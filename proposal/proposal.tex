@@ -61,63 +61,70 @@ energy efficiency goals~\cite{chen10}.
 
 \section{Architecture}
 
-
-
 \begin{figure}[htbp]
 \begin{center}
-\resizebox{0.9\columnwidth}{!}{
+\resizebox{0.8\columnwidth}{!}{
 \includegraphics{Architecture.pdf}
 }
-\caption{A diagram of the major components of our architecture.}
+\caption{The major components found in our architecture.}
 \label{fig:arch}
 \end{center}
 \end{figure}
 
 
-Our proposed architecture is shown in Figure~\ref{fig:arch}. This design is largely the same as the one presented in 
-%\citet{dean04mapreduce}
-?, with some additional detail. In particular, we have a worker daemon on each worker node that mediates communication between the master and the worker threads. We will explain the architecture by taking the reader through a typical MapReduce job.
+Our proposed architecture is shown in Figure~\ref{fig:arch}. We first describe the major difference between our proposed architecture and the architecture suggested in prior implementations of MapReduce. We will then explain our architecture and the RPCs it uses to communicate by taking the reader through the running of a typical MapReduce job. Will will finish this section by describing our mechanisms for tolerating faults and summarize the RPCs used in our architecture.
+
+\subsection{Main difference}
+
+The major difference between our architecture and prior implementations of MapReduce is that there is a worker daemon that sits on each node that mediates all communication between the master and the worker---including RPCing intermediate key/values to the reducers. This has some advantages and disadvantages.
+
+There are three advantages to this approach. The first is that mapper threads can free system resources by closing immediately upon completion. This is especially important in systems where memory is scarce. This property has a secondary advantage: it entirely removes a failure case. Jobs no longer need to be rerun if mappers crash after completion since the daemon is responsible for all RPC with the reducers. Additionally, since worker communication is centralized by the daemon we can reduce network overhead by batching messages.
+
+The principle disadvantage of the daemon approach is that intermediate results are no longer cached by the mapper after completion, so all data needs to be read off of the local disks before sending to the reducer. This will slow data transfer somewhat. A secondary disadvantage is that the worker daemon takes the entire system down when it crashs. However, since the daemon is isolated from the user's code and data we expect this to be a somewhat rare event.
+
+We feel that this design decision is reasonable for a MapReduce implementation that is intended for memory-constrained systems.
 
 \subsection{Typical Use}
 
-The user contacts a master process and submits the MapReduce job using the \rpc{SubmitJob} RPC call, which the user will wait on (indeed, this is the only synchronous RPC call  that we will use). In the initial version of our system we will assume that there is a single well-known master that is always available (fails of the master are catastrophic). The user programs to carry out the Map and Reduce operations. Right now we are planning for these to be precompiled executables that are located on the DFS.
+So how does a typical map reduce job look on this system? The process is initiated by the user when he contacts the master process and submits a MapReduce job using the \rpc{SubmitJob} RPC, which the user will wait on\footnote{This is the only synchronous RPC call  that we will use.}. In the initial version of our system we will assume that there is a single well-known master that is always available and that fails of the master are catastrophic. The user provides, in this initial RPC, the location of programs that carry out the \emph{map} and \emph{reduce} operations. At this point in the design, we intend for this programs to be precompiled executables located on the DFS.
 
-The master job then requests that the worker daemon on each node starts one or more mappers with \rpc{StartMapper}. The master will try to place mapper jobs on nodes that have a replicated copy of the appropriate input split.
+After receiving this initial message the master requests that the worker daemon on each node start \emph{mapper} threads with \rpc{StartMapper}. The master will try to place \emph{map} jobs on nodes that already have a replicated copy of the appropriate split of the input data.  We assume in this phase of the work that the user has access to the complete cluster and that the current MapReduce job is the only job running on the system. Later iterations of our work will have to include interactions with a cluster resource manager. We also assume that the worker daemons are already running on the worker nodes.
 
-We are assuming in this phase of the work that the user has access to the complete cluster and that the current MapReduce job is the only job running on the system. Later iterations of our work will have to include interactions with a cluster resource manager.
+The worker daemon, upon receipt of a \emph{map} work request, spawns a new \emph{mapper} thread for each request it gets. Because the worker daemon never delays or rejects any work request the master is completely responsible for work scheduling. The  \rpc{StartMapper} call includes a list of input chunks from the DFS. For now, we will assume that each chunk belongs to a single file and that we do not have to worry about the boundaries of multi-chunk files---\textit{e.g.} if a text document spans two chucks a word does not start in one block and end in another.
 
- The worker daemon, upon receipt of a mapper work request, spawns a new mapper thread for each request it gets. Because the worker daemon delays or rejects work requests the master is completely responsible for work scheduling. The  \rpc{StartMapper} call includes a list of input chunks from the DFS. For now, we will assume that each chunk belongs to a single file and that we do not have to worry about the boundaries of multi-chunk files---\textit{e.g.} if a text document spans two chucks a word does not start in one block and end in another.
+The \emph{mapper} thread buffers and writes the intermediate key-value pairs to local disk. Upon competition of the job, the mapper informs the worker daemon that it is done with \rpc{ReportLocalWorkComplete}, and exits. The worker daemon then contacts the master with \rpc{ReportWorkComplete} to inform it that it has some finshed work.
 
-The mapper thread buffers and writes the intermediate key-value pairs to local disk. Upon competition of the job, the mapper informs the worker daemon with \rpc{ReportLocalWorkComplete}, and exits. The worker daemon then contacts the master with \rpc{ReportWorkComplete} to inform it that it has some complete work.
+In response to the new work the master may creates some new \emph{reducer} threads with \rpc{StartReducer}. When all the necessary \emph{reducers} exist, the master informs these workers that they have new work with \rpc{ReportNewWork}. If the intermediate key/values  are local then the \emph{reducer} can read them right from disk. If not, then the key/values are requested from the remote worker daemon with a \rpc{SendDate} call. All of the intermediate data is read before the \emph{reducer} starts executing the user's \emph{reduce} code.
 
-In response to this new work the master may creates some new reducers with \rpc{StartReducer}. If all the necessary reducers exist, the master informs the existing workers that they have some new work with \rpc{ReportNewWork}. If the intermediate key/values  are local, then the reducer can read them right from disk. If not, then the key/values are requested from the remote worker daemon with the \rpc{SendDate} call. All of the intermediate data is read before the reducer starts executing the user's code.
-
-At this point the reducer thread runs the user's code and writes a temporary local file with the output. Upon completion the reducer writes this local file to the DFS and sends the worker daemon the \rpc{ReportLocalWorkComplete}. The worker daemon forwards this by the \rpc{ReportWorkComplete} call.
+While running the user's code the \emph{reducer} thread writes the final key/value pairs to a temporary local file. Upon completion the \emph{reducer} atomically writes this local file to the DFS and sends the worker daemon the \rpc{ReportLocalWorkComplete}. The worker daemon forwards this to the master by the \rpc{ReportWorkComplete} call.
 
 \subsection{Fault Tolerance}
-We will use a `checking in' model to keep track of the dispatched jobs. Whenever a mapper or a reducer is working, it will occasionally call on their associated worker daemon \rpc{LocalCheckIn}. Less frequently, the worker daemon will send the master a list of jobs that have not reported in recently with \rpc{CheckIn}. On a node with all threads reporting the list will be empty.
+The above process needs to be resilient to machines and threads failing. We will tolerate worker nodes, worker threads, and worker daemons crashing. We will not tolerate the master failing in this iteration.
 
-If a job has not checked in for a while (\textit{i.e.} has been on the worker daemon's non-responsive list for some number of reports) then the master will reschedule it: it will send a \rpc{Kill} to the worker daemon for that job and dispatch a new request for work. Notice that because the worker daemon is responsible for sending data to the reducers, we do not need to notify any reducers about failed mappers.
+We use a `checking in' model to keep track of the dispatched jobs which saves the master from having to actively query the status of the workers. Whenever a mapper or a reducer is working, it will occasionally report to their associated worker daemon with \rpc{LocalCheckIn}. Less frequently, the worker daemon will send the master a list of jobs that have not reported in recently with \rpc{CheckIn}. On a node with all threads reporting normally the list will be empty.
 
-If the entire node goes down (\textit{i.e.} the worker daemon has not checked in for a while), then the master sends a \rpc{Kill} to the worker daemon for all of its jobs, then \rpc{ReportFail}s to any reducer that depends on mappers on that node.
+If a job has not checked in for a while (\textit{i.e.} has been on the worker daemon's non-responsive list for some number of reports) then the master will reschedule it: it will send a \rpc{Kill} to the worker daemon for that job and dispatch a new request for work. Notice that because the worker daemon is responsible for sending data to the reducers, we do not need to notify any \emph{reducers} about failed \emph{mappers}.
 
-\subsection{Main point of divergence}
-
-Our architecture differs most from the implementation described in 
+If the entire node goes down (\textit{i.e.} the worker daemon has not checked in for a while), then the master sends a \rpc{Kill} to the worker daemon for all of its jobs, then \rpc{ReportFail}s any reducer that depends on mappers on that node. Finally, the master reschedules all work on the downed node.
 
 %\citet{dean04mapreduce}
 
 \subsection{RPC calls}
 
+Here is a summary of the RPC calls used in our system:
+
 \begin{table}[htdp]
 \caption{Stored procedures on the master.}
 \begin{center}
+\resizebox{0.9\columnwidth}{!}{
 \begin{tabular}{|l|l|}\hline
 \textbf{Procedure} & \textbf{Arguments}\\\hline
-\rpc{SubmitJob} & Input Directory, Output Directory, Map Program, Reduce Program, R, M\\
+\rpc{SubmitJob} & Input Directory, Output Directory, \\
+&\qquad Map Program, Reduce Program, R, M\\
 \rpc{CheckIn} & WorkerID, JobID List\\
 \rpc{ReportWorkComplete} & WorkerID, JobID\\\hline
 \end{tabular}
+}
 \end{center}
 \label{default}
 \end{table}%
@@ -125,6 +132,7 @@ Our architecture differs most from the implementation described in
 \begin{table}[htdp]
 \caption{Stored procedures on the worker daemon}
 \begin{center}
+\resizebox{0.9\columnwidth}{!}{
 \begin{tabular}{|l|l|}\hline
 \textbf{Procedure} & \textbf{Arguments}\\\hline
 \rpc{StartMapper} & JobID, DFS chunk list \\
@@ -136,6 +144,7 @@ Our architecture differs most from the implementation described in
 \rpc{Kill} & JobID\\
 \rpc{LocalCheckIn} & JobID\\\hline
 \end{tabular}
+}
 \end{center}
 \label{default}
 \end{table}%
