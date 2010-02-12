@@ -29,6 +29,27 @@ Erik Zawadzki \\
 
 \section{Previous Work}
 
+As a foundation, we are designing our implementation based on the original 
+description of MapReduce~\cite{mapreduce08}.  Other systems such as
+Dryad~\cite{dryad07} provide design considerations and expose areas
+where we can innovate with our implementation.  Our implementation on top
+of FAWN~\cite{fawn09} introduces a particular constraint that the original
+MapReduce design did not consider: low memory.  In addition, FAWN uses
+flash storage as its principal storage medium which introduces another
+area for MapReduce research---the original MapReduce design assumes a
+storage medium of hard drives.  
+
+Several other competing MapReduce implementations, such as
+Disco~\cite{disco10}, Hadoop~\cite{hadoop10}, Sector and
+Sphere~\cite{sphere09}, offer more examples to draw from for design
+decisions.  Research has also shown that techniques such as merging the
+MapReduce stages~\cite{barrier10}, and dynamically prioritizing resource
+usage~\cite{sandholm09} offer substantial performance benefits over
+standard MapReduce---techniques which have only been simulated before. 
+Finally, we can take advantage of FAWN's energy efficiency which is an active
+area of research with MapReduce as reflected in Gordon~\cite{gordon09}, 
+and work analyzing MapReduce traces for future energy efficiency goals~\cite{chen10}.
+
 \section{Architecture}
 
 \section{Design Plan (?)}
