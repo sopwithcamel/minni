@@ -26,6 +26,12 @@ Erik Zawadzki \\
 \thispagestyle{empty}
 
 \section{Problem Definition}
+MapReduce is a framework that allows programmers to easily write applications that process large data-sets in a reliable and fault-tolerant manner on large clusters involving commodity hardware. The basic implementation  comprises of two stages - map and reduce. The input data set is split into independent chunks and are parallely processed by the map tasks. The output from this stage is then passed (sometimes after an intermediate local sorting stage called combine) to the reduce tasks. The framework abstracts all details like scheduling tasks, monitoring them and re-execution of failed tasks. 
+
+The architecture typically conisists of a master node and several worker nodes that store data as well as do map/reduce jobs assigned by the master. The fact that the worker nodes store data as well as process them has been used to come up with efficient scheduling techniques that take into account locality and minimization of network traffic.
+
+Most of the already existing implementations of MapReduce try to minimize communication overhead between the worker machines. However memory footprint is not of important consideration in many design decisions. This is of importantance while designing MapReduce for systems like FAWN. In this project, we try to identify design possibilities that are key to decreasing memory footprint and we plan to reimplement a light weight MapReduce architecture that can be potentially be used by systems like FAWN.
+
 
 \section{Previous Work}
 
@@ -56,6 +62,8 @@ energy efficiency goals~\cite{chen10}.
 \section{Design Plan (?)}
 
 \section{Milestone Deliverables}
+We plan to prototype the architecture in C++ using the Apache Thrift framework for implementing RPCs. We will use the prototype to test and study how different design decisions affect the performance of MapReduce. After identifying them we will fine tune our final implementation for optimal memory, power(?) and network usage.
+
 
 \bibliographystyle{plain}
 \bibliography{references}
