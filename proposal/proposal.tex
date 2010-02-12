@@ -30,7 +30,7 @@ MapReduce~\cite{mapreduce08} is a framework that allows programmers to easily wr
 
 The architecture typically conisists of a master node and several worker nodes that store data as well as do map/reduce jobs assigned by the master. The fact that the worker nodes store data as well as process them has been used to come up with efficient scheduling techniques that take into account locality and minimization of network traffic.
 
-Most of the already existing implementations of MapReduce try to minimize communication overhead between the worker machines. However memory footprint is not of important consideration in many design decisions. This is of importantance while designing MapReduce for systems like FAWN~\cite{fawn09}. In this project, we try to identify design possibilities that are key to decreasing memory footprint and we plan to reimplement a light weight MapReduce architecture that can be potentially be used by systems like FAWN.
+Most of the already existing implementations of MapReduce try to minimize communication overhead between the worker machines. However memory footprint is not of important consideration in many design decisions. This is of importance while designing MapReduce for systems like FAWN~\cite{fawn09}. In this project, we try to identify design possibilities that are key to decreasing memory footprint and we plan to reimplement a light weight MapReduce architecture that can be potentially be used by systems like FAWN.
 
 \section{Previous Work}
 
