@@ -57,7 +57,7 @@ usage~\citep{sandholm09} offer substantial performance benefits over the
 standard MapReduce design---techniques which have only been simulated
 before. 
 
-A recent paper by \citet{yu2009distributed} evaluates different design choices for MapReduce and MapReduce-like systems. In particular, they discuss how the aggregation strategy used by Hadoop and the original MapReduce is empirically inferior to a competing aggregation method based on hashing used by some commercial databases (\emph{e.g.} by DB2~\citep{db210} and Oracle~\citep{oracle10}). They also point out that the aggregation method that we use in an implementation has a significant impact on the footprint that the jobs have in memory. This is particularly important for our project and we will discuss this issue later.
+A recent paper by \citet{yu2009distributed} evaluates different design choices for MapReduce and MapReduce-like systems. In particular, they discuss how the aggregation strategy used by Hadoop and the original MapReduce is empirically inferior to a competing aggregation method based on hashing that is similar to the aggregation method used by some major commercial databases (\emph{e.g.} by DB2~\citep{db210} and Oracle~\citep{oracle10}). They also point out that the aggregation method that we use in an implementation has a significant impact on the footprint that the jobs have in memory. This is particularly important for our project and we will discuss this issue later.
 
  Finally, we can take advantage of FAWN's energy efficiency which is
 an active area of research with MapReduce as reflected in
@@ -81,11 +81,25 @@ Our proposed architecture is shown in Figure~\ref{fig:arch}. We first describe t
 
 \subsection{Main difference}
 
-The major difference between our architecture and prior implementations of MapReduce is that there is a worker daemon that sits on each node that mediates all communication between the master and the worker---including RPCing intermediate key/values to the reducers. This has some advantages and disadvantages.
+There are two major differences between our implementation and standard MapReduce. The first is the introduction of a local manager process called the \emph{WorkDaemon} (WD) that manages a single node. The second difference is that we adopt the \emph{Accumulator-PartialHash} (APH) aggregation scheme described in \citet{yu2009distributed}.
 
-There are three advantages to this approach. The first is that mapper threads can free system resources by closing immediately upon completion. This is especially important in systems where memory is scarce. This property has a secondary advantage: it entirely removes a failure case. Jobs no longer need to be rerun if mappers crash after completion since the daemon is responsible for all RPC with the reducers. Additionally, since worker communication is centralized by the daemon we can reduce network overhead by batching messages.
+The first major difference is the WD that sits on each node that mediates all communication between the master and the worker---including RPCing intermediate key/values to the reducers. This has some advantages and disadvantages.
 
-The principle disadvantage of the daemon approach is that the worker daemon takes the node down when it crashes.  Essentially, a node is removed from the MapReduce pool if the daemon crashes. However, since the daemon is isolated from the user's code and data we expect this to be a somewhat rare event.
+There are three advantages to this approach. The first is that mapper threads can free system resources by closing immediately upon completion. This is especially important in systems where memory is scarce. This property has a secondary advantage: it entirely removes a failure case. Jobs no longer need to be rerun if mappers crash after completion since the daemon is responsible for all RPC with the reducers. Additionally, since worker communication is centralized by the WD we can reduce network overhead by batching messages.
+
+The principle disadvantage of the WD approach is that the WD takes the node down when it crashes.  Essentially, a node is removed from the MapReduce pool if the WD crashes. However, since the WD is isolated from the user's code and data we expect this to be a somewhat rare event.
+
+The second major difference is the adoptation of the APH aggregation scheme. \citet{yu2009distributed} describes the original MapReduce approach as the \emph{FullSort} method: all the records are gathered in memory and sorted by intermediate key immediately following the map phase\footnote{If there are too many key-value pairs to store in memory then they are sorted externally.}. This method has two principle disadvantages: it may be memory intensive (unless we always sort externally in which case it is slow), and requires every key-value pair to be present in memory before sorting. 
+
+ APH aggregation alleviates both these problems. APH essentially combines the sort phase with the initial reduction. For each reduction task, a hashtable that maps keys to partial aggregation objects. These partial aggregation objects, intuitively, are some sufficient description of an incomplete aggregation such that:
+\begin{itemize}
+ \item a new key-value pairs can be \emph{added} to the partial aggregation to yield a new partial aggregation;
+ \item two partial aggregation pairs can be \emph{merged} to form a new partial aggregation.
+\end{itemize}
+When an new object (either a value or a partial aggregation object) with a particular key is found, we add it to the appropriate partial aggregation object.
+
+This new formulation yields some immediate advantages: if the partial aggregation grows less the linearly in the number of key-value pairs then the in memory footprint of a collection of partial aggregations will be less than a complete list of the original records. Additionally, by evicting and shipping any partial aggregation object that is either 1) is too large or 2) has a hash-value with many collisions, then we can guarantee an upper bound on the memory footprint for an aggregator. Secondly, reduction work can begin as soon as the mappers have keys, reducing any wasted cycles waiting for key-value pairs to gather. Finally, since we don't sort APH only requires key-value pairs equality tests, rather than order comparisons. This means the programmer can avoid having to define spurious ``greater-than'' notions.
+
 
 We feel that this design decision is reasonable for a MapReduce implementation that is intended for memory-constrained systems.
 
