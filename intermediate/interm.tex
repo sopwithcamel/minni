@@ -81,7 +81,9 @@ Our proposed architecture is shown in Figure~\ref{fig:arch}. We first describe t
 
 \subsection{Main difference}
 
-There are two major differences between our implementation and standard MapReduce. The first is the introduction of a local manager process called the \emph{WorkDaemon} (WD) that manages a single node. The second difference is that we adopt the \emph{Accumulator-PartialHash} (APH) aggregation scheme described in \citet{yu2009distributed}.
+There are two major differences between our implementation and standard MapReduce. The first is the introduction of a local manager process called the \emph{WorkDaemon} (WD) that manages a single node. The second difference is that we use the \emph{Accumulator-PartialHash} (APH) aggregation scheme, as described in \citet{yu2009distributed}.
+
+\subsubsection{WorkDaemon}
 
 The first major difference is the WD that sits on each node that mediates all communication between the master and the worker---including RPCing intermediate key/values to the reducers. This has some advantages and disadvantages.
 
@@ -89,44 +91,51 @@ There are three advantages to this approach. The first is that mapper threads ca
 
 The principle disadvantage of the WD approach is that the WD takes the node down when it crashes.  Essentially, a node is removed from the MapReduce pool if the WD crashes. However, since the WD is isolated from the user's code and data we expect this to be a somewhat rare event.
 
-The second major difference is the adoptation of the APH aggregation scheme. \citet{yu2009distributed} describes the original MapReduce approach as the \emph{FullSort} method: all the records are gathered in memory and sorted by intermediate key immediately following the map phase\footnote{If there are too many key-value pairs to store in memory then they are sorted externally.}. This method has two principle disadvantages: it may be memory intensive (unless we always sort externally in which case it is slow), and requires every key-value pair to be present in memory before sorting. 
+\subsubsection{Accumulator-PartialHash}
 
- APH aggregation alleviates both these problems. APH essentially combines the sort phase with the initial reduction. For each reduction task, a hashtable that maps keys to partial aggregation objects. These partial aggregation objects, intuitively, are some sufficient description of an incomplete aggregation such that:
+The second major difference is the adoption of the APH aggregation scheme. \citet{yu2009distributed} describes the original MapReduce approach as the \emph{FullSort} method: all the records are gathered in memory and sorted by intermediate key immediately following the map phase\footnote{If there are too many key-value pairs to store in memory then they are sorted externally.}. This method has two principle disadvantages: it may be memory intensive (unless we always sort externally in which case it is slow), and requires every key-value pair to be present in memory before sorting. 
+
+ APH aggregation alleviates both these problems. APH essentially combines the sort phase with the initial reduction. Each reduction task has a hashtable that maps keys to partial aggregation objects (PAOs). These PAOs, intuitively, are some sufficient description of an incomplete aggregation such that:
 \begin{itemize}
- \item a new key-value pairs can be \emph{added} to the partial aggregation to yield a new partial aggregation;
- \item two partial aggregation pairs can be \emph{merged} to form a new partial aggregation.
+ \item a new key-value pairs can be \emph{added} to the PAO to yield a new PAO (\emph{i.e.} $p^t = p^{t-1} + v^t$);
+ \item two PAOs can be \emph{merged} to form a new PAO (\emph{i.e.} $p^s = p^q \oplus p^r$).
 \end{itemize}
-When an new object (either a value or a partial aggregation object) with a particular key is found, we add it to the appropriate partial aggregation object.
+The user describes a reduction with an initialization function, addition function and merger function instead of a single reduce function. When a new object (either a value or a PAO) with a particular key is give to a reducers task, the task adds it to or merges it with the appropriate PAO in the hashtable.
 
-This new formulation yields some immediate advantages: if the partial aggregation grows less the linearly in the number of key-value pairs then the in memory footprint of a collection of partial aggregations will be less than a complete list of the original records. Additionally, by evicting and shipping any partial aggregation object that is either 1) is too large or 2) has a hash-value with many collisions, then we can guarantee an upper bound on the memory footprint for an aggregator. Secondly, reduction work can begin as soon as the mappers have keys, reducing any wasted cycles waiting for key-value pairs to gather. Finally, since we don't sort APH only requires key-value pairs equality tests, rather than order comparisons. This means the programmer can avoid having to define spurious ``greater-than'' notions.
+This new formulation yields some immediate advantages: if the PAO grows less than linearly in the number of key-value pairs then the in memory footprint of a collection of PAOs will be less than a complete list of the original records. Additionally, by evicting any PAO object that is either 1) is too large or 2) has a hash-value with many collisions, then we can guarantee an upper bound on the memory footprint for a reducer task. (The \emph{eviction policy}---the policy that selects PAOs to write to disk---must balance between evicting early to save memory and evicting late to maximize data compression).  
 
+A second advantage of this approach reduction work can begin as soon as it has data, reducing any wasted cycles waiting for key-value pairs to gather. Finally, since we don't sort APH aggregation only requires key equality tests, rather than order comparisons. This means the programmer can avoid having to define spurious ``greater-than'' notions.
 
-We feel that this design decision is reasonable for a MapReduce implementation that is intended for memory-constrained systems.
+This formulation also has some disadvantages. Chief among these, some users may have a MapReduce formulation for their problem that assumes that the key-value pairs are initially sorted and rely on this fact to process them in sequence. We are breaking this for our prototype and explicitly assuming that key $k_i$ may be processed entirely independently from the processing of key $k_j$. In a full-featured release version of this program we would likely want to provide the user with a way of insisting that the key-value pairs be sorted, but we will not initially include this feature.
+
+We initially worried that the PAOs might also obfuscate errors. For example, in the original MapReduce paper key-value pairs could be flagged as `bad' and skipped if multiple reduce or map tasks fail on them. While we can still mark a record that causes repeated problems when we try to add it to a PAO as `bad', it is less clear what should be done if merging PAOs fails. Scrapping work and rerunning the tasks that generated the PAO could solve the problem if there was some order-dependent error, but what do we do if we just can't seem to get some PAOs to merge?
+
+We believe that the intent of the original intent of the bad-records was to primarily guard against anomalous data, and not logic problems with the user code. We can still provide reliability in the face of anomalous data by recording the last key-value pair that was successfully added to a PAO in the initial reduce, and some robustness to logical errors by rerunning PAO calculations, but we will  pass any repeated merger errors to the user---such errors represents a serious logical problem that is likely independent from \emph{where} the task was run. Additionally, if we have consistent problems merging two user-defined objects, this casts serious doubt about the validity of the user's code.
+
+We feel that our design decision to use APH aggregation is reasonable for a MapReduce implementation that is primarily intended for memory-constrained systems.
 
 \subsection{Typical Use}
 
-So how does a typical MapReduce job look on this system? The sequence is initiated by the user when he contacts the master process and submits a MapReduce job using the \rpc{SubmitJob} RPC, which the user will block on\footnote{This is the only synchronous RPC call  that we will use.}. In the initial version of our system we will assume that there is a single well-known master that is always available and that failures of the master are catastrophic. The user provides, in this initial RPC, the location of programs that carry out the \emph{map} and \emph{reduce} operations. At this point in the design, we expect these programs to be precompiled executables located in the DFS.
+So how does a typical MapReduce job look on this system? The sequence is initiated by the user when he contacts the master process and submits a MapReduce job using the \rpc{SubmitJob} RPC, which the user will block on\footnote{This is the only synchronous RPC call that we will use.}. In the initial version of our system we will assume that there is a single well-known master that is always available and that failures of the master are catastrophic. The user provides, in this initial RPC, the location of programs that carry out the \emph{map}function PAO operations. The user will pass this code to our program by implementing known functions and dynamically linking their object files into our code.
 
-After receiving this initial message the master requests that the worker daemon on each node start \emph{mapper} threads with \rpc{StartMapper}. The master will try to place \emph{map} jobs on nodes that already have a replicated copy of the appropriate split of the input data.  We assume in this phase of the work that the user has access to the complete cluster and that the current MapReduce job is the only job running on the system. Later iterations of our work will have to include interactions with a cluster resource manager. We also assume that the worker daemons are already running on the worker nodes.
+After receiving the initial message the master requests that the WorkDaemon on each node start \emph{mapper} threads with a \rpc{StartMapper} call. The master will try to place \emph{map} jobs on nodes that already have a replicated copy of the appropriate split of the input data.  We assume in this phase of the work that the user has access to the complete cluster and that the current MapReduce job is the only job running on the system. Later iterations of our work will have to include interactions with a cluster resource manager. We also assume that the WDs are already running on the worker nodes.
 
-The worker daemon, upon receipt of a \emph{map} work request, spawns a new \emph{mapper} thread for each request it gets. Because the worker daemon never delays or rejects any work request the master is completely responsible for work scheduling. The  \rpc{StartMapper} call includes a list of input chunks from the DFS. For now, we will assume that each chunk belongs to a single file and that we do not have to worry about the boundaries of multi-chunk files---\textit{e.g.} if a text document spans two chunks a word does not start in one block and end in another.
+The WD, upon receipt of a \emph{map} work request, spawns a new \emph{mapper} TBB task for each request it gets. Because the WD never delays or rejects any work request the master is completely responsible for work scheduling. The  \rpc{StartMapper} call includes a list of input chunks from the DFS. For now, we will assume that each chunk belongs to a single file and that we do not have to worry about the boundaries of multi-chunk files---\textit{e.g.} if a text document spans two chunks a word does not start in one block and end in another.
 
-The \emph{mapper} thread buffers and writes the intermediate key-value pairs to local disk. Upon completion of the job, the mapper informs the worker daemon that it is done with \rpc{ReportLocalWorkComplete}, and exits. The worker daemon then contacts the master with \rpc{ReportWorkComplete} to inform it that it has some finished work.
+Upon completion of its job a mapper informs the WD that it is done, and exits. The WD then starts an \emph{initial reduce} task for that mapper. The \emph{initial reducer} maintains a hashtable of PAOs, one for each key, and writes the resulting PAOs to local disk either when they are done or when they are evicted. The \emph{initial reducer} informs the WD when it is done, and the the WD contacts the master with a \rpc{ReportWorkComplete} to inform the master that it has some finished work. We will send all the completed PAOs for a reducer task as a single communication because this makes failure handling easier.
 
-In response to the finished work the master may initiate some new \emph{reducer} threads with \rpc{StartReducer}. When all the necessary \emph{mappers} exit, the master informs the corresponding \emph{reducers} that they have new work with \rpc{ReportNewWork}. If the intermediate key/values  are local then the \emph{reducer} can read them right from disk. If not, then the key/values are requested from the remote worker daemon with a \rpc{SendData} call. All of the intermediate data is read before the \emph{reducer} starts executing the user's \emph{reduce} code.
+In response to a \rpc{ReportWorkComplete} report the master may initiate some new \emph{final reducer} threads with \rpc{StartReducer}. Whenever a WD informs the master that it has some new PAOs to read, the master passes this information on to the appropriate \emph{final reducers} with an \rpc{ReportNewWork} call. If the PAOs  are local then the \emph{final reducer} can read them right from disk. If not, then the key/values are requested directly from the remote WD with a \rpc{SendData} call. The \emph{final reducer} starts executing the user's \emph{merge} code as soon as it has two PAOs.
 
-While running the user's code the \emph{reducer} thread writes the final key/value pairs to a temporary local file. Upon completion the \emph{reducer} atomically writes this local file to the DFS and sends the worker daemon the \rpc{ReportLocalWorkComplete}. The worker daemon forwards this to the master by the \rpc{ReportWorkComplete} call.
+While running the user's code the \emph{reducer} thread writes the final key-PAO pairs to a temporary local file. Upon completion the \emph{final reducer} writes this local file to the DFS and reports to the WD. The WD forwards this to the master by the \rpc{ReportWorkComplete} call.
 
 \subsection{Fault Tolerance}
-The above process needs to be resilient to machines and threads failing. We will tolerate worker nodes, worker threads, and worker daemons crashing. We will not tolerate the master failing.
+The above process needs to be resilient to machines and threads failing. We will tolerate worker nodes, worker tasks, and WorkDaemons crashing. We will not tolerate the master failing.
 
-We use a `checking in' model to keep track of the dispatched jobs which saves the master from having to actively query the status of the workers. Whenever a mapper or a reducer is working, it will occasionally report to their associated worker daemon with \rpc{LocalCheckIn}. Less frequently, the worker daemon will send the master a list of jobs that have not reported in recently with \rpc{CheckIn}. On a node with all threads reporting normally the list will be empty.
+We use a `checking in' model to keep track of the dispatched jobs. This saves the master from having to actively query the status of each task. Whenever a mapper or a reducer task is working, the WD will periodically check its running status to ensure that it has not terminated before reporting that it has completed its work. Less frequently, the WD will send the master a list of jobs that terminated unexpectedly. On a node with all tasks reporting normally the list will be empty, but this message will still serve as a heartbeat.
 
-If a job has not checked in for a while (\textit{i.e.} has been on the worker daemon's non-responsive list for some number of reports) then the master will reschedule it: it will send a \rpc{Kill} to the worker daemon for that job and dispatch a new request for work. Notice that because the worker daemon is responsible for sending data to the \emph{reducers}, we do not need to notify any \emph{reducers} about failed \emph{mappers}.
+If a job dies unexpectedly then the master will reschedule it: the master will send a \rpc{Kill} to the WD for that job and dispatch a new request for work. Notice that because the WD is responsible for sending data to the \emph{final reducers}, we do not need to notify any \emph{final reducers} about failed \emph{mappers}. 
 
-If the entire node goes down (\textit{i.e.} the worker daemon has not checked in for a while), then the master sends a \rpc{Kill} to the worker daemon for all of its jobs, then \rpc{ReportFail}'s any reducer that depends on mappers on that node. Finally, the master reschedules all work on the downed node.
-
-%\citet{dean04mapreduce}
+If the entire node goes down (\textit{i.e.} the WD has not checked in for a while), then the master sends a \rpc{Kill} to the WD for all of its jobs, then \rpc{ReportFail}'s any reducer that are still waiting for PAOs from that node. Notice that since we ensure that all or no PAOs from a \emph{final reducer}, a node crash cannot leave us with a case where we have used some but not all of a \emph{initial reducer's} PAOs. Finally, the master reschedules all work on the downed node.
 
 \subsection{RPC calls}
 
@@ -135,15 +144,13 @@ Here is a summary of the RPC calls used in our system:
 \begin{table}[htdp]
 \caption{Stored procedures on the master.}
 \begin{center}
-\resizebox{0.9\columnwidth}{!}{
 \begin{tabular}{|l|l|}\hline
 \textbf{Procedure} & \textbf{Arguments}\\\hline
-\rpc{SubmitJob} & Input Directory, Output Directory, \\
-&\qquad Map Program, Reduce Program, R, M\\
+\rpc{SubmitJob} & R,M, Input Directory,\\
+&\qquad  Output Directory\\
 \rpc{CheckIn} & WorkerID, JobID List\\
 \rpc{ReportWorkComplete} & WorkerID, JobID\\\hline
 \end{tabular}
-}
 \end{center}
 \label{tab:master_rpc}
 \end{table}%
@@ -151,19 +158,15 @@ Here is a summary of the RPC calls used in our system:
 \begin{table}[htdp]
 \caption{Stored procedures on the worker daemon}
 \begin{center}
-\resizebox{0.9\columnwidth}{!}{
 \begin{tabular}{|l|l|}\hline
 \textbf{Procedure} & \textbf{Arguments}\\\hline
 \rpc{StartMapper} & JobID, DFS chunk list \\
 \rpc{StartReducer} & JobID, Key, OutputFile \\
-\rpc{ReportLocalWorkComplete} & JobID\\
 \rpc{ReportNewWork} & Mapper IP, Mapper JobID\\
 \rpc{ReportFail} & Mapper IP, Mapper JobID\\
 \rpc{SendData} & JobID, Key\\
-\rpc{Kill} & JobID\\
-\rpc{LocalCheckIn} & JobID\\\hline
+\rpc{Kill} & JobID\\\hline
 \end{tabular}
-}
 \end{center}
 \label{tab:worker_rpc}
 \end{table}%
