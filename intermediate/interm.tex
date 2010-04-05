@@ -2,7 +2,7 @@
 
 %\documentclass[12pt,a4paper]{memoir} % for a long document
 \documentclass[10pt,letter,final,article,twocolumn]{article} % for a short document
-\usepackage[left=0.25in,top=0.25in,right=0.25in,bottom=0.25in,nohead,nofoot]{geometry} 
+%\usepackage[left=0.25in,top=0.25in,right=0.25in,bottom=0.25in,nohead,nofoot]{geometry} 
 \usepackage{titling,url}
 \usepackage{graphicx}
 \usepackage[numbers]{natbib}
@@ -11,7 +11,7 @@
 
 \newcommand{\rpc}[1]{\emph{#1}}
 
-\title{LWMR: Lightweight MapReduce}
+\title{Minnie: Minimalistic MapReduce}
 \author{Athula Balachandran \\
 {\tt abalacha@cs.cmu.edu}
 \and
@@ -20,14 +20,14 @@ Wolfgang Richter \\
 \and
 Erik Zawadzki \\
 {\tt epz@cs.cmu.edu}}
-\date{February 12, 2010} % delete this line to display the current date
+\date{April 5, 2010} % delete this line to display the current date
 
 %%% BEGIN DOCUMENT
 \begin{document}
 
-\pagestyle{empty}
+\pagenumbering{arabic}
+
 \maketitle
-\thispagestyle{empty}
 
 \section{Problem Definition}
 MapReduce~\citep{mapreduce08} is a framework that allows programmers to easily write applications that process large data-sets in a reliable and fault-tolerant manner on large clusters involving commodity hardware. The basic implementation  comprises of two stages---\emph{map} and \emph{reduce}. The input data set is split into independent chunks and are parallel processed by the \emph{map} tasks. The output from this stage is then passed---potentially after an optional local stage called \emph{combine}---to the \emph{reduce} tasks. The framework abstracts all details like scheduling tasks, monitoring tasks, and re-execution of failed tasks. 
@@ -49,23 +49,34 @@ area for MapReduce research---the original MapReduce design assumes a
 storage medium of hard drives.  
 
 Several other competing MapReduce implementations, such as
-Disco~\citep{disco10}, Hadoop~\citep{hadoop10}, Sector and
+Disco~\citep{disco10}, Hadoop~\citep{hadoop10}, and Sector and
 Sphere~\citep{sphere09}, offer more examples to draw from for design
 decisions.  Research has also shown that techniques such as merging the
 MapReduce stages~\citep{barrier10}, and dynamically prioritizing resource
 usage~\citep{sandholm09} offer substantial performance benefits over the
 standard MapReduce design---techniques which have only been simulated
-before. 
+before.  In addition, customized MapReduce implementations for specific 
+hardware configurations exist including MapReduce for the Cell Broadband
+architecture~\citep{rafique09}, and MapReduce for multicore 
+systems~\citep{chu06}.
 
-A recent paper by \citet{yu2009distributed} evaluates different design choices for MapReduce and MapReduce-like systems. In particular, they discuss how the aggregation strategy used by Hadoop and the original MapReduce is empirically inferior to a competing aggregation method based on hashing that is similar to the aggregation method used by some major commercial databases (\emph{e.g.} by DB2~\citep{db210} and Oracle~\citep{oracle10}). They also point out that the aggregation method that we use in an implementation has a significant impact on the footprint that the jobs have in memory. This is particularly important for our project and we will discuss this issue later.
+A recent paper by \citet{yu2009distributed} evaluates different design
+choices for MapReduce and MapReduce-like systems. In particular, they
+discuss how the aggregation strategy used by Hadoop and the original
+MapReduce is empirically inferior to a competing method based
+on hashing which is used by major commercial databases (\emph{e.g.}
+DB2~\citep{db210} and Oracle~\citep{oracle10}). They also point out
+that the aggregation method has a significant impact on the memory
+footprint of jobs. This is particularly important for our project and we will
+discuss this issue later.
 
- Finally, we can take advantage of FAWN's energy efficiency which is
+Finally, we can take advantage of FAWN's energy efficiency which is
 an active area of research with MapReduce as reflected in
 Gordon~\citep{gordon09},  and work analyzing MapReduce traces for future
 energy efficiency goals~\citep{chen10}.
 
 \section{Architecture}
-
+\label{sec:arch}
 \begin{figure}[htbp]
 \begin{center}
 \resizebox{0.8\columnwidth}{!}{
@@ -173,8 +184,19 @@ Here is a summary of the RPC calls used in our system:
 
 
 
-\section{Milestone Deliverables}
-We plan to prototype the architecture in C++ using the Apache Thrift framework for implementing RPCs. We will use the prototype to test and study how different design decisions affect the performance of MapReduce. After identifying them we will fine tune our final implementation for optimal memory, power, and network usage.
+\section{Evaluation}
+This section is the section subject to most future flucuation and should be
+read as a preliminary or rough-draft version of our final evaluation section.
+
+We plan on having two evaluation experiments, which may be composed of
+several sub-experiments---this is unclear right now.  The first set of experiments
+will run on $12$ machines located in the Satya server room.  These machines
+will have Minnie configured on top of HDFS as well as Hadoop.  Benchmarks run
+here will compare the two implementations of MapReduce on canoncial MapReduce
+jobs.  This will give an understanding of the tradeoffs in using Minnie over a
+more standard and established MapReduce implementation---Hadoop. The
+second set of experiments will run on a FAWN cluster to demonstrate the
+efficieny of the implementation in a low-memory environment.
 
 
 \bibliographystyle{plainnat}
