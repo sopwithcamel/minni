@@ -80,7 +80,7 @@ The major difference between our architecture and prior implementations of MapRe
 
 There are three advantages to this approach. The first is that mapper threads can free system resources by closing immediately upon completion. This is especially important in systems where memory is scarce. This property has a secondary advantage: it entirely removes a failure case. Jobs no longer need to be rerun if mappers crash after completion since the daemon is responsible for all RPC with the reducers. Additionally, since worker communication is centralized by the daemon we can reduce network overhead by batching messages.
 
-The principle disadvantage of the daemon approach is that the worker daemon takes the node down when it crashes.  Essentially, a node is removed from the MapReduce pool if the daemon crashes. However, since the daemon is isolated from the user's code and data we expect this to be a somewhat rare event.
+The principle disadvantage of the daemon approach is that the worker daemon takes the node down when it crashes.  Essentially, a node is removed from the MapReduce pool if the daemon crashes. However, since the daemon is isolated from the user's code and data, we expect this to be a somewhat rare event.
 
 We feel that this design decision is reasonable for a MapReduce implementation that is intended for memory-constrained systems.
 
