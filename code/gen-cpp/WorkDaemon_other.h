@@ -13,26 +13,22 @@
 #define PARAM_R 10
 #define PARAM_FILEBUFFER 2000
 
-// Task Status
-#define TASK_INPROGRESS 0
-#define TASK_COMPLETE 1
-#define TASK_DEAD 2
-
-// File Status
- 
-struct FileStatus{
-  unsigned int status;
-  unsigned int position;
-
-  static const unsigned int DNE = 0;
-  static const unsigned int READY = 1;
-  static const unsigned int INPROGRESS = 2;
-  static const unsigned int DONE = 3;
-};
-
 using namespace workdaemon;
 using namespace tbb;
 using namespace std;
+
+// Status
+namespace JobStatus {enum {DNE, INPROGRESS, DONE, DEAD};}
+namespace FileStatus {enum {DNE, READY, INPROGRESS, DONE};}
+namespace PartitionStatus {enum {DNE, READY, INPROGRESS, DONE};}
+
+struct Bookmark {
+  Status status;
+  unsigned int pos;
+};
+
+
+
 
 template <class T> 
 struct HashCompare { 
@@ -56,16 +52,20 @@ template <class T, class U>
   };
 
 
+typedef concurrent_hash_map<JobID,Status,HashCompare<JobID> > JobStatusMap;
 typedef concurrent_hash_map<PartitionID, 
-  map<JobID, FileStatus>, HashCompare<PartitionID> > FileStatusMap;
+  map<JobID, Status>, HashCompare<PartitionID> > FileStatusMap;
 
 class FileRegistry{
  private:
   FileStatusMap registry;
+  JobStatusMap * status_map;
  public:
-  void get_data(JobID jid, PartitionID pid, vector<vector<string> > &_return);
-  Status get_status(JobID jid, ParitionID pid);
-  void find_new(JobID jid, PartitionID pid);
+ FileRegistry(JobStatusMap * _smap);
+  void get_data(PartitionID pid, vector<vector<string> > &_return);
+  Status get_status(PartitionID pid);
+  void find_new(PartitionID pid);
+  string to_string();
 };
 
 string local_filename(JobID jid, PartitionID pid);

@@ -33,18 +33,12 @@ task * MasterTask::execute(){
       }
       // 2b) Get the reported status, and the actual status.
       state_type state = it->second->state();
-      bool believe_running = status->second == TASK_INPROGRESS;
+      bool believe_running = status->second == JobStatus::INPROGRESS;
       bool actually_running = state == executing;
-      cout << "Job " 
-	   << it->first  
-	   << " reports " 
-	   << believe_running 
-	   << " and is actually " 
-	   << actually_running << endl;
       // 2c) Check to make sure that the statuses make sense
       if(believe_running && !actually_running){
 	cerr << "\tThis is bad, master should be informed..." << endl;
-	status->second = TASK_DEAD;
+	status->second = JobStatus::DEAD;
 	status.release();
       }
     }
@@ -60,14 +54,12 @@ MapperTask::MapperTask(JobID jid_, ChunkID cid_, JobStatusMap * status_map_):
 
 task * MapperTask::execute(){
   // 1) Work for a while
-  this_tbb_thread::sleep(tick_count::interval_t((double)5)); // "Work"
-  generate_keyvalue_pairs("hello", 3);
+  //this_tbb_thread::sleep(tick_count::interval_t((double)5)); // "Work"
+  //generate_keyvalue_pairs("hello", 3);
 
   // 2) Report that you're done.
-  StatusAccessor a;
+  JobStatusMap::accessor a;
   this->status_map->insert(a, jid);
-  printf("Status of %d before: %d\n", (int)a->first, (int)a->second);
-  a->second = TASK_COMPLETE;
-  printf("Status of %d after: %d\n", (int)a->first, (int)a->second);
+  a->second = JobStatus::DONE;
   return NULL;
 }

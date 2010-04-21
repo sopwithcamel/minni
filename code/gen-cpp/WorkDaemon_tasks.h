@@ -7,8 +7,7 @@ using namespace tbb;
 using namespace std;
 
 
-typedef concurrent_hash_map<JobID,Status,HashCompare<JobID> > JobStatusMap;
-typedef JobStatusMap::accessor StatusAccessor;
+
 
 class MapperTask: public task{
 public:	

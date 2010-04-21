@@ -35,9 +35,10 @@ using namespace std;
 class WorkDaemonHandler : virtual public WorkDaemonIf {
   JobStatusMap status_map;
   JobMapperMap mapper_map;
+  FileRegistry file_reg;
   empty_task * root;
 public:
-  WorkDaemonHandler() {
+  WorkDaemonHandler(): status_map(), mapper_map(), file_reg(&status_map) {
     // Set up the root and a MasterTask.
     root = new(task::allocate_root()) empty_task();
     MasterTask& t = *new(root->allocate_additional_child_of(*root)) MasterTask(&status_map, &mapper_map);
@@ -46,7 +47,7 @@ public:
 	
   void bark(const string& s) {
     //Your implementation goes here
-     this_tbb_thread::sleep(tick_count::interval_t((double)5));
+    this_tbb_thread::sleep(tick_count::interval_t((double)5));
     printf("%s\n", s.c_str());
   }
 	
@@ -60,7 +61,7 @@ public:
     JobMapperMap::accessor mapper_accessor;
     // 1) Set the initial status of the job to inprogress
     status_map.insert(status_accessor, jid);
-    status_accessor->second = TASK_INPROGRESS;	
+    status_accessor->second = JobStatus::INPROGRESS;	
 		
     // 2) Allocate the mapper task
     MapperTask& t = *new(root->allocate_additional_child_of(*root)) 
@@ -83,11 +84,15 @@ public:
   void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID pid, const SeriesID sid) {
     // Your implementation goes here
     printf("sendData\n");
+    file_reg.find_new(0);
+    file_reg.find_new(1);
+    cout << file_reg.to_string();
   }
 
-  Status dataStatus(const PartitionID kid) {
-    // Your implementation goes here
+  Status dataStatus(const PartitionID pid) {
     printf("dataStatus\n");
+    file_reg.find_new(pid);
+    cout << file_reg.to_string();
   }
 
 	
@@ -109,7 +114,7 @@ public:
 
     // 3) Mark it as dead
     status_map.insert(status_accessor, jid);
-    status_accessor->second = TASK_DEAD;
+    status_accessor->second = JobStatus::DEAD;
   }
 	
 };
@@ -122,7 +127,7 @@ int main(int argc, char **argv) {
   shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
   shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
 	
-  TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
+  TSimpleServer server(processor, serverTransport, transportFactory, protocolFactory);
   server.serve();
   return 0;
 }
