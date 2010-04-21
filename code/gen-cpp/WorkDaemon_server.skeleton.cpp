@@ -37,14 +37,19 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
     printf("startMapper\n");
   }
 
-  void startReducer(const JobID jid, const KeyID kid, const std::string& outFile) {
+  void startReducer(const JobID jid, const PartitionID kid, const std::string& outFile) {
     // Your implementation goes here
     printf("startReducer\n");
   }
 
-  void sendData(std::vector<std::string> & _return, const JobID jid, const KeyID kid, const SeriesID sid) {
+  void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID kid, const SeriesID sid) {
     // Your implementation goes here
     printf("sendData\n");
+  }
+
+  Status dataStatus(const PartitionID kid) {
+    // Your implementation goes here
+    printf("dataStatus\n");
   }
 
   void kill(const JobID jid) {

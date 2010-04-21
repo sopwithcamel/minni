@@ -1,32 +1,17 @@
 #include "WorkDaemon.h"
-
+#include "WorkDaemon_other.h"
 #include "tbb/task.h"
-#include "tbb/concurrent_hash_map.h"
-
-
-#define TASK_INPROGRESS 0
-#define TASK_COMPLETE 1
-#define TASK_DEAD 2
 
 using namespace workdaemon;
 using namespace tbb;
 using namespace std;
 
-struct BasicHashCompare { 
-	static size_t hash( const JobID& x){
-		return (size_t) x;
-	}
-	static bool equal( const JobID& x, const JobID& y ){
-		return x == y;
-	}
-};
 
-typedef concurrent_hash_map<JobID,Status,BasicHashCompare> JobStatusMap;
+typedef concurrent_hash_map<JobID,Status,HashCompare<JobID> > JobStatusMap;
 typedef JobStatusMap::accessor StatusAccessor;
 
 class MapperTask: public task{
-public:
-	
+public:	
 	JobID jid;
 	ChunkID cid;
 	JobStatusMap * status_map;
@@ -34,7 +19,7 @@ public:
 	task * execute();
 };
 
-typedef concurrent_hash_map<JobID,MapperTask*,BasicHashCompare> JobMapperMap;
+typedef concurrent_hash_map<JobID,MapperTask*,HashCompare<JobID> > JobMapperMap;
 
 class MasterTask: public task{
 public:
@@ -43,3 +28,4 @@ public:
 	MasterTask(JobStatusMap * smap_, JobMapperMap * mmap_);
 	task * execute();
 };
+

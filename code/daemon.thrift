@@ -11,7 +11,7 @@ service WorkDaemon {
 	map<JobID, Status> pulse(),   // Are you alive
 	oneway void startMapper(1:JobID jid, 2:ChunkID cid),
 	oneway void startReducer(1:JobID jid, 2:PartitionID kid, 3:string outFile),
-	list<list<string>> sendData(1:JobID jid, 2:PartitionID kid, 3:SeriesID sid),
-	Status dataStatus(1:JobID jid, 2:PartitionID kid),
+	list<list<string>> sendData(1:PartitionID kid, 2:SeriesID sid),
+	Status dataStatus(1:PartitionID kid),
 	oneway void kill(1:JobID jid)
 }

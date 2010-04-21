@@ -61,7 +61,7 @@ MapperTask::MapperTask(JobID jid_, ChunkID cid_, JobStatusMap * status_map_):
 task * MapperTask::execute(){
   // 1) Work for a while
   this_tbb_thread::sleep(tick_count::interval_t((double)5)); // "Work"
-  generate_keyvalue_pairs();
+  generate_keyvalue_pairs("hello", 3);
 
   // 2) Report that you're done.
   StatusAccessor a;

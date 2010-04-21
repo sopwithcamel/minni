@@ -5,7 +5,7 @@
 #include <iostream>
 #include "WorkDaemon.h"
 #include "WorkDaemon_tasks.h"
-#include "WorkDaemon_other.h""
+#include "WorkDaemon_other.h"
 
 // Thrift includes
 #include <protocol/TBinaryProtocol.h>
@@ -75,15 +75,21 @@ public:
 		
   }
 	
-  void startReducer(const JobID jid, const KeyID kid, const string& outFile) {
+  void startReducer(const JobID jid, const PartitionID pid, const string& outFile) {
     // Your implementation goes here
     printf("startReducer\n");
   }
 	
-  void sendData(vector<string> & _return, const JobID jid, const KeyID kid, const SeriesID sid) {
+  void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID pid, const SeriesID sid) {
     // Your implementation goes here
     printf("sendData\n");
   }
+
+  Status dataStatus(const PartitionID kid) {
+    // Your implementation goes here
+    printf("dataStatus\n");
+  }
+
 	
   void kill(const JobID jid) {
     

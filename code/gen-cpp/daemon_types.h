@@ -18,7 +18,7 @@ typedef int16_t Status;
 
 typedef int64_t JobID;
 
-typedef int64_t KeyID;
+typedef int64_t PartitionID;
 
 typedef int64_t ChunkID;
 

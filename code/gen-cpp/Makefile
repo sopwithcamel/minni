@@ -5,18 +5,24 @@
 #OBJ = $(SRC:.cpp=.o)
 .SUFFIXES : .o .cpp
 
+OS = MAC
 
 #TBB
 TBB_LIB = -L$(TBB_DIR) -ltbb
-#TBB_DIR = /Library/Frameworks/Intel_TBB.framework/Versions/tbb22_013oss/build/macos_intel64_gcc_cc4.2.1_os10.6.2_release
-TBB_DIR = /opt/intel/tbb/tbb22_013oss/build/linux_ia32_gcc_cc4.4.1_libc2.10.1_kernel2.6.31_release
-TBB_INC = -I/opt/intel/tbb/tbb22_013oss/include
+ifeq ($(OS),LINUX)
+ TBB_DIR = /opt/intel/tbb/tbb22_013oss/build/linux_ia32_gcc_cc4.4.1_libc2.10.1_kernel2.6.31_release
+ TBB_INC = -I/opt/intel/tbb/tbb22_013oss/include
+else
+ TBB_DIR = /Library/Frameworks/Intel_TBB.framework/Versions/tbb22_013oss/build/macos_intel64_gcc_cc4.2.1_os10.6.2_release
+ TBB_INC = -I/Library/Frameworks/Intel_TBB.framework/Versions/tbb22_013oss/include
+endif
 
 #Thrift 
 THR_SRC = WorkDaemon.cpp daemon_constants.cpp daemon_types.cpp
 THR_OBJ = $(THR_SRC:.cpp=.o)
 THR_INC = -I/usr/local/include/thrift
 THR_LIB = -L/usr/local/lib -lthrift 
+
 
 # Generic
 LD = ld

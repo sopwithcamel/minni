@@ -17,8 +17,9 @@ class WorkDaemonIf {
   virtual void bark(const std::string& s) = 0;
   virtual void pulse(std::map<JobID, Status> & _return) = 0;
   virtual void startMapper(const JobID jid, const ChunkID cid) = 0;
-  virtual void startReducer(const JobID jid, const KeyID kid, const std::string& outFile) = 0;
-  virtual void sendData(std::vector<std::string> & _return, const JobID jid, const KeyID kid, const SeriesID sid) = 0;
+  virtual void startReducer(const JobID jid, const PartitionID kid, const std::string& outFile) = 0;
+  virtual void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID kid, const SeriesID sid) = 0;
+  virtual Status dataStatus(const PartitionID kid) = 0;
   virtual void kill(const JobID jid) = 0;
 };
 
@@ -34,11 +35,15 @@ class WorkDaemonNull : virtual public WorkDaemonIf {
   void startMapper(const JobID /* jid */, const ChunkID /* cid */) {
     return;
   }
-  void startReducer(const JobID /* jid */, const KeyID /* kid */, const std::string& /* outFile */) {
+  void startReducer(const JobID /* jid */, const PartitionID /* kid */, const std::string& /* outFile */) {
     return;
   }
-  void sendData(std::vector<std::string> & /* _return */, const JobID /* jid */, const KeyID /* kid */, const SeriesID /* sid */) {
+  void sendData(std::vector<std::vector<std::string> > & /* _return */, const PartitionID /* kid */, const SeriesID /* sid */) {
     return;
+  }
+  Status dataStatus(const PartitionID /* kid */) {
+    Status _return = 0;
+    return _return;
   }
   void kill(const JobID /* jid */) {
     return;
@@ -231,7 +236,7 @@ class WorkDaemon_startReducer_args {
   virtual ~WorkDaemon_startReducer_args() throw() {}
 
   JobID jid;
-  KeyID kid;
+  PartitionID kid;
   std::string outFile;
 
   struct __isset {
@@ -269,7 +274,7 @@ class WorkDaemon_startReducer_pargs {
   virtual ~WorkDaemon_startReducer_pargs() throw() {}
 
   const JobID* jid;
-  const KeyID* kid;
+  const PartitionID* kid;
   const std::string* outFile;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
@@ -279,26 +284,22 @@ class WorkDaemon_startReducer_pargs {
 class WorkDaemon_sendData_args {
  public:
 
-  WorkDaemon_sendData_args() : jid(0), kid(0), sid(0) {
+  WorkDaemon_sendData_args() : kid(0), sid(0) {
   }
 
   virtual ~WorkDaemon_sendData_args() throw() {}
 
-  JobID jid;
-  KeyID kid;
+  PartitionID kid;
   SeriesID sid;
 
   struct __isset {
-    __isset() : jid(false), kid(false), sid(false) {}
-    bool jid;
+    __isset() : kid(false), sid(false) {}
     bool kid;
     bool sid;
   } __isset;
 
   bool operator == (const WorkDaemon_sendData_args & rhs) const
   {
-    if (!(jid == rhs.jid))
-      return false;
     if (!(kid == rhs.kid))
       return false;
     if (!(sid == rhs.sid))
@@ -322,8 +323,7 @@ class WorkDaemon_sendData_pargs {
 
   virtual ~WorkDaemon_sendData_pargs() throw() {}
 
-  const JobID* jid;
-  const KeyID* kid;
+  const PartitionID* kid;
   const SeriesID* sid;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
@@ -338,7 +338,7 @@ class WorkDaemon_sendData_result {
 
   virtual ~WorkDaemon_sendData_result() throw() {}
 
-  std::vector<std::string>  success;
+  std::vector<std::vector<std::string> >  success;
 
   struct __isset {
     __isset() : success(false) {}
@@ -368,7 +368,100 @@ class WorkDaemon_sendData_presult {
 
   virtual ~WorkDaemon_sendData_presult() throw() {}
 
-  std::vector<std::string> * success;
+  std::vector<std::vector<std::string> > * success;
+
+  struct __isset {
+    __isset() : success(false) {}
+    bool success;
+  } __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+class WorkDaemon_dataStatus_args {
+ public:
+
+  WorkDaemon_dataStatus_args() : kid(0) {
+  }
+
+  virtual ~WorkDaemon_dataStatus_args() throw() {}
+
+  PartitionID kid;
+
+  struct __isset {
+    __isset() : kid(false) {}
+    bool kid;
+  } __isset;
+
+  bool operator == (const WorkDaemon_dataStatus_args & rhs) const
+  {
+    if (!(kid == rhs.kid))
+      return false;
+    return true;
+  }
+  bool operator != (const WorkDaemon_dataStatus_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WorkDaemon_dataStatus_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class WorkDaemon_dataStatus_pargs {
+ public:
+
+
+  virtual ~WorkDaemon_dataStatus_pargs() throw() {}
+
+  const PartitionID* kid;
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class WorkDaemon_dataStatus_result {
+ public:
+
+  WorkDaemon_dataStatus_result() : success(0) {
+  }
+
+  virtual ~WorkDaemon_dataStatus_result() throw() {}
+
+  Status success;
+
+  struct __isset {
+    __isset() : success(false) {}
+    bool success;
+  } __isset;
+
+  bool operator == (const WorkDaemon_dataStatus_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const WorkDaemon_dataStatus_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WorkDaemon_dataStatus_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class WorkDaemon_dataStatus_presult {
+ public:
+
+
+  virtual ~WorkDaemon_dataStatus_presult() throw() {}
+
+  Status* success;
 
   struct __isset {
     __isset() : success(false) {}
@@ -450,11 +543,14 @@ class WorkDaemonClient : virtual public WorkDaemonIf {
   void recv_pulse(std::map<JobID, Status> & _return);
   void startMapper(const JobID jid, const ChunkID cid);
   void send_startMapper(const JobID jid, const ChunkID cid);
-  void startReducer(const JobID jid, const KeyID kid, const std::string& outFile);
-  void send_startReducer(const JobID jid, const KeyID kid, const std::string& outFile);
-  void sendData(std::vector<std::string> & _return, const JobID jid, const KeyID kid, const SeriesID sid);
-  void send_sendData(const JobID jid, const KeyID kid, const SeriesID sid);
-  void recv_sendData(std::vector<std::string> & _return);
+  void startReducer(const JobID jid, const PartitionID kid, const std::string& outFile);
+  void send_startReducer(const JobID jid, const PartitionID kid, const std::string& outFile);
+  void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID kid, const SeriesID sid);
+  void send_sendData(const PartitionID kid, const SeriesID sid);
+  void recv_sendData(std::vector<std::vector<std::string> > & _return);
+  Status dataStatus(const PartitionID kid);
+  void send_dataStatus(const PartitionID kid);
+  Status recv_dataStatus();
   void kill(const JobID jid);
   void send_kill(const JobID jid);
  protected:
@@ -475,6 +571,7 @@ class WorkDaemonProcessor : virtual public ::apache::thrift::TProcessor {
   void process_startMapper(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_startReducer(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_sendData(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
+  void process_dataStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_kill(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
  public:
   WorkDaemonProcessor(boost::shared_ptr<WorkDaemonIf> iface) :
@@ -484,6 +581,7 @@ class WorkDaemonProcessor : virtual public ::apache::thrift::TProcessor {
     processMap_["startMapper"] = &WorkDaemonProcessor::process_startMapper;
     processMap_["startReducer"] = &WorkDaemonProcessor::process_startReducer;
     processMap_["sendData"] = &WorkDaemonProcessor::process_sendData;
+    processMap_["dataStatus"] = &WorkDaemonProcessor::process_dataStatus;
     processMap_["kill"] = &WorkDaemonProcessor::process_kill;
   }
 
@@ -529,21 +627,32 @@ class WorkDaemonMultiface : virtual public WorkDaemonIf {
     }
   }
 
-  void startReducer(const JobID jid, const KeyID kid, const std::string& outFile) {
+  void startReducer(const JobID jid, const PartitionID kid, const std::string& outFile) {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
       ifaces_[i]->startReducer(jid, kid, outFile);
     }
   }
 
-  void sendData(std::vector<std::string> & _return, const JobID jid, const KeyID kid, const SeriesID sid) {
+  void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID kid, const SeriesID sid) {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
       if (i == sz - 1) {
-        ifaces_[i]->sendData(_return, jid, kid, sid);
+        ifaces_[i]->sendData(_return, kid, sid);
         return;
       } else {
-        ifaces_[i]->sendData(_return, jid, kid, sid);
+        ifaces_[i]->sendData(_return, kid, sid);
+      }
+    }
+  }
+
+  Status dataStatus(const PartitionID kid) {
+    uint32_t sz = ifaces_.size();
+    for (uint32_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        return ifaces_[i]->dataStatus(kid);
+      } else {
+        ifaces_[i]->dataStatus(kid);
       }
     }
   }
