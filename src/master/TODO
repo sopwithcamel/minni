@@ -1,0 +1,12 @@
+Master Server
+-----------------
+
+1) Start MapReduce job
+	- Check input data in HDFS and determine split amongst nodes
+	depening on locality
+2) Maintain list of all nodes
+3) Assign maps to nodes
+4) Poll for statuses
+5) Assign reduce jobs to nodes
+6) Poll on statuses
+7) Once job completes, print out stats to user
