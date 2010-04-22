@@ -29,12 +29,42 @@ Erik Zawadzki \\
 
 \maketitle
 
-\section{Problem Definition}
-MapReduce~\citep{mapreduce08} is a framework that allows programmers to easily write applications that process large data-sets in a reliable and fault-tolerant manner on large clusters involving commodity hardware. The basic implementation  comprises of two stages---\emph{map} and \emph{reduce}. The input data set is split into independent chunks and are parallel processed by the \emph{map} tasks. The output from this stage is then passed---potentially after an optional local stage called \emph{combine}---to the \emph{reduce} tasks. The framework abstracts all details like scheduling tasks, monitoring tasks, and re-execution of failed tasks. 
+\section{Introduction}
+MapReduce~\citep{mapreduce08}, which was introduced by Google supports distributed computing on huge datasets on large clusters involving commodity hardware. The framework allows programmers to easily write applications that process these data-sets in a reliable and fault-tolerant manner.  The basic implementation  comprises of two stages---\emph{map} and \emph{reduce}. This framework is inspired by the map and reduce functions that are commonly used in functional programming. The input data set is split into independent chunks and are parallel processed by the \emph{map} tasks. The output from this stage is then passed---potentially after an optional local stage called \emph{combine}---to the \emph{reduce} tasks. The framework abstracts all details like scheduling tasks, monitoring tasks, and re-execution of failed tasks. 
 
 The architecture typically consists of a master node and several worker nodes that store data as well as do both \emph{map} and \emph{reduce} jobs assigned by the master. The fact that the worker nodes store data as well as process them has been used to come up with efficient scheduling techniques that take into account locality and enable minimization of network traffic.
 
-Most of the already existing implementations of MapReduce try to minimize communication overhead between the worker machines. However memory footprint is not of important consideration in many design decisions. This is of importance while designing MapReduce for systems like FAWN~\citep{fawn09}. In this project, we try to identify design possibilities that are key to decreasing memory footprint and we plan to re-implement a light weight MapReduce architecture that can be potentially be used by systems like FAWN.
+Several implementations of MapReduce are available \citep{mochi,hadoop10,disco10,sphere09}.  Most of the already existing implementations of MapReduce try to minimize communication overhead between the worker machines. However memory footprint is not of important consideration in many design decisions. This is of importance while designing MapReduce for systems like FAWN~\citep{fawn09}. In this project, we try to identify design possibilities that are key to decreasing memory footprint and we plan to re-implement a light weight MapReduce architecture that can be potentially be used by systems like FAWN.
+
+\section{Goals}
+
+\subsection{Work done so far}
+\begin{itemize}
+\item We iterated over the design decisions and came up with the final architecture for Minnie. The revised architecture is described in Section~\ref{sec:arch}.
+\item We have familiarized ourselves with Thrift~\citep{thrift10}, Intel's TBB~\citep{intel10}, and KosmosFS (KFS)~\citep{kfs10}. 
+\item We began creating an I/O abstraction layer on top of KFS.
+\item We also have prototype deamon code (not feature complete). 
+\end{itemize}
+
+\subsection{75\% goal}
+\begin{itemize}
+\item We will have a working MapReduce implementation that can run the word count application. 
+\end{itemize}
+
+\subsection{100\% goal}
+\begin{itemize}
+\item We will have a more robust and feature-complete MapReduce implementation which will have low memory footprint and can run on FAWN.
+\item This implementation will be robust to node failures.
+\item We will do comparison studies of Hadoop vs Minnie on 12 servers.
+\end{itemize}
+
+\subsection{125\% goal}
+\begin{itemize}
+\item We will make our implementation more flexible like Dryad.
+\item We will extend our implementation and provide features that allow users to specify combining and aggregation trees.
+\item Our implementation will also be robust to specific job failures.
+\item The implementation will be extended to read and process data from different sources (like databases) and also of different datatypes.
+\end{itemize}
 
 \section{Previous Work}
 
