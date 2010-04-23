@@ -47,8 +47,7 @@ public:
 	
   void bark(const string& s) {
     //Your implementation goes here
-    this_tbb_thread::sleep(tick_count::interval_t((double)5));
-    printf("%s\n", s.c_str());
+    printf("Ruff Ruff: %s\n", s.c_str());
   }
 	
   void pulse(map<JobID, Status> & _return) {
