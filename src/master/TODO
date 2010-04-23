@@ -4,6 +4,10 @@ Master Server
 1) Start MapReduce job
 	- Check input data in HDFS and determine split amongst nodes
 	depening on locality
+		+ Check if exists
+		+ getFileBlockLocations for assignment
+		+ Check isFile to see all input files
+		+ maybe listStatus on path
 2) Maintain list of all nodes
 3) Assign maps to nodes
 4) Poll for statuses

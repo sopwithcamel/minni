@@ -1,7 +1,8 @@
 #!/usr/local/bin/thrift --gen cpp
 
-namespace cpp Test
+namespace cpp Master
 
-service Something {
-  oneway void ping()
+service Master {
+ 	oneway void ping(),
+	oneway void bark(1:string s), // Debug
 }
