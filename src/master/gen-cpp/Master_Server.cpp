@@ -29,7 +29,6 @@ class MasterHandler : virtual public MasterIf {
 
   void bark(const std::string& s) {
     // Your implementation goes here
-	printf("ruff, ruff!!\n");
 	printf("%s\n", s.c_str());
   }
 
