@@ -50,8 +50,8 @@ public:
   }
 	
   void bark(const string& s) {
-    //this_tbb_thread::sleep(tick_count::interval_t((double)5));
-    printf("%s\n", s.c_str());
+    //Your implementation goes here
+    printf("Ruff Ruff: %s\n", s.c_str());
   }
 
   // Scans the status map and sees if there is anything new to report to the master

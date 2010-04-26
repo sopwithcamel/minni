@@ -23,18 +23,19 @@ THR_OBJ = $(THR_SRC:.cpp=.o)
 THR_INC = -I/usr/local/include/thrift
 THR_LIB = -L/usr/local/lib -lthrift 
 
+WOLF = /Users/epz/local/os_repo/src/master/gen-cpp
 
 # Generic
 LD = ld
-LIBFLAGS  = $(THR_LIB) $(TBB_LIB)
+LIBFLAGS  = $(THR_LIB) $(TBB_LIB) -L$(WOLF)
 CPPFLAGS = -g -O2 
-INCLUDES = $(THR_INC) $(TBB_INC)
+INCLUDES = $(THR_INC) $(TBB_INC) -I$(WOLF)
 
 # What is my name!?
 SERVER = WorkDaemon_Server
 SOBJ = $(THR_OBJ) WorkDaemon_server.o WorkDaemon_tasks.o WorkDaemon_other.o
 CLIENT = WorkDaemon_Client
-COBJ = $(THR_OBJ) WorkDaemon_client.o
+COBJ = $(THR_OBJ) WorkDaemon_client2.o $(WOLF)/Master.o
 
 all : $(SERVER) $(CLIENT)
 
@@ -48,7 +49,7 @@ $(SERVER) : $(SOBJ)
 
 $(CLIENT) : $(COBJ)
 	@printf "*** building test client ***"
-	$(CXX) $(LIBFLAGS) $(COBJ) -o $(CLIENT)  
+	$(CXX) $(LIBFLAGS)  $(COBJ) -o $(CLIENT)  
 
 clean:
 	rm *.o $(SERVER) $(CLIENT)
