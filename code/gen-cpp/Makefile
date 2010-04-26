@@ -35,7 +35,7 @@ INCLUDES = $(THR_INC) $(TBB_INC) -I$(WOLF)
 SERVER = WorkDaemon_Server
 SOBJ = $(THR_OBJ) WorkDaemon_server.o WorkDaemon_tasks.o WorkDaemon_other.o
 CLIENT = WorkDaemon_Client
-COBJ = $(THR_OBJ) WorkDaemon_client2.o $(WOLF)/Master.o
+COBJ = $(THR_OBJ) WorkDaemon_client.o
 
 all : $(SERVER) $(CLIENT)
 

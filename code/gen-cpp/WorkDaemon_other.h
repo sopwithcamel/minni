@@ -19,13 +19,7 @@ using namespace std;
 
 // Status
 namespace JobStatus {enum {DNE, INPROGRESS, DONE, DONE_AND_REPORTED, DEAD, DEAD_AND_REPORTED};}
-namespace FileStatus {enum {DNE, READY, INPROGRESS, DONE};}
-namespace PartitionStatus {enum {DNE, READY, INPROGRESS, DONE};}
 
-struct Bookmark {
-  Status status;
-  unsigned int pos;
-};
 
 template <class T>
 struct HashCompare {
@@ -38,21 +32,3 @@ struct HashCompare {
 };
 
 typedef concurrent_hash_map<JobID,Status,HashCompare<JobID> > JobStatusMap;
-typedef concurrent_hash_map<PartitionID, 
-map<JobID, Status>, HashCompare<PartitionID> > FileStatusMap;
-// JobMapper and JobReducer defined in WorkDaemon_tasks
-
-class FileRegistry{
- private:
-  FileStatusMap registry;
-  JobStatusMap * status_map;
- public:
- FileRegistry(JobStatusMap * _smap);
-  void get_data(PartitionID pid, vector<vector<string> > &_return);
-  Status get_status(PartitionID pid);
-  void find_new(PartitionID pid);
-  string to_string();
-};
-
-string local_filename(JobID jid, PartitionID pid);
-void generate_keyvalue_pairs(string filename, int num);

@@ -63,11 +63,11 @@ public:
     for(JobStatusMap::iterator it = range.begin(); it !=range.end(); it++){
       if(it->second == JobStatus::DONE){
 	_return[it->first] = JobStatus::DONE;
-	it->second == JobStatus::DONE_AND_REPORTED;
+	it->second = JobStatus::DONE_AND_REPORTED;
       }
       if(it->second == JobStatus::DEAD){
 	_return[it->first] = JobStatus::DEAD;
-	it->second == JobStatus::DEAD_AND_REPORTED;
+	it->second = JobStatus::DEAD_AND_REPORTED;
       }
     }
   }
@@ -97,17 +97,21 @@ public:
     JobReducerMap::accessor reducer_accessor;
     // 1) Set the initial status of the job to inprogress
     status_map.insert(status_accessor, jid);
-    status_accessor->second = JobStatus::INPROGRESS;	
+    status_accessor->second = JobStatus::INPROGRESS;
+
+    // 2) Fetch the data
+    // Get a list of IPs for master
+    vector
 		
-    // 2) Allocate the mapper task
+    // 3) Allocate the mapper task
     ReducerTask& t = *new(root->allocate_additional_child_of(*root)) 
       ReducerTask(jid,pid,outFile,&status_map);
 
-    // 3) Add the allocator task to the mapper map
+    // 4) Add the allocator task to the mapper map
     reducer_map.insert(reducer_accessor,jid);
     reducer_accessor->second = &t;
 
-    // 4) Spawn
+    // 5) Spawn
     root->spawn(t);
   }
 	
@@ -131,15 +135,10 @@ public:
     JobMapperMap::accessor mapper_accessor;
     JobStatusMap::accessor status_accessor;
     bool found = mapper_map.find(mapper_accessor, jid);
+    assert(found);
 
     // 2) Kill it (NB: doesn't actually cancel...)
     root->destroy(*mapper_accessor->second);
-    if(!found){
-      cerr << "Asked to kill "
-	   << jid 
-	   << " but it doesn't exist..."
-	   << endl;
-    }
 
     // 3) Mark it as dead
     status_map.insert(status_accessor, jid);
@@ -156,7 +155,7 @@ int main(int argc, char **argv) {
   shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
   shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
 	
-  TSimpleServer server(processor, serverTransport, transportFactory, protocolFactory);
+  TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
   server.serve();
   return 0;
 }

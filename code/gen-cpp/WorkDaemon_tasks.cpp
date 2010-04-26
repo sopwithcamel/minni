@@ -82,7 +82,7 @@ MapperTask::MapperTask(JobID jid_, ChunkID cid_, JobStatusMap * status_map_):
 
 task * MapperTask::execute(){
   // 1) Work for a while
-  this_tbb_thread::sleep(tick_count::interval_t((double)2)); // "Work"
+  this_tbb_thread::sleep(tick_count::interval_t((double)1)); // "Work"
   //generate_keyvalue_pairs("hello", 3);
 
   // 2) Report that you're done.
@@ -100,7 +100,7 @@ ReducerTask::ReducerTask(JobID jid_, PartitionID pid_, string outfile_, JobStatu
 
 task * ReducerTask::execute(){
   // 1) Work for a while
-  this_tbb_thread::sleep(tick_count::interval_t((double)2)); // "Work"
+  this_tbb_thread::sleep(tick_count::interval_t((double)1)); // "Work"
 
   // 2) Report that you're done.
   JobStatusMap::accessor a;
