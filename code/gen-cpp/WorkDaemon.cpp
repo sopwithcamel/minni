@@ -69,7 +69,7 @@ uint32_t WorkDaemon_bark_pargs::write(::apache::thrift::protocol::TProtocol* opr
   return xfer;
 }
 
-uint32_t WorkDaemon_pulse_args::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t WorkDaemon_listStatus_args::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -101,23 +101,23 @@ uint32_t WorkDaemon_pulse_args::read(::apache::thrift::protocol::TProtocol* ipro
   return xfer;
 }
 
-uint32_t WorkDaemon_pulse_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t WorkDaemon_listStatus_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("WorkDaemon_pulse_args");
+  xfer += oprot->writeStructBegin("WorkDaemon_listStatus_args");
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
 }
 
-uint32_t WorkDaemon_pulse_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t WorkDaemon_listStatus_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("WorkDaemon_pulse_pargs");
+  xfer += oprot->writeStructBegin("WorkDaemon_listStatus_pargs");
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
 }
 
-uint32_t WorkDaemon_pulse_result::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t WorkDaemon_listStatus_result::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -172,11 +172,11 @@ uint32_t WorkDaemon_pulse_result::read(::apache::thrift::protocol::TProtocol* ip
   return xfer;
 }
 
-uint32_t WorkDaemon_pulse_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t WorkDaemon_listStatus_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
 
   uint32_t xfer = 0;
 
-  xfer += oprot->writeStructBegin("WorkDaemon_pulse_result");
+  xfer += oprot->writeStructBegin("WorkDaemon_listStatus_result");
 
   if (this->__isset.success) {
     xfer += oprot->writeFieldBegin("success", ::apache::thrift::protocol::T_MAP, 0);
@@ -197,7 +197,7 @@ uint32_t WorkDaemon_pulse_result::write(::apache::thrift::protocol::TProtocol* o
   return xfer;
 }
 
-uint32_t WorkDaemon_pulse_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t WorkDaemon_listStatus_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -893,18 +893,18 @@ void WorkDaemonClient::send_bark(const std::string& s)
   oprot_->getTransport()->writeEnd();
 }
 
-void WorkDaemonClient::pulse(std::map<JobID, Status> & _return)
+void WorkDaemonClient::listStatus(std::map<JobID, Status> & _return)
 {
-  send_pulse();
-  recv_pulse(_return);
+  send_listStatus();
+  recv_listStatus(_return);
 }
 
-void WorkDaemonClient::send_pulse()
+void WorkDaemonClient::send_listStatus()
 {
   int32_t cseqid = 0;
-  oprot_->writeMessageBegin("pulse", ::apache::thrift::protocol::T_CALL, cseqid);
+  oprot_->writeMessageBegin("listStatus", ::apache::thrift::protocol::T_CALL, cseqid);
 
-  WorkDaemon_pulse_pargs args;
+  WorkDaemon_listStatus_pargs args;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -912,7 +912,7 @@ void WorkDaemonClient::send_pulse()
   oprot_->getTransport()->writeEnd();
 }
 
-void WorkDaemonClient::recv_pulse(std::map<JobID, Status> & _return)
+void WorkDaemonClient::recv_listStatus(std::map<JobID, Status> & _return)
 {
 
   int32_t rseqid = 0;
@@ -933,13 +933,13 @@ void WorkDaemonClient::recv_pulse(std::map<JobID, Status> & _return)
     iprot_->getTransport()->readEnd();
     throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
   }
-  if (fname.compare("pulse") != 0) {
+  if (fname.compare("listStatus") != 0) {
     iprot_->skip(::apache::thrift::protocol::T_STRUCT);
     iprot_->readMessageEnd();
     iprot_->getTransport()->readEnd();
     throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::WRONG_METHOD_NAME);
   }
-  WorkDaemon_pulse_presult result;
+  WorkDaemon_listStatus_presult result;
   result.success = &_return;
   result.read(iprot_);
   iprot_->readMessageEnd();
@@ -949,7 +949,7 @@ void WorkDaemonClient::recv_pulse(std::map<JobID, Status> & _return)
     // _return pointer has now been filled
     return;
   }
-  throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "pulse failed: unknown result");
+  throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "listStatus failed: unknown result");
 }
 
 void WorkDaemonClient::startMapper(const JobID jid, const ChunkID cid)
@@ -1192,20 +1192,20 @@ void WorkDaemonProcessor::process_bark(int32_t seqid, ::apache::thrift::protocol
   return;
 }
 
-void WorkDaemonProcessor::process_pulse(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
+void WorkDaemonProcessor::process_listStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
 {
-  WorkDaemon_pulse_args args;
+  WorkDaemon_listStatus_args args;
   args.read(iprot);
   iprot->readMessageEnd();
   iprot->getTransport()->readEnd();
 
-  WorkDaemon_pulse_result result;
+  WorkDaemon_listStatus_result result;
   try {
-    iface_->pulse(result.success);
+    iface_->listStatus(result.success);
     result.__isset.success = true;
   } catch (const std::exception& e) {
     ::apache::thrift::TApplicationException x(e.what());
-    oprot->writeMessageBegin("pulse", ::apache::thrift::protocol::T_EXCEPTION, seqid);
+    oprot->writeMessageBegin("listStatus", ::apache::thrift::protocol::T_EXCEPTION, seqid);
     x.write(oprot);
     oprot->writeMessageEnd();
     oprot->getTransport()->flush();
@@ -1213,7 +1213,7 @@ void WorkDaemonProcessor::process_pulse(int32_t seqid, ::apache::thrift::protoco
     return;
   }
 
-  oprot->writeMessageBegin("pulse", ::apache::thrift::protocol::T_REPLY, seqid);
+  oprot->writeMessageBegin("listStatus", ::apache::thrift::protocol::T_REPLY, seqid);
   result.write(oprot);
   oprot->writeMessageEnd();
   oprot->getTransport()->flush();

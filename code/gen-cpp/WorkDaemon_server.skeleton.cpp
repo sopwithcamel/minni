@@ -27,9 +27,9 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
     printf("bark\n");
   }
 
-  void pulse(std::map<JobID, Status> & _return) {
+  void listStatus(std::map<JobID, Status> & _return) {
     // Your implementation goes here
-    printf("pulse\n");
+    printf("listStatus\n");
   }
 
   void startMapper(const JobID jid, const ChunkID cid) {

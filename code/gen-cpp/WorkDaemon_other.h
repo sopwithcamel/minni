@@ -18,7 +18,7 @@ using namespace tbb;
 using namespace std;
 
 // Status
-namespace JobStatus {enum {DNE, INPROGRESS, DONE, DEAD};}
+namespace JobStatus {enum {DNE, INPROGRESS, DONE, DONE_AND_REPORTED, DEAD, DEAD_AND_REPORTED};}
 namespace FileStatus {enum {DNE, READY, INPROGRESS, DONE};}
 namespace PartitionStatus {enum {DNE, READY, INPROGRESS, DONE};}
 
@@ -27,11 +27,8 @@ struct Bookmark {
   unsigned int pos;
 };
 
-
-
-
-template <class T> 
-struct HashCompare { 
+template <class T>
+struct HashCompare {
   static size_t hash( const T& x){
     return (size_t) x;
   }
@@ -40,21 +37,10 @@ struct HashCompare {
   }
 };
 
-template <class T, class U>
-  struct PairHashCompare{
-    static size_t hash( const pair<T,U>& x){
-      size_t seed = (size_t)x.first;
-      return (size_t)x.second + 0x9e3779b9 + (seed<<6) + (seed>>2);
-    }
-    static bool equal( const pair<T,U>& x, const pair<T,U>& y ){
-      return x == y;
-    }
-  };
-
-
 typedef concurrent_hash_map<JobID,Status,HashCompare<JobID> > JobStatusMap;
 typedef concurrent_hash_map<PartitionID, 
-  map<JobID, Status>, HashCompare<PartitionID> > FileStatusMap;
+map<JobID, Status>, HashCompare<PartitionID> > FileStatusMap;
+// JobMapper and JobReducer defined in WorkDaemon_tasks
 
 class FileRegistry{
  private:
@@ -70,4 +56,3 @@ class FileRegistry{
 
 string local_filename(JobID jid, PartitionID pid);
 void generate_keyvalue_pairs(string filename, int num);
-

@@ -17,6 +17,7 @@
 // TBB includes
 #include "tbb/concurrent_hash_map.h"
 #include "tbb/task.h"
+#include "tbb/blocked_range.h"
 #include "tbb/tbb_thread.h"
 
 using namespace ::apache::thrift;
@@ -35,25 +36,40 @@ using namespace std;
 class WorkDaemonHandler : virtual public WorkDaemonIf {
   JobStatusMap status_map;
   JobMapperMap mapper_map;
+  JobReducerMap reducer_map;
+
   FileRegistry file_reg;
   empty_task * root;
+
 public:
-  WorkDaemonHandler(): status_map(), mapper_map(), file_reg(&status_map) {
+  WorkDaemonHandler(): status_map(), mapper_map(),reducer_map(), file_reg(&status_map) {
     // Set up the root and a MasterTask.
     root = new(task::allocate_root()) empty_task();
-    MasterTask& t = *new(root->allocate_additional_child_of(*root)) MasterTask(&status_map, &mapper_map);
+    MasterTask& t = *new(root->allocate_additional_child_of(*root)) MasterTask(&status_map, &mapper_map, &reducer_map);
     root->spawn(t); // NB: root hasn't be spawned since that is synchronous
   }
 	
   void bark(const string& s) {
-    //Your implementation goes here
-    this_tbb_thread::sleep(tick_count::interval_t((double)5));
+    //this_tbb_thread::sleep(tick_count::interval_t((double)5));
     printf("%s\n", s.c_str());
   }
-	
-  void pulse(map<JobID, Status> & _return) {
-    // Your implementation goes here
-    printf("pulse\n");
+
+  // Scans the status map and sees if there is anything new to report to the master
+  void listStatus(map<JobID, Status> & _return) {
+    _return.clear(); 
+
+    // Flip through the jobs and see if there are any new status
+    JobStatusMap::range_type range = status_map.range();
+    for(JobStatusMap::iterator it = range.begin(); it !=range.end(); it++){
+      if(it->second == JobStatus::DONE){
+	_return[it->first] = JobStatus::DONE;
+	it->second == JobStatus::DONE_AND_REPORTED;
+      }
+      if(it->second == JobStatus::DEAD){
+	_return[it->first] = JobStatus::DEAD;
+	it->second == JobStatus::DEAD_AND_REPORTED;
+      }
+    }
   }
 	
   void startMapper(const JobID jid, const ChunkID cid) {
@@ -77,8 +93,22 @@ public:
   }
 	
   void startReducer(const JobID jid, const PartitionID pid, const string& outFile) {
-    // Your implementation goes here
-    printf("startReducer\n");
+    JobStatusMap::accessor status_accessor;
+    JobReducerMap::accessor reducer_accessor;
+    // 1) Set the initial status of the job to inprogress
+    status_map.insert(status_accessor, jid);
+    status_accessor->second = JobStatus::INPROGRESS;	
+		
+    // 2) Allocate the mapper task
+    ReducerTask& t = *new(root->allocate_additional_child_of(*root)) 
+      ReducerTask(jid,pid,outFile,&status_map);
+
+    // 3) Add the allocator task to the mapper map
+    reducer_map.insert(reducer_accessor,jid);
+    reducer_accessor->second = &t;
+
+    // 4) Spawn
+    root->spawn(t);
   }
 	
   void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID pid, const SeriesID sid) {
@@ -96,8 +126,7 @@ public:
   }
 
 	
-  void kill(const JobID jid) {
-    
+  void kill(const JobID jid) {    
     // 1) Find the right job
     JobMapperMap::accessor mapper_accessor;
     JobStatusMap::accessor status_accessor;

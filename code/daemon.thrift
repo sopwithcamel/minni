@@ -8,7 +8,7 @@ typedef i32 SeriesID
 
 service WorkDaemon {
 	oneway void bark(1:string s), // Debug
-	map<JobID, Status> pulse(),   // Are you alive
+	map<JobID, Status> listStatus(),   // Are you alive
 	oneway void startMapper(1:JobID jid, 2:ChunkID cid),
 	oneway void startReducer(1:JobID jid, 2:PartitionID kid, 3:string outFile),
 	list<list<string>> sendData(1:PartitionID kid, 2:SeriesID sid),

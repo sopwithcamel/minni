@@ -15,7 +15,7 @@ class WorkDaemonIf {
  public:
   virtual ~WorkDaemonIf() {}
   virtual void bark(const std::string& s) = 0;
-  virtual void pulse(std::map<JobID, Status> & _return) = 0;
+  virtual void listStatus(std::map<JobID, Status> & _return) = 0;
   virtual void startMapper(const JobID jid, const ChunkID cid) = 0;
   virtual void startReducer(const JobID jid, const PartitionID kid, const std::string& outFile) = 0;
   virtual void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID kid, const SeriesID sid) = 0;
@@ -29,7 +29,7 @@ class WorkDaemonNull : virtual public WorkDaemonIf {
   void bark(const std::string& /* s */) {
     return;
   }
-  void pulse(std::map<JobID, Status> & /* _return */) {
+  void listStatus(std::map<JobID, Status> & /* _return */) {
     return;
   }
   void startMapper(const JobID /* jid */, const ChunkID /* cid */) {
@@ -94,48 +94,48 @@ class WorkDaemon_bark_pargs {
 
 };
 
-class WorkDaemon_pulse_args {
+class WorkDaemon_listStatus_args {
  public:
 
-  WorkDaemon_pulse_args() {
+  WorkDaemon_listStatus_args() {
   }
 
-  virtual ~WorkDaemon_pulse_args() throw() {}
+  virtual ~WorkDaemon_listStatus_args() throw() {}
 
 
-  bool operator == (const WorkDaemon_pulse_args & /* rhs */) const
+  bool operator == (const WorkDaemon_listStatus_args & /* rhs */) const
   {
     return true;
   }
-  bool operator != (const WorkDaemon_pulse_args &rhs) const {
+  bool operator != (const WorkDaemon_listStatus_args &rhs) const {
     return !(*this == rhs);
   }
 
-  bool operator < (const WorkDaemon_pulse_args & ) const;
+  bool operator < (const WorkDaemon_listStatus_args & ) const;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class WorkDaemon_pulse_pargs {
+class WorkDaemon_listStatus_pargs {
  public:
 
 
-  virtual ~WorkDaemon_pulse_pargs() throw() {}
+  virtual ~WorkDaemon_listStatus_pargs() throw() {}
 
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class WorkDaemon_pulse_result {
+class WorkDaemon_listStatus_result {
  public:
 
-  WorkDaemon_pulse_result() {
+  WorkDaemon_listStatus_result() {
   }
 
-  virtual ~WorkDaemon_pulse_result() throw() {}
+  virtual ~WorkDaemon_listStatus_result() throw() {}
 
   std::map<JobID, Status>  success;
 
@@ -144,28 +144,28 @@ class WorkDaemon_pulse_result {
     bool success;
   } __isset;
 
-  bool operator == (const WorkDaemon_pulse_result & rhs) const
+  bool operator == (const WorkDaemon_listStatus_result & rhs) const
   {
     if (!(success == rhs.success))
       return false;
     return true;
   }
-  bool operator != (const WorkDaemon_pulse_result &rhs) const {
+  bool operator != (const WorkDaemon_listStatus_result &rhs) const {
     return !(*this == rhs);
   }
 
-  bool operator < (const WorkDaemon_pulse_result & ) const;
+  bool operator < (const WorkDaemon_listStatus_result & ) const;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class WorkDaemon_pulse_presult {
+class WorkDaemon_listStatus_presult {
  public:
 
 
-  virtual ~WorkDaemon_pulse_presult() throw() {}
+  virtual ~WorkDaemon_listStatus_presult() throw() {}
 
   std::map<JobID, Status> * success;
 
@@ -538,9 +538,9 @@ class WorkDaemonClient : virtual public WorkDaemonIf {
   }
   void bark(const std::string& s);
   void send_bark(const std::string& s);
-  void pulse(std::map<JobID, Status> & _return);
-  void send_pulse();
-  void recv_pulse(std::map<JobID, Status> & _return);
+  void listStatus(std::map<JobID, Status> & _return);
+  void send_listStatus();
+  void recv_listStatus(std::map<JobID, Status> & _return);
   void startMapper(const JobID jid, const ChunkID cid);
   void send_startMapper(const JobID jid, const ChunkID cid);
   void startReducer(const JobID jid, const PartitionID kid, const std::string& outFile);
@@ -567,7 +567,7 @@ class WorkDaemonProcessor : virtual public ::apache::thrift::TProcessor {
  private:
   std::map<std::string, void (WorkDaemonProcessor::*)(int32_t, ::apache::thrift::protocol::TProtocol*, ::apache::thrift::protocol::TProtocol*)> processMap_;
   void process_bark(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
-  void process_pulse(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
+  void process_listStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_startMapper(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_startReducer(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_sendData(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
@@ -577,7 +577,7 @@ class WorkDaemonProcessor : virtual public ::apache::thrift::TProcessor {
   WorkDaemonProcessor(boost::shared_ptr<WorkDaemonIf> iface) :
     iface_(iface) {
     processMap_["bark"] = &WorkDaemonProcessor::process_bark;
-    processMap_["pulse"] = &WorkDaemonProcessor::process_pulse;
+    processMap_["listStatus"] = &WorkDaemonProcessor::process_listStatus;
     processMap_["startMapper"] = &WorkDaemonProcessor::process_startMapper;
     processMap_["startReducer"] = &WorkDaemonProcessor::process_startReducer;
     processMap_["sendData"] = &WorkDaemonProcessor::process_sendData;
@@ -608,14 +608,14 @@ class WorkDaemonMultiface : virtual public WorkDaemonIf {
     }
   }
 
-  void pulse(std::map<JobID, Status> & _return) {
+  void listStatus(std::map<JobID, Status> & _return) {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
       if (i == sz - 1) {
-        ifaces_[i]->pulse(_return);
+        ifaces_[i]->listStatus(_return);
         return;
       } else {
-        ifaces_[i]->pulse(_return);
+        ifaces_[i]->listStatus(_return);
       }
     }
   }

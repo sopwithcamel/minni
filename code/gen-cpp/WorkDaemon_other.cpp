@@ -80,3 +80,4 @@ string FileRegistry::to_string(){
   }
   return ss.str();
 }
+
