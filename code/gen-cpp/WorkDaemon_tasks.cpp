@@ -1,110 +1,130 @@
-#include <iostream>
-#include "WorkDaemon.h"
-#include "WorkDaemon_other.h"
 #include "WorkDaemon_tasks.h"
+#include <fstream>
+#include <sstream>
+#include <iostream>
 
-// TBB includes
 #include "tbb/concurrent_hash_map.h"
 #include "tbb/task.h"
 #include "tbb/tbb_thread.h"
 
-using namespace tbb;
 using namespace std;
 
-
-// Master Task
-// Basically scans through all the jobs every so often and checks
-// if their still alive
-MasterTask::MasterTask( JobStatusMap * smap_, JobMapperMap * mmap_, JobReducerMap * rmap_):
-  status_map(smap_), mapper_map(mmap_), reducer_map(rmap_)
-{}
-
-task * MasterTask::execute(){
-  while(true){
-    // 1) Sleep for a bit. Why not, you've earned it.
-    this_tbb_thread::sleep(tick_count::interval_t((double)SCAN_FREQUENCY));
-
-    // 2) Wake up, scan all map tasks
-    JobMapperMap::range_type map_range = mapper_map->range();
-    for(JobMapperMap::iterator it = map_range.begin();
-	it != map_range.end(); it++){
-      // 2a) Find the corresponding status for the mapper
-      JobStatusMap::accessor status;
-      bool found = this->status_map->find(status, it->first);
-      assert(found);
-
-      // 2b) Get the reported status, and the actual status.
-      state_type state = it->second->state();
-      bool believe_running = status->second == JobStatus::INPROGRESS;
-      bool actually_running = state == executing;
-
-      // 2c) Check to make sure that the statuses make sense
-      if(believe_running && !actually_running){
-	status->second = JobStatus::DEAD; 
-	//Seems like the thread terminated early; mark
-      }
-
-      // 2c) Release the accessor
-      status.release();
-    }
-    // 3) Repeat for Reducers
-    JobReducerMap::range_type reduce_range = reducer_map->range();
-    for(JobReducerMap::iterator it = reduce_range.begin();
-	it != reduce_range.end(); it++){
-      // 2a) Find the corresponding status for the reducer
-      JobStatusMap::accessor status;
-      bool found = this->status_map->find(status, it->first);
-      assert(found);
-
-      // 2b) Get the reported status, and the actual status.
-      state_type state = it->second->state();
-      bool believe_running = status->second == JobStatus::INPROGRESS;
-      bool actually_running = state == executing;
-
-      // 2c) Check to make sure that the statuses make sense
-      if(believe_running && !actually_running){
-	status->second = JobStatus::DEAD; 
-	//Seems like the thread terminated early; mark
-      }
-
-      // 2c) Release the accessor
-      status.release();
-    }
-  }
-  return NULL;
-}
-
-// Mapper Task
-// Runs the code
-MapperTask::MapperTask(JobID jid_, ChunkID cid_, JobStatusMap * status_map_):
-  jid(jid_), cid(cid_), status_map(status_map_)
-{}
+MapperTask::MapperTask(JobID jid_, ChunkID cid_, TaskRegistry * tasks_):
+  jid(jid_), cid(cid_), tasks(tasks_){}
 
 task * MapperTask::execute(){
-  // 1) Work for a while
-  this_tbb_thread::sleep(tick_count::interval_t((double)1)); // "Work"
-  //generate_keyvalue_pairs("hello", 3);
-
-  // 2) Report that you're done.
-  JobStatusMap::accessor a;
-  this->status_map->insert(a, jid);
-  a->second = JobStatus::DONE;
-  return NULL;
+  tasks->setStatus(jid, jobstatus::DONE);
 }
 
-// Mapper Task
-// Runs the code
-ReducerTask::ReducerTask(JobID jid_, PartitionID pid_, string outfile_, JobStatusMap * status_map_):
-  jid(jid_), pid(pid_), outfile(outfile_), status_map(status_map_)
-{}
+ReducerTask::ReducerTask(JobID jid_, PartID pid_, string outfile_, TaskRegistry * tasks_):
+  jid(jid_), pid(pid_), outfile(outfile_), tasks(tasks_){}
 
 task * ReducerTask::execute(){
-  // 1) Work for a while
-  this_tbb_thread::sleep(tick_count::interval_t((double)1)); // "Work"
+  tasks->setStatus(jid, jobstatus::DONE);
+}
 
-  // 2) Report that you're done.
-  JobStatusMap::accessor a;
-  this->status_map->insert(a, jid);
-  a->second = JobStatus::DONE;
-  return NULL;
+TaskRecord::TaskRecord(JobID j, task* t, JobKind k, Status s){
+  jid = j;
+  task_ptr = t;
+  kind = k;
+  status = s;
+}
+
+string TaskRecord::toString(){
+  stringstream ss;
+  ss << "(" << jid << ", " << kind << ", " << status << ")";
+  return ss.str();
+}
+
+void TaskRegistry::addJob(JobID jid, task * ptr, JobKind jk){
+  assert(!this->exists(jid));
+  // Get the accessor
+  TaskMap::accessor acc_task;
+  this->task_map.insert(acc_task, jid);
+
+  // Fill out the record
+  acc_task->second = TaskRecord(jid, ptr, jk, jobstatus::INPROGRESS);
+}
+
+bool TaskRegistry::exists(JobID jid){
+  TaskMap::const_accessor acc_task;
+  bool found = this->task_map.find(acc_task, jid);
+  return found;
+}
+
+Status TaskRegistry::getStatus(JobID jid){
+  TaskMap::const_accessor acc_task;
+  bool found = this->task_map.find(acc_task, jid);
+  if(!found){
+    return jobstatus::DNE;
+  }
+  // Have the reported status. If it claims to be running, make sure
+  Status status = acc_task->second.status;
+  if(status == jobstatus::INPROGRESS){
+    bool actually_running = (acc_task->second.task_ptr->state() == task::executing);
+    if(!actually_running){
+      status = jobstatus::DEAD;  
+      acc_task.release(); // Release the accessor so we can write      
+      this->setStatus(jid, status);
+    }
+  }
+  return status;
+}
+
+void TaskRegistry::setStatus(JobID jid, Status status){
+  assert(this->exists(jid));
+  TaskMap::accessor acc_stat;
+  this->task_map.find(acc_stat, jid);
+  acc_stat->second.status = status;
+}
+
+void TaskRegistry::remove(JobID jid){
+  this->task_map.erase(jid);
+}
+
+void TaskRegistry::cullReported(){
+  assert(false);
+}
+
+void TaskRegistry::getReport(Report &report){
+  report.clear();
+  TaskMap::range_type range = this->task_map.range();
+  for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){
+    JobID jid = it->first;
+    Status status = it->second.status;
+    if(status == jobstatus::DONE){
+      report[jid] = jobstatus::DONE;
+      it->second.status = jobstatus::DONE_AND_REPORTED;
+    }
+    if(status == jobstatus::DEAD){
+      report[jid] = jobstatus::DEAD;
+      it->second.status = jobstatus::DEAD_AND_REPORTED;
+    }
+  }
+}
+
+string TaskRegistry::toString(){
+  stringstream ss;
+   TaskMap::range_type range = this->task_map.range();
+   ss << "TaskReg = [\n";
+  for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){
+    ss << "\t" << it->second.toString() << "\n";
+  }
+  ss << "]\n";
+  return ss.str();
+}
+
+string printReport(map<JobID,Status> &M){
+  bool first = true;
+  stringstream ss;
+  ss << "[";
+  for(map<JobID,Status>::iterator it = M.begin(); it != M.end(); it++){
+    if(!first){
+      ss << ", ";
+      first = false;
+    }
+    ss << "(" << it->first << "->" << it->second << ")";
+  }
+  ss << "]";
+  return ss.str();
 }

@@ -34,11 +34,10 @@ using namespace std;
 // Server stubs
 
 class WorkDaemonHandler : virtual public WorkDaemonIf {
-  JobStatusMap status_map;
-  JobMapperMap mapper_map;
-  JobReducerMap reducer_map;
-
+  JobStatusRegistry status_reg;
+  TaskRegistry task_reg;
   FileRegistry file_reg;
+
   empty_task * root;
 
 public:
@@ -56,20 +55,7 @@ public:
 
   // Scans the status map and sees if there is anything new to report to the master
   void listStatus(map<JobID, Status> & _return) {
-    _return.clear(); 
-
-    // Flip through the jobs and see if there are any new status
-    JobStatusMap::range_type range = status_map.range();
-    for(JobStatusMap::iterator it = range.begin(); it !=range.end(); it++){
-      if(it->second == JobStatus::DONE){
-	_return[it->first] = JobStatus::DONE;
-	it->second = JobStatus::DONE_AND_REPORTED;
-      }
-      if(it->second == JobStatus::DEAD){
-	_return[it->first] = JobStatus::DEAD;
-	it->second = JobStatus::DEAD_AND_REPORTED;
-      }
-    }
+    
   }
 	
   void startMapper(const JobID jid, const ChunkID cid) {
@@ -116,14 +102,13 @@ public:
   }
 	
   void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID pid, const SeriesID sid) {
-    // Your implementation goes here
     printf("sendData\n");
     file_reg.find_new(0);
     file_reg.find_new(1);
     cout << file_reg.to_string();
   }
 
-  Status dataStatus(const PartitionID pid) {
+  Status dataStatus(const PartitionID pid, const SeriesID sid) {
     printf("dataStatus\n");
     file_reg.find_new(pid);
     cout << file_reg.to_string();

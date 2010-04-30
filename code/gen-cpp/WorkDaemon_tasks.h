@@ -1,41 +1,84 @@
+#pragma once
+
+#include <iostream>
+#include <sstream>
 #include "WorkDaemon.h"
-#include "WorkDaemon_other.h"
+
+// TBB includes
+#include "tbb/concurrent_hash_map.h"
 #include "tbb/task.h"
+#include "tbb/tbb_thread.h"
 
 using namespace workdaemon;
 using namespace tbb;
 using namespace std;
 
+// Status
+namespace jobstatus {enum {DNE, INPROGRESS, DONE, DONE_AND_REPORTED, DEAD, DEAD_AND_REPORTED};}
+namespace jobkind {enum {NIL, MAPPER, REDUCER};}
 
-#define SCAN_FREQUENCY 5
+template <class T>
+struct HashCompare {
+  static size_t hash( const T& x){
+    return (size_t) x;
+  }
+  static bool equal( const T& x, const T& y ){
+    return x == y;
+  }
+};
+
+
+// Task Registry
+string printReport(map<JobID,Status> &M);
+typedef unsigned int JobKind;
+
+class TaskRecord {
+ public:
+  JobID jid;
+  task * task_ptr; 
+  JobKind kind;
+  Status status;
+  TaskRecord(JobID j=0, task* t=NULL, JobKind k= jobkind::NIL, Status s=jobstatus::DNE);
+  string toString();
+};
+
+typedef concurrent_hash_map<JobID, TaskRecord> TaskMap;
+typedef map<JobID, Status> Report;
+
+class TaskRegistry{
+ private:
+  TaskMap task_map;
+ public:
+  void addJob(JobID jid, task* ptr, JobKind jk);
+  bool exists(JobID jid);
+  Status getStatus(JobID jid);
+  void setStatus(JobID jid, Status status);
+  void remove(JobID jid);
+
+  void cullReported();
+  void getReport(Report &report);
+  string toString();
+};
+
+//Tasks
 
 class MapperTask: public task{
  public:	
   JobID jid;
   ChunkID cid;
-  JobStatusMap * status_map;
-  MapperTask(JobID jid_, ChunkID cid_, JobStatusMap * status_map_);
+  TaskRegistry * tasks;
+  MapperTask(JobID jid_, ChunkID cid_, TaskRegistry * tasks_);
   task * execute();
 };
 
 class ReducerTask: public task{
  public:	
   JobID jid;
-  PartitionID pid;
+  PartID pid;
   string outfile;
-  JobStatusMap * status_map;
-  ReducerTask(JobID jid_, PartitionID pid_, string outfile_, JobStatusMap * status_map_);
+  TaskRegistry * tasks;
+  ReducerTask(JobID jid_, PartID pid_, string outfile_, TaskRegistry * tasks_);
   task * execute();
 };
 
-typedef concurrent_hash_map<JobID,MapperTask*,HashCompare<JobID> > JobMapperMap;
-typedef concurrent_hash_map<JobID,ReducerTask*,HashCompare<JobID> > JobReducerMap;
 
-class MasterTask: public task{
- public:
-  JobStatusMap * status_map;
-  JobMapperMap * mapper_map;
-  JobReducerMap * reducer_map;
-  MasterTask(JobStatusMap * smap_, JobMapperMap * mmap_, JobReducerMap * rmap_);
-  task * execute();
-};
