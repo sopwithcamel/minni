@@ -5,7 +5,7 @@
 #include <iostream>
 #include "WorkDaemon.h"
 #include "WorkDaemon_tasks.h"
-#include "WorkDaemon_other.h"
+#include "WorkDaemon_file.h"
 
 // Thrift includes
 #include <protocol/TBinaryProtocol.h>
@@ -34,22 +34,26 @@ using namespace std;
 // Server stubs
 
 class WorkDaemonHandler : virtual public WorkDaemonIf {
-  JobStatusRegistry status_reg;
   TaskRegistry task_reg;
-  FileRegistry file_reg;
+  LocalFileRegistry file_reg;
 
   empty_task * root;
 
 public:
-  WorkDaemonHandler(): status_map(), mapper_map(),reducer_map(), file_reg(&status_map) {
+  WorkDaemonHandler(): task_reg(), file_reg() {
     // Set up the root and a MasterTask.
     root = new(task::allocate_root()) empty_task();
-    MasterTask& t = *new(root->allocate_additional_child_of(*root)) MasterTask(&status_map, &mapper_map, &reducer_map);
-    root->spawn(t); // NB: root hasn't be spawned since that is synchronous
+    //MasterTask& t = *new(root->allocate_additional_child_of(*root)) MasterTask(&status_map, &mapper_map, &reducer_map);
+    //root->spawn(t); // NB: root hasn't be spawned since that is synchronous
   }
 	
   void bark(const string& s) {
     //Your implementation goes here
+    //file_reg.recordComplete(1,1,"moose");
+    //file_reg.recordComplete(2,1, "badger");
+    Location l = {"localhost", 9092};
+    Transfer t(1, l);
+    t.checkStatus();
     printf("Ruff Ruff: %s\n", s.c_str());
   }
 
@@ -59,81 +63,60 @@ public:
   }
 	
   void startMapper(const JobID jid, const ChunkID cid) {
-    JobStatusMap::accessor status_accessor;
-    JobMapperMap::accessor mapper_accessor;
-    // 1) Set the initial status of the job to inprogress
-    status_map.insert(status_accessor, jid);
-    status_accessor->second = JobStatus::INPROGRESS;	
-		
-    // 2) Allocate the mapper task
+	
+    // 1) Allocate the mapper task
     MapperTask& t = *new(root->allocate_additional_child_of(*root)) 
-      MapperTask(jid,cid,&status_map);
+      MapperTask(jid,cid,&task_reg);
 
-    // 3) Add the allocator task to the mapper map
-    mapper_map.insert(mapper_accessor,jid);
-    mapper_accessor->second = &t;
+    // 2) Add to registry
+    task_reg.addJob(jid, &t, jobkind::MAPPER);
+
+    // 3) Spawn
+    root->spawn(t);
+		
+  }
+	
+  void startReducer(const JobID jid, const PartID pid, const string& outFile) {
+        // 1) Allocate the mapper task
+    ReducerTask& t = *new(root->allocate_additional_child_of(*root)) 
+      ReducerTask(jid,pid, "NULL" ,&task_reg);
+
+    // 2) Add to registry
+    task_reg.addJob(jid, &t, jobkind::REDUCER);
+
+    // 3) Get files
+    // Scene missing
 
     // 4) Spawn
     root->spawn(t);
-		
   }
 	
-  void startReducer(const JobID jid, const PartitionID pid, const string& outFile) {
-    JobStatusMap::accessor status_accessor;
-    JobReducerMap::accessor reducer_accessor;
-    // 1) Set the initial status of the job to inprogress
-    status_map.insert(status_accessor, jid);
-    status_accessor->second = JobStatus::INPROGRESS;
-
-    // 2) Fetch the data
-    // Get a list of IPs for master
-    vector
-		
-    // 3) Allocate the mapper task
-    ReducerTask& t = *new(root->allocate_additional_child_of(*root)) 
-      ReducerTask(jid,pid,outFile,&status_map);
-
-    // 4) Add the allocator task to the mapper map
-    reducer_map.insert(reducer_accessor,jid);
-    reducer_accessor->second = &t;
-
-    // 5) Spawn
-    root->spawn(t);
-  }
-	
-  void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID pid, const SeriesID sid) {
-    printf("sendData\n");
-    file_reg.find_new(0);
-    file_reg.find_new(1);
-    cout << file_reg.to_string();
+  void sendData(string & _return, const PartID pid, const BlockID bid) {
+    file_reg.bufferData(_return, pid, bid);
   }
 
-  Status dataStatus(const PartitionID pid, const SeriesID sid) {
-    printf("dataStatus\n");
-    file_reg.find_new(pid);
-    cout << file_reg.to_string();
+  Status dataStatus(const PartID pid, const BlockID sid) {
+
+  }
+
+  Count blockCount(const PartID pid){
+    cout << "Getting block counts..." << endl;
+    return file_reg.blocks(pid);
   }
 
 	
   void kill(const JobID jid) {    
-    // 1) Find the right job
-    JobMapperMap::accessor mapper_accessor;
-    JobStatusMap::accessor status_accessor;
-    bool found = mapper_map.find(mapper_accessor, jid);
-    assert(found);
 
-    // 2) Kill it (NB: doesn't actually cancel...)
-    root->destroy(*mapper_accessor->second);
-
-    // 3) Mark it as dead
-    status_map.insert(status_accessor, jid);
-    status_accessor->second = JobStatus::DEAD;
   }
 	
 };
 
 int main(int argc, char **argv) {
   int port = 9090;
+  if(argc == 2){
+    port = atoi(argv[1]);
+  }
+  cout << "Port: " << port << endl;
   shared_ptr<WorkDaemonHandler> handler(new WorkDaemonHandler());
   shared_ptr<TProcessor> processor(new WorkDaemonProcessor(handler));
   shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));

@@ -18,7 +18,7 @@ class WorkDaemonIf {
   virtual void listStatus(std::map<JobID, Status> & _return) = 0;
   virtual void startMapper(const JobID jid, const ChunkID cid) = 0;
   virtual void startReducer(const JobID jid, const PartID kid, const std::string& outFile) = 0;
-  virtual void sendData(std::vector<std::vector<std::string> > & _return, const PartID kid, const BlockID sid) = 0;
+  virtual void sendData(std::string& _return, const PartID kid, const BlockID sid) = 0;
   virtual Status dataStatus(const PartID pid, const BlockID sid) = 0;
   virtual Count blockCount(const PartID pid) = 0;
   virtual void kill(const JobID jid) = 0;
@@ -39,7 +39,7 @@ class WorkDaemonNull : virtual public WorkDaemonIf {
   void startReducer(const JobID /* jid */, const PartID /* kid */, const std::string& /* outFile */) {
     return;
   }
-  void sendData(std::vector<std::vector<std::string> > & /* _return */, const PartID /* kid */, const BlockID /* sid */) {
+  void sendData(std::string& /* _return */, const PartID /* kid */, const BlockID /* sid */) {
     return;
   }
   Status dataStatus(const PartID /* pid */, const BlockID /* sid */) {
@@ -338,12 +338,12 @@ class WorkDaemon_sendData_pargs {
 class WorkDaemon_sendData_result {
  public:
 
-  WorkDaemon_sendData_result() {
+  WorkDaemon_sendData_result() : success("") {
   }
 
   virtual ~WorkDaemon_sendData_result() throw() {}
 
-  std::vector<std::vector<std::string> >  success;
+  std::string success;
 
   struct __isset {
     __isset() : success(false) {}
@@ -373,7 +373,7 @@ class WorkDaemon_sendData_presult {
 
   virtual ~WorkDaemon_sendData_presult() throw() {}
 
-  std::vector<std::vector<std::string> > * success;
+  std::string* success;
 
   struct __isset {
     __isset() : success(false) {}
@@ -648,9 +648,9 @@ class WorkDaemonClient : virtual public WorkDaemonIf {
   void send_startMapper(const JobID jid, const ChunkID cid);
   void startReducer(const JobID jid, const PartID kid, const std::string& outFile);
   void send_startReducer(const JobID jid, const PartID kid, const std::string& outFile);
-  void sendData(std::vector<std::vector<std::string> > & _return, const PartID kid, const BlockID sid);
+  void sendData(std::string& _return, const PartID kid, const BlockID sid);
   void send_sendData(const PartID kid, const BlockID sid);
-  void recv_sendData(std::vector<std::vector<std::string> > & _return);
+  void recv_sendData(std::string& _return);
   Status dataStatus(const PartID pid, const BlockID sid);
   void send_dataStatus(const PartID pid, const BlockID sid);
   Status recv_dataStatus();
@@ -742,7 +742,7 @@ class WorkDaemonMultiface : virtual public WorkDaemonIf {
     }
   }
 
-  void sendData(std::vector<std::vector<std::string> > & _return, const PartID kid, const BlockID sid) {
+  void sendData(std::string& _return, const PartID kid, const BlockID sid) {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
       if (i == sz - 1) {

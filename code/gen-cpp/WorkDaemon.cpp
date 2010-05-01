@@ -515,32 +515,8 @@ uint32_t WorkDaemon_sendData_result::read(::apache::thrift::protocol::TProtocol*
     switch (fid)
     {
       case 0:
-        if (ftype == ::apache::thrift::protocol::T_LIST) {
-          {
-            this->success.clear();
-            uint32_t _size15;
-            ::apache::thrift::protocol::TType _etype18;
-            iprot->readListBegin(_etype18, _size15);
-            this->success.resize(_size15);
-            uint32_t _i19;
-            for (_i19 = 0; _i19 < _size15; ++_i19)
-            {
-              {
-                this->success[_i19].clear();
-                uint32_t _size20;
-                ::apache::thrift::protocol::TType _etype23;
-                iprot->readListBegin(_etype23, _size20);
-                this->success[_i19].resize(_size20);
-                uint32_t _i24;
-                for (_i24 = 0; _i24 < _size20; ++_i24)
-                {
-                  xfer += iprot->readString(this->success[_i19][_i24]);
-                }
-                iprot->readListEnd();
-              }
-            }
-            iprot->readListEnd();
-          }
+        if (ftype == ::apache::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->success);
           this->__isset.success = true;
         } else {
           xfer += iprot->skip(ftype);
@@ -565,24 +541,8 @@ uint32_t WorkDaemon_sendData_result::write(::apache::thrift::protocol::TProtocol
   xfer += oprot->writeStructBegin("WorkDaemon_sendData_result");
 
   if (this->__isset.success) {
-    xfer += oprot->writeFieldBegin("success", ::apache::thrift::protocol::T_LIST, 0);
-    {
-      xfer += oprot->writeListBegin(::apache::thrift::protocol::T_LIST, this->success.size());
-      std::vector<std::vector<std::string> > ::const_iterator _iter25;
-      for (_iter25 = this->success.begin(); _iter25 != this->success.end(); ++_iter25)
-      {
-        {
-          xfer += oprot->writeListBegin(::apache::thrift::protocol::T_STRING, (*_iter25).size());
-          std::vector<std::string> ::const_iterator _iter26;
-          for (_iter26 = (*_iter25).begin(); _iter26 != (*_iter25).end(); ++_iter26)
-          {
-            xfer += oprot->writeString((*_iter26));
-          }
-          xfer += oprot->writeListEnd();
-        }
-      }
-      xfer += oprot->writeListEnd();
-    }
+    xfer += oprot->writeFieldBegin("success", ::apache::thrift::protocol::T_STRING, 0);
+    xfer += oprot->writeString(this->success);
     xfer += oprot->writeFieldEnd();
   }
   xfer += oprot->writeFieldStop();
@@ -611,32 +571,8 @@ uint32_t WorkDaemon_sendData_presult::read(::apache::thrift::protocol::TProtocol
     switch (fid)
     {
       case 0:
-        if (ftype == ::apache::thrift::protocol::T_LIST) {
-          {
-            (*(this->success)).clear();
-            uint32_t _size27;
-            ::apache::thrift::protocol::TType _etype30;
-            iprot->readListBegin(_etype30, _size27);
-            (*(this->success)).resize(_size27);
-            uint32_t _i31;
-            for (_i31 = 0; _i31 < _size27; ++_i31)
-            {
-              {
-                (*(this->success))[_i31].clear();
-                uint32_t _size32;
-                ::apache::thrift::protocol::TType _etype35;
-                iprot->readListBegin(_etype35, _size32);
-                (*(this->success))[_i31].resize(_size32);
-                uint32_t _i36;
-                for (_i36 = 0; _i36 < _size32; ++_i36)
-                {
-                  xfer += iprot->readString((*(this->success))[_i31][_i36]);
-                }
-                iprot->readListEnd();
-              }
-            }
-            iprot->readListEnd();
-          }
+        if (ftype == ::apache::thrift::protocol::T_STRING) {
+          xfer += iprot->readString((*(this->success)));
           this->__isset.success = true;
         } else {
           xfer += iprot->skip(ftype);
@@ -1165,7 +1101,7 @@ void WorkDaemonClient::send_startReducer(const JobID jid, const PartID kid, cons
   oprot_->getTransport()->writeEnd();
 }
 
-void WorkDaemonClient::sendData(std::vector<std::vector<std::string> > & _return, const PartID kid, const BlockID sid)
+void WorkDaemonClient::sendData(std::string& _return, const PartID kid, const BlockID sid)
 {
   send_sendData(kid, sid);
   recv_sendData(_return);
@@ -1186,7 +1122,7 @@ void WorkDaemonClient::send_sendData(const PartID kid, const BlockID sid)
   oprot_->getTransport()->writeEnd();
 }
 
-void WorkDaemonClient::recv_sendData(std::vector<std::vector<std::string> > & _return)
+void WorkDaemonClient::recv_sendData(std::string& _return)
 {
 
   int32_t rseqid = 0;

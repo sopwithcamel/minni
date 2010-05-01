@@ -42,7 +42,7 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
     printf("startReducer\n");
   }
 
-  void sendData(std::vector<std::vector<std::string> > & _return, const PartID kid, const BlockID sid) {
+  void sendData(std::string& _return, const PartID kid, const BlockID sid) {
     // Your implementation goes here
     printf("sendData\n");
   }
