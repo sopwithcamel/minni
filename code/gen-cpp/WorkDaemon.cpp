@@ -618,14 +618,6 @@ uint32_t WorkDaemon_dataStatus_args::read(::apache::thrift::protocol::TProtocol*
           xfer += iprot->skip(ftype);
         }
         break;
-      case 2:
-        if (ftype == ::apache::thrift::protocol::T_I32) {
-          xfer += iprot->readI32(this->sid);
-          this->__isset.sid = true;
-        } else {
-          xfer += iprot->skip(ftype);
-        }
-        break;
       default:
         xfer += iprot->skip(ftype);
         break;
@@ -644,9 +636,6 @@ uint32_t WorkDaemon_dataStatus_args::write(::apache::thrift::protocol::TProtocol
   xfer += oprot->writeFieldBegin("pid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64(this->pid);
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("sid", ::apache::thrift::protocol::T_I32, 2);
-  xfer += oprot->writeI32(this->sid);
-  xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
@@ -657,9 +646,6 @@ uint32_t WorkDaemon_dataStatus_pargs::write(::apache::thrift::protocol::TProtoco
   xfer += oprot->writeStructBegin("WorkDaemon_dataStatus_pargs");
   xfer += oprot->writeFieldBegin("pid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64((*(this->pid)));
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("sid", ::apache::thrift::protocol::T_I32, 2);
-  xfer += oprot->writeI32((*(this->sid)));
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -1162,20 +1148,19 @@ void WorkDaemonClient::recv_sendData(std::string& _return)
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "sendData failed: unknown result");
 }
 
-Status WorkDaemonClient::dataStatus(const PartID pid, const BlockID sid)
+Status WorkDaemonClient::dataStatus(const PartID pid)
 {
-  send_dataStatus(pid, sid);
+  send_dataStatus(pid);
   return recv_dataStatus();
 }
 
-void WorkDaemonClient::send_dataStatus(const PartID pid, const BlockID sid)
+void WorkDaemonClient::send_dataStatus(const PartID pid)
 {
   int32_t cseqid = 0;
   oprot_->writeMessageBegin("dataStatus", ::apache::thrift::protocol::T_CALL, cseqid);
 
   WorkDaemon_dataStatus_pargs args;
   args.pid = &pid;
-  args.sid = &sid;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -1454,7 +1439,7 @@ void WorkDaemonProcessor::process_dataStatus(int32_t seqid, ::apache::thrift::pr
 
   WorkDaemon_dataStatus_result result;
   try {
-    result.success = iface_->dataStatus(args.pid, args.sid);
+    result.success = iface_->dataStatus(args.pid);
     result.__isset.success = true;
   } catch (const std::exception& e) {
     ::apache::thrift::TApplicationException x(e.what());

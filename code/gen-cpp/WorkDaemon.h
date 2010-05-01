@@ -19,7 +19,7 @@ class WorkDaemonIf {
   virtual void startMapper(const JobID jid, const ChunkID cid) = 0;
   virtual void startReducer(const JobID jid, const PartID kid, const std::string& outFile) = 0;
   virtual void sendData(std::string& _return, const PartID kid, const BlockID sid) = 0;
-  virtual Status dataStatus(const PartID pid, const BlockID sid) = 0;
+  virtual Status dataStatus(const PartID pid) = 0;
   virtual Count blockCount(const PartID pid) = 0;
   virtual void kill(const JobID jid) = 0;
 };
@@ -42,7 +42,7 @@ class WorkDaemonNull : virtual public WorkDaemonIf {
   void sendData(std::string& /* _return */, const PartID /* kid */, const BlockID /* sid */) {
     return;
   }
-  Status dataStatus(const PartID /* pid */, const BlockID /* sid */) {
+  Status dataStatus(const PartID /* pid */) {
     Status _return = 0;
     return _return;
   }
@@ -387,25 +387,21 @@ class WorkDaemon_sendData_presult {
 class WorkDaemon_dataStatus_args {
  public:
 
-  WorkDaemon_dataStatus_args() : pid(0), sid(0) {
+  WorkDaemon_dataStatus_args() : pid(0) {
   }
 
   virtual ~WorkDaemon_dataStatus_args() throw() {}
 
   PartID pid;
-  BlockID sid;
 
   struct __isset {
-    __isset() : pid(false), sid(false) {}
+    __isset() : pid(false) {}
     bool pid;
-    bool sid;
   } __isset;
 
   bool operator == (const WorkDaemon_dataStatus_args & rhs) const
   {
     if (!(pid == rhs.pid))
-      return false;
-    if (!(sid == rhs.sid))
       return false;
     return true;
   }
@@ -427,7 +423,6 @@ class WorkDaemon_dataStatus_pargs {
   virtual ~WorkDaemon_dataStatus_pargs() throw() {}
 
   const PartID* pid;
-  const BlockID* sid;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
@@ -651,8 +646,8 @@ class WorkDaemonClient : virtual public WorkDaemonIf {
   void sendData(std::string& _return, const PartID kid, const BlockID sid);
   void send_sendData(const PartID kid, const BlockID sid);
   void recv_sendData(std::string& _return);
-  Status dataStatus(const PartID pid, const BlockID sid);
-  void send_dataStatus(const PartID pid, const BlockID sid);
+  Status dataStatus(const PartID pid);
+  void send_dataStatus(const PartID pid);
   Status recv_dataStatus();
   Count blockCount(const PartID pid);
   void send_blockCount(const PartID pid);
@@ -754,13 +749,13 @@ class WorkDaemonMultiface : virtual public WorkDaemonIf {
     }
   }
 
-  Status dataStatus(const PartID pid, const BlockID sid) {
+  Status dataStatus(const PartID pid) {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
       if (i == sz - 1) {
-        return ifaces_[i]->dataStatus(pid, sid);
+        return ifaces_[i]->dataStatus(pid);
       } else {
-        ifaces_[i]->dataStatus(pid, sid);
+        ifaces_[i]->dataStatus(pid);
       }
     }
   }

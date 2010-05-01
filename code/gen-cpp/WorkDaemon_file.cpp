@@ -103,71 +103,78 @@ string LocalFileRegistry::toString() const{
 }
 
 
-Transfer::Transfer(PartID p, Location l): pid(p), location(l), t_status(transferstatus::DNE){}
+Transfer::Transfer(PartID p, Location l, string o): 
+  pid(p), location(l), outfile(o),
+  t_status(transferstatus::DNE), progress(0), total(-1){
+  ofstream clearing(o.c_str(), ios::trunc|ios::out);
+  clearing.close();
+}
 
-Status Transfer::getFile(string outputfile){
-  cout << "Starting to transfer file..."  << endl;
+Status Transfer::getFile(){
   boost::shared_ptr<TSocket> socket(new TSocket(location.ip, location.port));
   boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
   boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 	
   workdaemon::WorkDaemonClient client(protocol);
-
-  // Set up the transfer this is the first call
-  cout << "Checking status..."  << endl;
-  if(t_status == transferstatus::DNE){
-    total = client.blockCount(pid);
-    if(total < 0){ // Job not done, comeback later.
-      cout << "Not ready."   << endl;
-      return transferstatus::DNE;
-    }
-    progress = 0; // Let's get ready to rock.
-    transferstatus::READY;
-  }
-
-  cout << "Done."   << endl;
-  if(progress == total){ // Hey. We're done.
-    t_status = transferstatus::DONE;
-    return transferstatus::DONE;
-  }
 
   // Get the next block and append.
   cout << "Fetching..."  << endl;
   string buffer;
-  client.sendData(buffer, pid, progress);
-  cout << "...Caught."  << endl;
-  fstream fs (outputfile.c_str(), fstream::app | fstream::out);
-  assert(!fs.fail());
-  fs << buffer;
+  fstream fs (outfile.c_str(), fstream::app | fstream::out);
+    assert(!fs.fail());
+  transport->open();
+  for(;progress < total;progress++){
+    string buffer;
+    client.sendData(buffer, pid, progress);
+    cout << "...Caught..."  << endl;
+    fs << buffer;
+  }
+  transport->close();
   fs.close();
-  progress++;
 }
 
 Status Transfer::checkStatus(){
-  cout << "Setting up with..." << location.ip << ":" << location.port  << endl;
   boost::shared_ptr<TSocket> socket(new TSocket(location.ip, location.port));
   boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
   boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 	
   workdaemon::WorkDaemonClient client(protocol);
 
-  // Set up the transfer this is the first call
-  cout << "Checking status..."  << endl;
-  if(t_status == transferstatus::DNE){
-    total = client.blockCount(pid);
-    if(total < 0){ // Job not done, comeback later.
-      cout << "Not ready."   << endl;
-      return transferstatus::DNE;
+  // We can't become undone
+  if(t_status == transferstatus::DONE){
+    return t_status;
+  }
+
+  // Check for new blocks
+  transport->open();
+  total = client.blockCount(pid); // update count
+  transport->close();
+
+  // Don't have any new ones
+  if(progress == total){
+    transport->open();
+    Status part_status = client.dataStatus(pid);
+    transport->close();
+    // Was this because we're done or not?
+    if(part_status == partstatus::DONE){
+      t_status = transferstatus::DONE;
     }
-    progress = 0; // Let's get ready to rock.
-    transferstatus::READY;
+    else{
+      t_status = transferstatus::BLOCKED;
+    }
+    return t_status;
   }
 
-  cout << "Done."   << endl;
-  if(progress == total){ // Hey. We're done.
-    t_status = transferstatus::DONE;
-    return transferstatus::DONE;
-  }
+  // There were some new ones!
+  t_status = transferstatus::READY;
+  return t_status;
+}
 
-  return transferstatus::READY;
+string Transfer::toString(){
+  stringstream ss;
+
+  ss << "L(" << location.ip << ":" << location.port << ") "
+     << "(" << progress << "/" << total << ") " << t_status;
+  
+  return ss.str();
 }

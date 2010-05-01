@@ -1,4 +1,5 @@
 #include "WorkDaemon.h"
+#include "WorkDaemon_file.h"
 #include <iostream>
 
 #include "tbb/tbb_thread.h"
@@ -29,8 +30,28 @@ int main(int argc, char **argv) {
 	
   workdaemon::WorkDaemonClient client(protocol);
   transport->open();
-  client.bark("Hewwo");
+  client.bark("request1");
   transport->close();
+
+  
+  Location l = {"localhost", 9091};
+  Transfer t(1, l, "snake");
+  t.checkStatus();
+  cout << t.toString() << endl;
+  t.getFile();
+  t.checkStatus();
+  cout << t.toString() << endl;
+
+
+  transport->open();
+  client.bark("request2");
+  transport->close();
+
+  t.checkStatus();
+  cout << t.toString() << endl;
+  t.getFile();
+  t.checkStatus();
+  cout << t.toString() << endl;
 	
   return 0;
 }

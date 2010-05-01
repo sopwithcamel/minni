@@ -49,12 +49,14 @@ public:
 	
   void bark(const string& s) {
     //Your implementation goes here
-    //file_reg.recordComplete(1,1,"moose");
-    //file_reg.recordComplete(2,1, "badger");
-    Location l = {"localhost", 9092};
-    Transfer t(1, l);
-    t.checkStatus();
-    printf("Ruff Ruff: %s\n", s.c_str());
+    if(s.compare("request1") == 0){
+      file_reg.recordComplete(1,1,"moose");
+    }
+    if(s.compare("request2") == 0){
+      file_reg.recordComplete(2,1, "badger");
+    }
+
+    printf("Finished: %s\n", s.c_str());
   }
 
   // Scans the status map and sees if there is anything new to report to the master
@@ -95,12 +97,11 @@ public:
     file_reg.bufferData(_return, pid, bid);
   }
 
-  Status dataStatus(const PartID pid, const BlockID sid) {
-
+  Status dataStatus(const PartID pid) {
+    return partstatus::BLOCKED;
   }
 
   Count blockCount(const PartID pid){
-    cout << "Getting block counts..." << endl;
     return file_reg.blocks(pid);
   }
 

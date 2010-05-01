@@ -47,7 +47,7 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
     printf("sendData\n");
   }
 
-  Status dataStatus(const PartID pid, const BlockID sid) {
+  Status dataStatus(const PartID pid) {
     // Your implementation goes here
     printf("dataStatus\n");
   }

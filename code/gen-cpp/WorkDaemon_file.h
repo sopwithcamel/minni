@@ -69,16 +69,18 @@ struct Location{
 
 // Transfers remote file
 class Transfer{
- private:
+  private:
   Count total;
   Count progress;
   Status t_status;
 
   PartID pid;  
   Location location;
+  string outfile;
 
  public:
-  Transfer(PartID p, Location l);
-  Status getFile(string outputfile);
+  Transfer(PartID p, Location l, string o);
+  Status getFile();
   Status checkStatus();
+  string toString();
 };

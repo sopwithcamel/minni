@@ -13,7 +13,7 @@ service WorkDaemon {
 	oneway void startMapper(1:JobID jid, 2:ChunkID cid),
 	oneway void startReducer(1:JobID jid, 2:PartID kid, 3:string outFile),
 	string sendData(1:PartID kid, 2:BlockID sid),
-	Status dataStatus(1:PartID pid, 2:BlockID sid),
+	Status dataStatus(1:PartID pid),
 	Count blockCount(1:PartID pid),
 	oneway void kill(1:JobID jid)
 }
