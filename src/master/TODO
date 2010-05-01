@@ -41,14 +41,6 @@ Master Server
 	+ number of machines used
 	+ etc. ???
 
-Notes
------------------
-
-1) Building libhdfs
-	@ref http://www.mail-archive.com/common-user@hadoop.apache.org/msg01812.html
-	JAVA_HOME=/usr/lib/jvm/default-java ant compile -Dcompile.c++=true -Dlibhdfs=true
-
-
 Future Work
 -----------------
 
