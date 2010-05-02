@@ -47,15 +47,15 @@ uint64_t HDFS::getNumChunks(string path)
 void HDFS::getChunkLocations(string path, ChunkID cid, vector<string*> & _return)
 {
 	/* dynamically size 2-d array, last pos is NULL */
-	char*** 2dArray = hdfsGetHosts(fs, path.c_str(), cid*getChunkSize(path), getChunkSize(path));
+	char*** twoDArray = hdfsGetHosts(fs, path.c_str(), cid*getChunkSize(path), getChunkSize(path));
 
-	while (2dArray != NULL)
+	while (twoDArray != NULL)
 	{
-		if (strtoul(2dArray[0][0]) == cid)
+		if (strtoul(twoDArray[0][0], NULL, 0) == cid)
 		{
-			_return.push_back(new string(2dArray[0][1]));
+			_return.push_back(new string(twoDArray[0][1]));
 		}
-		2dArray++;
+		twoDArray++;
 	}
 }
 

@@ -1,13 +1,16 @@
-#ifndef MINNIE_MASTER_DFS_H
-#define MINNIE_MASTER_DFS_H
+#ifndef MINNIE_MASTER_HDFS_H
+#define MINNIE_MASTER_HDFS_H
 
-#include "DFS.h"
+
 #include "hdfs.h"
+#include "DFS.h"
+#include "daemon_types.h"
 #include <math.h>
 #include <string>
 #include <vector>
 
 using namespace std;
+using namespace workdaemon;
 
 /* NOT THREAD SAFE */
 class HDFS : public DFS
