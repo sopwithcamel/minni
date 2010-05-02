@@ -1,7 +1,7 @@
 #include "Master.h"
 #include <unistd.h>
 
-#define LAG 15
+#define LAG 5
 
 int main(int argc, char* args[])
 {
