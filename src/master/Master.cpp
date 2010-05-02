@@ -1,6 +1,6 @@
 #include "Master.h"
 
-Master::Master()
+Master::Master() : jidCounter(0), mappers(0), reducers(0)
 {
 }
 
