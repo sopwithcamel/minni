@@ -5,6 +5,8 @@
 #OBJ = $(SRC:.cpp=.o)
 .SUFFIXES : .o .cpp
 
+CXX = gcc
+
 OS = LINUX
 
 #TBB
@@ -33,22 +35,29 @@ INCLUDES = $(THR_INC) $(TBB_INC) -I$(WOLF)
 
 # What is my name!?
 SERVER = WorkDaemon_Server
-SOBJ = $(THR_OBJ) WorkDaemon_server.o WorkDaemon_tasks.o WorkDaemon_other.o
+SOBJ = $(THR_OBJ) WorkDaemon_server.o WorkDaemon_tasks.o WorkDaemon_file.o
 CLIENT = WorkDaemon_Client
-COBJ = $(THR_OBJ) WorkDaemon_client2.o $(WOLF)/Master.o
+COBJ = $(THR_OBJ) WorkDaemon_client.o WorkDaemon_file.o
+TEST = Test
+TOBJ = $(THR_OBJ) WorkDaemon_tasks.o WorkDaemon_file.o WorkDaemon_test.o
+
+current : $(TEST)
 
 all : $(SERVER) $(CLIENT)
-
 
 .cpp.o: 
 	$(CXX) $(CPPFLAGS) $(INCLUDES) -c $< -o $@
 
+$(TEST) : $(TOBJ)
+	@printf "\n*** building test ***\n"
+	$(CXX) $(LIBFLAGS) $(TOBJ) -o $(TEST)
+
 $(SERVER) : $(SOBJ)
-	@printf "*** building server ***"
+	@printf "\n*** building server ***\n"
 	$(CXX) $(LIBFLAGS) $(SOBJ) -o $(SERVER)
 
 $(CLIENT) : $(COBJ)
-	@printf "*** building test client ***"
+	@printf "\n*** building test client ***\n"
 	$(CXX) $(LIBFLAGS)  $(COBJ) -o $(CLIENT)  
 
 clean:

@@ -17,12 +17,15 @@ class WorkDaemonIf {
  public:
   virtual ~WorkDaemonIf() {}
   virtual void bark(const std::string& s) = 0;
-  virtual void pulse(std::map<JobID, Status> & _return) = 0;
+  virtual void stateString(std::string& _return) = 0;
+  virtual void kill() = 0;
+  virtual void listStatus(std::map<JobID, Status> & _return) = 0;
   virtual void startMapper(const JobID jid, const ChunkID cid) = 0;
-  virtual void startReducer(const JobID jid, const PartitionID kid, const std::string& outFile) = 0;
-  virtual void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID kid, const SeriesID sid) = 0;
-  virtual Status dataStatus(const PartitionID kid) = 0;
-  virtual void kill(const JobID jid) = 0;
+  virtual void startReducer(const JobID jid, const PartID kid, const std::string& outFile) = 0;
+  virtual void sendData(std::string& _return, const PartID kid, const BlockID bid) = 0;
+  virtual Status partitionStatus(const PartID pid) = 0;
+  virtual Count blockCount(const PartID pid) = 0;
+  virtual void reportCompletedJobs(const std::vector<URL> & done) = 0;
 };
 
 class WorkDaemonNull : virtual public WorkDaemonIf {
@@ -31,23 +34,33 @@ class WorkDaemonNull : virtual public WorkDaemonIf {
   void bark(const std::string& /* s */) {
     return;
   }
-  void pulse(std::map<JobID, Status> & /* _return */) {
+  void stateString(std::string& /* _return */) {
+    return;
+  }
+  void kill() {
+    return;
+  }
+  void listStatus(std::map<JobID, Status> & /* _return */) {
     return;
   }
   void startMapper(const JobID /* jid */, const ChunkID /* cid */) {
     return;
   }
-  void startReducer(const JobID /* jid */, const PartitionID /* kid */, const std::string& /* outFile */) {
+  void startReducer(const JobID /* jid */, const PartID /* kid */, const std::string& /* outFile */) {
     return;
   }
-  void sendData(std::vector<std::vector<std::string> > & /* _return */, const PartitionID /* kid */, const SeriesID /* sid */) {
+  void sendData(std::string& /* _return */, const PartID /* kid */, const BlockID /* bid */) {
     return;
   }
-  Status dataStatus(const PartitionID /* kid */) {
+  Status partitionStatus(const PartID /* pid */) {
     Status _return = 0;
     return _return;
   }
-  void kill(const JobID /* jid */) {
+  Count blockCount(const PartID /* pid */) {
+    Count _return = 0;
+    return _return;
+  }
+  void reportCompletedJobs(const std::vector<URL> & /* done */) {
     return;
   }
 };
@@ -96,48 +109,167 @@ class WorkDaemon_bark_pargs {
 
 };
 
-class WorkDaemon_pulse_args {
+class WorkDaemon_stateString_args {
  public:
 
-  WorkDaemon_pulse_args() {
+  WorkDaemon_stateString_args() {
   }
 
-  virtual ~WorkDaemon_pulse_args() throw() {}
+  virtual ~WorkDaemon_stateString_args() throw() {}
 
 
-  bool operator == (const WorkDaemon_pulse_args & /* rhs */) const
+  bool operator == (const WorkDaemon_stateString_args & /* rhs */) const
   {
     return true;
   }
-  bool operator != (const WorkDaemon_pulse_args &rhs) const {
+  bool operator != (const WorkDaemon_stateString_args &rhs) const {
     return !(*this == rhs);
   }
 
-  bool operator < (const WorkDaemon_pulse_args & ) const;
+  bool operator < (const WorkDaemon_stateString_args & ) const;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class WorkDaemon_pulse_pargs {
+class WorkDaemon_stateString_pargs {
  public:
 
 
-  virtual ~WorkDaemon_pulse_pargs() throw() {}
+  virtual ~WorkDaemon_stateString_pargs() throw() {}
 
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class WorkDaemon_pulse_result {
+class WorkDaemon_stateString_result {
  public:
 
-  WorkDaemon_pulse_result() {
+  WorkDaemon_stateString_result() : success("") {
   }
 
-  virtual ~WorkDaemon_pulse_result() throw() {}
+  virtual ~WorkDaemon_stateString_result() throw() {}
+
+  std::string success;
+
+  struct __isset {
+    __isset() : success(false) {}
+    bool success;
+  } __isset;
+
+  bool operator == (const WorkDaemon_stateString_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const WorkDaemon_stateString_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WorkDaemon_stateString_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class WorkDaemon_stateString_presult {
+ public:
+
+
+  virtual ~WorkDaemon_stateString_presult() throw() {}
+
+  std::string* success;
+
+  struct __isset {
+    __isset() : success(false) {}
+    bool success;
+  } __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+class WorkDaemon_kill_args {
+ public:
+
+  WorkDaemon_kill_args() {
+  }
+
+  virtual ~WorkDaemon_kill_args() throw() {}
+
+
+  bool operator == (const WorkDaemon_kill_args & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WorkDaemon_kill_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WorkDaemon_kill_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class WorkDaemon_kill_pargs {
+ public:
+
+
+  virtual ~WorkDaemon_kill_pargs() throw() {}
+
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class WorkDaemon_listStatus_args {
+ public:
+
+  WorkDaemon_listStatus_args() {
+  }
+
+  virtual ~WorkDaemon_listStatus_args() throw() {}
+
+
+  bool operator == (const WorkDaemon_listStatus_args & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WorkDaemon_listStatus_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WorkDaemon_listStatus_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class WorkDaemon_listStatus_pargs {
+ public:
+
+
+  virtual ~WorkDaemon_listStatus_pargs() throw() {}
+
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class WorkDaemon_listStatus_result {
+ public:
+
+  WorkDaemon_listStatus_result() {
+  }
+
+  virtual ~WorkDaemon_listStatus_result() throw() {}
 
   std::map<JobID, Status>  success;
 
@@ -146,28 +278,28 @@ class WorkDaemon_pulse_result {
     bool success;
   } __isset;
 
-  bool operator == (const WorkDaemon_pulse_result & rhs) const
+  bool operator == (const WorkDaemon_listStatus_result & rhs) const
   {
     if (!(success == rhs.success))
       return false;
     return true;
   }
-  bool operator != (const WorkDaemon_pulse_result &rhs) const {
+  bool operator != (const WorkDaemon_listStatus_result &rhs) const {
     return !(*this == rhs);
   }
 
-  bool operator < (const WorkDaemon_pulse_result & ) const;
+  bool operator < (const WorkDaemon_listStatus_result & ) const;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class WorkDaemon_pulse_presult {
+class WorkDaemon_listStatus_presult {
  public:
 
 
-  virtual ~WorkDaemon_pulse_presult() throw() {}
+  virtual ~WorkDaemon_listStatus_presult() throw() {}
 
   std::map<JobID, Status> * success;
 
@@ -238,7 +370,7 @@ class WorkDaemon_startReducer_args {
   virtual ~WorkDaemon_startReducer_args() throw() {}
 
   JobID jid;
-  PartitionID kid;
+  PartID kid;
   std::string outFile;
 
   struct __isset {
@@ -276,7 +408,7 @@ class WorkDaemon_startReducer_pargs {
   virtual ~WorkDaemon_startReducer_pargs() throw() {}
 
   const JobID* jid;
-  const PartitionID* kid;
+  const PartID* kid;
   const std::string* outFile;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
@@ -286,25 +418,25 @@ class WorkDaemon_startReducer_pargs {
 class WorkDaemon_sendData_args {
  public:
 
-  WorkDaemon_sendData_args() : kid(0), sid(0) {
+  WorkDaemon_sendData_args() : kid(0), bid(0) {
   }
 
   virtual ~WorkDaemon_sendData_args() throw() {}
 
-  PartitionID kid;
-  SeriesID sid;
+  PartID kid;
+  BlockID bid;
 
   struct __isset {
-    __isset() : kid(false), sid(false) {}
+    __isset() : kid(false), bid(false) {}
     bool kid;
-    bool sid;
+    bool bid;
   } __isset;
 
   bool operator == (const WorkDaemon_sendData_args & rhs) const
   {
     if (!(kid == rhs.kid))
       return false;
-    if (!(sid == rhs.sid))
+    if (!(bid == rhs.bid))
       return false;
     return true;
   }
@@ -325,8 +457,8 @@ class WorkDaemon_sendData_pargs {
 
   virtual ~WorkDaemon_sendData_pargs() throw() {}
 
-  const PartitionID* kid;
-  const SeriesID* sid;
+  const PartID* kid;
+  const BlockID* bid;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
@@ -335,12 +467,12 @@ class WorkDaemon_sendData_pargs {
 class WorkDaemon_sendData_result {
  public:
 
-  WorkDaemon_sendData_result() {
+  WorkDaemon_sendData_result() : success("") {
   }
 
   virtual ~WorkDaemon_sendData_result() throw() {}
 
-  std::vector<std::vector<std::string> >  success;
+  std::string success;
 
   struct __isset {
     __isset() : success(false) {}
@@ -370,7 +502,7 @@ class WorkDaemon_sendData_presult {
 
   virtual ~WorkDaemon_sendData_presult() throw() {}
 
-  std::vector<std::vector<std::string> > * success;
+  std::string* success;
 
   struct __isset {
     __isset() : success(false) {}
@@ -381,57 +513,57 @@ class WorkDaemon_sendData_presult {
 
 };
 
-class WorkDaemon_dataStatus_args {
+class WorkDaemon_partitionStatus_args {
  public:
 
-  WorkDaemon_dataStatus_args() : kid(0) {
+  WorkDaemon_partitionStatus_args() : pid(0) {
   }
 
-  virtual ~WorkDaemon_dataStatus_args() throw() {}
+  virtual ~WorkDaemon_partitionStatus_args() throw() {}
 
-  PartitionID kid;
+  PartID pid;
 
   struct __isset {
-    __isset() : kid(false) {}
-    bool kid;
+    __isset() : pid(false) {}
+    bool pid;
   } __isset;
 
-  bool operator == (const WorkDaemon_dataStatus_args & rhs) const
+  bool operator == (const WorkDaemon_partitionStatus_args & rhs) const
   {
-    if (!(kid == rhs.kid))
+    if (!(pid == rhs.pid))
       return false;
     return true;
   }
-  bool operator != (const WorkDaemon_dataStatus_args &rhs) const {
+  bool operator != (const WorkDaemon_partitionStatus_args &rhs) const {
     return !(*this == rhs);
   }
 
-  bool operator < (const WorkDaemon_dataStatus_args & ) const;
+  bool operator < (const WorkDaemon_partitionStatus_args & ) const;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class WorkDaemon_dataStatus_pargs {
+class WorkDaemon_partitionStatus_pargs {
  public:
 
 
-  virtual ~WorkDaemon_dataStatus_pargs() throw() {}
+  virtual ~WorkDaemon_partitionStatus_pargs() throw() {}
 
-  const PartitionID* kid;
+  const PartID* pid;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class WorkDaemon_dataStatus_result {
+class WorkDaemon_partitionStatus_result {
  public:
 
-  WorkDaemon_dataStatus_result() : success(0) {
+  WorkDaemon_partitionStatus_result() : success(0) {
   }
 
-  virtual ~WorkDaemon_dataStatus_result() throw() {}
+  virtual ~WorkDaemon_partitionStatus_result() throw() {}
 
   Status success;
 
@@ -440,28 +572,28 @@ class WorkDaemon_dataStatus_result {
     bool success;
   } __isset;
 
-  bool operator == (const WorkDaemon_dataStatus_result & rhs) const
+  bool operator == (const WorkDaemon_partitionStatus_result & rhs) const
   {
     if (!(success == rhs.success))
       return false;
     return true;
   }
-  bool operator != (const WorkDaemon_dataStatus_result &rhs) const {
+  bool operator != (const WorkDaemon_partitionStatus_result &rhs) const {
     return !(*this == rhs);
   }
 
-  bool operator < (const WorkDaemon_dataStatus_result & ) const;
+  bool operator < (const WorkDaemon_partitionStatus_result & ) const;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class WorkDaemon_dataStatus_presult {
+class WorkDaemon_partitionStatus_presult {
  public:
 
 
-  virtual ~WorkDaemon_dataStatus_presult() throw() {}
+  virtual ~WorkDaemon_partitionStatus_presult() throw() {}
 
   Status* success;
 
@@ -474,45 +606,138 @@ class WorkDaemon_dataStatus_presult {
 
 };
 
-class WorkDaemon_kill_args {
+class WorkDaemon_blockCount_args {
  public:
 
-  WorkDaemon_kill_args() : jid(0) {
+  WorkDaemon_blockCount_args() : pid(0) {
   }
 
-  virtual ~WorkDaemon_kill_args() throw() {}
+  virtual ~WorkDaemon_blockCount_args() throw() {}
 
-  JobID jid;
+  PartID pid;
 
   struct __isset {
-    __isset() : jid(false) {}
-    bool jid;
+    __isset() : pid(false) {}
+    bool pid;
   } __isset;
 
-  bool operator == (const WorkDaemon_kill_args & rhs) const
+  bool operator == (const WorkDaemon_blockCount_args & rhs) const
   {
-    if (!(jid == rhs.jid))
+    if (!(pid == rhs.pid))
       return false;
     return true;
   }
-  bool operator != (const WorkDaemon_kill_args &rhs) const {
+  bool operator != (const WorkDaemon_blockCount_args &rhs) const {
     return !(*this == rhs);
   }
 
-  bool operator < (const WorkDaemon_kill_args & ) const;
+  bool operator < (const WorkDaemon_blockCount_args & ) const;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class WorkDaemon_kill_pargs {
+class WorkDaemon_blockCount_pargs {
  public:
 
 
-  virtual ~WorkDaemon_kill_pargs() throw() {}
+  virtual ~WorkDaemon_blockCount_pargs() throw() {}
 
-  const JobID* jid;
+  const PartID* pid;
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class WorkDaemon_blockCount_result {
+ public:
+
+  WorkDaemon_blockCount_result() : success(0) {
+  }
+
+  virtual ~WorkDaemon_blockCount_result() throw() {}
+
+  Count success;
+
+  struct __isset {
+    __isset() : success(false) {}
+    bool success;
+  } __isset;
+
+  bool operator == (const WorkDaemon_blockCount_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const WorkDaemon_blockCount_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WorkDaemon_blockCount_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class WorkDaemon_blockCount_presult {
+ public:
+
+
+  virtual ~WorkDaemon_blockCount_presult() throw() {}
+
+  Count* success;
+
+  struct __isset {
+    __isset() : success(false) {}
+    bool success;
+  } __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+class WorkDaemon_reportCompletedJobs_args {
+ public:
+
+  WorkDaemon_reportCompletedJobs_args() {
+  }
+
+  virtual ~WorkDaemon_reportCompletedJobs_args() throw() {}
+
+  std::vector<URL>  done;
+
+  struct __isset {
+    __isset() : done(false) {}
+    bool done;
+  } __isset;
+
+  bool operator == (const WorkDaemon_reportCompletedJobs_args & rhs) const
+  {
+    if (!(done == rhs.done))
+      return false;
+    return true;
+  }
+  bool operator != (const WorkDaemon_reportCompletedJobs_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WorkDaemon_reportCompletedJobs_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class WorkDaemon_reportCompletedJobs_pargs {
+ public:
+
+
+  virtual ~WorkDaemon_reportCompletedJobs_pargs() throw() {}
+
+  const std::vector<URL> * done;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
@@ -540,21 +765,29 @@ class WorkDaemonClient : virtual public WorkDaemonIf {
   }
   void bark(const std::string& s);
   void send_bark(const std::string& s);
-  void pulse(std::map<JobID, Status> & _return);
-  void send_pulse();
-  void recv_pulse(std::map<JobID, Status> & _return);
+  void stateString(std::string& _return);
+  void send_stateString();
+  void recv_stateString(std::string& _return);
+  void kill();
+  void send_kill();
+  void listStatus(std::map<JobID, Status> & _return);
+  void send_listStatus();
+  void recv_listStatus(std::map<JobID, Status> & _return);
   void startMapper(const JobID jid, const ChunkID cid);
   void send_startMapper(const JobID jid, const ChunkID cid);
-  void startReducer(const JobID jid, const PartitionID kid, const std::string& outFile);
-  void send_startReducer(const JobID jid, const PartitionID kid, const std::string& outFile);
-  void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID kid, const SeriesID sid);
-  void send_sendData(const PartitionID kid, const SeriesID sid);
-  void recv_sendData(std::vector<std::vector<std::string> > & _return);
-  Status dataStatus(const PartitionID kid);
-  void send_dataStatus(const PartitionID kid);
-  Status recv_dataStatus();
-  void kill(const JobID jid);
-  void send_kill(const JobID jid);
+  void startReducer(const JobID jid, const PartID kid, const std::string& outFile);
+  void send_startReducer(const JobID jid, const PartID kid, const std::string& outFile);
+  void sendData(std::string& _return, const PartID kid, const BlockID bid);
+  void send_sendData(const PartID kid, const BlockID bid);
+  void recv_sendData(std::string& _return);
+  Status partitionStatus(const PartID pid);
+  void send_partitionStatus(const PartID pid);
+  Status recv_partitionStatus();
+  Count blockCount(const PartID pid);
+  void send_blockCount(const PartID pid);
+  Count recv_blockCount();
+  void reportCompletedJobs(const std::vector<URL> & done);
+  void send_reportCompletedJobs(const std::vector<URL> & done);
  protected:
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
@@ -569,22 +802,28 @@ class WorkDaemonProcessor : virtual public ::apache::thrift::TProcessor {
  private:
   std::map<std::string, void (WorkDaemonProcessor::*)(int32_t, ::apache::thrift::protocol::TProtocol*, ::apache::thrift::protocol::TProtocol*)> processMap_;
   void process_bark(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
-  void process_pulse(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
+  void process_stateString(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
+  void process_kill(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
+  void process_listStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_startMapper(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_startReducer(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_sendData(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
-  void process_dataStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
-  void process_kill(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
+  void process_partitionStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
+  void process_blockCount(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
+  void process_reportCompletedJobs(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
  public:
   WorkDaemonProcessor(boost::shared_ptr<WorkDaemonIf> iface) :
     iface_(iface) {
     processMap_["bark"] = &WorkDaemonProcessor::process_bark;
-    processMap_["pulse"] = &WorkDaemonProcessor::process_pulse;
+    processMap_["stateString"] = &WorkDaemonProcessor::process_stateString;
+    processMap_["kill"] = &WorkDaemonProcessor::process_kill;
+    processMap_["listStatus"] = &WorkDaemonProcessor::process_listStatus;
     processMap_["startMapper"] = &WorkDaemonProcessor::process_startMapper;
     processMap_["startReducer"] = &WorkDaemonProcessor::process_startReducer;
     processMap_["sendData"] = &WorkDaemonProcessor::process_sendData;
-    processMap_["dataStatus"] = &WorkDaemonProcessor::process_dataStatus;
-    processMap_["kill"] = &WorkDaemonProcessor::process_kill;
+    processMap_["partitionStatus"] = &WorkDaemonProcessor::process_partitionStatus;
+    processMap_["blockCount"] = &WorkDaemonProcessor::process_blockCount;
+    processMap_["reportCompletedJobs"] = &WorkDaemonProcessor::process_reportCompletedJobs;
   }
 
   virtual bool process(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot);
@@ -610,14 +849,33 @@ class WorkDaemonMultiface : virtual public WorkDaemonIf {
     }
   }
 
-  void pulse(std::map<JobID, Status> & _return) {
+  void stateString(std::string& _return) {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
       if (i == sz - 1) {
-        ifaces_[i]->pulse(_return);
+        ifaces_[i]->stateString(_return);
         return;
       } else {
-        ifaces_[i]->pulse(_return);
+        ifaces_[i]->stateString(_return);
+      }
+    }
+  }
+
+  void kill() {
+    uint32_t sz = ifaces_.size();
+    for (uint32_t i = 0; i < sz; ++i) {
+      ifaces_[i]->kill();
+    }
+  }
+
+  void listStatus(std::map<JobID, Status> & _return) {
+    uint32_t sz = ifaces_.size();
+    for (uint32_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->listStatus(_return);
+        return;
+      } else {
+        ifaces_[i]->listStatus(_return);
       }
     }
   }
@@ -629,40 +887,51 @@ class WorkDaemonMultiface : virtual public WorkDaemonIf {
     }
   }
 
-  void startReducer(const JobID jid, const PartitionID kid, const std::string& outFile) {
+  void startReducer(const JobID jid, const PartID kid, const std::string& outFile) {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
       ifaces_[i]->startReducer(jid, kid, outFile);
     }
   }
 
-  void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID kid, const SeriesID sid) {
+  void sendData(std::string& _return, const PartID kid, const BlockID bid) {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
       if (i == sz - 1) {
-        ifaces_[i]->sendData(_return, kid, sid);
+        ifaces_[i]->sendData(_return, kid, bid);
         return;
       } else {
-        ifaces_[i]->sendData(_return, kid, sid);
+        ifaces_[i]->sendData(_return, kid, bid);
       }
     }
   }
 
-  Status dataStatus(const PartitionID kid) {
+  Status partitionStatus(const PartID pid) {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
       if (i == sz - 1) {
-        return ifaces_[i]->dataStatus(kid);
+        return ifaces_[i]->partitionStatus(pid);
       } else {
-        ifaces_[i]->dataStatus(kid);
+        ifaces_[i]->partitionStatus(pid);
       }
     }
   }
 
-  void kill(const JobID jid) {
+  Count blockCount(const PartID pid) {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
-      ifaces_[i]->kill(jid);
+      if (i == sz - 1) {
+        return ifaces_[i]->blockCount(pid);
+      } else {
+        ifaces_[i]->blockCount(pid);
+      }
+    }
+  }
+
+  void reportCompletedJobs(const std::vector<URL> & done) {
+    uint32_t sz = ifaces_.size();
+    for (uint32_t i = 0; i < sz; ++i) {
+      ifaces_[i]->reportCompletedJobs(done);
     }
   }
 

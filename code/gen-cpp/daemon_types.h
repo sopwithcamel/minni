@@ -18,11 +18,15 @@ typedef int16_t Status;
 
 typedef int64_t JobID;
 
-typedef int64_t PartitionID;
+typedef int64_t PartID;
 
 typedef int64_t ChunkID;
 
-typedef int32_t SeriesID;
+typedef int32_t BlockID;
+
+typedef int32_t Count;
+
+typedef std::string URL;
 
 } // namespace
 

@@ -27,9 +27,19 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
     printf("bark\n");
   }
 
-  void pulse(std::map<JobID, Status> & _return) {
+  void stateString(std::string& _return) {
     // Your implementation goes here
-    printf("pulse\n");
+    printf("stateString\n");
+  }
+
+  void kill() {
+    // Your implementation goes here
+    printf("kill\n");
+  }
+
+  void listStatus(std::map<JobID, Status> & _return) {
+    // Your implementation goes here
+    printf("listStatus\n");
   }
 
   void startMapper(const JobID jid, const ChunkID cid) {
@@ -37,24 +47,29 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
     printf("startMapper\n");
   }
 
-  void startReducer(const JobID jid, const PartitionID kid, const std::string& outFile) {
+  void startReducer(const JobID jid, const PartID kid, const std::string& outFile) {
     // Your implementation goes here
     printf("startReducer\n");
   }
 
-  void sendData(std::vector<std::vector<std::string> > & _return, const PartitionID kid, const SeriesID sid) {
+  void sendData(std::string& _return, const PartID kid, const BlockID bid) {
     // Your implementation goes here
     printf("sendData\n");
   }
 
-  Status dataStatus(const PartitionID kid) {
+  Status partitionStatus(const PartID pid) {
     // Your implementation goes here
-    printf("dataStatus\n");
+    printf("partitionStatus\n");
   }
 
-  void kill(const JobID jid) {
+  Count blockCount(const PartID pid) {
     // Your implementation goes here
-    printf("kill\n");
+    printf("blockCount\n");
+  }
+
+  void reportCompletedJobs(const std::vector<URL> & done) {
+    // Your implementation goes here
+    printf("reportCompletedJobs\n");
   }
 
 };
