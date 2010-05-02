@@ -9,8 +9,8 @@
 using namespace std;
 
 #include "Communicator.h"
-#include "DFS.h"
 #include "Node.h"
+#include "HDFS.h"
 
 class Master {
 	public:
