@@ -42,7 +42,7 @@ tbb:
 	$(CXX) $(CFLAGS) tbbTest.cpp -o tbb
 
 test:
-	@$(CXX) $(CFLAGS) $(WORKER_DAEMON_STUFF) Master.cpp Driver.cpp -o driver \
+	@$(CXX) $(CFLAGS) $(WORKER_DAEMON_STUFF) Master.cpp Node.cpp Driver.cpp -o driver \
 	&& ./run_hdfs.sh ./driver \
 	&& rm driver \
 	&& echo "Tests Completed"

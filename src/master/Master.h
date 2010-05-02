@@ -5,19 +5,12 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include "WorkDaemon.h"
-
-#include <transport/TSocket.h>
-#include <transport/TBufferTransports.h>
-#include <protocol/TBinaryProtocol.h>
 
 using namespace std;
-using namespace apache::thrift;
-using namespace apache::thrift::protocol;
-using namespace apache::thrift::transport;
 
-using namespace workdaemon;
-
+#include "Communicator.h"
+#include "DFS.h"
+#include "Node.h"
 
 class Master {
 	public:
