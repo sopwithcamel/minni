@@ -5,21 +5,15 @@
 #include "WorkDaemon.h"
 #include "WorkDaemon_file.h"
 
+
 // TBB includes
 #include "tbb/concurrent_hash_map.h"
 #include "tbb/task.h"
 #include "tbb/tbb_thread.h"
 
-#define WORKER_PORT 9090
-
 using namespace workdaemon;
 using namespace tbb;
 using namespace std;
-
-
-// Task Registry
-string printReport(map<JobID,Status> &M);
-typedef unsigned int JobKind;
 
 class TaskRecord {
  public:
@@ -32,7 +26,7 @@ class TaskRecord {
 };
 
 typedef concurrent_hash_map<JobID, TaskRecord> TaskMap;
-typedef map<JobID, Status> Report;
+
 
 class TaskRegistry{
  private:

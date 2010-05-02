@@ -205,8 +205,8 @@ void PartitionGrabber::addLocation(Location l){
   transfers.push_back(Transfer(pid, l, outfile));
 }
 
-void PartitionGrabber::addLocations(vector<URL> l){
-  for(vector<URL>::iterator it = l.begin();
+void PartitionGrabber::addLocations(const vector<URL> l){
+  for(vector<URL>::const_iterator it = l.begin();
       it != l.end(); it++){
     Location loc = {*it, WORKER_PORT};
     this->addLocation(loc);

@@ -16,8 +16,10 @@ MapperTask::MapperTask(JobID jid_,
   jid(jid_), prop(p), tasks(t), files(f){}
 
 MapperTask::~MapperTask(){
-  delete prop;
-  prop = NULL;
+  if(prop != NULL){
+    delete prop;
+    prop = NULL;
+  }
 }
 
 task * MapperTask::execute(){
@@ -31,8 +33,10 @@ ReducerTask::ReducerTask(JobID jid_,
   jid(jid_), prop(p), tasks(t),grab(g){}
 
 ReducerTask::~ReducerTask(){
-  delete prop;
-  prop = NULL;
+  if(prop != NULL){
+    delete prop;
+    prop = NULL;
+  }
 }
 
 task * ReducerTask::execute(){
@@ -154,8 +158,8 @@ void TaskRegistry::getReport(Report &report){
 
 string TaskRegistry::toString(){
   stringstream ss;
-   TaskMap::range_type range = this->task_map.range();
-   ss << "[\n";
+  TaskMap::range_type range = this->task_map.range();
+  ss << "[\n";
   for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){
     ss << "\t" << it->second.toString() << "\n";
   }
