@@ -13,8 +13,8 @@ service WorkDaemon {
 	string stateString(),         // Debug
 	oneway void kill();	      // Debug
 	map<JobID, Status> listStatus(),   // Are you alive
-	oneway void startMapper(1:JobID jid, 2:ChunkID cid),
-	oneway void startReducer(1:JobID jid, 2:PartID kid, 3:string outFile),
+	oneway void startMapper(1:JobID jid, 2:string inFile, 3:ChunkID cid),
+	oneway void startReducer(1:JobID jid, 2:PartID pid, 3:string outFile),
 	string sendData(1:PartID kid, 2:BlockID bid),
 	Status partitionStatus(1:PartID pid),
 	Count blockCount(1:PartID pid),
