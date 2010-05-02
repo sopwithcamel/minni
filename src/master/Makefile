@@ -24,11 +24,13 @@ CFLAGS=-Wall $(INCLUDE) $(LIB)  $(LINK)
 CXX=g++
 THRIFT=thrift
 
+WORKER_DAEMON_STUFF=-I../../code/gen-cpp ../../code/gen-cpp/daemon_types.cpp ../../code/gen-cpp/daemon_constants.cpp ../../code/gen-cpp/WorkDaemon.cpp
+
 all:
 	$(CXX) $(CFLAGS) gen-cpp/master_types.cpp gen-cpp/master_constants.cpp gen-cpp/Master.cpp gen-cpp/Master_Server.cpp -o server
 
 daemon:
-	$(CXX) $(CFLAGS) -I../../code/gen-cpp ../../code/gen-cpp/daemon_types.cpp ../../code/gen-cpp/daemon_constants.cpp ../../code/gen-cpp/WorkDaemon.cpp WorkDaemonClient.cpp -o client
+	$(CXX) $(CFLAGS) $(WORKER_DAEMON_STUFF) WorkDaemonClient.cpp -o client
 
 thrift:
 	$(THRIFT) --gen cpp master.thrift
@@ -38,6 +40,12 @@ hdfs:
 
 tbb:
 	$(CXX) $(CFLAGS) tbbTest.cpp -o tbb
+
+test:
+	@$(CXX) $(CFLAGS) $(WORKER_DAEMON_STUFF) Master.cpp Driver.cpp -o driver \
+	&& ./run_hdfs.sh ./driver \
+	&& rm driver \
+	&& echo "Tests Completed"
 
 clean:
 	@rm client

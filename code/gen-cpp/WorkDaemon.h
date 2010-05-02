@@ -9,6 +9,8 @@
 #include <TProcessor.h>
 #include "daemon_types.h"
 
+#define WORKER_PORT 9090
+
 namespace workdaemon {
 
 class WorkDaemonIf {
