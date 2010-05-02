@@ -51,10 +51,12 @@ class TaskRegistry{
  public:
   void addJob(JobID jid, task* ptr, JobKind jk);
   bool exists(JobID jid);
+  
   Status getStatus(JobID jid);
   void setStatus(JobID jid, Status status);
   void remove(JobID jid);
 
+  bool mapper_still_running();
   void cullReported();
   void getReport(Report &report);
   string toString();

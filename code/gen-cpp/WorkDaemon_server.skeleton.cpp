@@ -27,6 +27,16 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
     printf("bark\n");
   }
 
+  void stateString(std::string& _return) {
+    // Your implementation goes here
+    printf("stateString\n");
+  }
+
+  void kill() {
+    // Your implementation goes here
+    printf("kill\n");
+  }
+
   void listStatus(std::map<JobID, Status> & _return) {
     // Your implementation goes here
     printf("listStatus\n");
@@ -42,14 +52,14 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
     printf("startReducer\n");
   }
 
-  void sendData(std::string& _return, const PartID kid, const BlockID sid) {
+  void sendData(std::string& _return, const PartID kid, const BlockID bid) {
     // Your implementation goes here
     printf("sendData\n");
   }
 
-  Status dataStatus(const PartID pid) {
+  Status partitionStatus(const PartID pid) {
     // Your implementation goes here
-    printf("dataStatus\n");
+    printf("partitionStatus\n");
   }
 
   Count blockCount(const PartID pid) {
@@ -57,9 +67,9 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
     printf("blockCount\n");
   }
 
-  void kill(const JobID jid) {
+  void reportCompletedJobs(const std::vector<URL> & done) {
     // Your implementation goes here
-    printf("kill\n");
+    printf("reportCompletedJobs\n");
   }
 
 };

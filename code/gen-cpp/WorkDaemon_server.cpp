@@ -36,6 +36,7 @@ using namespace std;
 class WorkDaemonHandler : virtual public WorkDaemonIf {
   TaskRegistry task_reg;
   LocalFileRegistry file_reg;
+  GrabberMap grab_map;
 
   empty_task * root;
 
@@ -59,13 +60,22 @@ public:
     printf("Finished: %s\n", s.c_str());
   }
 
+  void stateString(string &_return){
+    stringstream ss;
+    ss << "Task Reg: " << task_reg.toString() << endl;
+    ss << "File Reg: " <<  file_reg.toString() << endl;
+    _return = ss.str();
+    return;
+  }
+
   // Scans the status map and sees if there is anything new to report to the master
   void listStatus(map<JobID, Status> & _return) {
-    
+    task_reg.getReport(_return);
+    return;
   }
 	
   void startMapper(const JobID jid, const ChunkID cid) {
-	
+    assert(!task_reg.exists(jid));
     // 1) Allocate the mapper task
     MapperTask& t = *new(root->allocate_additional_child_of(*root)) 
       MapperTask(jid,cid,&task_reg);
@@ -79,35 +89,56 @@ public:
   }
 	
   void startReducer(const JobID jid, const PartID pid, const string& outFile) {
-        // 1) Allocate the mapper task
+    assert(!task_reg.exists(jid));
+    // 1) Allocate the mapper task
     ReducerTask& t = *new(root->allocate_additional_child_of(*root)) 
       ReducerTask(jid,pid, "NULL" ,&task_reg);
 
     // 2) Add to registry
     task_reg.addJob(jid, &t, jobkind::REDUCER);
 
+
     // 3) Get files
-    // Scene missing
+    //Scene missing
+    GrabberMap::accessor acc_grab;
+    grab_map.insert(acc_grab,pid);
+    acc_grab->second = PartitionGrabber(pid, "Somefile_" + pid);
 
     // 4) Spawn
     root->spawn(t);
   }
 	
+  // RPC function for sending a small chunk of data.
+  // FileRegistry deals with the sender side, PartitionGrabber deals with
+  // the reciever side
   void sendData(string & _return, const PartID pid, const BlockID bid) {
     file_reg.bufferData(_return, pid, bid);
   }
 
-  Status dataStatus(const PartID pid) {
-    return partstatus::BLOCKED;
+  // Are we still waiting on some mappers?
+  Status partitionStatus(const PartID pid) {
+    if(true || task_reg.mapper_still_running()){
+      return jobstatus::INPROGRESS;
+    }
+    return jobstatus::DONE;
   }
 
+  // How many blocks do we know about?
   Count blockCount(const PartID pid){
     return file_reg.blocks(pid);
   }
 
-	
-  void kill(const JobID jid) {    
+  void reportCompletedJobs(const vector<URL> & done){
+    GrabberMap::range_type range = grab_map.range();
+    for(GrabberMap::iterator it = range.begin();
+	it != range.end(); it++){
+      it->second.addLocations(done);
+    }
+  }
 
+  void kill(){
+    // Crash the node.
+    exit(-1);
   }
 	
 };

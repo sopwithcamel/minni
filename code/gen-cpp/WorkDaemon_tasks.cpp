@@ -36,6 +36,7 @@ string TaskRecord::toString(){
   return ss.str();
 }
 
+// Record that this new job is running
 void TaskRegistry::addJob(JobID jid, task * ptr, JobKind jk){
   assert(!this->exists(jid));
   // Get the accessor
@@ -46,12 +47,14 @@ void TaskRegistry::addJob(JobID jid, task * ptr, JobKind jk){
   acc_task->second = TaskRecord(jid, ptr, jk, jobstatus::INPROGRESS);
 }
 
+// Do we know about this job?
 bool TaskRegistry::exists(JobID jid){
   TaskMap::const_accessor acc_task;
   bool found = this->task_map.find(acc_task, jid);
   return found;
 }
 
+// Figure out whether the job is running or dead
 Status TaskRegistry::getStatus(JobID jid){
   TaskMap::const_accessor acc_task;
   bool found = this->task_map.find(acc_task, jid);
@@ -71,6 +74,7 @@ Status TaskRegistry::getStatus(JobID jid){
   return status;
 }
 
+// Update the status
 void TaskRegistry::setStatus(JobID jid, Status status){
   assert(this->exists(jid));
   TaskMap::accessor acc_stat;
@@ -82,10 +86,36 @@ void TaskRegistry::remove(JobID jid){
   this->task_map.erase(jid);
 }
 
-void TaskRegistry::cullReported(){
-  assert(false);
+// Are any of the mapper still running, i.e. are we still generating data?
+bool TaskRegistry::mapper_still_running(){
+  TaskMap::range_type range = this->task_map.range();
+  for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){
+    JobID jid = it->first;
+    Status status = it->second.status;
+    JobKind kind = it->second.kind;
+    if(status == jobstatus::INPROGRESS 
+       && kind == jobkind::MAPPER){
+      return true;
+    }
+  }
+  return false;
 }
 
+
+// Yank any entries that we have told the master about.
+void TaskRegistry::cullReported(){
+  TaskMap::range_type range = this->task_map.range();
+  for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){
+    JobID jid = it->first;
+    Status status = it->second.status;
+    if(status == jobstatus::DONE_AND_REPORTED
+       || status == jobstatus::DEAD_AND_REPORTED ){
+      this->task_map.erase(jid);
+    }
+  }
+}
+
+// Tell the master about anything that is done or dead
 void TaskRegistry::getReport(Report &report){
   report.clear();
   TaskMap::range_type range = this->task_map.range();
@@ -106,7 +136,7 @@ void TaskRegistry::getReport(Report &report){
 string TaskRegistry::toString(){
   stringstream ss;
    TaskMap::range_type range = this->task_map.range();
-   ss << "TaskReg = [\n";
+   ss << "[\n";
   for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){
     ss << "\t" << it->second.toString() << "\n";
   }

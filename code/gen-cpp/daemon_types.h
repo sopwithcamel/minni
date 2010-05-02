@@ -26,6 +26,8 @@ typedef int32_t BlockID;
 
 typedef int32_t Count;
 
+typedef std::string URL;
+
 } // namespace
 
 #endif

@@ -69,6 +69,198 @@ uint32_t WorkDaemon_bark_pargs::write(::apache::thrift::protocol::TProtocol* opr
   return xfer;
 }
 
+uint32_t WorkDaemon_stateString_args::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
+uint32_t WorkDaemon_stateString_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("WorkDaemon_stateString_args");
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t WorkDaemon_stateString_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("WorkDaemon_stateString_pargs");
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t WorkDaemon_stateString_result::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 0:
+        if (ftype == ::apache::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->success);
+          this->__isset.success = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
+uint32_t WorkDaemon_stateString_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
+
+  uint32_t xfer = 0;
+
+  xfer += oprot->writeStructBegin("WorkDaemon_stateString_result");
+
+  if (this->__isset.success) {
+    xfer += oprot->writeFieldBegin("success", ::apache::thrift::protocol::T_STRING, 0);
+    xfer += oprot->writeString(this->success);
+    xfer += oprot->writeFieldEnd();
+  }
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t WorkDaemon_stateString_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 0:
+        if (ftype == ::apache::thrift::protocol::T_STRING) {
+          xfer += iprot->readString((*(this->success)));
+          this->__isset.success = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
+uint32_t WorkDaemon_kill_args::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
+uint32_t WorkDaemon_kill_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("WorkDaemon_kill_args");
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t WorkDaemon_kill_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("WorkDaemon_kill_pargs");
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
 uint32_t WorkDaemon_listStatus_args::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
@@ -448,8 +640,8 @@ uint32_t WorkDaemon_sendData_args::read(::apache::thrift::protocol::TProtocol* i
         break;
       case 2:
         if (ftype == ::apache::thrift::protocol::T_I32) {
-          xfer += iprot->readI32(this->sid);
-          this->__isset.sid = true;
+          xfer += iprot->readI32(this->bid);
+          this->__isset.bid = true;
         } else {
           xfer += iprot->skip(ftype);
         }
@@ -472,8 +664,8 @@ uint32_t WorkDaemon_sendData_args::write(::apache::thrift::protocol::TProtocol* 
   xfer += oprot->writeFieldBegin("kid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64(this->kid);
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("sid", ::apache::thrift::protocol::T_I32, 2);
-  xfer += oprot->writeI32(this->sid);
+  xfer += oprot->writeFieldBegin("bid", ::apache::thrift::protocol::T_I32, 2);
+  xfer += oprot->writeI32(this->bid);
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -486,8 +678,8 @@ uint32_t WorkDaemon_sendData_pargs::write(::apache::thrift::protocol::TProtocol*
   xfer += oprot->writeFieldBegin("kid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64((*(this->kid)));
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("sid", ::apache::thrift::protocol::T_I32, 2);
-  xfer += oprot->writeI32((*(this->sid)));
+  xfer += oprot->writeFieldBegin("bid", ::apache::thrift::protocol::T_I32, 2);
+  xfer += oprot->writeI32((*(this->bid)));
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -590,7 +782,7 @@ uint32_t WorkDaemon_sendData_presult::read(::apache::thrift::protocol::TProtocol
   return xfer;
 }
 
-uint32_t WorkDaemon_dataStatus_args::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t WorkDaemon_partitionStatus_args::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -630,9 +822,9 @@ uint32_t WorkDaemon_dataStatus_args::read(::apache::thrift::protocol::TProtocol*
   return xfer;
 }
 
-uint32_t WorkDaemon_dataStatus_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t WorkDaemon_partitionStatus_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("WorkDaemon_dataStatus_args");
+  xfer += oprot->writeStructBegin("WorkDaemon_partitionStatus_args");
   xfer += oprot->writeFieldBegin("pid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64(this->pid);
   xfer += oprot->writeFieldEnd();
@@ -641,9 +833,9 @@ uint32_t WorkDaemon_dataStatus_args::write(::apache::thrift::protocol::TProtocol
   return xfer;
 }
 
-uint32_t WorkDaemon_dataStatus_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t WorkDaemon_partitionStatus_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("WorkDaemon_dataStatus_pargs");
+  xfer += oprot->writeStructBegin("WorkDaemon_partitionStatus_pargs");
   xfer += oprot->writeFieldBegin("pid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64((*(this->pid)));
   xfer += oprot->writeFieldEnd();
@@ -652,7 +844,7 @@ uint32_t WorkDaemon_dataStatus_pargs::write(::apache::thrift::protocol::TProtoco
   return xfer;
 }
 
-uint32_t WorkDaemon_dataStatus_result::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t WorkDaemon_partitionStatus_result::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -692,11 +884,11 @@ uint32_t WorkDaemon_dataStatus_result::read(::apache::thrift::protocol::TProtoco
   return xfer;
 }
 
-uint32_t WorkDaemon_dataStatus_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t WorkDaemon_partitionStatus_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
 
   uint32_t xfer = 0;
 
-  xfer += oprot->writeStructBegin("WorkDaemon_dataStatus_result");
+  xfer += oprot->writeStructBegin("WorkDaemon_partitionStatus_result");
 
   if (this->__isset.success) {
     xfer += oprot->writeFieldBegin("success", ::apache::thrift::protocol::T_I16, 0);
@@ -708,7 +900,7 @@ uint32_t WorkDaemon_dataStatus_result::write(::apache::thrift::protocol::TProtoc
   return xfer;
 }
 
-uint32_t WorkDaemon_dataStatus_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t WorkDaemon_partitionStatus_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -906,7 +1098,7 @@ uint32_t WorkDaemon_blockCount_presult::read(::apache::thrift::protocol::TProtoc
   return xfer;
 }
 
-uint32_t WorkDaemon_kill_args::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t WorkDaemon_reportCompletedJobs_args::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -927,9 +1119,21 @@ uint32_t WorkDaemon_kill_args::read(::apache::thrift::protocol::TProtocol* iprot
     switch (fid)
     {
       case 1:
-        if (ftype == ::apache::thrift::protocol::T_I64) {
-          xfer += iprot->readI64(this->jid);
-          this->__isset.jid = true;
+        if (ftype == ::apache::thrift::protocol::T_LIST) {
+          {
+            this->done.clear();
+            uint32_t _size15;
+            ::apache::thrift::protocol::TType _etype18;
+            iprot->readListBegin(_etype18, _size15);
+            this->done.resize(_size15);
+            uint32_t _i19;
+            for (_i19 = 0; _i19 < _size15; ++_i19)
+            {
+              xfer += iprot->readString(this->done[_i19]);
+            }
+            iprot->readListEnd();
+          }
+          this->__isset.done = true;
         } else {
           xfer += iprot->skip(ftype);
         }
@@ -946,22 +1150,38 @@ uint32_t WorkDaemon_kill_args::read(::apache::thrift::protocol::TProtocol* iprot
   return xfer;
 }
 
-uint32_t WorkDaemon_kill_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t WorkDaemon_reportCompletedJobs_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("WorkDaemon_kill_args");
-  xfer += oprot->writeFieldBegin("jid", ::apache::thrift::protocol::T_I64, 1);
-  xfer += oprot->writeI64(this->jid);
+  xfer += oprot->writeStructBegin("WorkDaemon_reportCompletedJobs_args");
+  xfer += oprot->writeFieldBegin("done", ::apache::thrift::protocol::T_LIST, 1);
+  {
+    xfer += oprot->writeListBegin(::apache::thrift::protocol::T_STRING, this->done.size());
+    std::vector<URL> ::const_iterator _iter20;
+    for (_iter20 = this->done.begin(); _iter20 != this->done.end(); ++_iter20)
+    {
+      xfer += oprot->writeString((*_iter20));
+    }
+    xfer += oprot->writeListEnd();
+  }
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
 }
 
-uint32_t WorkDaemon_kill_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t WorkDaemon_reportCompletedJobs_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("WorkDaemon_kill_pargs");
-  xfer += oprot->writeFieldBegin("jid", ::apache::thrift::protocol::T_I64, 1);
-  xfer += oprot->writeI64((*(this->jid)));
+  xfer += oprot->writeStructBegin("WorkDaemon_reportCompletedJobs_pargs");
+  xfer += oprot->writeFieldBegin("done", ::apache::thrift::protocol::T_LIST, 1);
+  {
+    xfer += oprot->writeListBegin(::apache::thrift::protocol::T_STRING, (*(this->done)).size());
+    std::vector<URL> ::const_iterator _iter21;
+    for (_iter21 = (*(this->done)).begin(); _iter21 != (*(this->done)).end(); ++_iter21)
+    {
+      xfer += oprot->writeString((*_iter21));
+    }
+    xfer += oprot->writeListEnd();
+  }
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -980,6 +1200,83 @@ void WorkDaemonClient::send_bark(const std::string& s)
 
   WorkDaemon_bark_pargs args;
   args.s = &s;
+  args.write(oprot_);
+
+  oprot_->writeMessageEnd();
+  oprot_->getTransport()->flush();
+  oprot_->getTransport()->writeEnd();
+}
+
+void WorkDaemonClient::stateString(std::string& _return)
+{
+  send_stateString();
+  recv_stateString(_return);
+}
+
+void WorkDaemonClient::send_stateString()
+{
+  int32_t cseqid = 0;
+  oprot_->writeMessageBegin("stateString", ::apache::thrift::protocol::T_CALL, cseqid);
+
+  WorkDaemon_stateString_pargs args;
+  args.write(oprot_);
+
+  oprot_->writeMessageEnd();
+  oprot_->getTransport()->flush();
+  oprot_->getTransport()->writeEnd();
+}
+
+void WorkDaemonClient::recv_stateString(std::string& _return)
+{
+
+  int32_t rseqid = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TMessageType mtype;
+
+  iprot_->readMessageBegin(fname, mtype, rseqid);
+  if (mtype == ::apache::thrift::protocol::T_EXCEPTION) {
+    ::apache::thrift::TApplicationException x;
+    x.read(iprot_);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+    throw x;
+  }
+  if (mtype != ::apache::thrift::protocol::T_REPLY) {
+    iprot_->skip(::apache::thrift::protocol::T_STRUCT);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+    throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
+  }
+  if (fname.compare("stateString") != 0) {
+    iprot_->skip(::apache::thrift::protocol::T_STRUCT);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+    throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::WRONG_METHOD_NAME);
+  }
+  WorkDaemon_stateString_presult result;
+  result.success = &_return;
+  result.read(iprot_);
+  iprot_->readMessageEnd();
+  iprot_->getTransport()->readEnd();
+
+  if (result.__isset.success) {
+    // _return pointer has now been filled
+    return;
+  }
+  throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "stateString failed: unknown result");
+}
+
+void WorkDaemonClient::kill()
+{
+  send_kill();
+}
+
+void WorkDaemonClient::send_kill()
+{
+  int32_t cseqid = 0;
+  oprot_->writeMessageBegin("kill", ::apache::thrift::protocol::T_CALL, cseqid);
+
+  WorkDaemon_kill_pargs args;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -1087,20 +1384,20 @@ void WorkDaemonClient::send_startReducer(const JobID jid, const PartID kid, cons
   oprot_->getTransport()->writeEnd();
 }
 
-void WorkDaemonClient::sendData(std::string& _return, const PartID kid, const BlockID sid)
+void WorkDaemonClient::sendData(std::string& _return, const PartID kid, const BlockID bid)
 {
-  send_sendData(kid, sid);
+  send_sendData(kid, bid);
   recv_sendData(_return);
 }
 
-void WorkDaemonClient::send_sendData(const PartID kid, const BlockID sid)
+void WorkDaemonClient::send_sendData(const PartID kid, const BlockID bid)
 {
   int32_t cseqid = 0;
   oprot_->writeMessageBegin("sendData", ::apache::thrift::protocol::T_CALL, cseqid);
 
   WorkDaemon_sendData_pargs args;
   args.kid = &kid;
-  args.sid = &sid;
+  args.bid = &bid;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -1148,18 +1445,18 @@ void WorkDaemonClient::recv_sendData(std::string& _return)
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "sendData failed: unknown result");
 }
 
-Status WorkDaemonClient::dataStatus(const PartID pid)
+Status WorkDaemonClient::partitionStatus(const PartID pid)
 {
-  send_dataStatus(pid);
-  return recv_dataStatus();
+  send_partitionStatus(pid);
+  return recv_partitionStatus();
 }
 
-void WorkDaemonClient::send_dataStatus(const PartID pid)
+void WorkDaemonClient::send_partitionStatus(const PartID pid)
 {
   int32_t cseqid = 0;
-  oprot_->writeMessageBegin("dataStatus", ::apache::thrift::protocol::T_CALL, cseqid);
+  oprot_->writeMessageBegin("partitionStatus", ::apache::thrift::protocol::T_CALL, cseqid);
 
-  WorkDaemon_dataStatus_pargs args;
+  WorkDaemon_partitionStatus_pargs args;
   args.pid = &pid;
   args.write(oprot_);
 
@@ -1168,7 +1465,7 @@ void WorkDaemonClient::send_dataStatus(const PartID pid)
   oprot_->getTransport()->writeEnd();
 }
 
-Status WorkDaemonClient::recv_dataStatus()
+Status WorkDaemonClient::recv_partitionStatus()
 {
 
   int32_t rseqid = 0;
@@ -1189,14 +1486,14 @@ Status WorkDaemonClient::recv_dataStatus()
     iprot_->getTransport()->readEnd();
     throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
   }
-  if (fname.compare("dataStatus") != 0) {
+  if (fname.compare("partitionStatus") != 0) {
     iprot_->skip(::apache::thrift::protocol::T_STRUCT);
     iprot_->readMessageEnd();
     iprot_->getTransport()->readEnd();
     throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::WRONG_METHOD_NAME);
   }
   Status _return;
-  WorkDaemon_dataStatus_presult result;
+  WorkDaemon_partitionStatus_presult result;
   result.success = &_return;
   result.read(iprot_);
   iprot_->readMessageEnd();
@@ -1205,7 +1502,7 @@ Status WorkDaemonClient::recv_dataStatus()
   if (result.__isset.success) {
     return _return;
   }
-  throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "dataStatus failed: unknown result");
+  throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "partitionStatus failed: unknown result");
 }
 
 Count WorkDaemonClient::blockCount(const PartID pid)
@@ -1268,18 +1565,18 @@ Count WorkDaemonClient::recv_blockCount()
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "blockCount failed: unknown result");
 }
 
-void WorkDaemonClient::kill(const JobID jid)
+void WorkDaemonClient::reportCompletedJobs(const std::vector<URL> & done)
 {
-  send_kill(jid);
+  send_reportCompletedJobs(done);
 }
 
-void WorkDaemonClient::send_kill(const JobID jid)
+void WorkDaemonClient::send_reportCompletedJobs(const std::vector<URL> & done)
 {
   int32_t cseqid = 0;
-  oprot_->writeMessageBegin("kill", ::apache::thrift::protocol::T_CALL, cseqid);
+  oprot_->writeMessageBegin("reportCompletedJobs", ::apache::thrift::protocol::T_CALL, cseqid);
 
-  WorkDaemon_kill_pargs args;
-  args.jid = &jid;
+  WorkDaemon_reportCompletedJobs_pargs args;
+  args.done = &done;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -1341,6 +1638,48 @@ void WorkDaemonProcessor::process_bark(int32_t seqid, ::apache::thrift::protocol
 
   try {
     iface_->bark(args.s);
+  } catch (const std::exception& e) {
+  }
+  return;
+}
+
+void WorkDaemonProcessor::process_stateString(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
+{
+  WorkDaemon_stateString_args args;
+  args.read(iprot);
+  iprot->readMessageEnd();
+  iprot->getTransport()->readEnd();
+
+  WorkDaemon_stateString_result result;
+  try {
+    iface_->stateString(result.success);
+    result.__isset.success = true;
+  } catch (const std::exception& e) {
+    ::apache::thrift::TApplicationException x(e.what());
+    oprot->writeMessageBegin("stateString", ::apache::thrift::protocol::T_EXCEPTION, seqid);
+    x.write(oprot);
+    oprot->writeMessageEnd();
+    oprot->getTransport()->flush();
+    oprot->getTransport()->writeEnd();
+    return;
+  }
+
+  oprot->writeMessageBegin("stateString", ::apache::thrift::protocol::T_REPLY, seqid);
+  result.write(oprot);
+  oprot->writeMessageEnd();
+  oprot->getTransport()->flush();
+  oprot->getTransport()->writeEnd();
+}
+
+void WorkDaemonProcessor::process_kill(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
+{
+  WorkDaemon_kill_args args;
+  args.read(iprot);
+  iprot->readMessageEnd();
+  iprot->getTransport()->readEnd();
+
+  try {
+    iface_->kill();
   } catch (const std::exception& e) {
   }
   return;
@@ -1411,7 +1750,7 @@ void WorkDaemonProcessor::process_sendData(int32_t seqid, ::apache::thrift::prot
 
   WorkDaemon_sendData_result result;
   try {
-    iface_->sendData(result.success, args.kid, args.sid);
+    iface_->sendData(result.success, args.kid, args.bid);
     result.__isset.success = true;
   } catch (const std::exception& e) {
     ::apache::thrift::TApplicationException x(e.what());
@@ -1430,20 +1769,20 @@ void WorkDaemonProcessor::process_sendData(int32_t seqid, ::apache::thrift::prot
   oprot->getTransport()->writeEnd();
 }
 
-void WorkDaemonProcessor::process_dataStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
+void WorkDaemonProcessor::process_partitionStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
 {
-  WorkDaemon_dataStatus_args args;
+  WorkDaemon_partitionStatus_args args;
   args.read(iprot);
   iprot->readMessageEnd();
   iprot->getTransport()->readEnd();
 
-  WorkDaemon_dataStatus_result result;
+  WorkDaemon_partitionStatus_result result;
   try {
-    result.success = iface_->dataStatus(args.pid);
+    result.success = iface_->partitionStatus(args.pid);
     result.__isset.success = true;
   } catch (const std::exception& e) {
     ::apache::thrift::TApplicationException x(e.what());
-    oprot->writeMessageBegin("dataStatus", ::apache::thrift::protocol::T_EXCEPTION, seqid);
+    oprot->writeMessageBegin("partitionStatus", ::apache::thrift::protocol::T_EXCEPTION, seqid);
     x.write(oprot);
     oprot->writeMessageEnd();
     oprot->getTransport()->flush();
@@ -1451,7 +1790,7 @@ void WorkDaemonProcessor::process_dataStatus(int32_t seqid, ::apache::thrift::pr
     return;
   }
 
-  oprot->writeMessageBegin("dataStatus", ::apache::thrift::protocol::T_REPLY, seqid);
+  oprot->writeMessageBegin("partitionStatus", ::apache::thrift::protocol::T_REPLY, seqid);
   result.write(oprot);
   oprot->writeMessageEnd();
   oprot->getTransport()->flush();
@@ -1486,15 +1825,15 @@ void WorkDaemonProcessor::process_blockCount(int32_t seqid, ::apache::thrift::pr
   oprot->getTransport()->writeEnd();
 }
 
-void WorkDaemonProcessor::process_kill(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
+void WorkDaemonProcessor::process_reportCompletedJobs(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
 {
-  WorkDaemon_kill_args args;
+  WorkDaemon_reportCompletedJobs_args args;
   args.read(iprot);
   iprot->readMessageEnd();
   iprot->getTransport()->readEnd();
 
   try {
-    iface_->kill(args.jid);
+    iface_->reportCompletedJobs(args.done);
   } catch (const std::exception& e) {
   }
   return;

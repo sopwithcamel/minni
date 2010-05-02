@@ -23,7 +23,10 @@ string File::toString() const{
 // File Registry implementation
 LocalFileRegistry::LocalFileRegistry(){}
 
+
+// Buffers some data as descibed by the pid and a block ID
 void LocalFileRegistry::bufferData(string &_return, const PartID pid, const BlockID bid){
+  // Get the right partition
   FileMap::accessor acc_file;
   bool found = file_map.find(acc_file, pid);
   assert(found);
@@ -44,7 +47,7 @@ void LocalFileRegistry::bufferData(string &_return, const PartID pid, const Bloc
     cout << "start = " << start << ", len = " << len << endl;
     ifstream file(it->name.c_str(), ios::in);
     assert(file.is_open());
-    // read the block
+    // Read the block
     char memblock[File::block_size + 1];
     file.seekg(start, ios_base::beg);
     file.read(memblock, len);
@@ -55,7 +58,7 @@ void LocalFileRegistry::bufferData(string &_return, const PartID pid, const Bloc
   }
 }
 
-// Checks the number of blocks in the local partition
+// Checks the number of blocks in the partition
 Count LocalFileRegistry::blocks(const PartID p) const{
   FileMap::accessor acc_part;
   bool found = file_map.find(acc_part ,p);
@@ -71,13 +74,22 @@ Count LocalFileRegistry::blocks(const PartID p) const{
   return sum;
 }
 
+// Report a new complete file
 void LocalFileRegistry::recordComplete(const JobID j, const PartID p, const string n){
+  NameMap::accessor acc_name;
+  this->name_map.insert(acc_name,p);
+  if(acc_name->second.count(n) == 0){
+    assert(acc_name->second.count(n) == 0);
+    return;
+  }
+  
   FileMap::accessor acc_part;
   this->file_map.insert(acc_part, p);
   acc_part->second.push_back(File(j,p,n));
+  acc_name->second.insert(n);
 }
 
-
+// Report a bunch of new files (i.e. a job with a number of partitions)
 void LocalFileRegistry::recordComplete(const vector<File> &files){
   for(vector<File>::const_iterator it = files.begin(); it != files.end(); it++){
     this->recordComplete(it->jid, it->pid, it->name);
@@ -110,6 +122,7 @@ Transfer::Transfer(PartID p, Location l, string o):
   clearing.close();
 }
 
+// Get as much of a file as we know about
 Status Transfer::getFile(){
   boost::shared_ptr<TSocket> socket(new TSocket(location.ip, location.port));
   boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
@@ -133,6 +146,7 @@ Status Transfer::getFile(){
   fs.close();
 }
 
+// Update what we know about a file
 Status Transfer::checkStatus(){
   boost::shared_ptr<TSocket> socket(new TSocket(location.ip, location.port));
   boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
@@ -145,16 +159,14 @@ Status Transfer::checkStatus(){
     return t_status;
   }
 
-  // Check for new blocks
+  // Check for new blocks. Check for status first, because 
   transport->open();
+  Status part_status = client.partitionStatus(pid);
   total = client.blockCount(pid); // update count
   transport->close();
 
   // Don't have any new ones
   if(progress == total){
-    transport->open();
-    Status part_status = client.dataStatus(pid);
-    transport->close();
     // Was this because we're done or not?
     if(part_status == partstatus::DONE){
       t_status = transferstatus::DONE;
@@ -176,5 +188,44 @@ string Transfer::toString(){
   ss << "L(" << location.ip << ":" << location.port << ") "
      << "(" << progress << "/" << total << ") " << t_status;
   
+  return ss.str();
+}
+
+
+PartitionGrabber::PartitionGrabber(PartID p, string o): pid(p), outfile(o){}
+
+// Add a new node to what we think is done
+void PartitionGrabber::addLocation(Location l){
+  assert(locations.count(l) == 0);
+  transfers.push_back(Transfer(pid, l, outfile));
+}
+
+void PartitionGrabber::addLocations(vector<URL> l){
+  for(vector<URL>::iterator it = l.begin();
+      it != l.end(); it++){
+    Location loc = {*it, Location::default_port};
+    this->addLocation(loc);
+  }
+}
+
+// Grab as much as we can from whatever we think is done.
+void PartitionGrabber::getMore(){
+  for(vector<Transfer>::iterator it = transfers.begin();
+	it != transfers.end(); it++){
+    Status status = it->checkStatus();
+    if(status == transferstatus::READY){
+      it->getFile();
+    }
+  }
+}
+
+string PartitionGrabber::toString(){
+  stringstream ss;
+  ss << "[" << endl;
+  for(vector<Transfer>::iterator it = transfers.begin();
+      it != transfers.end(); it++){
+    ss << "\t" << it->toString() << endl;
+  }
+  ss << "]" << endl;
   return ss.str();
 }

@@ -24,34 +24,52 @@ template<class U, class T> void print_map(map<U,T> &m){
 }
 
 int main(int argc, char **argv) {
-  boost::shared_ptr<TSocket> socket(new TSocket("localhost", 9091));
-  boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-  boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+  boost::shared_ptr<TSocket> socket1(new TSocket("localhost", 9091));
+  boost::shared_ptr<TTransport> transport1(new TBufferedTransport(socket1));
+  boost::shared_ptr<TProtocol> protocol1(new TBinaryProtocol(transport1));
 	
-  workdaemon::WorkDaemonClient client(protocol);
-  transport->open();
-  client.bark("request1");
-  transport->close();
+  string state;
 
-  
-  Location l = {"localhost", 9091};
-  Transfer t(1, l, "snake");
-  t.checkStatus();
-  cout << t.toString() << endl;
-  t.getFile();
-  t.checkStatus();
-  cout << t.toString() << endl;
+  // The first server has done some work
+  cout << "First server:" << endl;
+  workdaemon::WorkDaemonClient client1(protocol1);
+  transport1->open();
+  client1.bark("request1");
+  client1.stateString(state); 
+  cout << state << endl;
+  transport1->close();
 
+  // Tell the client about both servers
+  PartitionGrabber pg(1, "snake");
+  Location l1 = {"localhost", 9091};
+  Location l2 = {"localhost", 9092};
+  pg.addLocation(l1);
+  pg.addLocation(l2);
 
-  transport->open();
-  client.bark("request2");
-  transport->close();
+  // Get the first server's data
+  pg.getMore();
 
-  t.checkStatus();
-  cout << t.toString() << endl;
-  t.getFile();
-  t.checkStatus();
-  cout << t.toString() << endl;
+  cout << "Grabber: " << pg.toString() << endl;
+
+  boost::shared_ptr<TSocket> socket2(new TSocket("localhost", 9092));
+  boost::shared_ptr<TTransport> transport2(new TBufferedTransport(socket2));
+  boost::shared_ptr<TProtocol> protocol2(new TBinaryProtocol(transport2));
+
+  // The second server has done some work
+  cout << "Second server:" << endl;
+  workdaemon::WorkDaemonClient client2(protocol2);
+  transport2->open();
+  client2.bark("request2");  
+  client2.stateString(state); 
+  cout << state << endl;
+
+  // Get the second server's data
+  pg.getMore();
+  pg.getMore();
+  cout << "Grabber: " << pg.toString() << endl;
+
+  transport1->close();
+  transport2->close();
 	
   return 0;
 }
