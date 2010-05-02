@@ -208,7 +208,7 @@ void PartitionGrabber::addLocation(Location l){
 void PartitionGrabber::addLocations(vector<URL> l){
   for(vector<URL>::iterator it = l.begin();
       it != l.end(); it++){
-    Location loc = {*it, Location::default_port};
+    Location loc = {*it, WORKER_PORT};
     this->addLocation(loc);
   }
 }

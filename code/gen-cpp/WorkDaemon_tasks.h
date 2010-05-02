@@ -9,6 +9,8 @@
 #include "tbb/task.h"
 #include "tbb/tbb_thread.h"
 
+#define WORKER_PORT 9090
+
 using namespace workdaemon;
 using namespace tbb;
 using namespace std;

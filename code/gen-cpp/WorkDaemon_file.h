@@ -74,8 +74,6 @@ struct Location{
   string ip;
   unsigned int port;
 
-  static const int default_port = 9090;
-
   friend bool operator<(Location const& lhs, Location const& rhs)
   {
     return make_pair(lhs.ip, lhs.port) < make_pair(rhs.ip, rhs.port);
