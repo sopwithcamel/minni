@@ -21,10 +21,21 @@ using namespace workdaemon;
 using namespace tbb;
 using namespace std;
 
-
 // Statuses
 namespace transferstatus {enum {DNE, READY, BLOCKED, DONE};}
 namespace partstatus {enum {AVAILABLE, BLOCKED, DONE};}
+namespace jobstatus {enum {DNE, INPROGRESS, DONE, DONE_AND_REPORTED, DEAD, DEAD_AND_REPORTED};}
+namespace jobkind {enum {NIL, MAPPER, REDUCER};}
+
+template <class T>
+struct HashCompare {
+  static size_t hash( const T& x){
+    return (size_t) x;
+  }
+  static bool equal( const T& x, const T& y ){
+    return x == y;
+  }
+};
 
 typedef unsigned long Length;
 struct File{

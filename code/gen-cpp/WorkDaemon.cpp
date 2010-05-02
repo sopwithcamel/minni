@@ -473,17 +473,24 @@ uint32_t WorkDaemon_startMapper_args::read(::apache::thrift::protocol::TProtocol
         }
         break;
       case 2:
-        if (ftype == ::apache::thrift::protocol::T_STRING) {
-          xfer += iprot->readString(this->inFile);
-          this->__isset.inFile = true;
-        } else {
-          xfer += iprot->skip(ftype);
-        }
-        break;
-      case 3:
-        if (ftype == ::apache::thrift::protocol::T_I64) {
-          xfer += iprot->readI64(this->cid);
-          this->__isset.cid = true;
+        if (ftype == ::apache::thrift::protocol::T_MAP) {
+          {
+            this->prop.clear();
+            uint32_t _size15;
+            ::apache::thrift::protocol::TType _ktype16;
+            ::apache::thrift::protocol::TType _vtype17;
+            iprot->readMapBegin(_ktype16, _vtype17, _size15);
+            uint32_t _i19;
+            for (_i19 = 0; _i19 < _size15; ++_i19)
+            {
+              std::string _key20;
+              xfer += iprot->readString(_key20);
+              std::string& _val21 = this->prop[_key20];
+              xfer += iprot->readString(_val21);
+            }
+            iprot->readMapEnd();
+          }
+          this->__isset.prop = true;
         } else {
           xfer += iprot->skip(ftype);
         }
@@ -506,11 +513,17 @@ uint32_t WorkDaemon_startMapper_args::write(::apache::thrift::protocol::TProtoco
   xfer += oprot->writeFieldBegin("jid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64(this->jid);
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("inFile", ::apache::thrift::protocol::T_STRING, 2);
-  xfer += oprot->writeString(this->inFile);
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("cid", ::apache::thrift::protocol::T_I64, 3);
-  xfer += oprot->writeI64(this->cid);
+  xfer += oprot->writeFieldBegin("prop", ::apache::thrift::protocol::T_MAP, 2);
+  {
+    xfer += oprot->writeMapBegin(::apache::thrift::protocol::T_STRING, ::apache::thrift::protocol::T_STRING, this->prop.size());
+    std::map<std::string, std::string> ::const_iterator _iter22;
+    for (_iter22 = this->prop.begin(); _iter22 != this->prop.end(); ++_iter22)
+    {
+      xfer += oprot->writeString(_iter22->first);
+      xfer += oprot->writeString(_iter22->second);
+    }
+    xfer += oprot->writeMapEnd();
+  }
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -523,11 +536,17 @@ uint32_t WorkDaemon_startMapper_pargs::write(::apache::thrift::protocol::TProtoc
   xfer += oprot->writeFieldBegin("jid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64((*(this->jid)));
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("inFile", ::apache::thrift::protocol::T_STRING, 2);
-  xfer += oprot->writeString((*(this->inFile)));
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("cid", ::apache::thrift::protocol::T_I64, 3);
-  xfer += oprot->writeI64((*(this->cid)));
+  xfer += oprot->writeFieldBegin("prop", ::apache::thrift::protocol::T_MAP, 2);
+  {
+    xfer += oprot->writeMapBegin(::apache::thrift::protocol::T_STRING, ::apache::thrift::protocol::T_STRING, (*(this->prop)).size());
+    std::map<std::string, std::string> ::const_iterator _iter23;
+    for (_iter23 = (*(this->prop)).begin(); _iter23 != (*(this->prop)).end(); ++_iter23)
+    {
+      xfer += oprot->writeString(_iter23->first);
+      xfer += oprot->writeString(_iter23->second);
+    }
+    xfer += oprot->writeMapEnd();
+  }
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -563,17 +582,24 @@ uint32_t WorkDaemon_startReducer_args::read(::apache::thrift::protocol::TProtoco
         }
         break;
       case 2:
-        if (ftype == ::apache::thrift::protocol::T_I64) {
-          xfer += iprot->readI64(this->pid);
-          this->__isset.pid = true;
-        } else {
-          xfer += iprot->skip(ftype);
-        }
-        break;
-      case 3:
-        if (ftype == ::apache::thrift::protocol::T_STRING) {
-          xfer += iprot->readString(this->outFile);
-          this->__isset.outFile = true;
+        if (ftype == ::apache::thrift::protocol::T_MAP) {
+          {
+            this->prop.clear();
+            uint32_t _size24;
+            ::apache::thrift::protocol::TType _ktype25;
+            ::apache::thrift::protocol::TType _vtype26;
+            iprot->readMapBegin(_ktype25, _vtype26, _size24);
+            uint32_t _i28;
+            for (_i28 = 0; _i28 < _size24; ++_i28)
+            {
+              std::string _key29;
+              xfer += iprot->readString(_key29);
+              std::string& _val30 = this->prop[_key29];
+              xfer += iprot->readString(_val30);
+            }
+            iprot->readMapEnd();
+          }
+          this->__isset.prop = true;
         } else {
           xfer += iprot->skip(ftype);
         }
@@ -596,11 +622,17 @@ uint32_t WorkDaemon_startReducer_args::write(::apache::thrift::protocol::TProtoc
   xfer += oprot->writeFieldBegin("jid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64(this->jid);
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("pid", ::apache::thrift::protocol::T_I64, 2);
-  xfer += oprot->writeI64(this->pid);
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("outFile", ::apache::thrift::protocol::T_STRING, 3);
-  xfer += oprot->writeString(this->outFile);
+  xfer += oprot->writeFieldBegin("prop", ::apache::thrift::protocol::T_MAP, 2);
+  {
+    xfer += oprot->writeMapBegin(::apache::thrift::protocol::T_STRING, ::apache::thrift::protocol::T_STRING, this->prop.size());
+    std::map<std::string, std::string> ::const_iterator _iter31;
+    for (_iter31 = this->prop.begin(); _iter31 != this->prop.end(); ++_iter31)
+    {
+      xfer += oprot->writeString(_iter31->first);
+      xfer += oprot->writeString(_iter31->second);
+    }
+    xfer += oprot->writeMapEnd();
+  }
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -613,11 +645,17 @@ uint32_t WorkDaemon_startReducer_pargs::write(::apache::thrift::protocol::TProto
   xfer += oprot->writeFieldBegin("jid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64((*(this->jid)));
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("pid", ::apache::thrift::protocol::T_I64, 2);
-  xfer += oprot->writeI64((*(this->pid)));
-  xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("outFile", ::apache::thrift::protocol::T_STRING, 3);
-  xfer += oprot->writeString((*(this->outFile)));
+  xfer += oprot->writeFieldBegin("prop", ::apache::thrift::protocol::T_MAP, 2);
+  {
+    xfer += oprot->writeMapBegin(::apache::thrift::protocol::T_STRING, ::apache::thrift::protocol::T_STRING, (*(this->prop)).size());
+    std::map<std::string, std::string> ::const_iterator _iter32;
+    for (_iter32 = (*(this->prop)).begin(); _iter32 != (*(this->prop)).end(); ++_iter32)
+    {
+      xfer += oprot->writeString(_iter32->first);
+      xfer += oprot->writeString(_iter32->second);
+    }
+    xfer += oprot->writeMapEnd();
+  }
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -1136,14 +1174,14 @@ uint32_t WorkDaemon_reportCompletedJobs_args::read(::apache::thrift::protocol::T
         if (ftype == ::apache::thrift::protocol::T_LIST) {
           {
             this->done.clear();
-            uint32_t _size15;
-            ::apache::thrift::protocol::TType _etype18;
-            iprot->readListBegin(_etype18, _size15);
-            this->done.resize(_size15);
-            uint32_t _i19;
-            for (_i19 = 0; _i19 < _size15; ++_i19)
+            uint32_t _size33;
+            ::apache::thrift::protocol::TType _etype36;
+            iprot->readListBegin(_etype36, _size33);
+            this->done.resize(_size33);
+            uint32_t _i37;
+            for (_i37 = 0; _i37 < _size33; ++_i37)
             {
-              xfer += iprot->readString(this->done[_i19]);
+              xfer += iprot->readString(this->done[_i37]);
             }
             iprot->readListEnd();
           }
@@ -1170,10 +1208,10 @@ uint32_t WorkDaemon_reportCompletedJobs_args::write(::apache::thrift::protocol::
   xfer += oprot->writeFieldBegin("done", ::apache::thrift::protocol::T_LIST, 1);
   {
     xfer += oprot->writeListBegin(::apache::thrift::protocol::T_STRING, this->done.size());
-    std::vector<URL> ::const_iterator _iter20;
-    for (_iter20 = this->done.begin(); _iter20 != this->done.end(); ++_iter20)
+    std::vector<URL> ::const_iterator _iter38;
+    for (_iter38 = this->done.begin(); _iter38 != this->done.end(); ++_iter38)
     {
-      xfer += oprot->writeString((*_iter20));
+      xfer += oprot->writeString((*_iter38));
     }
     xfer += oprot->writeListEnd();
   }
@@ -1189,10 +1227,10 @@ uint32_t WorkDaemon_reportCompletedJobs_pargs::write(::apache::thrift::protocol:
   xfer += oprot->writeFieldBegin("done", ::apache::thrift::protocol::T_LIST, 1);
   {
     xfer += oprot->writeListBegin(::apache::thrift::protocol::T_STRING, (*(this->done)).size());
-    std::vector<URL> ::const_iterator _iter21;
-    for (_iter21 = (*(this->done)).begin(); _iter21 != (*(this->done)).end(); ++_iter21)
+    std::vector<URL> ::const_iterator _iter39;
+    for (_iter39 = (*(this->done)).begin(); _iter39 != (*(this->done)).end(); ++_iter39)
     {
-      xfer += oprot->writeString((*_iter21));
+      xfer += oprot->writeString((*_iter39));
     }
     xfer += oprot->writeListEnd();
   }
@@ -1357,20 +1395,19 @@ void WorkDaemonClient::recv_listStatus(std::map<JobID, Status> & _return)
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "listStatus failed: unknown result");
 }
 
-void WorkDaemonClient::startMapper(const JobID jid, const std::string& inFile, const ChunkID cid)
+void WorkDaemonClient::startMapper(const JobID jid, const Properties& prop)
 {
-  send_startMapper(jid, inFile, cid);
+  send_startMapper(jid, prop);
 }
 
-void WorkDaemonClient::send_startMapper(const JobID jid, const std::string& inFile, const ChunkID cid)
+void WorkDaemonClient::send_startMapper(const JobID jid, const Properties& prop)
 {
   int32_t cseqid = 0;
   oprot_->writeMessageBegin("startMapper", ::apache::thrift::protocol::T_CALL, cseqid);
 
   WorkDaemon_startMapper_pargs args;
   args.jid = &jid;
-  args.inFile = &inFile;
-  args.cid = &cid;
+  args.prop = &prop;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -1378,20 +1415,19 @@ void WorkDaemonClient::send_startMapper(const JobID jid, const std::string& inFi
   oprot_->getTransport()->writeEnd();
 }
 
-void WorkDaemonClient::startReducer(const JobID jid, const PartID pid, const std::string& outFile)
+void WorkDaemonClient::startReducer(const JobID jid, const Properties& prop)
 {
-  send_startReducer(jid, pid, outFile);
+  send_startReducer(jid, prop);
 }
 
-void WorkDaemonClient::send_startReducer(const JobID jid, const PartID pid, const std::string& outFile)
+void WorkDaemonClient::send_startReducer(const JobID jid, const Properties& prop)
 {
   int32_t cseqid = 0;
   oprot_->writeMessageBegin("startReducer", ::apache::thrift::protocol::T_CALL, cseqid);
 
   WorkDaemon_startReducer_pargs args;
   args.jid = &jid;
-  args.pid = &pid;
-  args.outFile = &outFile;
+  args.prop = &prop;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -1736,7 +1772,7 @@ void WorkDaemonProcessor::process_startMapper(int32_t seqid, ::apache::thrift::p
   iprot->getTransport()->readEnd();
 
   try {
-    iface_->startMapper(args.jid, args.inFile, args.cid);
+    iface_->startMapper(args.jid, args.prop);
   } catch (const std::exception& e) {
   }
   return;
@@ -1750,7 +1786,7 @@ void WorkDaemonProcessor::process_startReducer(int32_t seqid, ::apache::thrift::
   iprot->getTransport()->readEnd();
 
   try {
-    iface_->startReducer(args.jid, args.pid, args.outFile);
+    iface_->startReducer(args.jid, args.prop);
   } catch (const std::exception& e) {
   }
   return;
