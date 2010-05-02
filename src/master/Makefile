@@ -24,7 +24,7 @@ CFLAGS=-Wall $(INCLUDE) $(LIB)  $(LINK)
 CXX=g++
 THRIFT=thrift
 
-WORKER_DAEMON_STUFF=-I../../code/gen-cpp ../../code/gen-cpp/daemon_types.cpp ../../code/gen-cpp/daemon_constants.cpp ../../code/gen-cpp/WorkDaemon.cpp
+WORKER_DAEMON_STUFF=-I../../code/gen-cpp ../../code/gen-cpp/daemon_types.cpp ../../code/gen-cpp/daemon_constants.cpp ../../code/gen-cpp/WorkDaemon.cpp -I./
 
 all:
 	$(CXX) $(CFLAGS) gen-cpp/master_types.cpp gen-cpp/master_constants.cpp gen-cpp/Master.cpp gen-cpp/Master_Server.cpp -o server
@@ -42,7 +42,7 @@ tbb:
 	$(CXX) $(CFLAGS) tbbTest.cpp -o tbb
 
 test:
-	@$(CXX) $(CFLAGS) $(WORKER_DAEMON_STUFF) Master.cpp Node.cpp Driver.cpp Communicator.cpp -o driver \
+	@$(CXX) $(CFLAGS) $(WORKER_DAEMON_STUFF) Master.cpp Node.cpp example/Driver.cpp Communicator.cpp -o driver \
 	&& ./run_hdfs.sh ./driver \
 	&& rm driver \
 	&& echo "Tests Completed"
