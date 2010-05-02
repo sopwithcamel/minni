@@ -41,7 +41,7 @@ struct File{
     return lhs.name.compare(rhs.name) < 0;
   }
 
-  static const Length block_size = 10; 
+  static const Length block_size; 
 };
 
 

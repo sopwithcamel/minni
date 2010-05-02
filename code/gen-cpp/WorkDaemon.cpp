@@ -473,6 +473,14 @@ uint32_t WorkDaemon_startMapper_args::read(::apache::thrift::protocol::TProtocol
         }
         break;
       case 2:
+        if (ftype == ::apache::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->inFile);
+          this->__isset.inFile = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 3:
         if (ftype == ::apache::thrift::protocol::T_I64) {
           xfer += iprot->readI64(this->cid);
           this->__isset.cid = true;
@@ -498,7 +506,10 @@ uint32_t WorkDaemon_startMapper_args::write(::apache::thrift::protocol::TProtoco
   xfer += oprot->writeFieldBegin("jid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64(this->jid);
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("cid", ::apache::thrift::protocol::T_I64, 2);
+  xfer += oprot->writeFieldBegin("inFile", ::apache::thrift::protocol::T_STRING, 2);
+  xfer += oprot->writeString(this->inFile);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("cid", ::apache::thrift::protocol::T_I64, 3);
   xfer += oprot->writeI64(this->cid);
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
@@ -512,7 +523,10 @@ uint32_t WorkDaemon_startMapper_pargs::write(::apache::thrift::protocol::TProtoc
   xfer += oprot->writeFieldBegin("jid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64((*(this->jid)));
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("cid", ::apache::thrift::protocol::T_I64, 2);
+  xfer += oprot->writeFieldBegin("inFile", ::apache::thrift::protocol::T_STRING, 2);
+  xfer += oprot->writeString((*(this->inFile)));
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("cid", ::apache::thrift::protocol::T_I64, 3);
   xfer += oprot->writeI64((*(this->cid)));
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
@@ -550,8 +564,8 @@ uint32_t WorkDaemon_startReducer_args::read(::apache::thrift::protocol::TProtoco
         break;
       case 2:
         if (ftype == ::apache::thrift::protocol::T_I64) {
-          xfer += iprot->readI64(this->kid);
-          this->__isset.kid = true;
+          xfer += iprot->readI64(this->pid);
+          this->__isset.pid = true;
         } else {
           xfer += iprot->skip(ftype);
         }
@@ -582,8 +596,8 @@ uint32_t WorkDaemon_startReducer_args::write(::apache::thrift::protocol::TProtoc
   xfer += oprot->writeFieldBegin("jid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64(this->jid);
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("kid", ::apache::thrift::protocol::T_I64, 2);
-  xfer += oprot->writeI64(this->kid);
+  xfer += oprot->writeFieldBegin("pid", ::apache::thrift::protocol::T_I64, 2);
+  xfer += oprot->writeI64(this->pid);
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldBegin("outFile", ::apache::thrift::protocol::T_STRING, 3);
   xfer += oprot->writeString(this->outFile);
@@ -599,8 +613,8 @@ uint32_t WorkDaemon_startReducer_pargs::write(::apache::thrift::protocol::TProto
   xfer += oprot->writeFieldBegin("jid", ::apache::thrift::protocol::T_I64, 1);
   xfer += oprot->writeI64((*(this->jid)));
   xfer += oprot->writeFieldEnd();
-  xfer += oprot->writeFieldBegin("kid", ::apache::thrift::protocol::T_I64, 2);
-  xfer += oprot->writeI64((*(this->kid)));
+  xfer += oprot->writeFieldBegin("pid", ::apache::thrift::protocol::T_I64, 2);
+  xfer += oprot->writeI64((*(this->pid)));
   xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldBegin("outFile", ::apache::thrift::protocol::T_STRING, 3);
   xfer += oprot->writeString((*(this->outFile)));
@@ -1343,18 +1357,19 @@ void WorkDaemonClient::recv_listStatus(std::map<JobID, Status> & _return)
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "listStatus failed: unknown result");
 }
 
-void WorkDaemonClient::startMapper(const JobID jid, const ChunkID cid)
+void WorkDaemonClient::startMapper(const JobID jid, const std::string& inFile, const ChunkID cid)
 {
-  send_startMapper(jid, cid);
+  send_startMapper(jid, inFile, cid);
 }
 
-void WorkDaemonClient::send_startMapper(const JobID jid, const ChunkID cid)
+void WorkDaemonClient::send_startMapper(const JobID jid, const std::string& inFile, const ChunkID cid)
 {
   int32_t cseqid = 0;
   oprot_->writeMessageBegin("startMapper", ::apache::thrift::protocol::T_CALL, cseqid);
 
   WorkDaemon_startMapper_pargs args;
   args.jid = &jid;
+  args.inFile = &inFile;
   args.cid = &cid;
   args.write(oprot_);
 
@@ -1363,19 +1378,19 @@ void WorkDaemonClient::send_startMapper(const JobID jid, const ChunkID cid)
   oprot_->getTransport()->writeEnd();
 }
 
-void WorkDaemonClient::startReducer(const JobID jid, const PartID kid, const std::string& outFile)
+void WorkDaemonClient::startReducer(const JobID jid, const PartID pid, const std::string& outFile)
 {
-  send_startReducer(jid, kid, outFile);
+  send_startReducer(jid, pid, outFile);
 }
 
-void WorkDaemonClient::send_startReducer(const JobID jid, const PartID kid, const std::string& outFile)
+void WorkDaemonClient::send_startReducer(const JobID jid, const PartID pid, const std::string& outFile)
 {
   int32_t cseqid = 0;
   oprot_->writeMessageBegin("startReducer", ::apache::thrift::protocol::T_CALL, cseqid);
 
   WorkDaemon_startReducer_pargs args;
   args.jid = &jid;
-  args.kid = &kid;
+  args.pid = &pid;
   args.outFile = &outFile;
   args.write(oprot_);
 
@@ -1721,7 +1736,7 @@ void WorkDaemonProcessor::process_startMapper(int32_t seqid, ::apache::thrift::p
   iprot->getTransport()->readEnd();
 
   try {
-    iface_->startMapper(args.jid, args.cid);
+    iface_->startMapper(args.jid, args.inFile, args.cid);
   } catch (const std::exception& e) {
   }
   return;
@@ -1735,7 +1750,7 @@ void WorkDaemonProcessor::process_startReducer(int32_t seqid, ::apache::thrift::
   iprot->getTransport()->readEnd();
 
   try {
-    iface_->startReducer(args.jid, args.kid, args.outFile);
+    iface_->startReducer(args.jid, args.pid, args.outFile);
   } catch (const std::exception& e) {
   }
   return;

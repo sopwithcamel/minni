@@ -38,7 +38,10 @@ string TaskRecord::toString(){
 
 // Record that this new job is running
 void TaskRegistry::addJob(JobID jid, task * ptr, JobKind jk){
-  assert(!this->exists(jid));
+  if(this->exists(jid)){
+    assert(!this->exists(jid));
+    return;
+  }
   // Get the accessor
   TaskMap::accessor acc_task;
   this->task_map.insert(acc_task, jid);

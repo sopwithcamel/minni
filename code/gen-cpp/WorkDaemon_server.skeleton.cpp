@@ -42,12 +42,12 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
     printf("listStatus\n");
   }
 
-  void startMapper(const JobID jid, const ChunkID cid) {
+  void startMapper(const JobID jid, const std::string& inFile, const ChunkID cid) {
     // Your implementation goes here
     printf("startMapper\n");
   }
 
-  void startReducer(const JobID jid, const PartID kid, const std::string& outFile) {
+  void startReducer(const JobID jid, const PartID pid, const std::string& outFile) {
     // Your implementation goes here
     printf("startReducer\n");
   }

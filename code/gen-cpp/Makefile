@@ -5,9 +5,9 @@
 #OBJ = $(SRC:.cpp=.o)
 .SUFFIXES : .o .cpp
 
-CXX = gcc
+#CXX = gcc
 
-OS = LINUX
+OS=MAC
 
 #TBB
 TBB_LIB = -L$(TBB_DIR) -ltbb

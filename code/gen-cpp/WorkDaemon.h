@@ -9,8 +9,6 @@
 #include <TProcessor.h>
 #include "daemon_types.h"
 
-#define WORKER_PORT 9090
-
 namespace workdaemon {
 
 class WorkDaemonIf {
@@ -20,8 +18,8 @@ class WorkDaemonIf {
   virtual void stateString(std::string& _return) = 0;
   virtual void kill() = 0;
   virtual void listStatus(std::map<JobID, Status> & _return) = 0;
-  virtual void startMapper(const JobID jid, const ChunkID cid) = 0;
-  virtual void startReducer(const JobID jid, const PartID kid, const std::string& outFile) = 0;
+  virtual void startMapper(const JobID jid, const std::string& inFile, const ChunkID cid) = 0;
+  virtual void startReducer(const JobID jid, const PartID pid, const std::string& outFile) = 0;
   virtual void sendData(std::string& _return, const PartID kid, const BlockID bid) = 0;
   virtual Status partitionStatus(const PartID pid) = 0;
   virtual Count blockCount(const PartID pid) = 0;
@@ -43,10 +41,10 @@ class WorkDaemonNull : virtual public WorkDaemonIf {
   void listStatus(std::map<JobID, Status> & /* _return */) {
     return;
   }
-  void startMapper(const JobID /* jid */, const ChunkID /* cid */) {
+  void startMapper(const JobID /* jid */, const std::string& /* inFile */, const ChunkID /* cid */) {
     return;
   }
-  void startReducer(const JobID /* jid */, const PartID /* kid */, const std::string& /* outFile */) {
+  void startReducer(const JobID /* jid */, const PartID /* pid */, const std::string& /* outFile */) {
     return;
   }
   void sendData(std::string& /* _return */, const PartID /* kid */, const BlockID /* bid */) {
@@ -315,23 +313,27 @@ class WorkDaemon_listStatus_presult {
 class WorkDaemon_startMapper_args {
  public:
 
-  WorkDaemon_startMapper_args() : jid(0), cid(0) {
+  WorkDaemon_startMapper_args() : jid(0), inFile(""), cid(0) {
   }
 
   virtual ~WorkDaemon_startMapper_args() throw() {}
 
   JobID jid;
+  std::string inFile;
   ChunkID cid;
 
   struct __isset {
-    __isset() : jid(false), cid(false) {}
+    __isset() : jid(false), inFile(false), cid(false) {}
     bool jid;
+    bool inFile;
     bool cid;
   } __isset;
 
   bool operator == (const WorkDaemon_startMapper_args & rhs) const
   {
     if (!(jid == rhs.jid))
+      return false;
+    if (!(inFile == rhs.inFile))
       return false;
     if (!(cid == rhs.cid))
       return false;
@@ -355,6 +357,7 @@ class WorkDaemon_startMapper_pargs {
   virtual ~WorkDaemon_startMapper_pargs() throw() {}
 
   const JobID* jid;
+  const std::string* inFile;
   const ChunkID* cid;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
@@ -364,19 +367,19 @@ class WorkDaemon_startMapper_pargs {
 class WorkDaemon_startReducer_args {
  public:
 
-  WorkDaemon_startReducer_args() : jid(0), kid(0), outFile("") {
+  WorkDaemon_startReducer_args() : jid(0), pid(0), outFile("") {
   }
 
   virtual ~WorkDaemon_startReducer_args() throw() {}
 
   JobID jid;
-  PartID kid;
+  PartID pid;
   std::string outFile;
 
   struct __isset {
-    __isset() : jid(false), kid(false), outFile(false) {}
+    __isset() : jid(false), pid(false), outFile(false) {}
     bool jid;
-    bool kid;
+    bool pid;
     bool outFile;
   } __isset;
 
@@ -384,7 +387,7 @@ class WorkDaemon_startReducer_args {
   {
     if (!(jid == rhs.jid))
       return false;
-    if (!(kid == rhs.kid))
+    if (!(pid == rhs.pid))
       return false;
     if (!(outFile == rhs.outFile))
       return false;
@@ -408,7 +411,7 @@ class WorkDaemon_startReducer_pargs {
   virtual ~WorkDaemon_startReducer_pargs() throw() {}
 
   const JobID* jid;
-  const PartID* kid;
+  const PartID* pid;
   const std::string* outFile;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
@@ -773,10 +776,10 @@ class WorkDaemonClient : virtual public WorkDaemonIf {
   void listStatus(std::map<JobID, Status> & _return);
   void send_listStatus();
   void recv_listStatus(std::map<JobID, Status> & _return);
-  void startMapper(const JobID jid, const ChunkID cid);
-  void send_startMapper(const JobID jid, const ChunkID cid);
-  void startReducer(const JobID jid, const PartID kid, const std::string& outFile);
-  void send_startReducer(const JobID jid, const PartID kid, const std::string& outFile);
+  void startMapper(const JobID jid, const std::string& inFile, const ChunkID cid);
+  void send_startMapper(const JobID jid, const std::string& inFile, const ChunkID cid);
+  void startReducer(const JobID jid, const PartID pid, const std::string& outFile);
+  void send_startReducer(const JobID jid, const PartID pid, const std::string& outFile);
   void sendData(std::string& _return, const PartID kid, const BlockID bid);
   void send_sendData(const PartID kid, const BlockID bid);
   void recv_sendData(std::string& _return);
@@ -880,17 +883,17 @@ class WorkDaemonMultiface : virtual public WorkDaemonIf {
     }
   }
 
-  void startMapper(const JobID jid, const ChunkID cid) {
+  void startMapper(const JobID jid, const std::string& inFile, const ChunkID cid) {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
-      ifaces_[i]->startMapper(jid, cid);
+      ifaces_[i]->startMapper(jid, inFile, cid);
     }
   }
 
-  void startReducer(const JobID jid, const PartID kid, const std::string& outFile) {
+  void startReducer(const JobID jid, const PartID pid, const std::string& outFile) {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
-      ifaces_[i]->startReducer(jid, kid, outFile);
+      ifaces_[i]->startReducer(jid, pid, outFile);
     }
   }
 

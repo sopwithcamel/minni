@@ -69,12 +69,13 @@ public:
   }
 
   // Scans the status map and sees if there is anything new to report to the master
+  // Will either be jobstatus::DONE or jobstatus::DEAD
   void listStatus(map<JobID, Status> & _return) {
     task_reg.getReport(_return);
     return;
   }
 	
-  void startMapper(const JobID jid, const ChunkID cid) {
+  void startMapper(const JobID jid, const string& infile, const ChunkID cid) {
     assert(!task_reg.exists(jid));
     // 1) Allocate the mapper task
     MapperTask& t = *new(root->allocate_additional_child_of(*root)) 

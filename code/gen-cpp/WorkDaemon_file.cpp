@@ -6,6 +6,8 @@
 
 // File
 
+const Length File::block_size = 10;
+
 File::File(JobID j, PartID p, string n): 
   jid(j), pid(p), name(n){
   ifstream file (this->name.c_str(), ios::in|ios::ate);
@@ -78,7 +80,7 @@ Count LocalFileRegistry::blocks(const PartID p) const{
 void LocalFileRegistry::recordComplete(const JobID j, const PartID p, const string n){
   NameMap::accessor acc_name;
   this->name_map.insert(acc_name,p);
-  if(acc_name->second.count(n) == 0){
+  if(acc_name->second.count(n) != 0){
     assert(acc_name->second.count(n) == 0);
     return;
   }
@@ -196,7 +198,10 @@ PartitionGrabber::PartitionGrabber(PartID p, string o): pid(p), outfile(o){}
 
 // Add a new node to what we think is done
 void PartitionGrabber::addLocation(Location l){
-  assert(locations.count(l) == 0);
+  if(locations.count(l) != 0){
+    assert(locations.count(l) == 0);
+    return;
+  }
   transfers.push_back(Transfer(pid, l, outfile));
 }
 
