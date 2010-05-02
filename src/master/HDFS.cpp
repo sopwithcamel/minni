@@ -46,10 +46,17 @@ uint64_t HDFS::getNumChunks(string path)
 
 void HDFS::getChunkLocations(string path, ChunkID cid, vector<string*> & _return)
 {
-	/* dynamically size 2-d array, last pos is 0 */
-	char*** 2dArray = char*** hdfsGetHosts(hdfsFS fs, const char* path, 
-            tOffset start, tOffset length);
-	
+	/* dynamically size 2-d array, last pos is NULL */
+	char*** 2dArray = hdfsGetHosts(fs, path.c_str(), cid*getChunkSize(path), getChunkSize(path));
+
+	while (2dArray != NULL)
+	{
+		if (strtoul(2dArray[0][0]) == cid)
+		{
+			_return.push_back(new string(2dArray[0][1]));
+		}
+		2dArray++;
+	}
 }
 
 bool HDFS::createFile(string path)
