@@ -84,7 +84,7 @@ public:
     cout << id++ << ": Starting Mapper..." << endl;
     assert(!task_reg.exists(jid));
     // 1) Allocate the mapper task
-    Properties * p_copy = new Properties(prop);
+    Properties * p_copy = new Properties(prop); // Deleted by ~Mapper
     MapperTask& t = *new(root->allocate_additional_child_of(*root)) 
       MapperTask(jid, p_copy, &task_reg, &file_reg);
 
@@ -100,7 +100,7 @@ public:
     cout << id++ << ": Starting Reducer..." << endl;
     assert(!task_reg.exists(jid));
     // 1) Allocate the mapper task
-    Properties * p_copy = new Properties(prop);
+    Properties * p_copy = new Properties(prop); // Deleted by ~Reducer
     ReducerTask& t = *new(root->allocate_additional_child_of(*root)) 
       ReducerTask(jid, p_copy, &task_reg, &grab_map);
 
