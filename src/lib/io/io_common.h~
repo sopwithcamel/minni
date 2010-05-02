@@ -1,0 +1,20 @@
+#ifndef IO_COMMON_H
+#define IO_COMMON_H
+
+#include <string>
+#include <vector>
+
+
+namespace LWMR
+{
+
+  class KFSClient
+  {
+  public:
+    KFSClient (string IP, uint16_t port);
+    readBlock (unsigned int block_id);
+  }
+
+}
+
+#endif

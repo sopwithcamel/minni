@@ -1,0 +1,5 @@
+1) Building libhdfs
+	# Reference URL:
+	# http://www.mail-archive.com/common-user@hadoop.apache.org/msg01812.html
+	# This line compiles it!	
+	JAVA_HOME=/usr/lib/jvm/default-java ant compile -Dcompile.c++=true -Dlibhdfs=true

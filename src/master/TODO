@@ -14,3 +14,37 @@ Master Server
 5) Assign reduce jobs to nodes
 6) Poll on statuses
 7) Once job completes, print out stats to user
+
+8) MapReduceSpecification spec
+	+ add_input() factory for MapReduceInput objects
+	+ output() factory for MapReduceOutput objects
+	+ set_machines(int);
+	+ set_map_megabytes(#);
+	+ set_reduce_megabytes(int);
+
+9) MapReduceInput
+	+ set_format("text"); dummy for now?
+	+ set_filepattern(argv[i]); dummy for now?
+	+ set_mapper_class("WordCounter");
+
+10) MapReduceOutput
+	+ set_filebase("/gfs/..."); register output dir in HDFS
+	+ set_format("text"); dummy for now?
+	+ set_reduced_class("Adder");
+	+ set_combiner_class("Adder");
+	+ set_partial_aggregation("??");
+	+ set_singleton_aggregation("??");
+
+11) MapReduceResult -- struct
+	+ counters
+	+ time taken
+	+ number of machines used
+	+ etc. ???
+
+Future Work
+-----------------
+
+1) More abstractions offered to the user
+2) XML Logging of the entire system, centralized into the HDFS
+3) Load system configuration from XML
+	- Configuration Editor
