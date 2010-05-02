@@ -10,6 +10,7 @@
 #include "tbb/concurrent_hash_map.h"
 #include "tbb/task.h"
 #include "tbb/tbb_thread.h"
+#include "tbb/spin_mutex.h"
 
 #include <transport/TSocket.h>
 #include <transport/TBufferTransports.h>
@@ -105,11 +106,30 @@ class PartitionGrabber{
 
  public:
   PartitionGrabber(PartID p = -1, string o ="");
+  void setValues(PartID p, string o);
   void addLocation(Location l); // Adds a new location with data
-  void addLocations(vector<URL> u);
+  void addLocations(const vector<URL> u);
+  void addLocations(const set<URL> u);
   void getMore(); // Gets as much of a partition as possible
   string toString();
 };
 
 typedef concurrent_hash_map<PartID, PartitionGrabber, 
   HashCompare<PartID> > GrabberMap;
+typedef spin_mutex Mutex;
+
+class GrabberRegistry{
+ private:
+  GrabberMap grab_map;
+  set<URL> urls;
+  Mutex mutex;
+  
+  
+ public:
+  GrabberRegistry();
+  void addLocations(const vector<URL> u);
+  void getMore(PartID pid);
+  string toString();
+};
+
+string local_file(PartID pid);

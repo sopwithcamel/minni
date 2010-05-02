@@ -65,12 +65,12 @@ class ReducerTask: public task{
  public:	
   JobID jid;
   TaskRegistry * tasks;
-  GrabberMap * grab;
+  GrabberRegistry * grab;
   Properties * prop;
   ReducerTask(JobID jid_, 
 	      Properties * p,
 	      TaskRegistry * t,
-	      GrabberMap * g);
+	      GrabberRegistry * g);
   ~ReducerTask();
   task * execute();
 };

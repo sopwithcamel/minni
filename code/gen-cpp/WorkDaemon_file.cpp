@@ -196,17 +196,31 @@ string Transfer::toString(){
 
 PartitionGrabber::PartitionGrabber(PartID p, string o): pid(p), outfile(o){}
 
+void PartitionGrabber::setValues(PartID p, string o){
+  pid =p;
+  outfile = o;
+}
+
 // Add a new node to what we think is done
 void PartitionGrabber::addLocation(Location l){
   if(locations.count(l) != 0){
     assert(locations.count(l) == 0);
     return;
   }
+  locations.insert(l);
   transfers.push_back(Transfer(pid, l, outfile));
 }
 
 void PartitionGrabber::addLocations(const vector<URL> l){
   for(vector<URL>::const_iterator it = l.begin();
+      it != l.end(); it++){
+    Location loc = {*it, WORKER_PORT};
+    this->addLocation(loc);
+  }
+}
+
+void PartitionGrabber::addLocations(const set<URL> l){
+  for(set<URL>::const_iterator it = l.begin();
       it != l.end(); it++){
     Location loc = {*it, WORKER_PORT};
     this->addLocation(loc);
@@ -226,11 +240,68 @@ void PartitionGrabber::getMore(){
 
 string PartitionGrabber::toString(){
   stringstream ss;
-  ss << "[" << endl;
+  ss << "Location = {";
+  bool first = true;
+  for(set<Location>::iterator it = locations.begin();
+      it != locations.end(); it++){
+    if(!first){
+      ss << ", ";
+    }
+    ss << it->ip;
+    first = false;
+  }
+  ss << "}" << endl;
+  ss << "Trans[" << endl;
   for(vector<Transfer>::iterator it = transfers.begin();
       it != transfers.end(); it++){
     ss << "\t" << it->toString() << endl;
   }
   ss << "]" << endl;
+  return ss.str();
+}
+
+GrabberRegistry::GrabberRegistry(){}
+void GrabberRegistry::addLocations(const vector<URL> u){
+  Mutex::scoped_lock lock(mutex);
+  urls.insert(u.begin(), u.end());
+  GrabberMap::range_type range = grab_map.range();
+  for(GrabberMap::iterator it = range.begin();
+      it != range.end(); it++){
+    it->second.addLocations(u);
+  }
+}
+void GrabberRegistry::getMore(PartID pid){
+  GrabberMap::accessor acc_grab;
+  bool found = grab_map.find(acc_grab, pid);
+  if(!found){
+    Mutex::scoped_lock lock(mutex);
+    grab_map.insert(acc_grab, pid);
+    acc_grab->second.setValues(pid, local_file(pid));
+    acc_grab->second.addLocations(urls);
+  }
+  acc_grab->second.getMore();
+}
+string GrabberRegistry::toString(){
+  stringstream ss;
+  bool first = true;
+  ss << "URLs = {";
+  for(set<URL>::iterator it = urls.begin(); it != urls.end(); it++){
+    if(!first){
+      ss << ", ";
+    }
+    ss << *it;
+    first = false;
+  }
+  ss << "}" << endl;
+  GrabberMap::range_type R = grab_map.range();
+  for(GrabberMap::iterator it = R.begin(); it != R.end(); it++){
+    ss << "\t" << it->first <<": "<< it->second.toString() << endl;
+  }
+  return ss.str();
+}
+
+string local_file(PartID pid){
+  stringstream ss;
+  ss << "localfile_" << pid;
   return ss.str();
 }

@@ -24,12 +24,13 @@ MapperTask::~MapperTask(){
 
 task * MapperTask::execute(){
   tasks->setStatus(jid, jobstatus::DONE);
+  return NULL;
 }
 
 ReducerTask::ReducerTask(JobID jid_, 
 			 Properties * p,
 			 TaskRegistry * t,
-			 GrabberMap * g):
+			 GrabberRegistry * g):
   jid(jid_), prop(p), tasks(t),grab(g){}
 
 ReducerTask::~ReducerTask(){
@@ -41,6 +42,7 @@ ReducerTask::~ReducerTask(){
 
 task * ReducerTask::execute(){
   tasks->setStatus(jid, jobstatus::DONE);
+  return NULL;
 }
 
 TaskRecord::TaskRecord(JobID j, task* t, JobKind k, Status s){
@@ -50,9 +52,10 @@ TaskRecord::TaskRecord(JobID j, task* t, JobKind k, Status s){
   status = s;
 }
 
+
 string TaskRecord::toString(){
   stringstream ss;
-  ss << "(" << jid << ", " << kind << ", " << status << ")";
+  ss << "(j" << jid << ", k" << kind << ", s" << status << ")";
   return ss.str();
 }
 
