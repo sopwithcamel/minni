@@ -6,7 +6,7 @@ Master::Master()
 
 Master::~Master()
 {
-	vector<string*>::iterator nodesIter;
+	vector<Node*>::iterator nodesIter;
 	for (nodesIter = nodes.begin() ; nodesIter < nodes.end(); nodesIter++ )
 	{
 		delete *nodesIter;
@@ -16,102 +16,93 @@ Master::~Master()
 void Master::loadNodesFile(string fileName)
 {
 	ifstream fileIn(fileName.c_str(), ifstream::in);
-	string* temp;
+	string* tempURL;
 
 	cout << "Reading Nodes File: " <<  fileName << endl;
 
 	while (!fileIn.eof())
 	{
-		temp = new string();
-		getline (fileIn,*temp);
-		if (!temp->empty() && (*temp).compare("\n") && (*temp).compare(""))
+		tempURL = new string();
+		getline (fileIn,*tempURL);
+		if (!tempURL->empty() && tempURL->compare("\n") && tempURL->compare(""))
 		{
-			nodes.push_back(temp);
-			cout << "New Node:\t" << *temp << endl;
+			nodes.push_back(new Node(tempURL));
+			cout << "New Node:\t" << *tempURL << endl;
 		}
 	}
 }
 
 void Master::sendMapCommand()
 {
-	vector<string*>::iterator nodesIter;
+	vector<Node*>::iterator nodesIter;
 	for (nodesIter = nodes.begin() ; nodesIter < nodes.end(); nodesIter++ )
 	{
-		cout << "Looping..." << endl;
-		cout  << "Sending Map To: " << *(*nodesIter) << endl;
-
-		TSocket* temp = new TSocket((*nodesIter)->c_str(), WORKER_PORT);
-		boost::shared_ptr<TSocket> socket(temp);
-
-		TBufferedTransport* temp1 = new TBufferedTransport(socket);
-		boost::shared_ptr<TTransport> transport(temp1);
-
-		TBinaryProtocol* temp2 = new TBinaryProtocol(transport);
-		boost::shared_ptr<TProtocol> protocol(temp2);
-
-		WorkDaemonClient client(protocol);
-		try {
-			transport->open();
-			client.startMapper(0,0);
-			transport->close();
-		} catch (TTransportException reason){
-			cout << "Caught Exception: Sending MAP."  << endl;
-		}
+		/* maps get even jid's */
+		(*nodesIter)->addMap(jidCounter*2,0,"/tmp/fs");
+		jidCounter++;
 	}
 }
 
 void Master::sendReduceCommand()
 {
-	vector<string*>::iterator nodesIter;
+	vector<Node*>::iterator nodesIter;
 	for (nodesIter = nodes.begin() ; nodesIter < nodes.end(); nodesIter++ )
 	{
-		cout << "Looping..." << endl;
-		cout  << "Sending Map To: " << *(*nodesIter) << endl;
-
-		TSocket* temp = new TSocket((*nodesIter)->c_str(), WORKER_PORT);
-		boost::shared_ptr<TSocket> socket(temp);
-
-		TBufferedTransport* temp1 = new TBufferedTransport(socket);
-		boost::shared_ptr<TTransport> transport(temp1);
-
-		TBinaryProtocol* temp2 = new TBinaryProtocol(transport);
-		boost::shared_ptr<TProtocol> protocol(temp2);
-
-		WorkDaemonClient client(protocol);
-		try {
-			transport->open();
-			client.startReducer(0,0,"/hdfs/tmp");
-			transport->close();
-		} catch (TTransportException reason){
-			cout << "Caught Exception: Sending REDUCE." << endl;
-		}
+		/* reduces get odd job id's */
+		(*nodesIter)->addReduce((jidCounter*2) + 1,0,"/tmp/fs");
+		jidCounter++;
 	}
 }
 
-void Master::checkStatus()
+bool Master::checkStatus()
 {
-	vector<string*>::iterator nodesIter;
+	vector<Node*>::iterator nodesIter;
+	map<JobID, Status> _return;
+	map<JobID, Status>::iterator mapIterator;
 	for (nodesIter = nodes.begin() ; nodesIter < nodes.end(); nodesIter++ )
 	{
-		cout << "Looping..." << endl;
-		cout  << "Sending Map To: " << *(*nodesIter) << endl;
-
-		TSocket* temp = new TSocket((*nodesIter)->c_str(), WORKER_PORT);
-		boost::shared_ptr<TSocket> socket(temp);
-
-		TBufferedTransport* temp1 = new TBufferedTransport(socket);
-		boost::shared_ptr<TTransport> transport(temp1);
-
-		TBinaryProtocol* temp2 = new TBinaryProtocol(transport);
-		boost::shared_ptr<TProtocol> protocol(temp2);
-
-		WorkDaemonClient client(protocol);
-		try {
-			transport->open();
-			//client.pulse(std::map<JobID, Status>);
-			transport->close();
-		} catch (TTransportException reason){
-			cout << "Caught Exception: Sending PULSE." << endl;
+		(*nodesIter)->checkStatus(_return);
+		/* loop thru, add to finished list if finished with a map-phase */
+		for ( mapIterator=_return.begin() ; mapIterator != _return.end(); mapIterator++ )
+		{
+			cout << (*mapIterator).first << " => " << (*mapIterator).second << endl;
+			if ((*mapIterator).first % 2 == 0) /* map */
+			{
+				if ((*mapIterator).second == jobstatus::DONE)
+				{
+					if ((*nodesIter)->removeMap((*mapIterator).first))
+					{
+						cout << "NODE[" << *((*nodesIter)->getURL()) << "] FINISHED ALL MAPS!" << endl;
+						mappers--;
+						finishedNodes.push_back(*((*nodesIter)->getURL()));
+					}
+				}
+			}
+			else /* reduce */
+			{
+				if ((*mapIterator).second == jobstatus::DONE)
+				{
+					if ((*nodesIter)->removeReduce((*mapIterator).first))
+					{
+						cout << "NODE[" << *((*nodesIter)->getURL()) << "] FINISHED ALL REDUCES!" << endl;
+						reducers--;
+						if (reducers == 0)
+						{
+							return true;
+						}
+					}
+				}
+			}
 		}
 	}
+	return false;
+}
+
+void Master::sendFinishedNodes()
+{
+	vector<Node*>::iterator nodesIter;
+	for (nodesIter = nodes.begin() ; nodesIter < nodes.end(); nodesIter++ )
+	{
+		(*nodesIter)->reportCompletedJobs(finishedNodes);
+	}	
 }
