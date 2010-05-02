@@ -19,9 +19,14 @@ class Master {
 		void loadNodesFile(string fileName);	/* load node names from file */
 		void sendMapCommand();			/* sends map command to all nodes */
 		void sendReduceCommand();			/* sends reduce command to all nodes */
-		void checkStatus();					/* poll all nodes for status */
+		bool checkStatus();					/* poll all nodes for status */
+		void sendFinishedNodes();			/* send list of finished URL's */
 	private:
-		vector<string*> nodes;			/* maintain string list of all node names */
+		vector<Node*> nodes;				/* maintain string list of all node names */
+		vector<string> finishedNodes;		/* string list of finished node URL's */
+		JobID jidCounter;					/* monotonically increasing universal job counter */
+		int64_t mappers;					/* count of active mappers */
+		int64_t reducers;					/* count of active reducers */
 };
 
 #endif
