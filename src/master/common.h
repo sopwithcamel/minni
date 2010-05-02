@@ -19,10 +19,9 @@ struct MapJob
 	{
 		ostringstream stringConverter;
 		stringConverter << cid;
-		prop["cid"] = stringConverter.str();
-		prop["fileIn"] = fileIn;
-		prop["SO_NAME"] = "";
-		prop["MAPPER"] = "";		
+		prop["CID"] = stringConverter.str();
+		prop["FILE_IN"] = fileIn;
+		prop["SO_NAME"] = "";		
 	}
 };
 
@@ -35,10 +34,9 @@ struct ReduceJob
 	{
 		ostringstream stringConverter;
 		stringConverter << pid;
-		prop["pid"] = stringConverter.str();
-		prop["fileOut"] = fileOut;
+		prop["PID"] = stringConverter.str();
+		prop["FILE_OUT"] = fileOut;
 		prop["SO_NAME"] = "";
-		prop["REDUCER"] = "";
 	}
 };
 
