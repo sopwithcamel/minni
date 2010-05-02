@@ -38,6 +38,8 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
   LocalFileRegistry file_reg;
   GrabberMap grab_map;
 
+  unsigned int id;
+
   empty_task * root;
 
 public:
@@ -49,6 +51,7 @@ public:
   }
 	
   void bark(const string& s) {
+    cout << id++ << ": Barking..." << endl;
     //Your implementation goes here
     if(s.compare("request1") == 0){
       file_reg.recordComplete(1,1,"moose");
@@ -61,6 +64,7 @@ public:
   }
 
   void stateString(string &_return){
+    cout << id++ << ": Returning state string..." << endl;
     stringstream ss;
     ss << "Task Reg: " << task_reg.toString() << endl;
     ss << "File Reg: " <<  file_reg.toString() << endl;
@@ -71,15 +75,18 @@ public:
   // Scans the status map and sees if there is anything new to report to the master
   // Will either be jobstatus::DONE or jobstatus::DEAD
   void listStatus(map<JobID, Status> & _return) {
+    cout << id++ << ": Listing Status..." << endl;
     task_reg.getReport(_return);
     return;
   }
 	
-  void startMapper(const JobID jid, const string& infile, const ChunkID cid) {
+  void startMapper(const JobID jid, const Properties& prop) {
+    cout << id++ << ": Starting Mapper..." << endl;
     assert(!task_reg.exists(jid));
     // 1) Allocate the mapper task
+    Properties * p_copy = new Properties(prop);
     MapperTask& t = *new(root->allocate_additional_child_of(*root)) 
-      MapperTask(jid,cid,&task_reg);
+      MapperTask(jid, p_copy, &task_reg, &file_reg);
 
     // 2) Add to registry
     task_reg.addJob(jid, &t, jobkind::MAPPER);
@@ -89,11 +96,13 @@ public:
 		
   }
 	
-  void startReducer(const JobID jid, const PartID pid, const string& outFile) {
+  void startReducer(const JobID jid, const Properties& prop) {
+    cout << id++ << ": Starting Reducer..." << endl;
     assert(!task_reg.exists(jid));
     // 1) Allocate the mapper task
+    Properties * p_copy = new Properties(prop);
     ReducerTask& t = *new(root->allocate_additional_child_of(*root)) 
-      ReducerTask(jid,pid, "NULL" ,&task_reg);
+      ReducerTask(jid, p_copy, &task_reg, &grab_map);
 
     // 2) Add to registry
     task_reg.addJob(jid, &t, jobkind::REDUCER);
@@ -101,9 +110,9 @@ public:
 
     // 3) Get files
     //Scene missing
-    GrabberMap::accessor acc_grab;
-    grab_map.insert(acc_grab,pid);
-    acc_grab->second = PartitionGrabber(pid, "Somefile_" + pid);
+    //GrabberMap::accessor acc_grab;
+    //grab_map.insert(acc_grab,pid);
+    //acc_grab->second = PartitionGrabber(pid, "Somefile_" + pid);
 
     // 4) Spawn
     root->spawn(t);
@@ -113,11 +122,13 @@ public:
   // FileRegistry deals with the sender side, PartitionGrabber deals with
   // the reciever side
   void sendData(string & _return, const PartID pid, const BlockID bid) {
+    cout << id++ << ": Sending data..." << endl;
     file_reg.bufferData(_return, pid, bid);
   }
 
   // Are we still waiting on some mappers?
   Status partitionStatus(const PartID pid) {
+    cout << id++ << ": Partition status..." << endl;
     if(true || task_reg.mapper_still_running()){
       return jobstatus::INPROGRESS;
     }
@@ -126,10 +137,12 @@ public:
 
   // How many blocks do we know about?
   Count blockCount(const PartID pid){
+    cout << id++ << ": Counting blocks..." << endl;
     return file_reg.blocks(pid);
   }
 
   void reportCompletedJobs(const vector<URL> & done){
+    cout << id++ << ": Reporting..." << endl;
     GrabberMap::range_type range = grab_map.range();
     for(GrabberMap::iterator it = range.begin();
 	it != range.end(); it++){
@@ -138,6 +151,7 @@ public:
   }
 
   void kill(){
+    cout << id++ << ": Kill..." << endl;
     // Crash the node.
     exit(-1);
   }

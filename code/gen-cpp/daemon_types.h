@@ -28,6 +28,8 @@ typedef int32_t Count;
 
 typedef std::string URL;
 
+typedef std::map<std::string, std::string>  Properties;
+
 } // namespace
 
 #endif

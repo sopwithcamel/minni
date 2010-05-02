@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include "WorkDaemon.h"
+#include "WorkDaemon_file.h"
 
 // TBB includes
 #include "tbb/concurrent_hash_map.h"
@@ -14,20 +15,6 @@
 using namespace workdaemon;
 using namespace tbb;
 using namespace std;
-
-// Status
-namespace jobstatus {enum {DNE, INPROGRESS, DONE, DONE_AND_REPORTED, DEAD, DEAD_AND_REPORTED};}
-namespace jobkind {enum {NIL, MAPPER, REDUCER};}
-
-template <class T>
-struct HashCompare {
-  static size_t hash( const T& x){
-    return (size_t) x;
-  }
-  static bool equal( const T& x, const T& y ){
-    return x == y;
-  }
-};
 
 
 // Task Registry
@@ -69,19 +56,28 @@ class TaskRegistry{
 class MapperTask: public task{
  public:	
   JobID jid;
-  ChunkID cid;
   TaskRegistry * tasks;
-  MapperTask(JobID jid_, ChunkID cid_, TaskRegistry * tasks_);
+  LocalFileRegistry * files;
+  Properties * prop;
+  MapperTask(JobID jid_, 
+	     Properties * p, 
+	     TaskRegistry * t,
+	     LocalFileRegistry * f);
+  ~MapperTask();
   task * execute();
 };
 
 class ReducerTask: public task{
  public:	
   JobID jid;
-  PartID pid;
-  string outfile;
   TaskRegistry * tasks;
-  ReducerTask(JobID jid_, PartID pid_, string outfile_, TaskRegistry * tasks_);
+  GrabberMap * grab;
+  Properties * prop;
+  ReducerTask(JobID jid_, 
+	      Properties * p,
+	      TaskRegistry * t,
+	      GrabberMap * g);
+  ~ReducerTask();
   task * execute();
 };
 

@@ -9,15 +9,31 @@
 
 using namespace std;
 
-MapperTask::MapperTask(JobID jid_, ChunkID cid_, TaskRegistry * tasks_):
-  jid(jid_), cid(cid_), tasks(tasks_){}
+MapperTask::MapperTask(JobID jid_, 
+		       Properties * p, 
+		       TaskRegistry * t,
+		       LocalFileRegistry * f):
+  jid(jid_), prop(p), tasks(t), files(f){}
+
+MapperTask::~MapperTask(){
+  delete prop;
+  prop = NULL;
+}
 
 task * MapperTask::execute(){
   tasks->setStatus(jid, jobstatus::DONE);
 }
 
-ReducerTask::ReducerTask(JobID jid_, PartID pid_, string outfile_, TaskRegistry * tasks_):
-  jid(jid_), pid(pid_), outfile(outfile_), tasks(tasks_){}
+ReducerTask::ReducerTask(JobID jid_, 
+			 Properties * p,
+			 TaskRegistry * t,
+			 GrabberMap * g):
+  jid(jid_), prop(p), tasks(t),grab(g){}
+
+ReducerTask::~ReducerTask(){
+  delete prop;
+  prop = NULL;
+}
 
 task * ReducerTask::execute(){
   tasks->setStatus(jid, jobstatus::DONE);
