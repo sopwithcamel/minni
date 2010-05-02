@@ -36,7 +36,7 @@ using namespace std;
 class WorkDaemonHandler : virtual public WorkDaemonIf {
   TaskRegistry task_reg;
   LocalFileRegistry file_reg;
-  GrabberMap grab_map;
+  GrabberRegistry grab_reg;
 
   unsigned int id;
 
@@ -59,8 +59,8 @@ public:
     if(s.compare("request2") == 0){
       file_reg.recordComplete(2,1, "badger");
     }
+    cout << "Done" << endl;
 
-    printf("Finished: %s\n", s.c_str());
   }
 
   void stateString(string &_return){
@@ -68,7 +68,9 @@ public:
     stringstream ss;
     ss << "Task Reg: " << task_reg.toString() << endl;
     ss << "File Reg: " <<  file_reg.toString() << endl;
+    ss << "Grabber: " << grab_reg.toString() << endl;
     _return = ss.str();
+    cout << "Done" << endl;
     return;
   }
 
@@ -77,6 +79,7 @@ public:
   void listStatus(map<JobID, Status> & _return) {
     cout << id++ << ": Listing Status..." << endl;
     task_reg.getReport(_return);
+    cout << "Done" << endl;
     return;
   }
 	
@@ -87,13 +90,16 @@ public:
     Properties * p_copy = new Properties(prop); // Deleted by ~Mapper
     MapperTask& t = *new(root->allocate_additional_child_of(*root)) 
       MapperTask(jid, p_copy, &task_reg, &file_reg);
+    //empty_task& t = *new(root->allocate_additional_child_of(*root)) empty_task();
 
     // 2) Add to registry
     task_reg.addJob(jid, &t, jobkind::MAPPER);
 
+    
     // 3) Spawn
+    //root->increment_ref_count(2);
     root->spawn(t);
-		
+    cout << "Done" << endl;
   }
 	
   void startReducer(const JobID jid, const Properties& prop) {
@@ -102,7 +108,7 @@ public:
     // 1) Allocate the mapper task
     Properties * p_copy = new Properties(prop); // Deleted by ~Reducer
     ReducerTask& t = *new(root->allocate_additional_child_of(*root)) 
-      ReducerTask(jid, p_copy, &task_reg, &grab_map);
+      ReducerTask(jid, p_copy, &task_reg, &grab_reg);
 
     // 2) Add to registry
     task_reg.addJob(jid, &t, jobkind::REDUCER);
@@ -116,6 +122,7 @@ public:
 
     // 4) Spawn
     root->spawn(t);
+    cout << "Done" << endl;
   }
 	
   // RPC function for sending a small chunk of data.
@@ -124,12 +131,13 @@ public:
   void sendData(string & _return, const PartID pid, const BlockID bid) {
     cout << id++ << ": Sending data..." << endl;
     file_reg.bufferData(_return, pid, bid);
+    cout << "Done" << endl;
   }
 
   // Are we still waiting on some mappers?
   Status partitionStatus(const PartID pid) {
     cout << id++ << ": Partition status..." << endl;
-    if(true || task_reg.mapper_still_running()){
+    if(task_reg.mapper_still_running()){
       return jobstatus::INPROGRESS;
     }
     return jobstatus::DONE;
@@ -138,20 +146,21 @@ public:
   // How many blocks do we know about?
   Count blockCount(const PartID pid){
     cout << id++ << ": Counting blocks..." << endl;
+    cout << "Done" << endl;
     return file_reg.blocks(pid);
   }
 
   void reportCompletedJobs(const vector<URL> & done){
     cout << id++ << ": Reporting..." << endl;
-    GrabberMap::range_type range = grab_map.range();
-    for(GrabberMap::iterator it = range.begin();
-	it != range.end(); it++){
-      it->second.addLocations(done);
-    }
+    
+    grab_reg.addLocations(done);
+
+    cout << "Done" << endl;
   }
 
   void kill(){
     cout << id++ << ": Kill..." << endl;
+  
     // Crash the node.
     exit(-1);
   }
@@ -163,6 +172,7 @@ int main(int argc, char **argv) {
   if(argc == 2){
     port = atoi(argv[1]);
   }
+  cout << "--- Starting Minni ---" << endl;
   cout << "Port: " << port << endl;
   shared_ptr<WorkDaemonHandler> handler(new WorkDaemonHandler());
   shared_ptr<TProcessor> processor(new WorkDaemonProcessor(handler));
