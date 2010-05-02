@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <sstream>
 #include "WorkDaemon.h"
 #include "daemon_types.h"
 
@@ -12,19 +13,33 @@ using namespace std;
 struct MapJob
 {
 	JobID jid;
-	ChunkID cid;
 	Status stat;
-	string fileIn;
-	MapJob (JobID jid, ChunkID cid, Status stat, string fileIn) : jid(jid), cid(cid), stat(stat), fileIn(fileIn) {}
+	Properties prop;
+	MapJob (JobID jid, ChunkID cid, Status stat, string fileIn) : jid(jid), stat(stat)
+	{
+		ostringstream stringConverter;
+		stringConverter << cid;
+		prop["cid"] = stringConverter.str();
+		prop["fileIn"] = fileIn;
+		prop["SO_NAME"] = "";
+		prop["MAPPER"] = "";		
+	}
 };
 
 struct ReduceJob
 {
 	JobID jid;
-	PartID pid;
 	Status stat;
-	string fileOut;
-	ReduceJob (JobID jid, PartID pid, Status stat, string fileOut) : jid(jid), pid(pid), stat(stat), fileOut(fileOut) {}
+	Properties prop;
+	ReduceJob (JobID jid, PartID pid, Status stat, string fileOut) : jid(jid), stat(stat)
+	{
+		ostringstream stringConverter;
+		stringConverter << pid;
+		prop["pid"] = stringConverter.str();
+		prop["fileOut"] = fileOut;
+		prop["SO_NAME"] = "";
+		prop["REDUCER"] = "";
+	}
 };
 
 #endif

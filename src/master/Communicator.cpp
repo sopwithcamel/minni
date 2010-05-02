@@ -22,7 +22,7 @@ void Communicator::sendMap(MapJob map)
 
 	try {
 		transport->open();
-		client.startMapper(map.jid, map.fileIn, map.cid);
+		client.startMapper(map.jid, map.prop);
 		transport->close();
 	} catch (TTransportException reason){
 		cout << "Caught Exception: Sending MAP."  << endl;
@@ -46,7 +46,7 @@ void Communicator::sendReduce(ReduceJob reduce)
 
 	try {
 		transport->open();
-		client.startReducer(reduce.jid, reduce.pid, reduce.fileOut);
+		client.startReducer(reduce.jid, reduce.prop);
 		transport->close();
 	} catch (TTransportException reason){
 		cout << "Caught Exception: Sending REDUCE."  << endl;

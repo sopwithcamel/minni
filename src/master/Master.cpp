@@ -63,7 +63,14 @@ bool Master::checkStatus()
 	{
 		(*nodesIter)->checkStatus(_return);
 		/* loop thru, add to finished list if finished with a map-phase */
-		for ( mapIterator=_return.begin() ; mapIterator != _return.end(); mapIterator++ )
+		
+		if (_return.begin() == _return.end())
+		{
+			cout << "No status to report from " <<  *((*nodesIter)->getURL()) << endl;
+			continue;
+		}
+
+		for ( mapIterator = _return.begin(); mapIterator != _return.end(); mapIterator++ )
 		{
 			cout << (*mapIterator).first << " => " << (*mapIterator).second << endl;
 			if ((*mapIterator).first % 2 == 0) /* map */
@@ -76,6 +83,14 @@ bool Master::checkStatus()
 						mappers--;
 						finishedNodes.push_back(*((*nodesIter)->getURL()));
 					}
+					else
+					{
+						cout << "NODE[" << *((*nodesIter)->getURL()) << "] still has MAPS!" << endl;
+					}
+				}
+				else
+				{
+					cout << "Got MAP NOT DONE(" << (*mapIterator).second <<  ") job status from " << *((*nodesIter)->getURL()) << endl;
 				}
 			}
 			else /* reduce */
@@ -88,9 +103,14 @@ bool Master::checkStatus()
 						reducers--;
 						if (reducers == 0)
 						{
+							cout << "All reducers have now finished" << endl;
 							return true;
 						}
 					}
+				}
+				else
+				{
+					cout << "Got MAP NOT DONE(" << (*mapIterator).second <<  ") job status from " << *((*nodesIter)->getURL()) << endl;
 				}
 			}
 		}
