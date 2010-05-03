@@ -21,7 +21,10 @@ struct MapJob
 		stringConverter << cid;
 		prop["CID"] = stringConverter.str();
 		prop["FILE_IN"] = fileIn;
-		prop["SO_NAME"] = "";		
+		prop["SO_NAME"] = "";
+		prop["NUM_REDUCERS"] = "";
+		prop["DFS_MASTER"] = "";
+		prop["DFS_PORT"] = "";
 	}
 };
 
@@ -37,6 +40,8 @@ struct ReduceJob
 		prop["PID"] = stringConverter.str();
 		prop["FILE_OUT"] = fileOut;
 		prop["SO_NAME"] = "";
+		prop["DFS_MASTER"] = "";
+		prop["DFS_PORT"] = "";
 	}
 };
 
