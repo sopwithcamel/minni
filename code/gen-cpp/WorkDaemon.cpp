@@ -1240,6 +1240,54 @@ uint32_t WorkDaemon_reportCompletedJobs_pargs::write(::apache::thrift::protocol:
   return xfer;
 }
 
+uint32_t WorkDaemon_allMapsDone_args::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
+uint32_t WorkDaemon_allMapsDone_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("WorkDaemon_allMapsDone_args");
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t WorkDaemon_allMapsDone_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("WorkDaemon_allMapsDone_pargs");
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
 void WorkDaemonClient::bark(const std::string& s)
 {
   send_bark(s);
@@ -1635,6 +1683,24 @@ void WorkDaemonClient::send_reportCompletedJobs(const std::vector<URL> & done)
   oprot_->getTransport()->writeEnd();
 }
 
+void WorkDaemonClient::allMapsDone()
+{
+  send_allMapsDone();
+}
+
+void WorkDaemonClient::send_allMapsDone()
+{
+  int32_t cseqid = 0;
+  oprot_->writeMessageBegin("allMapsDone", ::apache::thrift::protocol::T_CALL, cseqid);
+
+  WorkDaemon_allMapsDone_pargs args;
+  args.write(oprot_);
+
+  oprot_->writeMessageEnd();
+  oprot_->getTransport()->flush();
+  oprot_->getTransport()->writeEnd();
+}
+
 bool WorkDaemonProcessor::process(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot) {
 
   ::apache::thrift::protocol::TProtocol* iprot = piprot.get();
@@ -1885,6 +1951,20 @@ void WorkDaemonProcessor::process_reportCompletedJobs(int32_t seqid, ::apache::t
 
   try {
     iface_->reportCompletedJobs(args.done);
+  } catch (const std::exception& e) {
+  }
+  return;
+}
+
+void WorkDaemonProcessor::process_allMapsDone(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
+{
+  WorkDaemon_allMapsDone_args args;
+  args.read(iprot);
+  iprot->readMessageEnd();
+  iprot->getTransport()->readEnd();
+
+  try {
+    iface_->allMapsDone();
   } catch (const std::exception& e) {
   }
   return;

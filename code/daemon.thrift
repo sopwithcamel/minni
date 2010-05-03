@@ -19,5 +19,6 @@ service WorkDaemon {
 	string sendData(1:PartID kid, 2:BlockID bid),
 	Status partitionStatus(1:PartID pid),
 	Count blockCount(1:PartID pid),
-	oneway void reportCompletedJobs(1:list<URL> done)
+	oneway void reportCompletedJobs(1:list<URL> done),
+	oneway void allMapsDone()
 }

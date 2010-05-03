@@ -72,6 +72,11 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
     printf("reportCompletedJobs\n");
   }
 
+  void allMapsDone() {
+    // Your implementation goes here
+    printf("allMapsDone\n");
+  }
+
 };
 
 int main(int argc, char **argv) {

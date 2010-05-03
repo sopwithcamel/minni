@@ -24,6 +24,7 @@ class WorkDaemonIf {
   virtual Status partitionStatus(const PartID pid) = 0;
   virtual Count blockCount(const PartID pid) = 0;
   virtual void reportCompletedJobs(const std::vector<URL> & done) = 0;
+  virtual void allMapsDone() = 0;
 };
 
 class WorkDaemonNull : virtual public WorkDaemonIf {
@@ -59,6 +60,9 @@ class WorkDaemonNull : virtual public WorkDaemonIf {
     return _return;
   }
   void reportCompletedJobs(const std::vector<URL> & /* done */) {
+    return;
+  }
+  void allMapsDone() {
     return;
   }
 };
@@ -736,6 +740,41 @@ class WorkDaemon_reportCompletedJobs_pargs {
 
 };
 
+class WorkDaemon_allMapsDone_args {
+ public:
+
+  WorkDaemon_allMapsDone_args() {
+  }
+
+  virtual ~WorkDaemon_allMapsDone_args() throw() {}
+
+
+  bool operator == (const WorkDaemon_allMapsDone_args & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WorkDaemon_allMapsDone_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WorkDaemon_allMapsDone_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+class WorkDaemon_allMapsDone_pargs {
+ public:
+
+
+  virtual ~WorkDaemon_allMapsDone_pargs() throw() {}
+
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
 class WorkDaemonClient : virtual public WorkDaemonIf {
  public:
   WorkDaemonClient(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) :
@@ -781,6 +820,8 @@ class WorkDaemonClient : virtual public WorkDaemonIf {
   Count recv_blockCount();
   void reportCompletedJobs(const std::vector<URL> & done);
   void send_reportCompletedJobs(const std::vector<URL> & done);
+  void allMapsDone();
+  void send_allMapsDone();
  protected:
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
@@ -804,6 +845,7 @@ class WorkDaemonProcessor : virtual public ::apache::thrift::TProcessor {
   void process_partitionStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_blockCount(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_reportCompletedJobs(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
+  void process_allMapsDone(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
  public:
   WorkDaemonProcessor(boost::shared_ptr<WorkDaemonIf> iface) :
     iface_(iface) {
@@ -817,6 +859,7 @@ class WorkDaemonProcessor : virtual public ::apache::thrift::TProcessor {
     processMap_["partitionStatus"] = &WorkDaemonProcessor::process_partitionStatus;
     processMap_["blockCount"] = &WorkDaemonProcessor::process_blockCount;
     processMap_["reportCompletedJobs"] = &WorkDaemonProcessor::process_reportCompletedJobs;
+    processMap_["allMapsDone"] = &WorkDaemonProcessor::process_allMapsDone;
   }
 
   virtual bool process(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot);
@@ -925,6 +968,13 @@ class WorkDaemonMultiface : virtual public WorkDaemonIf {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
       ifaces_[i]->reportCompletedJobs(done);
+    }
+  }
+
+  void allMapsDone() {
+    uint32_t sz = ifaces_.size();
+    for (uint32_t i = 0; i < sz; ++i) {
+      ifaces_[i]->allMapsDone();
     }
   }
 

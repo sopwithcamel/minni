@@ -59,6 +59,9 @@ public:
     if(s.compare("request2") == 0){
       file_reg.recordComplete(2,1, "badger");
     }
+    if(s.compare("request3") == 0){
+      file_reg.recordComplete(2,1, "pika");
+    }
     cout << "Done" << endl;
 
   }
@@ -157,6 +160,8 @@ public:
 
     cout << "Done" << endl;
   }
+
+  void allMapsDone(){}
 
   void kill(){
     cout << id++ << ": Kill..." << endl;
