@@ -1,9 +1,8 @@
 #ifndef MINNIE_MASTER_HDFS_H
 #define MINNIE_MASTER_HDFS_H
 
-
-#include "hdfs.h"
 #include "DFS.h"
+#include "hdfs.h"
 #include "daemon_types.h"
 #include <math.h>
 #include <string>
