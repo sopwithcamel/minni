@@ -57,9 +57,9 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
     printf("sendData\n");
   }
 
-  Status partitionStatus(const PartID pid) {
+  Status mapperStatus() {
     // Your implementation goes here
-    printf("partitionStatus\n");
+    printf("mapperStatus\n");
   }
 
   Count blockCount(const PartID pid) {

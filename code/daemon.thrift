@@ -17,7 +17,7 @@ service WorkDaemon {
 	oneway void startMapper(1:JobID jid, 2:Properties prop),
 	oneway void startReducer(1:JobID jid, 2:Properties prop),
 	string sendData(1:PartID kid, 2:BlockID bid),
-	Status partitionStatus(1:PartID pid),
+	Status mapperStatus(),
 	Count blockCount(1:PartID pid),
 	oneway void reportCompletedJobs(1:list<URL> done),
 	oneway void allMapsDone()

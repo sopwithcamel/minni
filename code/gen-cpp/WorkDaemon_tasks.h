@@ -20,8 +20,8 @@ class TaskRecord {
   JobID jid;
   task * task_ptr; 
   JobKind kind;
-  Status status;
-  TaskRecord(JobID j=0, task* t=NULL, JobKind k= jobkind::NIL, Status s=jobstatus::DNE);
+  JobStatus status;
+  TaskRecord(JobID j=0, task* t=NULL, JobKind k= jobkind::NIL, JobStatus s=jobstatus::DNE);
   string toString();
 };
 
@@ -35,8 +35,8 @@ class TaskRegistry{
   void addJob(JobID jid, task* ptr, JobKind jk);
   bool exists(JobID jid);
   
-  Status getStatus(JobID jid);
-  void setStatus(JobID jid, Status status);
+  JobStatus getStatus(JobID jid);
+  void setStatus(JobID jid, JobStatus status);
   void remove(JobID jid);
 
   bool mapper_still_running();

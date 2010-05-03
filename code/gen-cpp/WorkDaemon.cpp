@@ -834,7 +834,7 @@ uint32_t WorkDaemon_sendData_presult::read(::apache::thrift::protocol::TProtocol
   return xfer;
 }
 
-uint32_t WorkDaemon_partitionStatus_args::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t WorkDaemon_mapperStatus_args::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -854,14 +854,6 @@ uint32_t WorkDaemon_partitionStatus_args::read(::apache::thrift::protocol::TProt
     }
     switch (fid)
     {
-      case 1:
-        if (ftype == ::apache::thrift::protocol::T_I64) {
-          xfer += iprot->readI64(this->pid);
-          this->__isset.pid = true;
-        } else {
-          xfer += iprot->skip(ftype);
-        }
-        break;
       default:
         xfer += iprot->skip(ftype);
         break;
@@ -874,29 +866,23 @@ uint32_t WorkDaemon_partitionStatus_args::read(::apache::thrift::protocol::TProt
   return xfer;
 }
 
-uint32_t WorkDaemon_partitionStatus_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t WorkDaemon_mapperStatus_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("WorkDaemon_partitionStatus_args");
-  xfer += oprot->writeFieldBegin("pid", ::apache::thrift::protocol::T_I64, 1);
-  xfer += oprot->writeI64(this->pid);
-  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeStructBegin("WorkDaemon_mapperStatus_args");
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
 }
 
-uint32_t WorkDaemon_partitionStatus_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t WorkDaemon_mapperStatus_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("WorkDaemon_partitionStatus_pargs");
-  xfer += oprot->writeFieldBegin("pid", ::apache::thrift::protocol::T_I64, 1);
-  xfer += oprot->writeI64((*(this->pid)));
-  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeStructBegin("WorkDaemon_mapperStatus_pargs");
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
 }
 
-uint32_t WorkDaemon_partitionStatus_result::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t WorkDaemon_mapperStatus_result::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -936,11 +922,11 @@ uint32_t WorkDaemon_partitionStatus_result::read(::apache::thrift::protocol::TPr
   return xfer;
 }
 
-uint32_t WorkDaemon_partitionStatus_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t WorkDaemon_mapperStatus_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
 
   uint32_t xfer = 0;
 
-  xfer += oprot->writeStructBegin("WorkDaemon_partitionStatus_result");
+  xfer += oprot->writeStructBegin("WorkDaemon_mapperStatus_result");
 
   if (this->__isset.success) {
     xfer += oprot->writeFieldBegin("success", ::apache::thrift::protocol::T_I16, 0);
@@ -952,7 +938,7 @@ uint32_t WorkDaemon_partitionStatus_result::write(::apache::thrift::protocol::TP
   return xfer;
 }
 
-uint32_t WorkDaemon_partitionStatus_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t WorkDaemon_mapperStatus_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -1544,19 +1530,18 @@ void WorkDaemonClient::recv_sendData(std::string& _return)
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "sendData failed: unknown result");
 }
 
-Status WorkDaemonClient::partitionStatus(const PartID pid)
+Status WorkDaemonClient::mapperStatus()
 {
-  send_partitionStatus(pid);
-  return recv_partitionStatus();
+  send_mapperStatus();
+  return recv_mapperStatus();
 }
 
-void WorkDaemonClient::send_partitionStatus(const PartID pid)
+void WorkDaemonClient::send_mapperStatus()
 {
   int32_t cseqid = 0;
-  oprot_->writeMessageBegin("partitionStatus", ::apache::thrift::protocol::T_CALL, cseqid);
+  oprot_->writeMessageBegin("mapperStatus", ::apache::thrift::protocol::T_CALL, cseqid);
 
-  WorkDaemon_partitionStatus_pargs args;
-  args.pid = &pid;
+  WorkDaemon_mapperStatus_pargs args;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -1564,7 +1549,7 @@ void WorkDaemonClient::send_partitionStatus(const PartID pid)
   oprot_->getTransport()->writeEnd();
 }
 
-Status WorkDaemonClient::recv_partitionStatus()
+Status WorkDaemonClient::recv_mapperStatus()
 {
 
   int32_t rseqid = 0;
@@ -1585,14 +1570,14 @@ Status WorkDaemonClient::recv_partitionStatus()
     iprot_->getTransport()->readEnd();
     throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
   }
-  if (fname.compare("partitionStatus") != 0) {
+  if (fname.compare("mapperStatus") != 0) {
     iprot_->skip(::apache::thrift::protocol::T_STRUCT);
     iprot_->readMessageEnd();
     iprot_->getTransport()->readEnd();
     throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::WRONG_METHOD_NAME);
   }
   Status _return;
-  WorkDaemon_partitionStatus_presult result;
+  WorkDaemon_mapperStatus_presult result;
   result.success = &_return;
   result.read(iprot_);
   iprot_->readMessageEnd();
@@ -1601,7 +1586,7 @@ Status WorkDaemonClient::recv_partitionStatus()
   if (result.__isset.success) {
     return _return;
   }
-  throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "partitionStatus failed: unknown result");
+  throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "mapperStatus failed: unknown result");
 }
 
 Count WorkDaemonClient::blockCount(const PartID pid)
@@ -1886,20 +1871,20 @@ void WorkDaemonProcessor::process_sendData(int32_t seqid, ::apache::thrift::prot
   oprot->getTransport()->writeEnd();
 }
 
-void WorkDaemonProcessor::process_partitionStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
+void WorkDaemonProcessor::process_mapperStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
 {
-  WorkDaemon_partitionStatus_args args;
+  WorkDaemon_mapperStatus_args args;
   args.read(iprot);
   iprot->readMessageEnd();
   iprot->getTransport()->readEnd();
 
-  WorkDaemon_partitionStatus_result result;
+  WorkDaemon_mapperStatus_result result;
   try {
-    result.success = iface_->partitionStatus(args.pid);
+    result.success = iface_->mapperStatus();
     result.__isset.success = true;
   } catch (const std::exception& e) {
     ::apache::thrift::TApplicationException x(e.what());
-    oprot->writeMessageBegin("partitionStatus", ::apache::thrift::protocol::T_EXCEPTION, seqid);
+    oprot->writeMessageBegin("mapperStatus", ::apache::thrift::protocol::T_EXCEPTION, seqid);
     x.write(oprot);
     oprot->writeMessageEnd();
     oprot->getTransport()->flush();
@@ -1907,7 +1892,7 @@ void WorkDaemonProcessor::process_partitionStatus(int32_t seqid, ::apache::thrif
     return;
   }
 
-  oprot->writeMessageBegin("partitionStatus", ::apache::thrift::protocol::T_REPLY, seqid);
+  oprot->writeMessageBegin("mapperStatus", ::apache::thrift::protocol::T_REPLY, seqid);
   result.write(oprot);
   oprot->writeMessageEnd();
   oprot->getTransport()->flush();

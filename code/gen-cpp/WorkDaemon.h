@@ -21,7 +21,7 @@ class WorkDaemonIf {
   virtual void startMapper(const JobID jid, const Properties& prop) = 0;
   virtual void startReducer(const JobID jid, const Properties& prop) = 0;
   virtual void sendData(std::string& _return, const PartID kid, const BlockID bid) = 0;
-  virtual Status partitionStatus(const PartID pid) = 0;
+  virtual Status mapperStatus() = 0;
   virtual Count blockCount(const PartID pid) = 0;
   virtual void reportCompletedJobs(const std::vector<URL> & done) = 0;
   virtual void allMapsDone() = 0;
@@ -51,7 +51,7 @@ class WorkDaemonNull : virtual public WorkDaemonIf {
   void sendData(std::string& /* _return */, const PartID /* kid */, const BlockID /* bid */) {
     return;
   }
-  Status partitionStatus(const PartID /* pid */) {
+  Status mapperStatus() {
     Status _return = 0;
     return _return;
   }
@@ -510,57 +510,48 @@ class WorkDaemon_sendData_presult {
 
 };
 
-class WorkDaemon_partitionStatus_args {
+class WorkDaemon_mapperStatus_args {
  public:
 
-  WorkDaemon_partitionStatus_args() : pid(0) {
+  WorkDaemon_mapperStatus_args() {
   }
 
-  virtual ~WorkDaemon_partitionStatus_args() throw() {}
+  virtual ~WorkDaemon_mapperStatus_args() throw() {}
 
-  PartID pid;
 
-  struct __isset {
-    __isset() : pid(false) {}
-    bool pid;
-  } __isset;
-
-  bool operator == (const WorkDaemon_partitionStatus_args & rhs) const
+  bool operator == (const WorkDaemon_mapperStatus_args & /* rhs */) const
   {
-    if (!(pid == rhs.pid))
-      return false;
     return true;
   }
-  bool operator != (const WorkDaemon_partitionStatus_args &rhs) const {
+  bool operator != (const WorkDaemon_mapperStatus_args &rhs) const {
     return !(*this == rhs);
   }
 
-  bool operator < (const WorkDaemon_partitionStatus_args & ) const;
+  bool operator < (const WorkDaemon_mapperStatus_args & ) const;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class WorkDaemon_partitionStatus_pargs {
+class WorkDaemon_mapperStatus_pargs {
  public:
 
 
-  virtual ~WorkDaemon_partitionStatus_pargs() throw() {}
+  virtual ~WorkDaemon_mapperStatus_pargs() throw() {}
 
-  const PartID* pid;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class WorkDaemon_partitionStatus_result {
+class WorkDaemon_mapperStatus_result {
  public:
 
-  WorkDaemon_partitionStatus_result() : success(0) {
+  WorkDaemon_mapperStatus_result() : success(0) {
   }
 
-  virtual ~WorkDaemon_partitionStatus_result() throw() {}
+  virtual ~WorkDaemon_mapperStatus_result() throw() {}
 
   Status success;
 
@@ -569,28 +560,28 @@ class WorkDaemon_partitionStatus_result {
     bool success;
   } __isset;
 
-  bool operator == (const WorkDaemon_partitionStatus_result & rhs) const
+  bool operator == (const WorkDaemon_mapperStatus_result & rhs) const
   {
     if (!(success == rhs.success))
       return false;
     return true;
   }
-  bool operator != (const WorkDaemon_partitionStatus_result &rhs) const {
+  bool operator != (const WorkDaemon_mapperStatus_result &rhs) const {
     return !(*this == rhs);
   }
 
-  bool operator < (const WorkDaemon_partitionStatus_result & ) const;
+  bool operator < (const WorkDaemon_mapperStatus_result & ) const;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-class WorkDaemon_partitionStatus_presult {
+class WorkDaemon_mapperStatus_presult {
  public:
 
 
-  virtual ~WorkDaemon_partitionStatus_presult() throw() {}
+  virtual ~WorkDaemon_mapperStatus_presult() throw() {}
 
   Status* success;
 
@@ -812,9 +803,9 @@ class WorkDaemonClient : virtual public WorkDaemonIf {
   void sendData(std::string& _return, const PartID kid, const BlockID bid);
   void send_sendData(const PartID kid, const BlockID bid);
   void recv_sendData(std::string& _return);
-  Status partitionStatus(const PartID pid);
-  void send_partitionStatus(const PartID pid);
-  Status recv_partitionStatus();
+  Status mapperStatus();
+  void send_mapperStatus();
+  Status recv_mapperStatus();
   Count blockCount(const PartID pid);
   void send_blockCount(const PartID pid);
   Count recv_blockCount();
@@ -842,7 +833,7 @@ class WorkDaemonProcessor : virtual public ::apache::thrift::TProcessor {
   void process_startMapper(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_startReducer(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_sendData(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
-  void process_partitionStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
+  void process_mapperStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_blockCount(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_reportCompletedJobs(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_allMapsDone(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
@@ -856,7 +847,7 @@ class WorkDaemonProcessor : virtual public ::apache::thrift::TProcessor {
     processMap_["startMapper"] = &WorkDaemonProcessor::process_startMapper;
     processMap_["startReducer"] = &WorkDaemonProcessor::process_startReducer;
     processMap_["sendData"] = &WorkDaemonProcessor::process_sendData;
-    processMap_["partitionStatus"] = &WorkDaemonProcessor::process_partitionStatus;
+    processMap_["mapperStatus"] = &WorkDaemonProcessor::process_mapperStatus;
     processMap_["blockCount"] = &WorkDaemonProcessor::process_blockCount;
     processMap_["reportCompletedJobs"] = &WorkDaemonProcessor::process_reportCompletedJobs;
     processMap_["allMapsDone"] = &WorkDaemonProcessor::process_allMapsDone;
@@ -942,13 +933,13 @@ class WorkDaemonMultiface : virtual public WorkDaemonIf {
     }
   }
 
-  Status partitionStatus(const PartID pid) {
+  Status mapperStatus() {
     uint32_t sz = ifaces_.size();
     for (uint32_t i = 0; i < sz; ++i) {
       if (i == sz - 1) {
-        return ifaces_[i]->partitionStatus(pid);
+        return ifaces_[i]->mapperStatus();
       } else {
-        ifaces_[i]->partitionStatus(pid);
+        ifaces_[i]->mapperStatus();
       }
     }
   }

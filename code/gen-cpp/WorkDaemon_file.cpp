@@ -119,13 +119,14 @@ string LocalFileRegistry::toString() const{
 
 Transfer::Transfer(PartID p, Location l, string o): 
   pid(p), location(l), outfile(o),
-  t_status(transferstatus::DNE), progress(0), total(-1){
+  t_status(transferstatus::DNE), progress(0), total(0){
+  // Wipeout file
   ofstream clearing(o.c_str(), ios::trunc|ios::out);
   clearing.close();
 }
 
 // Get as much of a file as we know about
-Status Transfer::getFile(){
+TransferStatus Transfer::getFile(){
   boost::shared_ptr<TSocket> socket(new TSocket(location.ip, location.port));
   boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
   boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
@@ -148,26 +149,27 @@ Status Transfer::getFile(){
   fs.close();
 }
 
-// Update what we know about a file
-Status Transfer::checkStatus(){
+/* Statuses:
+   Get the total number of blocks on the remote entity (actively check)
+   BLOCKED -> progress == total
+   DONE -> progress == total AND all mappers are done
+   READY -> progress < total
+ */
+TransferStatus Transfer::checkStatus(){
+
   boost::shared_ptr<TSocket> socket(new TSocket(location.ip, location.port));
   boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
   boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
-	
   workdaemon::WorkDaemonClient client(protocol);
-
-  // We can't become undone
-  if(t_status == transferstatus::DONE){
-    return t_status;
-  }
 
   // Check for new blocks. Check for status first, because 
   transport->open();
-  Status part_status = client.partitionStatus(pid);
+  PartStatus part_status = client.mapperStatus();
   total = client.blockCount(pid); // update count
   transport->close();
 
   // Don't have any new ones
+  assert(total >= progress);
   if(progress == total){
     // Was this because we're done or not?
     if(part_status == partstatus::DONE){
@@ -231,11 +233,26 @@ void PartitionGrabber::addLocations(const set<URL> l){
 void PartitionGrabber::getMore(){
   for(vector<Transfer>::iterator it = transfers.begin();
 	it != transfers.end(); it++){
-    Status status = it->checkStatus();
+    TransferStatus status = it->checkStatus();
     if(status == transferstatus::READY){
       it->getFile();
     }
   }
+}
+
+/*
+  Status:
+  If there is at least one transfer that is READY then the partition is READY
+  If there are no transfers that are READY then the parition is BLOCKED
+*/
+PartStatus PartitionGrabber::getStatus(){
+  for(vector<Transfer>::iterator it = transfers.begin();
+      it != transfers.end(); it++){
+    if(it->checkStatus() == transferstatus::READY){
+      return partstatus::READY;
+    }
+  }
+  return partstatus::BLOCKED;
 }
 
 string PartitionGrabber::toString(){
@@ -260,7 +277,10 @@ string PartitionGrabber::toString(){
   return ss.str();
 }
 
-GrabberRegistry::GrabberRegistry(){}
+GrabberRegistry::GrabberRegistry(){
+  finished = false;
+}
+
 void GrabberRegistry::addLocations(const vector<URL> u){
   Mutex::scoped_lock lock(mutex);
   urls.insert(u.begin(), u.end());
@@ -273,13 +293,45 @@ void GrabberRegistry::addLocations(const vector<URL> u){
 void GrabberRegistry::getMore(PartID pid){
   GrabberMap::accessor acc_grab;
   bool found = grab_map.find(acc_grab, pid);
-  if(!found){
-    Mutex::scoped_lock lock(mutex);
-    grab_map.insert(acc_grab, pid);
-    acc_grab->second.setValues(pid, local_file(pid));
-    acc_grab->second.addLocations(urls);
-  }
+  assert(found);
   acc_grab->second.getMore();
+}
+
+void GrabberRegistry::setupFile(PartID p, string o){
+  GrabberMap::accessor acc_grab;
+  grab_map.insert(acc_grab,p);
+  acc_grab->second.setValues(p,o);
+  acc_grab->second.addLocations(urls);
+}
+
+/*
+What are the status messages:
+DNE -> Cannot find the partition requested, new
+AVAILABLE -> PartitionGrabber thinks that it is available
+BLOCKED -> PartitionGrabber thinks that it is blocked
+DONE -> The master told us that all of the mappers finished, and the
+ PartitionGrabber thinks that it is blocked
+*/
+
+PartStatus GrabberRegistry::getStatus(PartID pid){
+  GrabberMap::accessor acc_grab;
+  bool found = grab_map.find(acc_grab, pid);
+  if(!found){
+    return partstatus::DNE;
+  }
+  PartStatus status = acc_grab->second.getStatus();
+  Mutex::scoped_lock lock(mutex);
+  if(status == partstatus::BLOCKED && finished){
+    return partstatus::DONE;
+  }
+  else{
+    return status;
+  }
+}
+
+void GrabberRegistry::reportDone(){
+  Mutex::scoped_lock lock(mutex);
+  finished = true;
 }
 string GrabberRegistry::toString(){
   stringstream ss;

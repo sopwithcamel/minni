@@ -138,8 +138,8 @@ public:
   }
 
   // Are we still waiting on some mappers?
-  Status partitionStatus(const PartID pid) {
-    cout << id++ << ": Partition status..." << endl;
+  Status mapperStatus() {
+    cout << id++ << ": Mapper status..." << endl;
     if(task_reg.mapper_still_running()){
       return jobstatus::INPROGRESS;
     }
@@ -161,7 +161,9 @@ public:
     cout << "Done" << endl;
   }
 
-  void allMapsDone(){}
+  void allMapsDone(){
+    grab_reg.reportDone();
+  }
 
   void kill(){
     cout << id++ << ": Kill..." << endl;

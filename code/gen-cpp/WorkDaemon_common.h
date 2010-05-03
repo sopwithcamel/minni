@@ -14,18 +14,23 @@ using namespace std;
 
 #define WORKER_PORT 9090
 
-
-// Task Registry
-string printReport(map<JobID,Status> &M);
-typedef map<JobID, Status> Report;
-
-// Statuses
 namespace transferstatus {enum {DNE, READY, BLOCKED, DONE};}
-namespace partstatus {enum {AVAILABLE, BLOCKED, DONE};}
+namespace partstatus {enum {DNE, READY, BLOCKED, DONE};}
 namespace jobstatus {enum {DNE, INPROGRESS, DONE, DONE_AND_REPORTED, DEAD, DEAD_AND_REPORTED};}
 namespace jobkind {enum {NIL, MAPPER, REDUCER};}
 
+typedef Status TransferStatus;
+typedef Status PartStatus;
+typedef Status JobStatus;
 typedef unsigned int JobKind;
+
+
+// Task Registry
+typedef map<JobID, JobStatus> Report;
+string printReport(Report &M);
+
+// Statuses
+
 
 template <class T>
 struct HashCompare {

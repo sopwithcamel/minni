@@ -83,7 +83,7 @@ class Transfer{
   private:
   Count total;
   Count progress;
-  Status t_status;
+  TransferStatus t_status;
 
   PartID pid;  
   Location location;
@@ -91,12 +91,13 @@ class Transfer{
 
  public:
   Transfer(PartID p, Location l, string o);
-  Status getFile(); // Gets as much of the partition as possible
-  Status checkStatus(); // Updates our knowledge of the partition
+  TransferStatus getFile(); // Gets as much of the partition as possible
+  TransferStatus checkStatus(); // Updates our knowledge of the partition
   string toString();
 };
 
 // Gets all of a partition; manages Transfers
+// NB: this object is serial.
 class PartitionGrabber{
  private:
   set<Location> locations;
@@ -105,7 +106,8 @@ class PartitionGrabber{
   PartID pid;
 
  public:
-  PartitionGrabber(PartID p = -1, string o ="");
+  PartitionGrabber(PartID p = -1, string o ="NOT_A_FILE");
+  PartStatus getStatus();
   void setValues(PartID p, string o);
   void addLocation(Location l); // Adds a new location with data
   void addLocations(const vector<URL> u);
@@ -118,17 +120,22 @@ typedef concurrent_hash_map<PartID, PartitionGrabber,
   HashCompare<PartID> > GrabberMap;
 typedef spin_mutex Mutex;
 
+//Concurrent Grabber managers
 class GrabberRegistry{
  private:
   GrabberMap grab_map;
   set<URL> urls;
+  bool finished;
   Mutex mutex;
   
   
  public:
   GrabberRegistry();
   void addLocations(const vector<URL> u);
+  void setupFile(PartID p, string o);
   void getMore(PartID pid);
+  PartStatus getStatus(PartID pid);
+  void reportDone();
   string toString();
 };
 

@@ -45,7 +45,7 @@ task * ReducerTask::execute(){
   return NULL;
 }
 
-TaskRecord::TaskRecord(JobID j, task* t, JobKind k, Status s){
+TaskRecord::TaskRecord(JobID j, task* t, JobKind k, JobStatus s){
   jid = j;
   task_ptr = t;
   kind = k;
@@ -81,14 +81,21 @@ bool TaskRegistry::exists(JobID jid){
 }
 
 // Figure out whether the job is running or dead
-Status TaskRegistry::getStatus(JobID jid){
+// Checks if the job status claims that it is running
+// DNE -> no knowledge of this job
+// INPROGRESS -> Job is running
+// DONE -> Job is not running, exited gracefully
+// DONE_AND_REPORTED -> DONE, and told the master
+// DEAD -> Job is not running, did not exit gracefully
+// DEAD_AND_REPORTED -> DEAD, and told the master
+JobStatus TaskRegistry::getStatus(JobID jid){
   TaskMap::const_accessor acc_task;
   bool found = this->task_map.find(acc_task, jid);
   if(!found){
     return jobstatus::DNE;
   }
   // Have the reported status. If it claims to be running, make sure
-  Status status = acc_task->second.status;
+  JobStatus status = acc_task->second.status;
   if(status == jobstatus::INPROGRESS){
     bool actually_running = (acc_task->second.task_ptr->state() == task::executing);
     if(!actually_running){
@@ -101,7 +108,7 @@ Status TaskRegistry::getStatus(JobID jid){
 }
 
 // Update the status
-void TaskRegistry::setStatus(JobID jid, Status status){
+void TaskRegistry::setStatus(JobID jid, JobStatus status){
   assert(this->exists(jid));
   TaskMap::accessor acc_stat;
   this->task_map.find(acc_stat, jid);
@@ -117,7 +124,7 @@ bool TaskRegistry::mapper_still_running(){
   TaskMap::range_type range = this->task_map.range();
   for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){
     JobID jid = it->first;
-    Status status = it->second.status;
+    JobStatus status = this->getStatus(jid);
     JobKind kind = it->second.kind;
     if(status == jobstatus::INPROGRESS 
        && kind == jobkind::MAPPER){
@@ -133,7 +140,7 @@ void TaskRegistry::cullReported(){
   TaskMap::range_type range = this->task_map.range();
   for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){
     JobID jid = it->first;
-    Status status = it->second.status;
+    JobStatus status = it->second.status;
     if(status == jobstatus::DONE_AND_REPORTED
        || status == jobstatus::DEAD_AND_REPORTED ){
       this->task_map.erase(jid);
@@ -147,7 +154,7 @@ void TaskRegistry::getReport(Report &report){
   TaskMap::range_type range = this->task_map.range();
   for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){
     JobID jid = it->first;
-    Status status = it->second.status;
+    JobStatus status = it->second.status;
     if(status == jobstatus::DONE){
       report[jid] = jobstatus::DONE;
       it->second.status = jobstatus::DONE_AND_REPORTED;
@@ -170,11 +177,11 @@ string TaskRegistry::toString(){
   return ss.str();
 }
 
-string printReport(map<JobID,Status> &M){
+string printReport(Report &M){
   bool first = true;
   stringstream ss;
   ss << "[";
-  for(map<JobID,Status>::iterator it = M.begin(); it != M.end(); it++){
+  for(Report::iterator it = M.begin(); it != M.end(); it++){
     if(!first){
       ss << ", ";
       first = false;
