@@ -5,7 +5,7 @@ Communicator::~Communicator()
 	delete url;
 }
 
-void Communicator::sendMap(struct MapJob map)
+void Communicator::sendMap(struct MapJob map, uint16_t retries)
 {
 	cout  << "Sending Map To: " << *url << endl;
 
@@ -26,12 +26,13 @@ void Communicator::sendMap(struct MapJob map)
 		transport->close();
 	} catch (TTransportException reason){
 		cout << "Caught Exception: Sending MAP."  << endl;
+		if (retries > 0) sendMap(map, --retries);
 	}
 }
 
-void Communicator::sendReduce(struct ReduceJob reduce)
+void Communicator::sendReduce(struct ReduceJob reduce, uint16_t retries)
 {
-	cout  << "Sending Reduce To: " << *url << endl;
+	cout  << "Sending Reduce["<< reduce.jid << "] To: " << *url << endl;
 
 	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT);
 	boost::shared_ptr<TSocket> socket(temp);
@@ -50,10 +51,11 @@ void Communicator::sendReduce(struct ReduceJob reduce)
 		transport->close();
 	} catch (TTransportException reason){
 		cout << "Caught Exception: Sending REDUCE."  << endl;
-	}	
+		if (retries > 0) sendReduce(reduce, --retries);
+	}
 }
 
-void Communicator::sendListStatus(std::map<JobID, Status> & _return)
+void Communicator::sendListStatus(std::map<JobID, Status> & _return, uint16_t retries)
 {
 	cout  << "Sending ListStatus To: " << *url << endl;
 
@@ -74,11 +76,13 @@ void Communicator::sendListStatus(std::map<JobID, Status> & _return)
 		transport->close();
 	} catch (TTransportException reason){
 		cout << "Caught Exception: Sending LISTSTATUS."  << endl;
+		if (retries > 0) sendListStatus(_return, --retries);
 	}
 }
 
-void Communicator::sendReportCompletedJobs(const std::vector<URL> & done)
+void Communicator::sendReportCompletedJobs(const std::vector<URL> & done, uint16_t retries)
 {
+	if (done.size() == 0) return;
 	cout  << "Sending reportCompletedJobs To: " << *url << endl;
 
 	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT);
@@ -98,10 +102,11 @@ void Communicator::sendReportCompletedJobs(const std::vector<URL> & done)
 		transport->close();
 	} catch (TTransportException reason){
 		cout << "Caught Exception: Sending REPORTCOMPLETEDJOBS."  << endl;
+		if (retries > 0) sendReportCompletedJobs(done, --retries);
 	}
 }
 
-void Communicator::sendAllMapsDone()
+void Communicator::sendAllMapsDone(uint16_t retries)
 {
 	cout  << "Sending allMapsDone To: " << *url << endl;
 
@@ -122,6 +127,7 @@ void Communicator::sendAllMapsDone()
 		transport->close();
 	} catch (TTransportException reason){
 		cout << "Caught Exception: Sending ALLMAPSDONE."  << endl;
+		if (retries > 0) sendAllMapsDone(--retries);
 	}
 }
 

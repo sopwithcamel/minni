@@ -3,3 +3,7 @@
 	# http://www.mail-archive.com/common-user@hadoop.apache.org/msg01812.html
 	# This line compiles it!	
 	JAVA_HOME=/usr/lib/jvm/default-java ant compile -Dcompile.c++=true -Dlibhdfs=true
+
+2) Running HDFS
+	a) Format filesystem:	bin/hadoop namenode -format
+	b) Run DFS:		bin/start-dfs.sh

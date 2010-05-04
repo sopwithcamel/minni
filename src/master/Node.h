@@ -16,25 +16,28 @@ using namespace workdaemon;
 class Node
 {
 	public:
-		Node(string* URL, MapReduceSpecification spec) : communicator(URL), spec(spec) {};
+		Node(string* URL);
 		~Node();
 		void addMap(struct MapJob);
 		void addReduce(struct ReduceJob);
 		bool removeMap(JobID jid);
 		bool removeReduce(JobID jid);
-		void runMap();
-		void runReduce();
+		bool runMap();
+		bool runReduce();
 		void setMapStatus(JobID jid, Status stat);
 		void setReduceStatus(JobID jid, Status stat);
 		void checkStatus(map<JobID, Status> & _return);
 		void reportCompletedJobs(const std::vector<string> & done);
-		void sendAllMapsDone();
+		void sendAllMapsFinished();
 		bool hasMaps();
 		bool hasReduces();
 		string* getURL();
 		JobID numRemainingMapJobs();
 		JobID numRemainingReduceJobs();		
 		JobID numRemainingJobs();
+		JobID numActiveJobs();
+		struct MapJob stealMap();
+		struct ReduceJob stealReduce();
 
 	private:
 		JobID remainingMapsCount;
@@ -46,7 +49,6 @@ class Node
 		queue<struct MapJob> remainingMaps;
 		queue<struct ReduceJob> remainingReduces;
 		Communicator communicator;
-		MapReduceSpecification spec;
 };
 
 #endif

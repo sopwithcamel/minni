@@ -3,6 +3,16 @@
 #include <iostream>
 using namespace std;
 
+HDFS::~HDFS()
+{
+	map<string, hdfsFile>::iterator iter;
+	for (iter = fileCache.begin(); iter != fileCache.end(); iter++)
+	{
+		hdfsCloseFile(fs, (*iter).second);
+	}
+	if (fs) disconnect();
+}
+
 bool HDFS::connect()
 {
 	fs = hdfsConnect(host.c_str(), port);
@@ -12,11 +22,12 @@ bool HDFS::connect()
 
 bool HDFS::disconnect()
 {
-	if (hdfsDisconnect(fs)) throw("Error disconnecting to HDFS.");
+	if (hdfsDisconnect(fs)) throw("Error disconnecting from HDFS.");
+	fs = NULL;
 	return true;
 }
 
-bool HDFS::checkExistance(string path)
+bool HDFS::checkExistence(string path)
 {
 	if (hdfsExists(fs, path.c_str()))	return false;
 	return true;
@@ -110,8 +121,33 @@ int64_t HDFS::writeToFileOffset(string path, uint64_t offset, char* buf, uint64_
 int64_t HDFS::writeToFile(string path, char* buf, uint64_t length)
 {
 	uint64_t ret = 0;
-	hdfsFile file = hdfsOpenFile(fs, path.c_str(), O_WRONLY, 0, 0, 0);
+	hdfsFile file;
+	if (fileCache.find(path) != fileCache.end())
+	{
+		cout << "Pulling open file from fileCache" << endl;
+		file = fileCache[path];
+	}
+	else
+	{
+		cout << "Opening file for writing." << endl;
+		file = hdfsOpenFile(fs, path.c_str(), O_WRONLY, 0, 0, 0);
+		fileCache[path] = file;
+	}
 	ret = hdfsWrite(fs, file, buf, (tSize) length);
-	if (hdfsCloseFile(fs, file)) return -1;
 	return ret;
+}
+
+int64_t HDFS::closeFile(string path)
+{
+	int64_t ret;
+	if (fileCache.find(path) != fileCache.end())
+	{
+		ret = hdfsCloseFile(fs, fileCache[path]);
+		fileCache.erase(path);
+		return ret;
+	}
+	else
+	{
+		return -1;
+	}
 }
