@@ -4,7 +4,9 @@
 #include <fstream>
 #include <cmath>
 
-// File
+/*********
+***File***
+**********/
 
 const Length File::block_size = 10;
 
@@ -21,6 +23,10 @@ string File::toString() const{
   ss << "File[j:" << jid << ",p:" << pid << ",n:" << name << ",l:" << length << ",b:" << blocks << "]";
   return ss.str();
 }
+
+/**********************
+***LocalFileRegistry***
+***********************/
 
 // File Registry implementation
 LocalFileRegistry::LocalFileRegistry(){}
@@ -117,16 +123,22 @@ string LocalFileRegistry::toString() const{
 }
 
 
-Transfer::Transfer(PartID p, Location l, string o): 
-  pid(p), location(l), outfile(o),
+/**************
+ ***TRANSFER***
+ **************/
+
+/*
+Notes: PartitionGrabber should be responsible for all 
+*/
+
+Transfer::Transfer(PartID p, Location l): 
+  pid(p), location(l),
   t_status(transferstatus::DNE), progress(0), total(0){
-  // Wipeout file
-  ofstream clearing(o.c_str(), ios::trunc|ios::out);
-  clearing.close();
 }
 
+
 // Get as much of a file as we know about
-TransferStatus Transfer::getFile(){
+TransferStatus Transfer::getFile(string outfile){
   boost::shared_ptr<TSocket> socket(new TSocket(location.ip, location.port));
   boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
   boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
@@ -195,13 +207,16 @@ string Transfer::toString(){
   return ss.str();
 }
 
+/*********************
+***PartitionGrabber***
+**********************/
 
-PartitionGrabber::PartitionGrabber(PartID p, string o): pid(p), outfile(o){}
+
+PartitionGrabber::PartitionGrabber(PartID p): pid(p){}
 
 // Set the output file and the PartID
-void PartitionGrabber::setValues(PartID p, string o){
+void PartitionGrabber::setPID(PartID p){
   pid = p;
-  outfile = o;
 }
 
 // Add a new node to what we think is done
@@ -211,7 +226,7 @@ void PartitionGrabber::addLocation(Location l){
     return;
   }
   locations.insert(l);
-  transfers.push_back(Transfer(pid, l, outfile));
+  transfers.push_back(Transfer(pid, l));
 }
 
 void PartitionGrabber::addLocations(const vector<URL> l){
@@ -231,12 +246,15 @@ void PartitionGrabber::addLocations(const set<URL> l){
 }
 
 // Grab as much as we can from whatever we think is done.
-void PartitionGrabber::getMore(){
+void PartitionGrabber::getMore(string outfile){
+  // Wipe out the file
+  ofstream clearing(outfile.c_str(), ios::trunc|ios::out);
+  clearing.close();
   for(vector<Transfer>::iterator it = transfers.begin();
 	it != transfers.end(); it++){
     TransferStatus status = it->checkStatus();
     if(status == transferstatus::READY){
-      it->getFile();
+      it->getFile(outfile);
     }
   }
 }
@@ -278,6 +296,10 @@ string PartitionGrabber::toString(){
   return ss.str();
 }
 
+/********************
+***GrabberRegistry***
+*********************/
+
 // Initially, the Grabber isn't done.
 GrabberRegistry::GrabberRegistry(){
   finished = false;
@@ -292,18 +314,18 @@ void GrabberRegistry::addLocations(const vector<URL> u){
     it->second.addLocations(u); // Update any of the running grabbers
   }
 }
-void GrabberRegistry::getMore(PartID pid){
+void GrabberRegistry::getMore(PartID pid, string outfile){
   GrabberMap::accessor acc_grab;
   bool found = grab_map.find(acc_grab, pid);
   assert(found); // Can't get more if we don't have any! That's deep, Erik.
-  acc_grab->second.getMore();
+  acc_grab->second.getMore(outfile);
 }
 
 // Sets up a particular grabber, assigns an output file
-void GrabberRegistry::setupFile(PartID p, string o){
+void GrabberRegistry::setupGrabber(PartID p){
   GrabberMap::accessor acc_grab;
   grab_map.insert(acc_grab,p);
-  acc_grab->second.setValues(p,o);
+  acc_grab->second.setPID(p);
   acc_grab->second.addLocations(urls);
 }
 

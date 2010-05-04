@@ -89,11 +89,10 @@ class Transfer{
 
   PartID pid;  
   Location location;
-  string outfile;
 
  public:
-  Transfer(PartID p, Location l, string o);
-  TransferStatus getFile(); // Gets as much of the partition as possible
+  Transfer(PartID p, Location l);
+  TransferStatus getFile(string outfile); // Gets as much of the partition as possible
   TransferStatus checkStatus(); // Updates our knowledge of the partition
   string toString();
 };
@@ -108,13 +107,13 @@ class PartitionGrabber{
   PartID pid;
 
  public:
-  PartitionGrabber(PartID p = -1, string o ="NOT_A_FILE");
+  PartitionGrabber(PartID p = -1);
   PartStatus getStatus();
-  void setValues(PartID p, string o);
+  void setPID(PartID p);
   void addLocation(Location l); // Adds a new location with data
   void addLocations(const vector<URL> u);
   void addLocations(const set<URL> u);
-  void getMore(); // Gets as much of a partition as possible
+  void getMore(string outfile); // Gets as much of a partition as possible
   string toString();
 };
 
@@ -134,8 +133,8 @@ class GrabberRegistry{
  public:
   GrabberRegistry();
   void addLocations(const vector<URL> u);
-  void setupFile(PartID p, string o);
-  void getMore(PartID pid);
+  void setupGrabber(PartID p);
+  void getMore(PartID pid, string outfile);
   PartStatus getStatus(PartID pid);
   void reportDone();
   string toString();

@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
 
   GrabberRegistry reg;
   reg.addLocations(urls);
-  reg.getMore(1);
+  reg.getMore(1, "snake");
   
   cout << reg.toString() << endl;
 
