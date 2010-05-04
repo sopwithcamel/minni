@@ -83,13 +83,23 @@ public:
   void listStatus(map<JobID, Status> & _return) {
     cout << id++ << ": Listing Status..." << endl;
     task_reg.getReport(_return);
+    //task_reg.cullReported();
     cout << "Done" << endl;
     return;
   }
 	
   void startMapper(const JobID jid, const Properties& prop) {
-    cout << id++ << ": Starting Mapper..." << endl;
-    assert(!task_reg.exists(jid));
+    cout << id++ << ": Starting Mapper " << jid << "..." << endl;
+    if(task_reg.exists(jid)){
+      cout << "Repeat, skipping." << endl;
+      if(task_reg.getStatus(jid) == jobstatus::DEAD_AND_REPORTED){
+	task_reg.setStatus(jid, jobstatus::DEAD);
+      }
+      if(task_reg.getStatus(jid) == jobstatus::DONE_AND_REPORTED){
+	task_reg.setStatus(jid, jobstatus::DONE);
+      }
+      return;
+    }
     // 1) Allocate the mapper task
     Properties * p_copy = new Properties(prop); // Deleted by ~Mapper
     MapperTask& t = *new(root->allocate_additional_child_of(*root)) 
@@ -100,21 +110,27 @@ public:
 
     
     // 3) Spawn
+    root->increment_ref_count();
     root->spawn(t);
     cout << "Done" << endl;
   }
 	
   void startReducer(const JobID jid, const Properties& prop) {
-    cout << id++ << ": Starting Reducer..." << endl;
-    assert(!task_reg.exists(jid));
+    cout << id++ << ": Starting Reducer " << jid << "..." << endl;
+    if(task_reg.exists(jid)){
+      cout << "Repeat, skipping." << endl;
+      return;
+    }
+    //cout << "Assert passed" << endl;
     // 1) Allocate the mapper task
     Properties * p_copy = new Properties(prop); // Deleted by ~Reducer
     ReducerTask& t = *new(root->allocate_additional_child_of(*root)) 
       ReducerTask(jid, p_copy, &task_reg, &grab_reg);
+    //cout << "Allocate passed" << endl;
 
     // 2) Add to registry
     task_reg.addJob(jid, &t, jobkind::REDUCER);
-
+    //cout << "Add passed" << endl;
 
     // 3) Get files
     //Scene missing
@@ -123,6 +139,7 @@ public:
     //acc_grab->second = PartitionGrabber(pid, "Somefile_" + pid);
 
     // 4) Spawn
+    root->increment_ref_count();
     root->spawn(t);
     cout << "Done" << endl;
   }
@@ -154,7 +171,7 @@ public:
 
   // Used by the master to report finished mappers
   void reportCompletedJobs(const vector<URL> & done){
-    cout << id++ << ": Reporting..." << endl;
+    cout << id++ << ": Master reporting work..." << endl;
     
     grab_reg.addLocations(done);
 

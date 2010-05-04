@@ -23,6 +23,7 @@ MapperTask::~MapperTask(){
 }
 
 task * MapperTask::execute(){
+  //tbb::this_tbb_thread::sleep(tbb::tick_count::interval_t(4.0));
   tasks->setStatus(jid, jobstatus::DONE);
   return NULL;
 }
@@ -41,6 +42,7 @@ ReducerTask::~ReducerTask(){
 }
 
 task * ReducerTask::execute(){
+  //tbb::this_tbb_thread::sleep(tbb::tick_count::interval_t(4.0));
   tasks->setStatus(jid, jobstatus::DONE);
   return NULL;
 }
@@ -139,11 +141,11 @@ bool TaskRegistry::mapper_still_running(){
 // Yank any entries that we have told the master about.
 void TaskRegistry::cullReported(){
   TaskMap::range_type range = this->task_map.range();
-  for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){
+  for(TaskMap::iterator it = range.begin(); it !=range.end();){
     JobID jid = it->first;
     JobStatus status = it->second.status;
-    if(status == jobstatus::DONE_AND_REPORTED
-       || status == jobstatus::DEAD_AND_REPORTED ){
+    it++;
+    if(status == jobstatus::DONE_AND_REPORTED){
       this->task_map.erase(jid);
     }
   }
@@ -155,7 +157,7 @@ void TaskRegistry::getReport(Report &report){
   TaskMap::range_type range = this->task_map.range();
   for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){
     JobID jid = it->first;
-    JobStatus status = it->second.status;
+    JobStatus status = this->getStatus(jid);
     if(status == jobstatus::DONE){
       report[jid] = jobstatus::DONE;
       it->second.status = jobstatus::DONE_AND_REPORTED;

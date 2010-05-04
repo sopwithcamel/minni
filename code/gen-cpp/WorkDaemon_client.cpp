@@ -31,28 +31,12 @@ int main(int argc, char **argv) {
   string state;
 
   // The first server has done some work
-  cout << "First server:" << endl;
+  cout << "SERVER STATE:" << endl;
   workdaemon::WorkDaemonClient client1(protocol1);
   transport1->open();
-
-  //map<string,string> prop;
-  //client1.startMapper(5, prop);
-  vector<URL> urls;
-  urls.push_back("localhost");
-  client1.bark("request1");
-  client1.bark("request2");
-  client1.stateString(state); 
-  client1.reportCompletedJobs(urls);
   client1.stateString(state); 
   cout << state << endl;
   transport1->close();
 
-  GrabberRegistry reg;
-  reg.addLocations(urls);
-  reg.getMore(1, "snake");
-  
-  cout << reg.toString() << endl;
-
- 
   return 0;
 }
