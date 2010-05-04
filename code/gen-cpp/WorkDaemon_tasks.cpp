@@ -107,7 +107,7 @@ JobStatus TaskRegistry::getStatus(JobID jid){
   return status;
 }
 
-// Update the status
+// Update the status; tasks use this to mark a file as done
 void TaskRegistry::setStatus(JobID jid, JobStatus status){
   assert(this->exists(jid));
   TaskMap::accessor acc_stat;
@@ -115,11 +115,12 @@ void TaskRegistry::setStatus(JobID jid, JobStatus status){
   acc_stat->second.status = status;
 }
 
+// Yanks some job
 void TaskRegistry::remove(JobID jid){
   this->task_map.erase(jid);
 }
 
-// Are any of the mapper still running, i.e. are we still generating data?
+// Are any of the mapper still running, i.e. could we be still generating data?
 bool TaskRegistry::mapper_still_running(){
   TaskMap::range_type range = this->task_map.range();
   for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){

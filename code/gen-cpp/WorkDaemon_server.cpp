@@ -49,10 +49,10 @@ public:
     //MasterTask& t = *new(root->allocate_additional_child_of(*root)) MasterTask(&status_map, &mapper_map, &reducer_map);
     //root->spawn(t); // NB: root hasn't be spawned since that is synchronous
   }
-	
+
+  // Swiss-army knife debug function
   void bark(const string& s) {
     cout << id++ << ": Barking..." << endl;
-    //Your implementation goes here
     if(s.compare("request1") == 0){
       file_reg.recordComplete(1,1,"moose");
     }
@@ -66,6 +66,7 @@ public:
 
   }
 
+  // Useful for querying the state of a remote object
   void stateString(string &_return){
     cout << id++ << ": Returning state string..." << endl;
     stringstream ss;
@@ -93,14 +94,12 @@ public:
     Properties * p_copy = new Properties(prop); // Deleted by ~Mapper
     MapperTask& t = *new(root->allocate_additional_child_of(*root)) 
       MapperTask(jid, p_copy, &task_reg, &file_reg);
-    //empty_task& t = *new(root->allocate_additional_child_of(*root)) empty_task();
 
     // 2) Add to registry
     task_reg.addJob(jid, &t, jobkind::MAPPER);
 
     
     // 3) Spawn
-    //root->increment_ref_count(2);
     root->spawn(t);
     cout << "Done" << endl;
   }
@@ -153,6 +152,7 @@ public:
     return file_reg.blocks(pid);
   }
 
+  // Used by the master to report finished mappers
   void reportCompletedJobs(const vector<URL> & done){
     cout << id++ << ": Reporting..." << endl;
     
@@ -161,14 +161,14 @@ public:
     cout << "Done" << endl;
   }
 
+  // Sounds the all clear when all mappers are done
   void allMapsDone(){
     grab_reg.reportDone();
   }
-
-  void kill(){
-    cout << id++ << ": Kill..." << endl;
   
     // Crash the node.
+  void kill(){
+    cout << id++ << ": Kill..." << endl;
     exit(-1);
   }
 	
