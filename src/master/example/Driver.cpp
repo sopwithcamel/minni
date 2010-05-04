@@ -11,8 +11,6 @@ int main(int argc, char* args[])
 {
 	if (PRODUCTION_TEST)
 	{
-		vector<string*> input;
-		input.push_back(new string("/input/test.file"));
 		string output = "/output/";
 		string dfs_master = "localhost";
 		string so_name = "wordcount.so";
@@ -21,12 +19,12 @@ int main(int argc, char* args[])
 		JobID maxMaps = 5000;
 		JobID maxReduces = 1000;
 		MapReduceSpecification spec;
-		spec.setInput(input);
-		spec.setOutput(output);
+		spec.addInput(new string("/input/test.file"));
+		spec.setOutputPath(output);
 		spec.setDfsMaster(dfs_master);
 		spec.setSoName(so_name);
 		spec.setDfsPort(dfs_port);
-		spec.setMaxJobs(maxJobs);
+		spec.setMaxJobsPerNode(maxJobs);
 		spec.setMaxMaps(maxMaps);
 		spec.setMaxReduces(maxReduces);
 		HDFS hdfs("localhost", 9000);

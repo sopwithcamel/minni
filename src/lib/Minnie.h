@@ -13,7 +13,7 @@ using namespace std;
 class MapReduceSpecification {
   public:
         MapReduceSpecification() {};
-	~MapReduceSpecification();
+	~MapReduceSpecification() {};
 	vector<string*> getInputFiles() { return input; };
 	string getOutputPath() { return output; };
 	string getDfsMaster() {return dfs_master; };

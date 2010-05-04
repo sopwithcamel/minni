@@ -17,7 +17,7 @@ Master::Master(MapReduceSpecification spec, DFS &dfs, string nodesFile) : spec(s
 	dfs.connect();
 
 	/* assign all map jobs */
-	for (iter = spec.getInputPath().begin(); iter < spec.getInputPath().end(); iter++)
+	for (iter = spec.getInputFiles().begin(); iter < spec.getInputFiles().end(); iter++)
 	{
 		uint64_t num_chunks = dfs.getNumChunks(*(*iter));
 		cout << "Inspecting input file: " << *(*iter) << endl;
