@@ -5,12 +5,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
+#include "daemon_types.h"
 
-typedef uint64_t JobID;
-
+using namespace workdaemon;
 using namespace std;
 
-class MapReduceSpecification { 
+class MapReduceSpecification {
   public:
         MapReduceSpecification() {};
 	~MapReduceSpecification();
@@ -21,8 +21,8 @@ class MapReduceSpecification {
 	uint16_t getDfsPort() { return dfs_port; };
 	JobID getMaxJobsPerNode() { return maxJobs; };
 	JobID getMaxMaps() { return maxMaps; };
-	JobID getMaxReduces() { return maxReduces; };
-	
+	JobID getMaxReduces() { return maxReduces; }
+
 	void setOutputPath(string o) { output = o;}
 	void setDfsMaster(string master) {dfs_master = master; };
 	void setSoName(string sname) { so_name = sname; };
@@ -40,8 +40,7 @@ class MapReduceSpecification {
 	uint16_t dfs_port;
 	JobID maxJobs;
 	JobID maxMaps;
-	JobID maxReduces; 
-   
+	JobID maxReduces;
 };
 
 class MapReduceResult

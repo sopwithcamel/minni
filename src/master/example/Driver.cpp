@@ -20,7 +20,15 @@ int main(int argc, char* args[])
 		JobID maxJobs = 10;
 		JobID maxMaps = 5000;
 		JobID maxReduces = 1000;
-		MapReduceSpecification spec(input, output, dfs_master, so_name, dfs_port, maxJobs, maxMaps, maxReduces);
+		MapReduceSpecification spec;
+		spec.setInput(input);
+		spec.setOutput(output);
+		spec.setDfsMaster(dfs_master);
+		spec.setSoName(so_name);
+		spec.setDfsPort(dfs_port);
+		spec.setMaxJobs(maxJobs);
+		spec.setMaxMaps(maxMaps);
+		spec.setMaxReduces(maxReduces);
 		HDFS hdfs("localhost", 9000);
 		Master m(spec, hdfs, "example/nodes.conf");
 		while (m.checkMapStatus()) /* assignment of all maps */
