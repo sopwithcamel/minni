@@ -16,7 +16,7 @@ using namespace workdaemon;
 class Node
 {
 	public:
-		Node(string* URL, MapReduceSpecification spec) : spec(spec), communicator(URL), remainingMapsCount(0), remainingReducesCount(0), activeMapsCount(0), activeReducesCount(0) {};
+		Node(string* URL, MapReduceSpecification spec);
 		~Node();
 		void addMap(struct MapJob);
 		void addReduce(struct ReduceJob);

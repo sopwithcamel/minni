@@ -41,9 +41,9 @@ class Master {
 		void sendAllMappersFinished();							/* send all maps finished to all nodes */
 		map<string, Node*> nodes;								/* maintain string list of all node names */
 		Node* nodeWithMaxMapJobs;								/* node with maximum remaining map jobs */
-		uint64_t maximumMapJobsCount;							/* the number of jobs assigned to highest map loaded node */
+		JobID maximumMapJobsCount;							/* the number of jobs assigned to highest map loaded node */
 		Node* nodeWithMaxReduceJobs;							/* node with maximum remaining reduce jobs */
-		uint64_t maximumReduceJobsCount;						/* the number of jobs assigned to highest reduce loaded node */
+		JobID maximumReduceJobsCount;							/* the number of jobs assigned to highest reduce loaded node */
 		vector<string> finishedNodes;							/* string list of finished node URL's */
 		set<string> alreadySentFinishedNodes;						/* set of finished nodes we've sent out */
 		JobID jidCounter;										/* monotonically increasing universal job counter */

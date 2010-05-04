@@ -1,7 +1,17 @@
 #include "Master.h"
 
-Master::Master(MapReduceSpecification spec, DFS &dfs, string nodesFile) : spec(spec), jidCounter(0), activeMappers(0), activeReducers(0), remainingMappers(0), remainingReducers(0), completedMaps(0), completedReducers(0), maximumMapJobsCount(0), maximumReduceJobsCount(0)
+Master::Master(MapReduceSpecification spec, DFS &dfs, string nodesFile) : spec(spec)
 {
+	jidCounter = 0;
+	activeMappers = 0;
+	activeReducers = 0;
+	remainingMappers = 0;
+	remainingReducers = 0;
+	completedMaps = 0;
+	completedReducers = 0;
+	maximumMapJobsCount = 0;
+	maximumReduceJobsCount = 0;
+
 	loadNodesFile(nodesFile.c_str());
 	vector<string*>::iterator iter;
 	dfs.connect();

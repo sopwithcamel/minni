@@ -1,5 +1,13 @@
 #include "Node.h"
 
+Node::Node(string* URL, MapReduceSpecification spec) : spec(spec), communicator(URL)
+{
+	remainingMapsCount = 0;
+	remainingReducesCount = 0;
+	activeMapsCount = 0;
+	activeReducesCount = 0;
+}
+
 Node::~Node()
 {
 

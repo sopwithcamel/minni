@@ -3,8 +3,8 @@
 #include <string.h>
 
 #define LAG 5
-#define HDFS_TEST 0
-#define PRODUCTION_TEST 1
+#define HDFS_TEST 1
+#define PRODUCTION_TEST 0
 #define HDFS_TEST_PATH "/test/foo.log"
 
 int main(int argc, char* args[])
@@ -62,17 +62,17 @@ int main(int argc, char* args[])
 		char jello[12] = {'j','e','l','l','o',' ','w','a','l','l','a','\0'};
 		memset(buf, 0, 256);
 		HDFS hdfs("localhost", 9000);
+		cout << "Connecting to DFS" << endl;
 		hdfs.connect();
+		cout << "Connected to DFS" << endl;
 		cout << "Creating '" << HDFS_TEST_PATH << "': " << hdfs.createFile(HDFS_TEST_PATH) << endl;
 		cout << "/test/foo.log exists: " << hdfs.checkExistance(HDFS_TEST_PATH) << endl;
 		cout << "Writing \"jello walla\" to '" << HDFS_TEST_PATH "':"
 			<< hdfs.writeToFile(HDFS_TEST_PATH, jello, strlen(jello)) << endl;
-		cout << "Reading from file '" << HDFS_TEST_PATH << "': " << hdfs.readChunkOffset(string(HDFS_TEST_PATH), (uint64_t)0, buf, (uint64_t)256)
-			<< "\t" << buf << endl;
-		memset(buf, 0, 256);
 		cout << "Writing \"hello world\" to '" << HDFS_TEST_PATH << "': "
 			<< hdfs.writeToFile(HDFS_TEST_PATH, hello, strlen(hello)) << endl;
-		cout << "Reading from file '" << HDFS_TEST_PATH << "': " << hdfs.readChunkOffset(string(HDFS_TEST_PATH), (uint64_t)0, buf, (uint64_t)256)
+		cout << "Closing file " << HDFS_TEST_PATH << ":" << hdfs.closeFile(HDFS_TEST_PATH) << endl;
+		cout << "Reading from file '" << HDFS_TEST_PATH << "': " << hdfs.readChunkOffset(HDFS_TEST_PATH, (uint64_t)0, buf, (uint64_t)256)
 			<< "\t" << buf << endl;
 		cout << "Chunksize for '" << HDFS_TEST_PATH << "': " << hdfs.getChunkSize(HDFS_TEST_PATH) << endl;
 		cout << "Chunks for '" << HDFS_TEST_PATH << "': " << hdfs.getNumChunks(HDFS_TEST_PATH) << endl;

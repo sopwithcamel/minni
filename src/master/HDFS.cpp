@@ -124,11 +124,14 @@ int64_t HDFS::writeToFile(string path, char* buf, uint64_t length)
 	hdfsFile file;
 	if (fileCache.find(path) != fileCache.end())
 	{
+		cout << "Pulling open file from fileCache" << endl;
 		file = fileCache[path];
 	}
 	else
 	{
+		cout << "Opening file for writing." << endl;
 		file = hdfsOpenFile(fs, path.c_str(), O_WRONLY, 0, 0, 0);
+		fileCache[path] = file;
 	}
 	ret = hdfsWrite(fs, file, buf, (tSize) length);
 	return ret;
@@ -136,9 +139,12 @@ int64_t HDFS::writeToFile(string path, char* buf, uint64_t length)
 
 int64_t HDFS::closeFile(string path)
 {
+	int64_t ret;
 	if (fileCache.find(path) != fileCache.end())
 	{
-		hdfsCloseFile(fs, fileCache[path]);
+		ret = hdfsCloseFile(fs, fileCache[path]);
+		fileCache.erase(path);
+		return ret;
 	}
 	else
 	{
