@@ -35,32 +35,36 @@ bool Node::removeReduce(JobID jid)
 	return false;
 }
 
-void Node::runMap()
+bool Node::runMap()
 {
-	communicator.sendMap(remainingMaps.top());
-	activeMaps[remainingMaps.top().jid] = remainingMaps.top();
+	if (remainingMaps.empty()) return false;
+	communicator.sendMap(remainingMaps.front());
+	activeMaps[remainingMaps.front().jid] = remainingMaps.front();
 	remainingMaps.pop();
 	activeMapsCount++;
 	remainingMapsCount--;
+	return true;
 }
 
-void Node::runReduce()
+bool Node::runReduce()
 {
-	communicator.sendReduce(remainingReduces.top());
-	activeMaps[remainingReduces.top().jid] = remainingReduces.top();
+	if (remainingReduces.empty()) return false;
+	communicator.sendReduce(remainingReduces.front());
+	activeReduces[remainingReduces.front().jid] = (remainingReduces.front());
 	remainingReduces.pop();
 	activeReducesCount++;
 	remainingReducesCount--;
+	return true;
 }
 
 void Node::setMapStatus(JobID jid, Status stat)
 {
-	maps[jid]->stat = stat;
+	activeMaps[jid].stat = stat;
 }
 
 void Node::setReduceStatus(JobID jid, Status stat)
 {
-	reduces[jid]->stat = stat;
+	activeReduces[jid].stat = stat;
 }
 
 void Node::checkStatus(std::map<JobID, Status> & _return)
@@ -68,7 +72,7 @@ void Node::checkStatus(std::map<JobID, Status> & _return)
 	communicator.sendListStatus(_return);
 }
 
-void Node::sendAllMapsDone()
+void Node::sendAllMapsFinished()
 {
 	communicator.sendAllMapsDone();
 }
@@ -84,9 +88,9 @@ bool Node::hasMaps()
 	return false;
 }
 
-bool hasReduces()
+bool Node::hasReduces()
 {
-	if (remainingReducesCount > 0) return true;
+	if ( remainingReducesCount > 0) return true;
 	return false;
 }
 
@@ -109,3 +113,25 @@ JobID Node::numRemainingJobs()
 {
 	return remainingMapsCount + remainingReducesCount;
 }
+
+JobID Node::numActiveJobs()
+{
+	return activeMapsCount + activeReducesCount;
+}
+
+struct MapJob Node::stealMap()
+{
+	MapJob ret = remainingMaps.front();
+	remainingMapsCount--;
+	remainingMaps.pop();
+	return ret;
+}
+
+struct ReduceJob Node::stealReduce()
+{
+	ReduceJob ret = remainingReduces.front();
+	remainingReducesCount--;
+	remainingReduces.pop();
+	return ret;	
+}
+
