@@ -129,7 +129,7 @@ class MapReduceSpecification { //Talk to Wolf whether these are enough...
 						outputPath(output), dfs_master(dfs_master),
 						so_name(so_name), dfs_port(dfs_port), maxJobs(maxJobs),
 						maxMaps(maxMaps), maxReduces(maxReduces) {};
-		~MapReduceSpecification();
+		~MapReduceSpecification() {};
 		vector<string*> getInputPath() { return inputPath; };
 		string getOutputPath() { return outputPath; };
 		string getDfsMaster() {return dfs_master; };
