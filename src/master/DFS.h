@@ -16,7 +16,7 @@ class DFS
 		~DFS() {};
 		virtual bool connect() = 0;
 		virtual bool disconnect() = 0;
-		virtual bool checkExistance(string path) = 0;
+		virtual bool checkExistence(string path) = 0;
 		virtual int64_t readChunkOffset(string path, uint64_t offset, char* buf, uint64_t length) = 0;
 		virtual uint64_t getChunkSize(string path) = 0;
 		virtual uint64_t getNumChunks(string path) = 0;

@@ -24,17 +24,20 @@ Master::Master(MapReduceSpecification spec, DFS &dfs, string nodesFile) : spec(s
 		for (uint64_t i = 0; i < num_chunks; i++)
 		{
 			vector<string> locations;
-			Node* min;
+			Node* min = (*(nodes.begin())).second;
 			JobID minNumJobs = UINT64_MAX;
 			vector<string>::iterator location_iter;
 			for (location_iter = locations.begin(); location_iter < locations.end(); location_iter++)
 			{
 				cout << "Node[" << *location_iter << " has chunk " << i << endl;
-				if (nodes[*location_iter]->numRemainingJobs() < minNumJobs)
+				if (nodes.find(*location_iter) != nodes.end())
 				{
-					cout << "New min found: " << nodes[*location_iter]->numRemainingJobs() << endl;
-					minNumJobs  = nodes[*location_iter]->numRemainingJobs();
-					min = nodes[*location_iter];
+					if (nodes[*location_iter]->numRemainingJobs() < minNumJobs)
+					{
+						cout << "New min found: " << nodes[*location_iter]->numRemainingJobs() << endl;
+						minNumJobs  = nodes[*location_iter]->numRemainingJobs();
+						min = nodes[*location_iter];
+					}
 				}
 			}
 			assignMapJob(min, i, *(*iter));

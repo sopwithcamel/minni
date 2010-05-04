@@ -27,7 +27,7 @@ bool HDFS::disconnect()
 	return true;
 }
 
-bool HDFS::checkExistance(string path)
+bool HDFS::checkExistence(string path)
 {
 	if (hdfsExists(fs, path.c_str()))	return false;
 	return true;
