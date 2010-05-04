@@ -19,7 +19,7 @@ using namespace std;
 
 class Master {
 	public:
-		Master(MapReduceSpecification spec, DFS &dfs, string nodesFile); /* constructor */
+		Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile);/* constructor */
 		~Master();											/* destructor */
 		void assignMaps();										/* assign and run as many maps as possible */
 		void assignReduces();									/* assign and run as many reduces as possible */
@@ -47,7 +47,7 @@ class Master {
 		vector<string> finishedNodes;							/* string list of finished node URL's */
 		set<string> alreadySentFinishedNodes;						/* set of finished nodes we've sent out */
 		JobID jidCounter;										/* monotonically increasing universal job counter */
-		MapReduceSpecification spec;								/* job specification parameters and constants */
+		MapReduceSpecification* spec;							/* job specification parameters and constants */
 		JobID activeMappers;									/* count of active mappers */
 		JobID activeReducers;									/* count of active reducers */
 		JobID remainingMappers;								/* remaining map jobs to run */

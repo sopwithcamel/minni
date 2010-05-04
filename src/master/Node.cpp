@@ -1,6 +1,6 @@
 #include "Node.h"
 
-Node::Node(string* URL, MapReduceSpecification spec) : spec(spec), communicator(URL)
+Node::Node(string* URL) : communicator(URL)
 {
 	remainingMapsCount = 0;
 	remainingReducesCount = 0;
@@ -30,7 +30,7 @@ bool Node::removeMap(JobID jid)
 {
 	activeMaps.erase(jid);
 	activeMapsCount--;
-	if (remainingMapsCount == 0) return true;
+	if (activeMapsCount + remainingMapsCount == 0) return true;
 	return false;
 }
 
@@ -39,14 +39,14 @@ bool Node::removeReduce(JobID jid)
 {
 	activeReduces.erase(jid);
 	activeReducesCount--;
-	if (remainingReducesCount == 0) return true;
+	if (activeReducesCount + remainingReducesCount == 0) return true;
 	return false;
 }
 
 bool Node::runMap()
 {
 	if (remainingMaps.empty()) return false;
-	communicator.sendMap(remainingMaps.front());
+	communicator.sendMap(remainingMaps.front(), 3);
 	activeMaps[remainingMaps.front().jid] = remainingMaps.front();
 	remainingMaps.pop();
 	activeMapsCount++;
@@ -57,7 +57,7 @@ bool Node::runMap()
 bool Node::runReduce()
 {
 	if (remainingReduces.empty()) return false;
-	communicator.sendReduce(remainingReduces.front());
+	communicator.sendReduce(remainingReduces.front(), 3);
 	activeReduces[remainingReduces.front().jid] = (remainingReduces.front());
 	remainingReduces.pop();
 	activeReducesCount++;
@@ -77,17 +77,17 @@ void Node::setReduceStatus(JobID jid, Status stat)
 
 void Node::checkStatus(std::map<JobID, Status> & _return)
 {
-	communicator.sendListStatus(_return);
+	communicator.sendListStatus(_return, 3);
 }
 
 void Node::sendAllMapsFinished()
 {
-	communicator.sendAllMapsDone();
+	communicator.sendAllMapsDone(3);
 }
 
 void Node::reportCompletedJobs(const std::vector<string> & done)
 {
-	communicator.sendReportCompletedJobs(done);
+	communicator.sendReportCompletedJobs(done, 3);
 }
 
 bool Node::hasMaps()

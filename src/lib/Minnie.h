@@ -14,7 +14,7 @@ class MapReduceSpecification {
   public:
         MapReduceSpecification() {};
 	~MapReduceSpecification() {};
-	vector<string*> getInputFiles() { return input; };
+	vector<string> getInputFiles() { return input; };
 	string getOutputPath() { return output; };
 	string getDfsMaster() {return dfs_master; };
 	string getSoName() { return so_name; };
@@ -30,10 +30,10 @@ class MapReduceSpecification {
 	void setMaxJobsPerNode(JobID maxj) { maxJobs = maxj;};
 	void setMaxMaps(JobID maxm) { maxMaps = maxm;};
 	void setMaxReduces(JobID maxr) {maxReduces = maxr;};
-	void addInput(string* in) {input.push_back(in);};
+	void addInput(string in) {input.push_back(in);};
 
   private:
-	vector<string*> input;
+	vector<string> input;
 	string output;
         string dfs_master;
 	string so_name;

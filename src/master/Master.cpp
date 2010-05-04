@@ -1,6 +1,20 @@
 #include "Master.h"
 
-Master::Master(MapReduceSpecification spec, DFS &dfs, string nodesFile) : spec(spec)
+void printInputFiles(vector<string> vec)
+{
+	cout << "\t\tVector Size: " << vec.size() << endl;
+	for (unsigned int i = 0; i < vec.size(); i++)
+	{
+		cout << "\t\tVector String Input File***: '" << (vec[i]) << "'" << endl;
+	}
+	vector<string>::iterator it = vec.begin();
+	for (; it < vec.end(); it++)
+	{
+		cout << "\t\tVector String Input File: '" << (*it) << "'" << endl;
+	}
+}
+
+Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(spec)
 {
 	jidCounter = 0;
 	activeMappers = 0;
@@ -13,14 +27,20 @@ Master::Master(MapReduceSpecification spec, DFS &dfs, string nodesFile) : spec(s
 	maximumReduceJobsCount = 0;
 
 	loadNodesFile(nodesFile.c_str());
-	vector<string*>::iterator iter;
+	cout << "Master: Loaded nodes file." << endl;
+	vector<string>::iterator iter;
+	cout << "Master: Connecting to DFS." << endl;
 	dfs.connect();
-
+	cout << "Master: Connected." << endl;
+	cout << "Number of input files " << spec->getInputFiles().size() <<  endl;
+	vector<string> inputFiles = spec->getInputFiles();
 	/* assign all map jobs */
-	for (iter = spec.getInputFiles().begin(); iter < spec.getInputFiles().end(); iter++)
+	for (iter = inputFiles.begin(); iter < inputFiles.end(); iter++)
 	{
-		uint64_t num_chunks = dfs.getNumChunks(*(*iter));
-		cout << "Inspecting input file: " << *(*iter) << endl;
+		cout << "Master: Getting num chunks for" << (*iter) << endl;
+		uint64_t num_chunks = dfs.getNumChunks((*iter));
+		cout << "Master: Got num chunks" << endl;
+		cout << "Inspecting input file: " << ((*iter)) << endl;
 		for (uint64_t i = 0; i < num_chunks; i++)
 		{
 			vector<string> locations;
@@ -40,20 +60,24 @@ Master::Master(MapReduceSpecification spec, DFS &dfs, string nodesFile) : spec(s
 					}
 				}
 			}
-			assignMapJob(min, i, *(*iter));
+			assignMapJob(min, i, (*iter));
 		}
 	}
+	cout << "All maps assigned." << endl;
 	dfs.disconnect();
+	cout << "Disconnected from DFS." << endl;
 	
 	/* assign all reduce jobs */
-	PartID numSingleNode = (PartID) ceil((double)spec.getMaxReduces() / (double)nodes.size());
+	PartID numSingleNode = (PartID) ceil((double)spec->getMaxReduces() / (double)nodes.size());
 	PartID currentPID = 0;
 	map<string, Node*>::iterator nodeIter;
+	cout << "Assigning reduce jobs." << endl;
 	for (nodeIter = nodes.begin(); nodeIter != nodes.end(); nodeIter++)
 	{
+		cout << "Assigning " << numSingleNode <<" reduces to " << *(((*nodeIter).second)->getURL()) << endl;
 		for (PartID i = 0; i < numSingleNode; i++)
 		{
-			assignReduceJob((*nodeIter).second, currentPID + i, spec.getOutputPath());
+			assignReduceJob((*nodeIter).second, currentPID + i, spec->getOutputPath());
 			currentPID++;
 		}
 	}
@@ -71,7 +95,7 @@ Master::~Master()
 
 void Master::assignMapJob(Node* node, ChunkID cid, string fileIn)
 {
-	struct MapJob job(jidCounter*2, cid, jobstatus::INPROGRESS, fileIn, spec.getSoName(), spec.getMaxReduces(), spec.getDfsMaster(), spec.getDfsPort());
+	struct MapJob job(jidCounter*2, cid, jobstatus::INPROGRESS, fileIn, spec->getSoName(), spec->getMaxReduces(), spec->getDfsMaster(), spec->getDfsPort());
 	node->addMap(job);
 	remainingMappers++;
 	jidCounter++;
@@ -79,7 +103,7 @@ void Master::assignMapJob(Node* node, ChunkID cid, string fileIn)
 
 void Master::assignReduceJob(Node* node, PartID pid, string fileOut)
 {
-	struct ReduceJob job(jidCounter*2+1, pid, jobstatus::INPROGRESS, fileOut, spec.getSoName(), spec.getDfsMaster(), spec.getDfsPort());
+	struct ReduceJob job(jidCounter*2+1, pid, jobstatus::INPROGRESS, fileOut, spec->getSoName(), spec->getDfsMaster(), spec->getDfsPort());
 	node->addReduce(job);
 	remainingReducers++;
 	jidCounter++;
@@ -98,7 +122,7 @@ void Master::loadNodesFile(string fileName)
 		getline (fileIn,*tempURL);
 		if (!tempURL->empty() && tempURL->compare("\n") && tempURL->compare(""))
 		{
-			nodes["test"] = new Node(tempURL, spec);
+			nodes["test"] = new Node(tempURL);
 			cout << "New Node:\t" << *tempURL << endl;
 		}
 	}
@@ -109,21 +133,24 @@ void Master::assignMaps()
 	map<string, Node*>::iterator nodesIter;
 	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
 	{
-		cout <<  "Before Running Map Job Status: " << activeMappers << " active jobs " << remainingMappers << " remaining jobs" << endl; 
+		cout <<  "Before Running Map Job Status: " << activeMappers + activeReducers << " active jobs " << remainingMappers + remainingReducers << " remaining jobs" << endl; 
 		/* decrement and increment counters accordingly */
-		while ((*nodesIter).second->numActiveJobs() < spec.getMaxJobsPerNode())
+		while ((*nodesIter).second->numActiveJobs() < spec->getMaxJobsPerNode())
 		{
 			if (!((*nodesIter).second->runMap()))
 			{
+				cout << "Breaking out of loop in assignMaps()" << endl;
 				break;
 			}
 			activeMappers++;
 			remainingMappers--;
 		}
 
+		cout << "assignMaps() updating max map node" << endl;
 		updateMaximumMapNode();
 
-		while ((*nodesIter).second->numActiveJobs() < spec.getMaxJobsPerNode())
+		cout << "looping to steal" << endl;
+		while ((*nodesIter).second->numActiveJobs() < spec->getMaxJobsPerNode() && nodeWithMaxMapJobs->numRemainingMapJobs() > 0)
 		{
 			struct MapJob job = nodeWithMaxMapJobs->stealMap();
 			(*nodesIter).second->addMap(job);
@@ -133,7 +160,7 @@ void Master::assignMaps()
 			updateMaximumMapNode();
 		}
 
-		cout <<  "After Running Map Job Status: " << activeMappers << " active jobs " << remainingMappers << " remaining jobs" << endl; 
+		cout <<  "After Running Map Job Status: " << activeMappers + activeReducers << " active jobs " << remainingMappers + remainingReducers << " remaining jobs" << endl; 
 	}
 }
 
@@ -143,9 +170,9 @@ void Master::assignReduces()
 	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
 	{
 		if ((*nodesIter).second->hasMaps() || nodeWithMaxMapJobs->hasMaps()) return; /* assign all maps first */
-		cout <<  "Before Running Reduce Job Status: " << activeMappers << " active jobs " << remainingMappers << " remaining jobs" << endl; 
+		cout <<  "Before Running Reduce Job Status: " << activeMappers + activeReducers << " active jobs " << remainingMappers + remainingReducers << " remaining jobs" << endl; 
 		/* decrement and increment counters accordingly */
-		while ((*nodesIter).second->numActiveJobs() < spec.getMaxJobsPerNode())
+		while ((*nodesIter).second->numActiveJobs() < spec->getMaxJobsPerNode())
 		{
 			if (!(*nodesIter).second->runReduce())
 			{
@@ -157,7 +184,7 @@ void Master::assignReduces()
 
 		updateMaximumReduceNode();
 
-		while ((*nodesIter).second->numActiveJobs() < spec.getMaxJobsPerNode())
+		while ((*nodesIter).second->numActiveJobs() < spec->getMaxJobsPerNode() && nodeWithMaxReduceJobs->numRemainingReduceJobs() > 0)
 		{
 			struct ReduceJob job = nodeWithMaxReduceJobs->stealReduce();
 			(*nodesIter).second->addReduce(job);
@@ -167,7 +194,7 @@ void Master::assignReduces()
 			updateMaximumReduceNode();
 		}
 
-		cout <<  "After Running Reduce Job Status: " << activeMappers << " active jobs " << remainingMappers << " remaining jobs" << endl; 
+		cout <<  "After Running Reduce Job Status: " << activeMappers + activeReducers << " active jobs " << remainingMappers + remainingReducers << " remaining jobs" << endl; 
 	}
 }
 
@@ -211,12 +238,14 @@ bool Master::checkReducerStatus()
 
 bool Master::maps()
 {
+	cout << "Checking map jobs: "  << activeMappers << " active mappers " << remainingMappers << " remaining mappers." << endl;
 	if (activeMappers || remainingMappers) return true;
 	return false;
 }
 
 bool Master::reduces()
 {
+	cout << "Checking reduce jobs: "  << activeReducers << " active reducers " << remainingReducers << " remaining reducers." << endl;
 	if (activeReducers || remainingReducers) return true;
 	return false;
 }
@@ -239,7 +268,7 @@ bool Master::checkStatus()
 
 		for ( mapIterator = _return.begin(); mapIterator != _return.end(); mapIterator++ )
 		{
-			cout << (*mapIterator).first << " => " << (*mapIterator).second << endl;
+			cout << "\t\t" << "Job[" << (*mapIterator).first << "] => Status[" << (*mapIterator).second << "]" << endl;
 			if ((*mapIterator).first % 2 == 0) /* map */
 			{
 				if ((*mapIterator).second == jobstatus::DONE)
