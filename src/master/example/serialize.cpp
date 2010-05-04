@@ -3,8 +3,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 
-void serialize(FILE* fileOut, char type, uint64_t keyLength, char* key, uint64_t valueLength, char* value)
+using namespace std;
+
+void serialize(FILE* fileOut, char type, uint64_t keyLength, const char* key, uint64_t valueLength, const char* value)
 {
 	keyLength = keyLength + 1; /* write \0 */
 	valueLength = valueLength + 1; /* write \0 */
@@ -29,6 +32,8 @@ void deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint
 int main(int arg, char* args[])
 {
 	/* serialize some data */
+	string key = "test key";
+	string value = "test value";
 	char type1 = 1;
 	char key1[9] = {'t','e','s','t',' ','k','e','y','\0'};
 	uint64_t keyLength1 = strlen(key1);
@@ -37,7 +42,7 @@ int main(int arg, char* args[])
 
 	FILE* fileOut = fopen("serialized.out", "wb");
 
-	serialize(fileOut, type1, keyLength1, key1, valueLength1, value1);
+	serialize(fileOut, type1, (uint64_t) key.length(), key.c_str(), (uint64_t) value.length(), value.c_str());
 
 	fclose(fileOut);
 
