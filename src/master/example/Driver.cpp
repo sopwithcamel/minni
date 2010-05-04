@@ -3,46 +3,36 @@
 #include <string.h>
 
 #define LAG 5
-#define MASTER_TEST 0
 #define HDFS_TEST 0
 #define PRODUCTION_TEST 1
 #define HDFS_TEST_PATH "/test/foo.log"
 
 int main(int argc, char* args[])
 {
-	if (MASTER_TEST)
-	{
-		Master m;
-		m.loadNodesFile("example/nodes.conf");
-
-		m.sendMapCommand();
-		sleep(LAG);
-		m.checkStatus();
-		sleep(LAG);
-		m.sendFinishedNodes();
-		sleep(LAG);
-		m.sendReduceCommand();
-		sleep(LAG);
-		m.checkStatus();
-		sleep(LAG);
-		return 0;
-	}
-
 	if (PRODUCTION_TEST)
 	{
-		MapReduceSpecification spec;
-		Master m(spec);
-		m.loadNodesFile("example/nodes.conf");
+		vector<string*> input;
+		input.push_back(new string("/input/test.file"));
+		string output = "/output/";
+		string dfs_master = "localhost";
+		string so_name = "wordcount.so";
+		uint16_t dfs_port = 9000;
+		JobID maxJobs = 10;
+		JobID maxMaps = 5000;
+		JobID maxReduces = 1000;
+		MapReduceSpecification spec(input, output, dfs_master, so_name, dfs_port, maxJobs, maxMaps, maxReduces);
+		HDFS hdfs("localhost", 9000);
+		Master m(spec, hdfs, "example/nodes.conf");
 		while (m.checkMapStatus()) /* assignment of all maps */
 		{
 			cout << "Assigning and running maps." << endl;
 			m.assignMaps();
-			n.checkStatus();
+			m.checkStatus();
 			m.assignReduces();
 			sleep(LAG);
 		}
 
-		while (m.checkReduceStatus()) /* assignment of all reduces */
+		while (m.checkReducerStatus()) /* assignment of all reduces */
 		{
 			cout << "Assigning and running reduces." << endl;
 			m.assignReduces();
@@ -58,7 +48,7 @@ int main(int argc, char* args[])
 		}
 		cout << "Congratulations.  You finished an entire MapReduce Job." << endl;
 
-		MapReduceResult result(m.getNumberOfCompletedMaps(), m.getNumberOfReducesCompleted(), m.getNumberOfNodes());
+		MapReduceResult result(m.getNumberOfMapsCompleted(), m.getNumberOfReducesCompleted(), m.getNumberOfNodes());
 
 		/* return result; */
 
@@ -86,15 +76,11 @@ int main(int argc, char* args[])
 			<< "\t" << buf << endl;
 		cout << "Chunksize for '" << HDFS_TEST_PATH << "': " << hdfs.getChunkSize(HDFS_TEST_PATH) << endl;
 		cout << "Chunks for '" << HDFS_TEST_PATH << "': " << hdfs.getNumChunks(HDFS_TEST_PATH) << endl;
-		vector<string*> _return;
+		vector<string> _return;
 		hdfs.getChunkLocations(HDFS_TEST_PATH, 0, _return);
 		for(unsigned int i = 0; i < _return.size(); i++)
 		{
-			cout << "\tChunk at: " << *_return[i] << endl;
-		}
-		for(unsigned int i = 0; i < _return.size(); i++)
-		{
-			delete _return[i];
+			cout << "\tChunk at: " << _return[i] << endl;
 		}
 		hdfs.disconnect();
 		return 0;
