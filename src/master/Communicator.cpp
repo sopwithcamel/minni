@@ -5,7 +5,7 @@ Communicator::~Communicator()
 	delete url;
 }
 
-void Communicator::sendMap(MapJob map)
+void Communicator::sendMap(struct MapJob map)
 {
 	cout  << "Sending Map To: " << *url << endl;
 
@@ -29,7 +29,7 @@ void Communicator::sendMap(MapJob map)
 	}
 }
 
-void Communicator::sendReduce(ReduceJob reduce)
+void Communicator::sendReduce(struct ReduceJob reduce)
 {
 	cout  << "Sending Reduce To: " << *url << endl;
 
@@ -98,6 +98,30 @@ void Communicator::sendReportCompletedJobs(const std::vector<URL> & done)
 		transport->close();
 	} catch (TTransportException reason){
 		cout << "Caught Exception: Sending REPORTCOMPLETEDJOBS."  << endl;
+	}
+}
+
+void Communicator::sendAllMapsDone()
+{
+	cout  << "Sending allMapsDone To: " << *url << endl;
+
+	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT);
+	boost::shared_ptr<TSocket> socket(temp);
+
+	TBufferedTransport* temp1 = new TBufferedTransport(socket);
+	boost::shared_ptr<TTransport> transport(temp1);
+
+	TBinaryProtocol* temp2 = new TBinaryProtocol(transport);
+	boost::shared_ptr<TProtocol> protocol(temp2);
+
+	WorkDaemonClient client(protocol);
+
+	try {
+		transport->open();
+		client.allMapsDone();
+		transport->close();
+	} catch (TTransportException reason){
+		cout << "Caught Exception: Sending ALLMAPSDONE."  << endl;
 	}
 }
 

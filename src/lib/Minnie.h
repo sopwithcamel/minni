@@ -139,7 +139,15 @@ class MapReduceSpecification { //Talk to Wolf whether these are enough...
 	create_mapper_t* mapper_creater;
 	create_reducer_t* reducer_creater;
 	destroy_mapper_t* mapper_destroyer;
-	destroy_reducer_t* reducer_destroyer;	
+	destroy_reducer_t* reducer_destroyer;
+
+	JobID getMaxJobsPerNode() { return max_jobs; };
+	JobID getMaxMaps() { return max_maps; };
+	JobID getMaxReduces() { return max_reduces; } ;	
+
+	void setMaxJobsPerNode(JobID max) { max_jobs = max; };
+	void setMaxMaps(JobID max) { max_maps = max; };
+	void setMaxReduces(JobID max) { max_reduces = max; } ;
 
   private:
 	MapReduceInput* array_inputs;
@@ -148,7 +156,9 @@ class MapReduceSpecification { //Talk to Wolf whether these are enough...
 	int num_machines;
 	int map_megabytes;
 	int reduce_megabytes;
-		
+	JobID max_jobs;
+	JobID max_maps;
+	JobID max_reduces;		
 };
 
 class MapReduceResult { //Consult with Wolf abt what all to add

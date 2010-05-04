@@ -55,7 +55,7 @@ uint64_t HDFS::getNumChunks(string path)
 		[char* node][int block][guard]
 		...
 */
-void HDFS::getChunkLocations(string path, ChunkID cid, vector<string*> & _return)
+void HDFS::getChunkLocations(string path, ChunkID cid, vector<string> & _return)
 {
 	/* dynamically size 2-d array, last pos is NULL */
 	char*** twoDArray = hdfsGetHosts(fs, path.c_str(), cid*getChunkSize(path), getChunkSize(path));
@@ -65,7 +65,7 @@ void HDFS::getChunkLocations(string path, ChunkID cid, vector<string*> & _return
 		cout << "DEBUG: " << twoDArray[0][0] << "|\t|" << (uint64_t)twoDArray[0][1] << endl;
 		if ((int64_t)twoDArray[0][1] == cid)
 		{
-			_return.push_back(new string(twoDArray[0][0]));
+			_return.push_back(string(twoDArray[0][0]));
 		}
 		if (twoDArray[0][2] == NULL) break;
 		twoDArray++;

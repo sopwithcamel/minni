@@ -3,10 +3,12 @@
 
 #include <string>
 #include <map>
+#include <queue>
 #include "common.h"
 #include "Communicator.h"
 #include "WorkDaemon.h"
 #include "WorkDaemon_tasks.h"
+#include "Minnie.h"
 
 using namespace std;
 using namespace workdaemon;
@@ -14,24 +16,37 @@ using namespace workdaemon;
 class Node
 {
 	public:
-		Node(string* URL) : communicator(URL) {};
+		Node(string* URL, MapReduceSpecification spec) : communicator(URL), spec(spec) {};
 		~Node();
-		void addMap(JobID jid, ChunkID cid, string fileIn);
-		void addReduce(JobID jid, PartID pid, string fileOut);
+		void addMap(struct MapJob);
+		void addReduce(struct ReduceJob);
 		bool removeMap(JobID jid);
 		bool removeReduce(JobID jid);
+		void runMap();
+		void runReduce();
 		void setMapStatus(JobID jid, Status stat);
 		void setReduceStatus(JobID jid, Status stat);
 		void checkStatus(map<JobID, Status> & _return);
 		void reportCompletedJobs(const std::vector<string> & done);
+		void sendAllMapsDone();
+		bool hasMaps();
+		bool hasReduces();
 		string* getURL();
+		JobID numRemainingMapJobs();
+		JobID numRemainingReduceJobs();		
+		JobID numRemainingJobs();
 
 	private:
-		JobID remainingMaps;
-		JobID remainingReduces;
-		map<JobID, struct MapJob*> maps;
-		map<JobID, struct ReduceJob*> reduces;
+		JobID remainingMapsCount;
+		JobID remainingReducesCount;
+		JobID activeMapsCount;
+		JobID activeReducesCount;
+		map<JobID, struct MapJob> activeMaps;
+		map<JobID, struct ReduceJob> activeReduces;
+		queue<struct MapJob> remainingMaps;
+		queue<struct ReduceJob> remainingReduces;
 		Communicator communicator;
+		MapReduceSpecification spec;
 };
 
 #endif
