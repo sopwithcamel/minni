@@ -22,10 +22,19 @@ class MapReduceSpecification {
 	JobID getMaxJobsPerNode() { return maxJobs; };
 	JobID getMaxMaps() { return maxMaps; };
 	JobID getMaxReduces() { return maxReduces; };
+	
+	void setOutputPath(string o) { output = o;}
+	void setDfsMaster(string master) {dfs_master = master; };
+	void setSoName(string sname) { so_name = sname; };
+	void setDfsPort(uint16_t port) { dfs_port = port;};
+	void setMaxJobsPerNode(JobID maxj) { maxJobs = maxj;};
+	void setMaxMaps(JobID maxm) { maxMaps = maxm;};
+	void setMaxReduces(JobID maxr) {maxReduces = maxr;};
+	void addInput(string* in) {input.push_back(in);};
 
   private:
 	vector<string*> input;
-	string output,
+	string output;
         string dfs_master;
 	string so_name;
 	uint16_t dfs_port;
