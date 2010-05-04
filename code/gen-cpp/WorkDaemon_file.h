@@ -46,6 +46,7 @@ typedef concurrent_hash_map<PartID, vector<File>, HashCompare<PartID> > FileMap;
 typedef concurrent_hash_map<PartID, set<string>, HashCompare<PartID> > NameMap;
 
 // Tracks the status of the local files
+// Concurrent
 class LocalFileRegistry{
  private:
   FileMap file_map;
@@ -79,6 +80,7 @@ struct Location{
 };
 
 // Transfers remote file from a single entity
+// Serial
 class Transfer{
   private:
   Count total;

@@ -27,7 +27,7 @@ class TaskRecord {
 
 typedef concurrent_hash_map<JobID, TaskRecord> TaskMap;
 
-
+// Maintains a list of all tasks, and their statuses
 class TaskRegistry{
  private:
   TaskMap task_map;

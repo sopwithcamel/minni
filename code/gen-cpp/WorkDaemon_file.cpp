@@ -198,8 +198,9 @@ string Transfer::toString(){
 
 PartitionGrabber::PartitionGrabber(PartID p, string o): pid(p), outfile(o){}
 
+// Set the output file and the PartID
 void PartitionGrabber::setValues(PartID p, string o){
-  pid =p;
+  pid = p;
   outfile = o;
 }
 
@@ -277,26 +278,28 @@ string PartitionGrabber::toString(){
   return ss.str();
 }
 
+// Initially, the Grabber isn't done.
 GrabberRegistry::GrabberRegistry(){
   finished = false;
 }
 
 void GrabberRegistry::addLocations(const vector<URL> u){
   Mutex::scoped_lock lock(mutex);
-  urls.insert(u.begin(), u.end());
+  urls.insert(u.begin(), u.end()); // Add it to the master list
   GrabberMap::range_type range = grab_map.range();
   for(GrabberMap::iterator it = range.begin();
       it != range.end(); it++){
-    it->second.addLocations(u);
+    it->second.addLocations(u); // Update any of the running grabbers
   }
 }
 void GrabberRegistry::getMore(PartID pid){
   GrabberMap::accessor acc_grab;
   bool found = grab_map.find(acc_grab, pid);
-  assert(found);
+  assert(found); // Can't get more if we don't have any! That's deep, Erik.
   acc_grab->second.getMore();
 }
 
+// Sets up a particular grabber, assigns an output file
 void GrabberRegistry::setupFile(PartID p, string o){
   GrabberMap::accessor acc_grab;
   grab_map.insert(acc_grab,p);
@@ -329,6 +332,7 @@ PartStatus GrabberRegistry::getStatus(PartID pid){
   }
 }
 
+// For the master to call when all Mappers are done.
 void GrabberRegistry::reportDone(){
   Mutex::scoped_lock lock(mutex);
   finished = true;
