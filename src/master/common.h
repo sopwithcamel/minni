@@ -15,16 +15,18 @@ struct MapJob
 	JobID jid;
 	Status stat;
 	Properties prop;
-	MapJob (JobID jid, ChunkID cid, Status stat, string fileIn) : jid(jid), stat(stat)
+	MapJob (JobID jid, ChunkID cid, Status stat, string fileIn, string so_name, JobID numReducers, string dfsMaster, uint16_t dfsPort) : jid(jid), stat(stat)
 	{
 		ostringstream stringConverter;
 		stringConverter << cid;
 		prop["CID"] = stringConverter.str();
+		stringConverter.str("");
 		prop["FILE_IN"] = fileIn;
-		prop["SO_NAME"] = "";
-		prop["NUM_REDUCERS"] = "";
-		prop["DFS_MASTER"] = "";
-		prop["DFS_PORT"] = "";
+		prop["SO_NAME"] = so_name;
+		prop["NUM_REDUCERS"] = numReducers;
+		prop["DFS_MASTER"] = dfsMaster;
+		stringConverter << dfsPort;
+		prop["DFS_PORT"] = stringConverter.str();
 	}
 };
 
@@ -33,15 +35,17 @@ struct ReduceJob
 	JobID jid;
 	Status stat;
 	Properties prop;
-	ReduceJob (JobID jid, PartID pid, Status stat, string fileOut) : jid(jid), stat(stat)
+	ReduceJob (JobID jid, PartID pid, Status stat, string fileOut, string so_name, string dfsMaster, uint16_t dfsPort) : jid(jid), stat(stat)
 	{
 		ostringstream stringConverter;
 		stringConverter << pid;
 		prop["PID"] = stringConverter.str();
 		prop["FILE_OUT"] = fileOut;
-		prop["SO_NAME"] = "";
-		prop["DFS_MASTER"] = "";
-		prop["DFS_PORT"] = "";
+		prop["SO_NAME"] = so_name;
+		prop["DFS_MASTER"] = dfsMaster;
+		stringConverter.str("");
+		stringConverter << dfsPort;
+		prop["DFS_PORT"] = stringConverter.str();
 	}
 };
 

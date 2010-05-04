@@ -5,38 +5,52 @@ Node::~Node()
 
 }
 
-void Node::addMap(JobID jid, ChunkID cid, string fileIn)
+void Node::addMap(struct MapJob map)
 {
-	struct MapJob* map = new struct MapJob(jid, cid, jobstatus::INPROGRESS, fileIn);
-	maps[map->jid] = map;
-	communicator.sendMap(*map);
-	remainingMaps++;
+	remainingMaps.push(map);
+	remainingMapsCount++;
 }
 
-void Node::addReduce(JobID jid, PartID pid, string fileOut)
+void Node::addReduce(struct ReduceJob reduce)
 {
-	struct ReduceJob* reduce = new struct ReduceJob(jid, pid, jobstatus::INPROGRESS, fileOut);
-	reduces[reduce->jid] = reduce;
-	communicator.sendReduce(*reduce);
-	remainingReduces++;
+	remainingReduces.push(reduce);
+	remainingReducesCount++;
 }
 
 /* return true when all maps over */
 bool Node::removeMap(JobID jid)
 {
-	maps.erase(jid);
-	remainingMaps--;
-	if (remainingMaps == 0) return true;
+	activeMaps.erase(jid);
+	activeMapsCount--;
+	if (remainingMapsCount == 0) return true;
 	return false;
 }
 
 /* return true when all reduces over */
 bool Node::removeReduce(JobID jid)
 {
-	reduces.erase(jid);
-	remainingReduces--;
-	if (remainingReduces == 0) return true;
+	activeReduces.erase(jid);
+	activeReducesCount--;
+	if (remainingReducesCount == 0) return true;
 	return false;
+}
+
+void Node::runMap()
+{
+	communicator.sendMap(remainingMaps.top());
+	activeMaps[remainingMaps.top().jid] = remainingMaps.top();
+	remainingMaps.pop();
+	activeMapsCount++;
+	remainingMapsCount--;
+}
+
+void Node::runReduce()
+{
+	communicator.sendReduce(remainingReduces.top());
+	activeMaps[remainingReduces.top().jid] = remainingReduces.top();
+	remainingReduces.pop();
+	activeReducesCount++;
+	remainingReducesCount--;
 }
 
 void Node::setMapStatus(JobID jid, Status stat)
@@ -54,12 +68,44 @@ void Node::checkStatus(std::map<JobID, Status> & _return)
 	communicator.sendListStatus(_return);
 }
 
+void Node::sendAllMapsDone()
+{
+	communicator.sendAllMapsDone();
+}
+
 void Node::reportCompletedJobs(const std::vector<string> & done)
 {
 	communicator.sendReportCompletedJobs(done);
 }
 
+bool Node::hasMaps()
+{
+	if (remainingMapsCount > 0) return true;
+	return false;
+}
+
+bool hasReduces()
+{
+	if (remainingReducesCount > 0) return true;
+	return false;
+}
+
 string* Node::getURL()
 {
 	return communicator.getURL();
+}
+
+JobID Node::numRemainingMapJobs()
+{
+	return remainingMapsCount;
+}
+
+JobID Node::numRemainingReduceJobs()
+{
+	return remainingReducesCount;
+}	
+
+JobID Node::numRemainingJobs()
+{
+	return remainingMapsCount + remainingReducesCount;
 }

@@ -4,7 +4,8 @@
 
 #define LAG 5
 #define MASTER_TEST 0
-#define HDFS_TEST 1
+#define HDFS_TEST 0
+#define PRODUCTION_TEST 1
 #define HDFS_TEST_PATH "/test/foo.log"
 
 int main(int argc, char* args[])
@@ -25,6 +26,43 @@ int main(int argc, char* args[])
 		m.checkStatus();
 		sleep(LAG);
 		return 0;
+	}
+
+	if (PRODUCTION_TEST)
+	{
+		MapReduceSpecification spec;
+		Master m(spec);
+		m.loadNodesFile("example/nodes.conf");
+		while (m.checkMapStatus()) /* assignment of all maps */
+		{
+			cout << "Assigning and running maps." << endl;
+			m.assignMaps();
+			n.checkStatus();
+			m.assignReduces();
+			sleep(LAG);
+		}
+
+		while (m.checkReduceStatus()) /* assignment of all reduces */
+		{
+			cout << "Assigning and running reduces." << endl;
+			m.assignReduces();
+			m.checkStatus();
+			sleep(LAG);
+		}
+
+		while (!m.maps() || !m.reduces()) /* wait for running maps and reduces */
+		{
+			cout << "Waiting for all maps and reduces to finish." << endl;
+			m.checkStatus();
+			sleep(LAG);
+		}
+		cout << "Congratulations.  You finished an entire MapReduce Job." << endl;
+
+		MapReduceResult result(m.getNumberOfCompletedMaps(), m.getNumberOfReducesCompleted(), m.getNumberOfNodes());
+
+		/* return result; */
+
+		return 0; /* return!!! */
 	}
 
 	if (HDFS_TEST)

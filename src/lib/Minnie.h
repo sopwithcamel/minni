@@ -120,9 +120,24 @@ struct MapReduceOutput {
 		int num_tasks;		
 };
 
-
 class MapReduceSpecification { //Talk to Wolf whether these are enough...
   public:
+		MapReduceSpecification(vector<string*> input, string output, 
+						string dfs_master, string so_name, uint16_t dfs_port,
+						JobID maxJobs, JobID maxMaps, 
+						JobID maxReduces): inputPath(input),
+						outputPath(output), dfs_master(dfs_master),
+						so_name(so_name), dfs_port(dfs_port), maxJobs(maxJobs),
+						maxMaps(maxMaps), maxReduces(maxReduces) {};
+		~MapReduceSpecification();
+		vector<string*> getInputPath() { return inputPath; };
+		string getOutputPath() { return outputPath; };
+		string getDfsMaster() {return dfs_master; };
+		string getSoName() { return so_name; };
+		uint16_t getDfsPort() { return dfs_port; };
+		JobID getMaxJobsPerNode() { return maxJobs; };
+		JobID getMaxMaps() { return maxMaps; };
+		JobID getMaxReduces() { return maxReduces; };
 	MapReduceInput* add_input ();
 	MapReduceOutput* output ();
 	void set_machines (int number);
@@ -139,7 +154,7 @@ class MapReduceSpecification { //Talk to Wolf whether these are enough...
 	create_mapper_t* mapper_creater;
 	create_reducer_t* reducer_creater;
 	destroy_mapper_t* mapper_destroyer;
-	destroy_reducer_t* reducer_destroyer;	
+	destroy_reducer_t* reducer_destroyer;
 
   private:
 	MapReduceInput* array_inputs;
@@ -148,16 +163,28 @@ class MapReduceSpecification { //Talk to Wolf whether these are enough...
 	int num_machines;
 	int map_megabytes;
 	int reduce_megabytes;
+		vector<string*> inputPath;
+		string outputPath;
+		string dfs_master;
+		string so_name;
+		uint16_t dfs_port;
 		
+		JobID maxJobs;
+		JobID maxMaps;
+		JobID maxReduces;	
 };
 
-class MapReduceResult { //Consult with Wolf abt what all to add
+class MapReduceResult
+{
 	public:
-		//what all the results - ouput file name? and other statistics??
-
+		MapReduceResult(JobID completedMaps, JobID completedReduces, JobID numberNodes) : completedMaps(completedMaps), completedReduces(completedReduces), numberNodes(numberNodes) {};
+		JobID getCompletedMaps() { return completedMaps; };
+		JobID getCompletedReduces() { return completedReduces; };
+		JobID getNumberNodes() { return numberNodes; };
 	private:
-		//data
-
+		JobID completedMaps;
+		JobID completedReduces;
+		JobID numberNodes;
 };
 
 /*class MapReduce : public task{
