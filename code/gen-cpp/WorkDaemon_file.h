@@ -63,6 +63,8 @@ class LocalFileRegistry{
   void recordComplete(const JobID j, const PartID p, const string n);
   void recordComplete(const vector<File> &files);
 
+  void clear();
+
   string toString() const;
 };
 
@@ -138,6 +140,7 @@ class GrabberRegistry{
   PartStatus getStatus(PartID pid);
   void reportDone();
   string toString();
+  void clear();
 };
 
 string local_file(PartID pid);

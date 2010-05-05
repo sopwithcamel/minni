@@ -122,6 +122,11 @@ string LocalFileRegistry::toString() const{
   return ss.str();
 }
 
+void LocalFileRegistry::clear(){
+  file_map.clear();
+  name_map.clear();
+}
+
 
 /**************
  ***TRANSFER***
@@ -382,4 +387,11 @@ string local_file(PartID pid){
   stringstream ss;
   ss << "localfile_" << pid;
   return ss.str();
+}
+
+void GrabberRegistry::clear(){
+  Mutex::scoped_lock lock(mutex);
+  grab_map.clear();
+  urls.clear();
+  finished = false;
 }

@@ -23,6 +23,7 @@ MapperTask::~MapperTask(){
 }
 
 task * MapperTask::execute(){
+  //tbb::this_tbb_thread::sleep(tbb::tick_count::interval_t(4.0));
   tasks->setStatus(jid, jobstatus::DONE);
   return NULL;
 }
@@ -41,6 +42,7 @@ ReducerTask::~ReducerTask(){
 }
 
 task * ReducerTask::execute(){
+  //tbb::this_tbb_thread::sleep(tbb::tick_count::interval_t(4.0));
   tasks->setStatus(jid, jobstatus::DONE);
   return NULL;
 }
@@ -109,10 +111,11 @@ JobStatus TaskRegistry::getStatus(JobID jid){
 
 // Update the status; tasks use this to mark a file as done
 void TaskRegistry::setStatus(JobID jid, JobStatus status){
-  assert(this->exists(jid));
   TaskMap::accessor acc_stat;
-  this->task_map.find(acc_stat, jid);
-  acc_stat->second.status = status;
+  bool found = this->task_map.find(acc_stat, jid);
+  if(found){
+    acc_stat->second.status = status;
+  }
 }
 
 // Yanks some job
@@ -137,13 +140,18 @@ bool TaskRegistry::mapper_still_running(){
 
 
 // Yank any entries that we have told the master about.
+// Don't use: we need to remember all jobs so that resubmits
+// Aren't run again.
+// Might want to place in seperate list, though, so we 
+// Don't iterate through for listing statuses
 void TaskRegistry::cullReported(){
+  assert(false); // Don't use, please!
   TaskMap::range_type range = this->task_map.range();
-  for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){
+  for(TaskMap::iterator it = range.begin(); it !=range.end();){
     JobID jid = it->first;
     JobStatus status = it->second.status;
-    if(status == jobstatus::DONE_AND_REPORTED
-       || status == jobstatus::DEAD_AND_REPORTED ){
+    it++;
+    if(status == jobstatus::DONE_AND_REPORTED){
       this->task_map.erase(jid);
     }
   }
@@ -155,7 +163,7 @@ void TaskRegistry::getReport(Report &report){
   TaskMap::range_type range = this->task_map.range();
   for(TaskMap::iterator it = range.begin(); it !=range.end(); it++){
     JobID jid = it->first;
-    JobStatus status = it->second.status;
+    JobStatus status = this->getStatus(jid);
     if(status == jobstatus::DONE){
       report[jid] = jobstatus::DONE;
       it->second.status = jobstatus::DONE_AND_REPORTED;
@@ -176,6 +184,10 @@ string TaskRegistry::toString(){
   }
   ss << "]\n";
   return ss.str();
+}
+
+void TaskRegistry::clear(){
+  task_map.clear();
 }
 
 string printReport(Report &M){
