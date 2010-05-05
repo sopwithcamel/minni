@@ -6,12 +6,14 @@
 
 int MapInput::key_value(char** value) {
 
+	cout<<"Mapper: Connecting to HDFS"<<endl;
 	HDFS myhdfs(master_name,port);
 	myhdfs.connect();
 	if(myhdfs.checkExistence(file_location))
 		cout<<"file not in location!!\n";
 	uint64_t length = myhdfs.getChunkSize(file_location);
 	*value = (char*) malloc(length+1);
+	cout<<"Reading chunks from HDFS"<<endl;
 	int k = myhdfs.readChunkOffset(file_location, (uint64_t) 0, *value, length);
 	myhdfs.disconnect();
 	return length;
@@ -26,6 +28,7 @@ Mapper::~Mapper() {
 }
 
 void Map (MapInput* input) {
+	
 		char* text;
                 int n = input->key_value(&text);
 
@@ -211,6 +214,7 @@ task* MapperWrapperTask::execute() {
 			serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str());
 			
 		}
+		cout<<"Mapper: I am closing the file "<<final_path<<endl;
 		fclose(fptr);
 	}
 
