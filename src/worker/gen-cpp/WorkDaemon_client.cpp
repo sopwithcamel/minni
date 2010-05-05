@@ -24,7 +24,14 @@ template<class U, class T> void print_map(map<U,T> &m){
 }
 
 int main(int argc, char **argv) {
-  boost::shared_ptr<TSocket> socket1(new TSocket("localhost", WORKER_PORT));
+  string ip = "localhost";
+  int port = WORKER_PORT;
+  if(argc == 3){
+    ip.assign(argv[1]);
+    port = atoi(argv[2]);
+  }
+  cout << ip << ":" << port << endl;
+  boost::shared_ptr<TSocket> socket1(new TSocket("128.2.208.113", WORKER_PORT));
   boost::shared_ptr<TTransport> transport1(new TBufferedTransport(socket1));
   boost::shared_ptr<TProtocol> protocol1(new TBinaryProtocol(transport1));
 	
