@@ -30,6 +30,7 @@ class Communicator
 		void sendListStatus(std::map<JobID, Status> & _return, uint16_t retries);			/* poll for status */
 		void sendReportCompletedJobs(const std::vector<URL> & done, uint16_t retries);	/* send per node, never repeat strings */
 		void sendAllMapsDone(uint16_t retries);										/* send once per node, when all maps finish */
+		void sendKill(uint16_t retries);											/* send debug restart message */
 		string* getURL();
 	private:
 		string* url;

@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#define LAG 5
+#define LAG 0
 #define HDFS_TEST 0
 #define PRODUCTION_TEST 1
 #define HDFS_TEST_PATH "/test/foo.log"
@@ -15,7 +15,7 @@ int main(int argc, char* args[])
 		string dfs_master = "localhost";
 		string so_name = "wordcount.so";
 		uint16_t dfs_port = 9000;
-		JobID maxJobs = 100;
+		JobID maxJobs = 10;
 		JobID maxMaps = 5000;
 		JobID maxReduces = 10000;
 		MapReduceSpecification* spec = new MapReduceSpecification();
@@ -50,6 +50,8 @@ int main(int argc, char* args[])
 		{
 			cout << "Waiting for all maps and reduces to finish." << endl;
 			m.checkStatus();
+			m.assignMaps();
+			m.assignReduces();
 			sleep(LAG);
 		}
 		cout << "Congratulations.  You finished an entire MapReduce Job. [" << m.getNumberOfMapsCompleted() << " maps, " << m.getNumberOfReducesCompleted() << " reduces, " << m.getNumberOfNodes() << " nodes]" << endl;

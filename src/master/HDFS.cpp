@@ -118,7 +118,7 @@ int64_t HDFS::writeToFileOffset(string path, uint64_t offset, char* buf, uint64_
 	return ret;
 }
 
-int64_t HDFS::writeToFile(string path, char* buf, uint64_t length)
+int64_t HDFS::writeToFile(string path, const char* buf, uint64_t length)
 {
 	uint64_t ret = 0;
 	hdfsFile file;
