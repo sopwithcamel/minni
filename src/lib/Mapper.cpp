@@ -160,13 +160,13 @@ task* MapperWrapperTask::execute() {
 		cout<<"Parse properties something wrong. I am leaving!"<<endl;
 		return NULL; 
 	}
-	cout<<"Parse happened properly! "<<endl;
+	cout<<"Mapper: Parse happened properly! "<<endl;
 	//dynamically loading the classes
 	//if(UserMapLinking(soname) == 1) { //TODO
 	//	cout<<"User map linking not happening very successfully!"<<endl;
 	//	return NULL; 
 	//}
-	cout<<"User map too is successful "<<endl;
+	cout<<"Mapper: User map too is successful "<<endl;
 	//instantiating my mapper 	
 	Mapper* my_mapper = Mapper();
 	my_mapper->num_partition = npart;
@@ -175,11 +175,14 @@ task* MapperWrapperTask::execute() {
 	{
 		my_mapper->aggregs.push_back(new Aggregator);
 	}
+	cout<<"Mapper: I am going to run map here"<<endl;
+
 	my_mapper->Map(&myinput);
 
+	cout<<"Mapper: Supposedly done with mapping"<<endl;
 	string path = GetCurrentPath();
 	vector<File> my_Filelist;
-	cout<<"About to start writing into files\n";
+	cout<<"Mapper: About to start writing into files\n";
 	//now i need to start writing into file
 	for(int i = 0; i < npart ; i++)
 	{
@@ -187,6 +190,7 @@ task* MapperWrapperTask::execute() {
 		File f1;
 		f1.name = final_path;	
 		my_Filelist.push_back(f1);
+		cout<<"Mapper: I am going to write the file "<<final_path<<endl;
 	 	FILE* fptr = fopen(final_path.c_str(), "w");
 		Aggregator::iterator aggiter;
 		for(aggiter = (my_mapper->aggregs[i])->begin(); aggiter != (my_mapper->aggregs[i])->end(); ++aggiter)
@@ -198,6 +202,7 @@ task* MapperWrapperTask::execute() {
 			serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str());
 			
 		}
+		fclose(fptr);
 	}
 
 	
