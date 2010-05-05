@@ -16,7 +16,6 @@ using namespace std;
 #include "Node.h"
 #include "HDFS.h"
 #include "Minnie.h"
-#include "assert.h"
 
 class Master {
 	public:
