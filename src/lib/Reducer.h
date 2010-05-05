@@ -40,8 +40,8 @@ class ReduceOutput {
 
 class Reducer {
   public:
-	Reducer();
-	~Reducer();
+	Reducer() {};
+	~Reducer(){};
 	void AddKeyVal(string key, string value);
 	void AddPartialAgg(string key, PartialAgg* pagg);
   	Aggregator* aggreg;

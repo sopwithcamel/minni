@@ -41,7 +41,7 @@ class MapInput {
 class Mapper {
   public:
 	Mapper() {};
-	~Mapper();
+	~Mapper(){};
 	virtual void Map (MapInput* mapinp){} ; //will be overloaded
 	virtual void Emit (string key, string value);
 	virtual int GetPartition (string key); //the default parititioner. This can be overriden

@@ -8,9 +8,9 @@ using namespace std;
 
 class PartialAgg {
   public:
-	PartialAgg();
+	PartialAgg(){};
 	PartialAgg (string v);
-	~PartialAgg();
+	~PartialAgg(){};
 	virtual void add (string value);
 	virtual void merge (PartialAgg* add_agg);
 	string get_value();
