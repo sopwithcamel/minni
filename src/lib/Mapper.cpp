@@ -84,19 +84,25 @@ MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p, TaskRegistry * 
 int MapperWrapperTask::ParseProperties(string& soname, int& num_partitions) {//TODO checking and printing error reports!	
 	stringstream ss;
 	soname = (*prop)["SO_NAME"];
+	cout<<"Mapper: soname is "<<soname<<endl;
   	myinput.file_location = (*prop)["FILE_IN"];
+	cout<<"Mapper: file location is "<<myinput.file_location<<endl;
 	string chunk_temp = (*prop)["CID"];
 	ss <<chunk_temp;
 	ss >> myinput.chunk_id;
+	cout<<"Mapper: chunk id is "<<myinput.chunk_id<<endl;
   	myinput.master_name = (*prop)["DFS_MASTER"];
+	cout<<"Mapper: dfs master is "<<myinput.master_name<<endl;
         string port_temp = (*prop)["DFS_PORT"];
-        ss <<port_temp;
+	ss <<port_temp;
 	int port_int;
 	ss >> port_int;
 	myinput.port = (uint16_t) port_int;
+	cout<<"Mapper: port is "<<myinput.port<<endl;
 	string part = (*prop)["NUM_REDUCERS"];
 	ss << part;
 	ss >> num_partitions; 
+	cout<<"Mapper: number of partions is "<<num_partitions<<endl;
 	return 0;
 }
 
@@ -127,6 +133,7 @@ string MapperWrapperTask::GetCurrentPath() {
         cCurrentPath[sizeof(cCurrentPath) - 1] = '\0'; /* not really required */
         string path;
         path = cCurrentPath;
+	cout<<"Mapper: current path is "<<path<<endl;
 	return path;
 }
 
@@ -137,6 +144,7 @@ string MapperWrapperTask::GetLocalFilename(string path, JobID jobid, int i) {
        	ss << jobid;
        	ss << "_";
        	ss << i;
+	cout<<"The local file name generated is "<<ss.str()<<endl;
         return ss.str();
 }
 
@@ -186,7 +194,8 @@ task* MapperWrapperTask::execute() {
 	//now i need to start writing into file
 	for(int i = 0; i < npart ; i++)
 	{
-	       	string final_path = GetLocalFilename(path,jobid,i);
+		cout<<"Mapper: Executing loop for i = "<<i<<endl;
+		string final_path = GetLocalFilename(path,jobid,i);
 		File f1;
 		f1.name = final_path;	
 		my_Filelist.push_back(f1);
