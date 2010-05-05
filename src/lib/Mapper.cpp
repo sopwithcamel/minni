@@ -168,7 +168,7 @@ task* MapperWrapperTask::execute() {
 	//}
 	cout<<"Mapper: User map too is successful "<<endl;
 	//instantiating my mapper 	
-	Mapper* my_mapper = Mapper();
+	Mapper* my_mapper = new Mapper();
 	my_mapper->num_partition = npart;
 
 	for(int i = 0; i < npart; i++)

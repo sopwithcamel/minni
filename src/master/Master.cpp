@@ -79,10 +79,10 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 		cout << "Assigning " << numSingleNode <<" reduces to " << *(((*nodeIter).second)->getURL()) << endl;
 		for (PartID i = 0; i < numSingleNode; i++)
 		{
-			cout << "Assigning PID " << currentPID + i << " to " << ((*nodeIter).second)->getURL() << endl;
+			cout << "Assigning PID " << currentPID + i << " to " << *(((*nodeIter).second)->getURL()) << endl;
 			assignReduceJob((*nodeIter).second, currentPID + i, spec->getOutputPath());
-			currentPID++;
 		}
+		currentPID += numSingleNode;
 	}
 	updateMaximumMapNode();
 }
