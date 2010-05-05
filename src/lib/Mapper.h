@@ -11,12 +11,13 @@
 #include <unistd.h>
 #include <sstream>
 #include <fstream>
-#include "gen-cpp/daemon_types.h"
-#include "gen-cpp/WorkDaemon_file.h"
-#include "gen-cpp/WorkDaemon_tasks.h"
+#include "daemon_types.h"
+#include "WorkDaemon_file.h"
+#include "WorkDaemon_tasks.h"
 #include <dlfcn.h>
 #include <map>
 #include "PartialAgg.h"
+//#include "HDFS.h"
 #define GetCurrentDir getcwd
 
 using namespace std;
@@ -29,10 +30,10 @@ class MapInput {
   public:
 	MapInput() {};
 	~MapInput() {};
-	virtual string key_value(); 
+	virtual void key_value(char* str); 
   private:
 	ChunkID chunk_id;   
-	URL file_location;	
+	string file_location;	
 	uint16_t port;
 	string master_name;
 };
@@ -60,8 +61,8 @@ class MapperWrapperTask : public task {
   public:
 	create_mapper_t* create_fn;
 	destroy_mapper_t* destroy_fn;
-	create_partialagg_t* create_agg_fn;
-	destroy_partialagg_t* destroy_agg_fn;
+	//create_partialagg_t* create_agg_fn;
+	//destroy_partialagg_t* destroy_agg_fn;
 	MapInput myinput;
 	MapperWrapperTask (JobID jid, Properties * p, TaskRegistry * t, LocalFileRegistry * f);
 	task* execute();
@@ -72,8 +73,8 @@ class MapperWrapperTask : public task {
 	LocalFileRegistry* filereg;
 	int ParseProperties(string& soname, int& num_partitions);
 	int UserMapLinking(string soname);
-	string get_current_path();
-	string get_local_filename(string path, JobID jobid, int i);	
+	string GetCurrentPath();
+	string GetLocalFilename(string path, JobID jobid, int i);	
 };
 
 

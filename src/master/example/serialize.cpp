@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+#include <iostream>
+
 
 using namespace std;
 
@@ -55,8 +57,13 @@ int main(int arg, char* args[])
 	uint64_t valueLength2;
 
 	deSerialize(fileIn, &type2, &keyLength2, &key2, &valueLength2, &value2);
+	
+	string keyout = string(key2);
+	string valueout = string(value2);
 
-	printf("Type: %d\nKey Length: %ld\nKey: %s\nValue Length: %ld\nValue: %s\n", type2, keyLength2, key2, valueLength2, value2);
+	cout<<(int)type2<<" "<<keyout<<" "<<valueout<<"\n";
+
+	printf("Type: %d\nKey Length: %lld\nKey: %s\nValue Length: %lld\nValue: %s\n", type2, keyLength2, key2, valueLength2, value2);
 
 	/* free buffer memory */
 	free(key2);

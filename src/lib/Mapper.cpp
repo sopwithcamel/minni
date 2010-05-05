@@ -4,32 +4,38 @@
 
 //MapInput Class
 
-string MapInput::key_value() {
-	
-		//TODO: need to read the DFS reads!
-	
+void MapInput::key_value(char* value) {
 
+	HDFS myhdfs(master_name,port);
+	myhdfs.connect();
+	if(myhdfs.checkExistence(file_location))
+		cout<<"file not in location!!\n";
+	uint64_t length = myhdfs.getChunkSize(file_location);
+	value = (char*) malloc(length+1);
+	int k = readChunkOffset(file_location, 0, value, length);
+	myhdfs.disconnect();
 }
 
 //Mapper
 Mapper::~Mapper() {
-	for (int i = 0; i < my_file_streams.size(); i++)
-        {
-                delete my_file_streams[i];
-        }
+//	for (int i = 0; i < my_file_streams.size(); i++)
+  //      {
+    //            delete my_file_streams[i];
+      //  }
 }
 
 void Mapper::Emit (string key, string value) { //Partial aggregation going on here
 	
 	//Case1: New key value - insert into map
 	int i = GetPartition(key);
-	Aggregator::iterator found = (aggregs[i])->find(key);
+	
+	Aggregator::iterator found = (*(aggregs[i])).find(key);
 	if(found == (aggregs[i])->end()) {
-		(*aggregs[i])[key] = new PartialAgg(key,value);
+		(*(aggregs[i]))[key] = new PartialAgg(value);
 	}
 	//Existing key value - then add to the partial result
 	else {
-		(*aggregs[i])[key]->add(value);
+		(*(aggregs[i]))[key]->add(value);
 	}
 }
 
@@ -54,22 +60,22 @@ MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p, TaskRegistry * 
 	filereg = f;
 }
 
-int MappperWrapperTask::ParseProperties(string& soname, int& num_partitions) {//TODO checking and printing error reports!	
+int MapperWrapperTask::ParseProperties(string& soname, int& num_partitions) {//TODO checking and printing error reports!	
 	stringstream ss;
 	soname = (*prop)["SO_NAME"];
   	myinput.file_location = (*prop)["FILE_IN"];
 	string chunk_temp = (*prop)["CID"];
-	ss(chunk_temp);
+	ss <<chunk_temp;
 	ss >> myinput.chunk_id;
   	myinput.master_name = (*prop)["DFS_MASTER"];
         string port_temp = (*prop)["DFS_PORT"];
-        ss(port_temp);
+        ss <<port_temp;
 	int port_int;
 	ss >> port_int;
 	myinput.port = (uint16_t) port_int;
 	string part = (*prop)["NUM_REDUCERS"];
-	ss(part);
-	ss >> num_partition; 
+	ss << part;
+	ss >> num_partitions; 
 	return 0;
 }
 
@@ -95,7 +101,7 @@ string MapperWrapperTask::GetCurrentPath() {
 	char cCurrentPath[FILENAME_MAX];
         if (!GetCurrentDir(cCurrentPath, sizeof(cCurrentPath)))
         {
-                return 0;
+                return 0;  //TODO change here!!!
         }
         cCurrentPath[sizeof(cCurrentPath) - 1] = '\0'; /* not really required */
         string path;
@@ -113,49 +119,67 @@ string MapperWrapperTask::GetLocalFilename(string path, JobID jobid, int i) {
         return ss.str();
 }
 
+void serialize(FILE* fileOut, char type, uint64_t keyLength, const char* key, uint64_t valueLength, const char* value)
+{
+        keyLength = keyLength + 1; /* write \0 */
+        valueLength = valueLength + 1; /* write \0 */
+        fwrite(&type, sizeof(char), 1, fileOut);
+        fwrite(&keyLength, sizeof(uint64_t), 1, fileOut);
+        fwrite(key, sizeof(char), keyLength, fileOut);
+        fwrite(&valueLength, sizeof(uint64_t), 1, fileOut);
+        fwrite(value, sizeof(char), valueLength, fileOut);
+}
+
+
+
 task* MapperWrapperTask::execute() {
 	string soname;
 	int npart;
-	if(ParseProperties(soname,npart) == 1)  {
-		return NULL; //TODO check with Erik
+	if(ParseProperties(soname,npart) == 1)  { //TODO
+		return NULL; 
 	}
 	//dynamically loading the classes
-	if(UserMapLinking(soname) == 1) {
-		return NULL; //TODO check with Erik
+	if(UserMapLinking(soname) == 1) { //TODO
+		return NULL; 
 	}
 
 	//instantiating my mapper 	
 	Mapper* my_mapper = create_fn();
-	my_mapper->num_partitions = npart;
+	my_mapper->num_partition = npart;
 
 	for(int i = 0; i < npart; i++)
 	{
 		my_mapper->aggregs.push_back(new Aggregator);
 	}
-	my_mapper->Map(*myinput);
+	my_mapper->Map(&myinput);
 
 	string path = GetCurrentPath();
+	vector<File> my_Filelist;
 
 	//now i need to start writing into file
 	for(int i = 0; i < npart ; i++)
 	{
 	       	string final_path = GetLocalFilename(path,jobid,i);
-	 	ofstream temp = new ofstream();
-       		ofstream.open(final_path.c_str());
-		//TODO should do serializing one by one here
-		
-		//freeing up all  resources
-        	ofstream.close();
+		File f1;
+		f1.name = final_path;	
+		my_Filelist.push_back(f1);
+	 	FILE* fptr = fopen(final_path.c_str(), "w");
+		Aggregator::iterator aggiter;
+		for(aggiter = (my_mapper->aggregs[i])->begin(); aggiter != (my_mapper->aggregs[i])->end(); ++aggiter)
+		{
+			string k = aggiter->first;
+			PartialAgg* curr_par = aggiter->second;
+			string val = curr_par->value;
+			char type = 1;
+			serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str());
+			
+		}
 	}
 
-
+	
+	filereg->recordComplete(my_Filelist);
 	taskreg->setStatus(jobid, jobstatus::DONE);
-	//TODO:Also has to pass the file pointers / update them
 
-	
-
-
-	
 	return NULL;
 
 	
