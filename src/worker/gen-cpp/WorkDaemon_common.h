@@ -16,7 +16,7 @@ using namespace std;
 
 namespace transferstatus {enum {DNE, READY, BLOCKED, DONE};}
 namespace partstatus {enum {DNE, READY, BLOCKED, DONE};}
-namespace jobstatus {enum {DNE, INPROGRESS, DONE, DONE_AND_REPORTED, DEAD, DEAD_AND_REPORTED};}
+namespace jobstatus {enum {DNE, INPROGRESS, DONE, DONE_AND_REPORTED, DEAD, DEAD_AND_REPORTED, SEEMS_DEAD};}
 namespace jobkind {enum {NIL, MAPPER, REDUCER};}
 
 typedef Status TransferStatus;

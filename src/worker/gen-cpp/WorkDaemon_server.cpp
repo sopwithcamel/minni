@@ -83,6 +83,8 @@ public:
   void listStatus(map<JobID, Status> & _return) {
     cout << id++ << ": Listing Status..." << endl;
     task_reg.getReport(_return);
+    cout << printReport(_return) << endl;
+    cout << "Sent " << _return.size() << " elements." << endl;
     //task_reg.cullReported();
     cout << "Done" << endl;
     return;
@@ -192,9 +194,11 @@ public:
     // Crash the node.
   void kill(){
     cout << id++ << ": Kill..." << endl;
+    cout << "---NEW EPOCH---" << endl;
     file_reg.clear();
     grab_reg.clear();
     task_reg.clear();
+    id = 0;
   }
 	
 };
