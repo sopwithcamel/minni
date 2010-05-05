@@ -125,6 +125,11 @@ JobID Node::numActiveJobs()
 	return activeMapsCount + activeReducesCount;
 }
 
+void Node::sendState(string &_ret)
+{
+	communicator.sendState(_ret, 3);
+}
+
 void Node::sendKill()
 {
 	communicator.sendKill(3);

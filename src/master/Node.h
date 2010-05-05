@@ -30,6 +30,7 @@ class Node
 		void reportCompletedJobs(const std::vector<string> & done);
 		void sendAllMapsFinished();
 		void sendKill();
+		void sendState(string &_ret);
 		bool hasMaps();
 		bool hasReduces();
 		string* getURL();
