@@ -12,12 +12,12 @@ int main(int argc, char* args[])
 	if (PRODUCTION_TEST)
 	{
 		string output = "/output/";
-		string dfs_master = "localhost";
+		string dfs_master = "128.2.208.113";
 		string so_name = "wordcount.so";
 		uint16_t dfs_port = 9000;
-		JobID maxJobs = 10;
+		JobID maxJobs = 4;
 		JobID maxMaps = 5000;
-		JobID maxReduces = 10000;
+		JobID maxReduces = 2;
 		MapReduceSpecification* spec = new MapReduceSpecification();
 		spec->addInput("/input/hello.txt");
 		spec->setOutputPath(output);
