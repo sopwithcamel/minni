@@ -79,6 +79,7 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 		cout << "Assigning " << numSingleNode <<" reduces to " << *(((*nodeIter).second)->getURL()) << endl;
 		for (PartID i = 0; i < numSingleNode; i++)
 		{
+			cout << "Assigning PID " << currentPID + i << " to " << ((*nodeIter).second)->getURL() << endl;
 			assignReduceJob((*nodeIter).second, currentPID + i, spec->getOutputPath());
 			currentPID++;
 		}
@@ -146,6 +147,17 @@ void Master::loadNodesFile(string fileName)
 		}
 	}
 	broadcastKill();
+}
+
+void Master::checkState()
+{
+	map<string, Node*>::iterator nodesIter;
+	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
+	{
+		string ret;
+		(((*nodesIter).second))->sendState(ret);
+		cout << "\t--> State Debug: " << ret << endl;
+	}	
 }
 
 void Master::broadcastKill()

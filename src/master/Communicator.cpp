@@ -152,7 +152,32 @@ void Communicator::sendKill(uint16_t retries)
 		transport->close();
 	} catch (TTransportException reason){
 		cout << "Caught Exception: Sending KILL."  << endl;
-		if (retries > 0) sendAllMapsDone(--retries);
+		if (retries > 0) sendKill(--retries);
+	}
+}
+
+void Communicator::sendState(string &_return, uint16_t retries)
+{
+	cout  << "Sending state To: " << *url << endl;
+
+	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT);
+	boost::shared_ptr<TSocket> socket(temp);
+
+	TBufferedTransport* temp1 = new TBufferedTransport(socket);
+	boost::shared_ptr<TTransport> transport(temp1);
+
+	TBinaryProtocol* temp2 = new TBinaryProtocol(transport);
+	boost::shared_ptr<TProtocol> protocol(temp2);
+
+	WorkDaemonClient client(protocol);
+
+	try {
+		transport->open();
+		client.stateString(_return);
+		transport->close();
+	} catch (TTransportException reason){
+		cout << "Caught Exception: Sending STATE."  << endl;
+		if (retries > 0) sendState(_return, --retries);
 	}
 }
 

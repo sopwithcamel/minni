@@ -31,6 +31,7 @@ class Communicator
 		void sendReportCompletedJobs(const std::vector<URL> & done, uint16_t retries);	/* send per node, never repeat strings */
 		void sendAllMapsDone(uint16_t retries);										/* send once per node, when all maps finish */
 		void sendKill(uint16_t retries);											/* send debug restart message */
+		void sendState(string &_return, uint16_t retries);											/* query for debug string */
 		string* getURL();
 	private:
 		string* url;

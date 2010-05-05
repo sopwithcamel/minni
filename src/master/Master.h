@@ -26,6 +26,7 @@ class Master {
 		bool checkStatus();										/* poll all nodes for status */
 		bool checkMapStatus();									/* check if all maps have completed */
 		bool checkReducerStatus();								/* check if all reduces have completed */
+		void checkState();										/* debug functionality */
 		void sendFinishedNodes();								/* send list of finished URL's */
 		bool maps();											/* check if map jobs still remain to be assigned */
 		bool reduces();										/* check if reduce jobs still remain to be assigned */
