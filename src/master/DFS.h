@@ -24,7 +24,7 @@ class DFS
 		virtual bool createFile(string path) = 0;
 		virtual int64_t appendToFile(string path, char* buf, uint64_t length) = 0;
 		virtual int64_t writeToFileOffset(string path, uint64_t offset, char* buf, uint64_t length) = 0;
-		virtual int64_t writeToFile(string path, char* buf, uint64_t length) = 0;
+		virtual int64_t writeToFile(string path, const char* buf, uint64_t length) = 0;
 		virtual int64_t closeFile(string path) = 0;
 	protected:
 		string host;
