@@ -11,6 +11,7 @@ int main(int argc, char* args[])
 {
 	if (PRODUCTION_TEST)
 	{
+		string input = "/input/hello.txt";
 		string output = "/output/";
 		string dfs_master = "128.2.208.113";
 		string so_name = "wordcount.so";
@@ -19,7 +20,7 @@ int main(int argc, char* args[])
 		JobID maxMaps = 5000;
 		JobID maxReduces = 2;
 		MapReduceSpecification* spec = new MapReduceSpecification();
-		spec->addInput("/input/hello.txt");
+		spec->addInput(input);
 		spec->setOutputPath(output);
 		spec->setDfsMaster(dfs_master);
 		spec->setSoName(so_name);

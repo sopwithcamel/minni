@@ -60,7 +60,7 @@ COBJ = $(THR_OBJ) WorkDaemon_client.o WorkDaemon_file.o
 TEST = Test
 TOBJ = $(THR_OBJ) WorkDaemon_tasks.o WorkDaemon_file.o WorkDaemon_test.o
 
-WOBJ = $(WRAPPER)/Mapper.o $(WRAPPER)/Minnie.o $(WRAPPER)/PartialAgg.o $(WRAPPER)/Reducer.o
+WOBJ = $(WRAPPER)/Mapper.o $(WRAPPER)/PartialAgg.o $(WRAPPER)/Reducer.o $(MASTER)/HDFS.o
 
 all : $(SERVER) $(CLIENT)
 
