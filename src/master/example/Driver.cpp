@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#define LAG 0
+#define LAG 5
 #define HDFS_TEST 0
 #define PRODUCTION_TEST 1
 #define HDFS_TEST_PATH "/test/foo.log"
@@ -36,6 +36,7 @@ int main(int argc, char* args[])
 			m.assignMaps();
 			m.checkStatus();
 			m.assignReduces();
+			m.checkState();
 			sleep(LAG);
 		}
 
@@ -44,6 +45,7 @@ int main(int argc, char* args[])
 			cout << "Assigning and running reduces." << endl;
 			m.assignReduces();
 			m.checkStatus();
+			m.checkState();
 			sleep(LAG);
 		}
 
@@ -53,6 +55,7 @@ int main(int argc, char* args[])
 			m.checkStatus();
 			m.assignMaps();
 			m.assignReduces();
+			m.checkState();
 			sleep(LAG);
 		}
 		cout << "Congratulations.  You finished an entire MapReduce Job. [" << m.getNumberOfMapsCompleted() << " maps, " << m.getNumberOfReducesCompleted() << " reduces, " << m.getNumberOfNodes() << " nodes]" << endl;
