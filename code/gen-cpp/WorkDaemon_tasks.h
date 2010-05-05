@@ -43,6 +43,8 @@ class TaskRegistry{
   void cullReported();
   void getReport(Report &report);
   string toString();
+
+  void clear();
 };
 
 //Tasks

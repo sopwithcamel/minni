@@ -111,10 +111,11 @@ JobStatus TaskRegistry::getStatus(JobID jid){
 
 // Update the status; tasks use this to mark a file as done
 void TaskRegistry::setStatus(JobID jid, JobStatus status){
-  assert(this->exists(jid));
   TaskMap::accessor acc_stat;
-  this->task_map.find(acc_stat, jid);
-  acc_stat->second.status = status;
+  bool found = this->task_map.find(acc_stat, jid);
+  if(found){
+    acc_stat->second.status = status;
+  }
 }
 
 // Yanks some job
@@ -139,7 +140,12 @@ bool TaskRegistry::mapper_still_running(){
 
 
 // Yank any entries that we have told the master about.
+// Don't use: we need to remember all jobs so that resubmits
+// Aren't run again.
+// Might want to place in seperate list, though, so we 
+// Don't iterate through for listing statuses
 void TaskRegistry::cullReported(){
+  assert(false); // Don't use, please!
   TaskMap::range_type range = this->task_map.range();
   for(TaskMap::iterator it = range.begin(); it !=range.end();){
     JobID jid = it->first;
@@ -178,6 +184,10 @@ string TaskRegistry::toString(){
   }
   ss << "]\n";
   return ss.str();
+}
+
+void TaskRegistry::clear(){
+  task_map.clear();
 }
 
 string printReport(Report &M){

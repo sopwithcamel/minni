@@ -119,6 +119,12 @@ public:
     cout << id++ << ": Starting Reducer " << jid << "..." << endl;
     if(task_reg.exists(jid)){
       cout << "Repeat, skipping." << endl;
+      if(task_reg.getStatus(jid) == jobstatus::DEAD_AND_REPORTED){
+	task_reg.setStatus(jid, jobstatus::DEAD);
+      }
+      if(task_reg.getStatus(jid) == jobstatus::DONE_AND_REPORTED){
+	task_reg.setStatus(jid, jobstatus::DONE);
+      }
       return;
     }
     //cout << "Assert passed" << endl;
@@ -186,7 +192,9 @@ public:
     // Crash the node.
   void kill(){
     cout << id++ << ": Kill..." << endl;
-    exit(-1);
+    file_reg.clear();
+    grab_reg.clear();
+    task_reg.clear();
   }
 	
 };
