@@ -12,7 +12,7 @@ void MapInput::key_value(char* value) {
 		cout<<"file not in location!!\n";
 	uint64_t length = myhdfs.getChunkSize(file_location);
 	value = (char*) malloc(length+1);
-	int k = readChunkOffset(file_location, 0, value, length);
+	int k = myhdfs.readChunkOffset(file_location, (uint64_t) 0, value, length);
 	myhdfs.disconnect();
 }
 

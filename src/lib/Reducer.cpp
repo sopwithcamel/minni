@@ -39,7 +39,7 @@ ReducerWrapperTask::ReducerWrapperTask (JobID jid, Properties * p, TaskRegistry 
 int ReducerWrapperTask::ParseProperties(string& soname) {//TODO checking and printing error reports!	
 	stringstream ss;
 	soname = (*prop)["SO_NAME"];
-  	myoutput.path = (*prop)["FILE_IN"];
+  	myoutput.path = (*prop)["FILE_OUT"];
 	string chunk_temp = (*prop)["PID"];
 	ss <<chunk_temp;
 	ss >> my_partition;
@@ -158,8 +158,11 @@ task* ReducerWrapperTask::execute() {
 		curr_stat = grabreg->getStatus(my_partition);
 	}
 
-	/*HDFS myhdfs(myoutput.master_name,myoutput.port);
+	HDFS myhdfs(myoutput.master_name,myoutput.port);
 	myhdfs.connect();
+	stringstream ss1;
+	ss1 << my_partition;
+	string file_location = myoutput.path + ss1.str();
 	if(myhdfs.checkExistence(file_location))
 		cout<<"file not in location!!\n";
 	Aggregator::iterator aggiter;
@@ -172,7 +175,7 @@ task* ReducerWrapperTask::execute() {
 		string out = Write(k, val);
 		myhdfs.writeToFile(file_location,out.c_str(),out.size());
 	}
-	myhdfs.disconnect();*/
+	myhdfs.disconnect();
 
 	taskreg->setStatus(jobid, jobstatus::DONE);
 	return NULL;

@@ -16,6 +16,7 @@
 #include "WorkDaemon_tasks.h"
 #include <dlfcn.h>
 #include "PartialAgg.h"
+#include "HDFS.h"
 #define GetCurrentDir getcwd
 #define ERROR_EXIT 1
 #define SUCCESS_EXIT 0
