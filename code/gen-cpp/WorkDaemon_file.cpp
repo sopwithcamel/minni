@@ -337,7 +337,7 @@ void GrabberRegistry::setupGrabber(PartID p){
 /*
 What are the status messages:
 DNE -> Cannot find the partition requested, new
-AVAILABLE -> PartitionGrabber thinks that it is available
+READY -> PartitionGrabber thinks that it is available
 BLOCKED -> PartitionGrabber thinks that it is blocked
 DONE -> The master told us that all of the mappers finished, and the
  PartitionGrabber thinks that it is blocked

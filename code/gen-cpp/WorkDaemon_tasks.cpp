@@ -101,9 +101,9 @@ JobStatus TaskRegistry::getStatus(JobID jid){
   if(status == jobstatus::INPROGRESS){
     bool actually_running = (acc_task->second.task_ptr->state() == task::executing);
     if(!actually_running){
-      status = jobstatus::DEAD;  
+      status = jobstatus::SEEMS_DEAD;  
       acc_task.release(); // Release the accessor so we can write      
-      this->setStatus(jid, status);
+      this->setStatus(jid, jobstatus::SEEMS_DEAD);
     }
   }
   return status;
@@ -167,10 +167,15 @@ void TaskRegistry::getReport(Report &report){
     if(status == jobstatus::DONE){
       report[jid] = jobstatus::DONE;
       it->second.status = jobstatus::DONE_AND_REPORTED;
+      continue;
     }
     if(status == jobstatus::DEAD){
       report[jid] = jobstatus::DEAD;
       it->second.status = jobstatus::DEAD_AND_REPORTED;
+      continue;
+    }
+    if(status == jobstatus::SEEMS_DEAD){
+      it->second.status = jobstatus::DEAD;
     }
   }
 }
