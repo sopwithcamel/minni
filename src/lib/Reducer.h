@@ -11,12 +11,19 @@
 #include <unistd.h>
 #include <sstream>
 #include <fstream>
-#include "gen-cpp/daemon_types.h"
-#include "gen-cpp/WorkDaemon_file.h"
-#include "gen-cpp/WorkDaemon_tasks.h"
+#include "daemon_types.h"
+#include "WorkDaemon_file.h"
+#include "WorkDaemon_tasks.h"
 #include <dlfcn.h>
+#include "PartialAgg.h"
+#include "HDFS.h"
 #define GetCurrentDir getcwd
-
+#define ERROR_EXIT 1
+#define SUCCESS_EXIT 0
+#define BASE_SLEEPTIME 2
+#define EXPONENT 2
+#define MAX_SLEEPTIME 1024*1024
+#define MAX_STRING_LENGTH 100000
 
 
 class ReduceTaskWrapper;
@@ -25,8 +32,7 @@ class ReduceOutput {
   public:
 	ReduceOutput() { };
 	~ReduceOutput() { };
-	virtual int Write(string result_key, string result_value);
-  private:
+	//virtual int Write(string result_key, string result_value);
 	string path;
 	uint16_t port;
 	string master_name;
@@ -46,19 +52,24 @@ class ReducerWrapperTask : public task {
   public:
 	ReducerWrapperTask (JobID jid, Properties * p, TaskRegistry * t, GrabberRegistry * g);
 	task* execute ();
-	MapOutput myoutput;
-	create_partialagg_t* create_agg_fn;
-	destroy_partialagg_t* destroy_agg_fn;
+	ReduceOutput myoutput;
+	//create_partialagg_t* create_agg_fn;
+	//destroy_partialagg_t* destroy_agg_fn;
+	
   private:
+	Reducer* my_reducer;
 	JobID jobid;
 	Properties * prop;
 	TaskRegistry * taskreg;
 	GrabberRegistry* grabreg;
-	int my_partition;
+	PartID my_partition;
 	int ParseProperties(string& soname);
 	int UserMapLinking(string soname);  
-	string get_current_path();
-	string get_local_filename(string path, JobID jobid);
+	string GetCurrentPath();
+	string GetLocalFilename(string path, JobID jobid);
+	void DoReduce(string filename);
+	string Write(string result_key, string result_value);
+	
 };
 
 #endif
