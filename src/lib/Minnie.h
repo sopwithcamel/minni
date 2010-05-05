@@ -6,7 +6,7 @@
 #include <string.h>
 #include <vector>
 
-typedef uint64_t JobID;
+#include "daemon_types.h"
 
 using namespace std;
 
