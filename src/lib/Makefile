@@ -13,7 +13,7 @@ LIB_JAVA=/usr/lib/jvm/default-java/jre/lib/amd64/server
 LINK_HDFS=hdfs
 LINK_JVM=jvm
 
-HDFS=-I$(INCLUDE_HADOOP) -I$(INCLUDE_JAVA) -I$(INCLUDE_LINUX_JAVA) -L$(LIB_HDFS) -L$(LIB_JAVA) -l$(LINK_HDFS) -l$(LINK_JVM)
+#HDFS=-I$(INCLUDE_HADOOP) -I$(INCLUDE_JAVA) -I$(INCLUDE_LINUX_JAVA) -L$(LIB_HDFS) -L$(LIB_JAVA) -l$(LINK_HDFS) -l$(LINK_JVM)
 
 all: PartialAgg.o Mapper.o Reducer.o 
 
@@ -30,8 +30,8 @@ Mapper.o: Mapper.cpp Mapper.h
 Reducer.o: Reducer.cpp Reducer.h
 	g++ -c Reducer.cpp -I /usr/local/include/thrift/ -I../worker/gen-cpp/ -I../master/ -I tbb/ $(HDFS)
 
-wordcount: wordcount.cpp 
-	g++ wordcount.cpp -o wordcount
+wordcount: example/wordcount.cpp 
+	g++ example/wordcount.cpp -I. -I/usr/local/include/thrift/ -I../worker/gen-cpp -I../master/ -I tbb/ -shared $(HDFS) -o example/wordcount.so
 
 
 #Minnie.o: Minnie.cpp Minnie.h tbb/task.h tbb/tbb_thread.h 
