@@ -108,6 +108,8 @@ public:
     Properties * p_copy = new Properties(prop); // Deleted by ~Mapper
     MapperWrapperTask& t = *new(root->allocate_additional_child_of(*root)) 
       MapperWrapperTask(jid, p_copy, &task_reg, &file_reg);
+    /*MapperTestTask& t = *new(root->allocate_additional_child_of(*root)) 
+      MapperTestTask(jid, p_copy, &task_reg, &file_reg);*/
 
     // 2) Add to registry
     task_reg.addJob(jid, &t, jobkind::MAPPER);
@@ -136,7 +138,8 @@ public:
     Properties * p_copy = new Properties(prop); // Deleted by ~Reducer
     ReducerWrapperTask& t = *new(root->allocate_additional_child_of(*root)) 
       ReducerWrapperTask(jid, p_copy, &task_reg, &grab_reg);
-    //cout << "Allocate passed" << endl;
+    /*ReducerTestTask& t = *new(root->allocate_additional_child_of(*root)) 
+      ReducerTestTask(jid, p_copy, &task_reg, &grab_reg);*/
 
     // 2) Add to registry
     task_reg.addJob(jid, &t, jobkind::REDUCER);

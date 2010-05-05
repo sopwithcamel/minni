@@ -49,31 +49,31 @@ class TaskRegistry{
 
 //Tasks
 
-class MapperTask: public task{
+class MapperTestTask: public task{
  public:	
   JobID jid;
   TaskRegistry * tasks;
   LocalFileRegistry * files;
   Properties * prop;
-  MapperTask(JobID jid_, 
+  MapperTestTask(JobID jid_, 
 	     Properties * p, 
 	     TaskRegistry * t,
 	     LocalFileRegistry * f);
-  ~MapperTask();
+  ~MapperTestTask();
   task * execute();
 };
 
-class ReducerTask: public task{
+class ReducerTestTask: public task{
  public:	
   JobID jid;
   TaskRegistry * tasks;
   GrabberRegistry * grab;
   Properties * prop;
-  ReducerTask(JobID jid_, 
+  ReducerTestTask(JobID jid_, 
 	      Properties * p,
 	      TaskRegistry * t,
 	      GrabberRegistry * g);
-  ~ReducerTask();
+  ~ReducerTestTask();
   task * execute();
 };
 

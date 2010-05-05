@@ -9,40 +9,61 @@
 
 using namespace std;
 
-MapperTask::MapperTask(JobID jid_, 
+MapperTestTask::MapperTestTask(JobID jid_, 
 		       Properties * p, 
 		       TaskRegistry * t,
 		       LocalFileRegistry * f):
   jid(jid_), prop(p), tasks(t), files(f){}
 
-MapperTask::~MapperTask(){
+MapperTestTask::~MapperTestTask(){
   if(prop != NULL){
     delete prop;
     prop = NULL;
   }
 }
 
-task * MapperTask::execute(){
+task * MapperTestTask::execute(){
   //tbb::this_tbb_thread::sleep(tbb::tick_count::interval_t(4.0));
+  stringstream ss;
+  ss << "map_" << jid;
+  string outfile = ss.str();
+  ofstream file(outfile.c_str(), fstream::out);
+  for(int i = 0; i < 1000; i++){
+    file << "I am a merry piece of code! Look at me dance across the network." << endl;
+  }
+  file.close();
+  files->recordComplete(jid, 0, outfile);
   tasks->setStatus(jid, jobstatus::DONE);
   return NULL;
 }
 
-ReducerTask::ReducerTask(JobID jid_, 
+ReducerTestTask::ReducerTestTask(JobID jid_, 
 			 Properties * p,
 			 TaskRegistry * t,
 			 GrabberRegistry * g):
   jid(jid_), prop(p), tasks(t),grab(g){}
 
-ReducerTask::~ReducerTask(){
+ReducerTestTask::~ReducerTestTask(){
   if(prop != NULL){
     delete prop;
     prop = NULL;
   }
 }
 
-task * ReducerTask::execute(){
-  //tbb::this_tbb_thread::sleep(tbb::tick_count::interval_t(4.0));
+task * ReducerTestTask::execute(){
+  
+  grab->setupGrabber(0);
+  PartStatus status = grab->getStatus(0);
+  int I = 0;
+  while(status != partstatus::DONE){  
+    if( status == partstatus::READY){
+      stringstream ss;
+      ss << "reduce_" << jid << "_" << I;
+      grab->getMore(0, ss.str());
+    }
+    grab->getStatus(0);
+    tbb::this_tbb_thread::sleep(tbb::tick_count::interval_t(1.0));
+  }
   tasks->setStatus(jid, jobstatus::DONE);
   return NULL;
 }
