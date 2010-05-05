@@ -137,13 +137,16 @@ task* MapperWrapperTask::execute() {
 	string soname;
 	int npart;
 	if(ParseProperties(soname,npart) == 1)  { //TODO
+		cout<<"Parse properties something wrong. I am leaving!"<<endl;
 		return NULL; 
 	}
+	cout<<"Parse happened properly! "<<endl;
 	//dynamically loading the classes
 	if(UserMapLinking(soname) == 1) { //TODO
+		cout<<"User map linking not happening very successfully!"<<endl;
 		return NULL; 
 	}
-
+	cout<<"User map too is successful "<<endl;
 	//instantiating my mapper 	
 	Mapper* my_mapper = create_fn();
 	my_mapper->num_partition = npart;
@@ -156,7 +159,7 @@ task* MapperWrapperTask::execute() {
 
 	string path = GetCurrentPath();
 	vector<File> my_Filelist;
-
+	cout<<"About to start writing into files\n";
 	//now i need to start writing into file
 	for(int i = 0; i < npart ; i++)
 	{
