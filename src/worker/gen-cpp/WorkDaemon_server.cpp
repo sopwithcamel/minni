@@ -6,6 +6,8 @@
 #include "WorkDaemon.h"
 #include "WorkDaemon_tasks.h"
 #include "WorkDaemon_file.h"
+#include "Mapper.h"
+#include "Reducer.h"
 
 // Thrift includes
 #include <protocol/TBinaryProtocol.h>
@@ -104,8 +106,8 @@ public:
     }
     // 1) Allocate the mapper task
     Properties * p_copy = new Properties(prop); // Deleted by ~Mapper
-    MapperTask& t = *new(root->allocate_additional_child_of(*root)) 
-      MapperTask(jid, p_copy, &task_reg, &file_reg);
+    MapperWrapperTask& t = *new(root->allocate_additional_child_of(*root)) 
+      MapperWrapperTask(jid, p_copy, &task_reg, &file_reg);
 
     // 2) Add to registry
     task_reg.addJob(jid, &t, jobkind::MAPPER);
@@ -132,8 +134,8 @@ public:
     //cout << "Assert passed" << endl;
     // 1) Allocate the mapper task
     Properties * p_copy = new Properties(prop); // Deleted by ~Reducer
-    ReducerTask& t = *new(root->allocate_additional_child_of(*root)) 
-      ReducerTask(jid, p_copy, &task_reg, &grab_reg);
+    ReducerWrapperTask& t = *new(root->allocate_additional_child_of(*root)) 
+      ReducerWrapperTask(jid, p_copy, &task_reg, &grab_reg);
     //cout << "Allocate passed" << endl;
 
     // 2) Add to registry

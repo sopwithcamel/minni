@@ -25,13 +25,32 @@ THR_OBJ = $(THR_SRC:.cpp=.o)
 THR_INC = -I/usr/local/include/thrift
 THR_LIB = -L/usr/local/lib -lthrift 
 
-WOLF = /Users/epz/local/os_repo/src/master/gen-cpp
+JAVA_HOME=/usr/lib/jvm/default-java
+HADOOP_HOME=/home/wolf/Dropbox/CMU/hadoop-0.20.2
+
+INCLUDE_HADOOP=$(HADOOP_HOME)/src/c++/libhdfs
+INCLUDE_JAVA=$(JAVA_HOME)/include
+INCLUDE_LINUX_JAVA=$(JAVA_INCLUDE)/linux
+
+LIB_HDFS=$(HADOOP_HOME)/build/c++/Linux-amd64-64/lib
+LIB_JAVA=$(JAVA_HOME)/jre/lib/amd64/server
+
+LINK_HDFS=hdfs
+LINK_JVM=jvm
+
+# DIR
+MASTER = ../../master/gen-cpp
+WRAPPER = ../../lib
+
+INCLUDES = $(THR_INC) $(TBB_INC) -I$(INCLUDE_HADOOP) -I$(INCLUDE_JAVA) -I$(INCLUDE_LINUX_JAVA) -I$(WRAPPER)
+LINK= -l$(LINK_HDFS) -l$(LINK_JVM) -lm
+LIBFLAGS =  $(THR_LIB) $(TBB_LIB) -L$(LIB_JAVA) -L$(LIB_HDFS) $(LINK)
+
 
 # Generic
 LD = ld
-LIBFLAGS  = $(THR_LIB) $(TBB_LIB) -L$(WOLF)
 CPPFLAGS = -g -O2 
-INCLUDES = $(THR_INC) $(TBB_INC) -I$(WOLF)
+
 
 # What is my name!?
 SERVER = WorkDaemon_Server
@@ -41,20 +60,24 @@ COBJ = $(THR_OBJ) WorkDaemon_client.o WorkDaemon_file.o
 TEST = Test
 TOBJ = $(THR_OBJ) WorkDaemon_tasks.o WorkDaemon_file.o WorkDaemon_test.o
 
-current : $(TEST)
+WOBJ = $(WRAPPER)/Mapper.o $(WRAPPER)/Minnie.o $(WRAPPER)/PartialAgg.o $(WRAPPER)/Reducer.o
 
 all : $(SERVER) $(CLIENT)
 
 .cpp.o: 
 	$(CXX) $(CPPFLAGS) $(INCLUDES) -c $< -o $@
 
+build_wrapper: $(WOBJ)
+
 $(TEST) : $(TOBJ)
 	@printf "\n*** building test ***\n"
 	$(CXX) $(LIBFLAGS) $(TOBJ) -o $(TEST)
 
+
+
 $(SERVER) : $(SOBJ)
 	@printf "\n*** building server ***\n"
-	$(CXX) $(LIBFLAGS) $(SOBJ) -o $(SERVER)
+	$(CXX) $(LIBFLAGS) $(SOBJ) $(WOBJ) -o $(SERVER)
 
 $(CLIENT) : $(COBJ)
 	@printf "\n*** building test client ***\n"
