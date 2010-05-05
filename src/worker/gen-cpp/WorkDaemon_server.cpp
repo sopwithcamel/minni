@@ -158,7 +158,7 @@ public:
   // FileRegistry deals with the sender side, PartitionGrabber deals with
   // the reciever side
   void sendData(string & _return, const PartID pid, const BlockID bid) {
-    cout << id++ << ": Sending data..." << endl;
+    cout << id++ << ": Sending data (p" << pid << ",b" << bid << ")" << endl;
     file_reg.bufferData(_return, pid, bid);
     cout << "Done" << endl;
   }
@@ -174,17 +174,17 @@ public:
 
   // How many blocks do we know about?
   Count blockCount(const PartID pid){
-    cout << id++ << ": Counting blocks..." << endl;
-    cout << "Done" << endl;
-    return file_reg.blocks(pid);
+    cout << id++ << ": Counting blocks p" << pid << endl;
+    Count blocks = file_reg.blocks(pid);
+    
+    cout << "Done (" << blocks  << ")" << endl;
+    return blocks;
   }
 
   // Used by the master to report finished mappers
   void reportCompletedJobs(const vector<URL> & done){
     cout << id++ << ": Master reporting work..." << endl;
-    
     grab_reg.addLocations(done);
-
     cout << "Done" << endl;
   }
 
