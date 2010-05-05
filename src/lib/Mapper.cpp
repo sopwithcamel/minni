@@ -25,6 +25,26 @@ Mapper::~Mapper() {
       //  }
 }
 
+void Map (MapInput* input) {
+		char* text;
+                int n = input->key_value(&text);
+
+                for(int i = 0; i < n; ) {
+                        //skip through the leading whitespace
+                        while((i < n) && isspace(text[i]))
+                                i++;
+
+                        //Find word end
+                        int start = i;
+                        while ((i < n) && !isspace(text[i]))
+                                i++;
+                        //if(start < i)
+                                //Emit();
+                }
+}
+
+
+
 void Mapper::Emit (string key, string value) { //Partial aggregation going on here
 	
 	//Case1: New key value - insert into map
@@ -142,13 +162,13 @@ task* MapperWrapperTask::execute() {
 	}
 	cout<<"Parse happened properly! "<<endl;
 	//dynamically loading the classes
-	if(UserMapLinking(soname) == 1) { //TODO
-		cout<<"User map linking not happening very successfully!"<<endl;
-		return NULL; 
-	}
+	//if(UserMapLinking(soname) == 1) { //TODO
+	//	cout<<"User map linking not happening very successfully!"<<endl;
+	//	return NULL; 
+	//}
 	cout<<"User map too is successful "<<endl;
 	//instantiating my mapper 	
-	Mapper* my_mapper = create_fn();
+	Mapper* my_mapper = Mapper();
 	my_mapper->num_partition = npart;
 
 	for(int i = 0; i < npart; i++)
