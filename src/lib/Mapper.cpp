@@ -182,7 +182,7 @@ task* MapperWrapperTask::execute() {
 	cout<<"Mapper: Supposedly done with mapping"<<endl;
 	string path = GetCurrentPath();
 	vector<File> my_Filelist;
-	cout<<"Mapper: About to start writing into files\n";
+	cout<<"Mapper: About to start writing into files and my npart is "<<npart<<"\n";
 	//now i need to start writing into file
 	for(int i = 0; i < npart ; i++)
 	{
