@@ -29,6 +29,7 @@ class Node
 		void checkStatus(map<JobID, Status> & _return);
 		void reportCompletedJobs(const std::vector<string> & done);
 		void sendAllMapsFinished();
+		void sendKill();
 		bool hasMaps();
 		bool hasReduces();
 		string* getURL();
@@ -38,6 +39,8 @@ class Node
 		JobID numActiveJobs();
 		struct MapJob stealMap();
 		struct ReduceJob stealReduce();
+		void printActiveMaps(vector<struct MapJob*> & _return);
+		void printActiveReduces(vector<struct ReduceJob*> & _return);
 
 	private:
 		JobID remainingMapsCount;

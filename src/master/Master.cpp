@@ -25,6 +25,8 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 	completedReducers = 0;
 	maximumMapJobsCount = 0;
 	maximumReduceJobsCount = 0;
+	nodeWithMaxMapJobs = NULL;
+	nodeWithMaxReduceJobs = NULL;
 
 	loadNodesFile(nodesFile.c_str());
 	cout << "Master: Loaded nodes file." << endl;
@@ -82,6 +84,14 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 		}
 	}
 	updateMaximumMapNode();
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
 }
 
 Master::~Master()
@@ -99,6 +109,31 @@ void Master::assignMapJob(Node* node, ChunkID cid, string fileIn)
 	node->addMap(job);
 	remainingMappers++;
 	jidCounter++;
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
+}
+
+void Master::resubmitMapJob(Node* node, struct MapJob job)
+{
+	node->removeMap(job.jid);
+	node->addMap(job);
+	remainingMappers++;
+	updateMaximumMapNode();
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
+
 }
 
 void Master::assignReduceJob(Node* node, PartID pid, string fileOut)
@@ -107,6 +142,31 @@ void Master::assignReduceJob(Node* node, PartID pid, string fileOut)
 	node->addReduce(job);
 	remainingReducers++;
 	jidCounter++;
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
+}
+
+void Master::resubmitReduceJob(Node* node, struct ReduceJob job)
+{
+	node->removeReduce(job.jid);
+	node->addReduce(job);
+	remainingReducers++;
+	updateMaximumReduceNode();
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
+
 }
 
 void Master::loadNodesFile(string fileName)
@@ -126,10 +186,28 @@ void Master::loadNodesFile(string fileName)
 			cout << "New Node:\t" << *tempURL << endl;
 		}
 	}
+	broadcastKill();
+}
+
+void Master::broadcastKill()
+{
+	map<string, Node*>::iterator nodesIter;
+	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
+	{
+		(((*nodesIter).second))->sendKill();
+	}	
 }
 
 void Master::assignMaps()
 {
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
 	map<string, Node*>::iterator nodesIter;
 	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
 	{
@@ -150,22 +228,43 @@ void Master::assignMaps()
 		updateMaximumMapNode();
 
 		cout << "looping to steal" << endl;
-		while ((*nodesIter).second->numActiveJobs() < spec->getMaxJobsPerNode() && nodeWithMaxMapJobs->numRemainingMapJobs() > 0)
+		if (nodeWithMaxMapJobs != NULL)
 		{
-			struct MapJob job = nodeWithMaxMapJobs->stealMap();
-			(*nodesIter).second->addMap(job);
-			(*nodesIter).second->runMap();
-			activeMappers++;
-			remainingMappers--;
-			updateMaximumMapNode();
+			while ((*nodesIter).second->numActiveJobs() < spec->getMaxJobsPerNode() && nodeWithMaxMapJobs->numRemainingMapJobs() > 0)
+			{
+				struct MapJob job = nodeWithMaxMapJobs->stealMap();
+				(*nodesIter).second->addMap(job);
+				if ((*nodesIter).second->runMap())
+				{
+					activeMappers++;
+					remainingMappers--;
+				}
+				updateMaximumMapNode();
+			}
 		}
 
 		cout <<  "After Running Map Job Status: " << activeMappers + activeReducers << " active jobs " << remainingMappers + remainingReducers << " remaining jobs" << endl; 
 	}
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
 }
 
 void Master::assignReduces()
 {
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
 	map<string, Node*>::iterator nodesIter;
 	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
 	{
@@ -176,6 +275,7 @@ void Master::assignReduces()
 		{
 			if (!(*nodesIter).second->runReduce())
 			{
+				cout << "Breaking out of loop in assignReduces()" << endl;
 				break;
 			}
 			activeReducers++;
@@ -184,22 +284,46 @@ void Master::assignReduces()
 
 		updateMaximumReduceNode();
 
-		while ((*nodesIter).second->numActiveJobs() < spec->getMaxJobsPerNode() && nodeWithMaxReduceJobs->numRemainingReduceJobs() > 0)
+		cout << "Looping to steal reduce jobs" << endl;
+
+		if (nodeWithMaxReduceJobs != NULL)
 		{
-			struct ReduceJob job = nodeWithMaxReduceJobs->stealReduce();
-			(*nodesIter).second->addReduce(job);
-			(*nodesIter).second->runReduce();
-			activeReducers++;
-			remainingReducers--;
-			updateMaximumReduceNode();
+			while ((*nodesIter).second->numActiveJobs() < spec->getMaxJobsPerNode() && nodeWithMaxReduceJobs->numRemainingReduceJobs() > 0)
+			{
+				cout << "Stealing a reduce job" << endl;
+				struct ReduceJob job = nodeWithMaxReduceJobs->stealReduce();
+				(*nodesIter).second->addReduce(job);
+				if ((*nodesIter).second->runReduce())
+				{
+					activeReducers++;
+					remainingReducers--;
+				}
+				updateMaximumReduceNode();
+			}
 		}
 
 		cout <<  "After Running Reduce Job Status: " << activeMappers + activeReducers << " active jobs " << remainingMappers + remainingReducers << " remaining jobs" << endl; 
 	}
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
 }
 
 void Master::updateMaximumMapNode()
 {
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
 	map<string, Node*>::iterator nodesIter;
 	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
 	{
@@ -209,10 +333,27 @@ void Master::updateMaximumMapNode()
 			nodeWithMaxMapJobs = ((*nodesIter).second);
 		}
 	}
+	cout << "nodeWithMaxMapJobs set to: " << nodeWithMaxMapJobs << endl;	
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
 }
 
 void Master::updateMaximumReduceNode()
 {
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
 	map<string, Node*>::iterator nodesIter;
 	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
 	{
@@ -221,7 +362,16 @@ void Master::updateMaximumReduceNode()
 			maximumReduceJobsCount = ((*nodesIter).second)->numRemainingReduceJobs();
 			nodeWithMaxReduceJobs = ((*nodesIter).second);
 		}
-	}	
+	}
+	cout << "nodeWithMaxReduceJobs set to: " << nodeWithMaxReduceJobs << endl;
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
 }
 
 bool Master::checkMapStatus()
@@ -236,9 +386,90 @@ bool Master::checkReducerStatus()
 	return false;
 }
 
+void Master::printMaps(map<string, Node*> nodes)
+{
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
+	map<string, Node*>::iterator nodesIter;
+	vector<struct MapJob*> _return;
+	cout << "*** Printing active maps." << endl;
+	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
+	{
+		((*nodesIter).second)->printActiveMaps(_return);
+		vector<struct MapJob*>::iterator jobIter;
+		for (jobIter = _return.begin(); jobIter < _return.end(); jobIter++)
+		{
+			(*jobIter)->staleness++;
+			cout << "Job[" << (*jobIter)->jid << "] Staleness: " << (*jobIter)->staleness << endl;
+			if ((*jobIter)->staleness >= 100)
+			{
+				cout << "Resubmitting a map job: " << (*jobIter)->jid << endl;
+				activeMappers--;
+				(*jobIter)->staleness = 0;
+				resubmitMapJob((*nodesIter).second, *(*jobIter));
+			}
+		}
+	}
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
+}
+
+void Master::printReduces(map<string, Node*> nodes)
+{
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
+	map<string, Node*>::iterator nodesIter;
+	vector<struct ReduceJob*> _return;
+	cout << "*** Printing active reduces." << endl;
+	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
+	{
+		((*nodesIter).second)->printActiveReduces(_return);
+		vector<struct ReduceJob*>::iterator jobIter;
+		for (jobIter = _return.begin(); jobIter < _return.end(); jobIter++)
+		{
+			(*jobIter)->staleness++;
+			cout << "Job[" << (*jobIter)->jid << "] Staleness: " << (*jobIter)->staleness << endl;
+			if ((*jobIter)->staleness >= 100)
+			{
+				cout << "Resubmitting a reduce job: " << (*jobIter)->jid << endl;
+				activeReducers--;
+				(*jobIter)->staleness = 0;
+				resubmitReduceJob((*nodesIter).second, *(*jobIter));
+			}
+		}
+	}
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
+}
+
 bool Master::maps()
 {
 	cout << "Checking map jobs: "  << activeMappers << " active mappers " << remainingMappers << " remaining mappers." << endl;
+	if (activeMappers + remainingMappers <= 5) printMaps(nodes);
 	if (activeMappers || remainingMappers) return true;
 	return false;
 }
@@ -246,12 +477,21 @@ bool Master::maps()
 bool Master::reduces()
 {
 	cout << "Checking reduce jobs: "  << activeReducers << " active reducers " << remainingReducers << " remaining reducers." << endl;
+	if (activeReducers + remainingReducers <= 5) printReduces(nodes);
 	if (activeReducers || remainingReducers) return true;
 	return false;
 }
 
 bool Master::checkStatus()
 {
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
 	map<string, Node*>::iterator nodesIter;
 	map<JobID, Status> _return;
 	map<JobID, Status>::iterator mapIterator;
@@ -271,22 +511,17 @@ bool Master::checkStatus()
 			cout << "\t\t" << "Job[" << (*mapIterator).first << "] => Status[" << (*mapIterator).second << "]" << endl;
 			if ((*mapIterator).first % 2 == 0) /* map */
 			{
-				if ((*mapIterator).second == jobstatus::DONE)
+				if ((*mapIterator).second == jobstatus::DONE || ((*mapIterator).second == jobstatus::DEAD))
 				{
-					activeMappers--;
-					completedMaps++;
-					if (activeMappers + remainingMappers == 0)
-					{
-						sendAllMappersFinished();
-					}
-					finishedNodes.push_back(*(((*nodesIter).second)->getURL()));
 					if (((*nodesIter).second)->removeMap((*mapIterator).first))
 					{
-						cout << "NODE[" << *(((*nodesIter).second)->getURL()) << "] FINISHED ALL MAPS!" << endl;
-					}
-					else
-					{
-						cout << "NODE[" << *(((*nodesIter).second)->getURL()) << "] still has MAPS!" << endl;
+						activeMappers--;
+						completedMaps++;
+						if (activeMappers + remainingMappers == 0)
+						{
+							sendAllMappersFinished();
+						}
+						finishedNodes.push_back(*(((*nodesIter).second)->getURL()));
 					}
 				}
 				else
@@ -296,29 +531,44 @@ bool Master::checkStatus()
 			}
 			else /* reduce */
 			{
-				if ((*mapIterator).second == jobstatus::DONE)
+				if ((*mapIterator).second == jobstatus::DONE || (*mapIterator).second == jobstatus::DEAD)
 				{
-					activeReducers--;
-					completedReducers++;
 					if (((*nodesIter).second)->removeReduce((*mapIterator).first))
 					{
-						cout << "NODE[" << *(((*nodesIter).second)->getURL()) << "] FINISHED ALL REDUCES!" << endl;
+						activeReducers--;
+						completedReducers++;
 						if (remainingReducers + activeReducers == 0)
 						{
 							cout << "All reducers have now finished" << endl;
 							sendFinishedNodes();
+							assert(activeMappers >= 0);
+							assert(activeReducers >= 0);
+							assert(remainingMappers >= 0);
+							assert(remainingReducers >= 0);
+							assert(completedMaps >= 0);
+							assert(completedReducers >= 0);
+							assert(maximumMapJobsCount >= 0);
+							assert(maximumReduceJobsCount >= 0);
 							return true;
 						}
 					}
 				}
 				else
 				{
-					cout << "Got MAP NOT DONE(" << (*mapIterator).second <<  ") job status from " << *((*nodesIter).second)->getURL() << endl;
+					cout << "Got REDUCE NOT DONE(" << (*mapIterator).second <<  ") job status from " << *((*nodesIter).second)->getURL() << endl;
 				}
 			}
 		}
 	}
 	sendFinishedNodes();
+	assert(activeMappers >= 0);
+	assert(activeReducers >= 0);
+	assert(remainingMappers >= 0);
+	assert(remainingReducers >= 0);
+	assert(completedMaps >= 0);
+	assert(completedReducers >= 0);
+	assert(maximumMapJobsCount >= 0);
+	assert(maximumReduceJobsCount >= 0);
 	return false;
 }
 

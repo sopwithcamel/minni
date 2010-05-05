@@ -14,6 +14,7 @@ struct MapJob
 {
 	JobID jid;
 	Status stat;
+	uint64_t staleness;
 	Properties prop;
 	MapJob () {};
 	MapJob (JobID jid, ChunkID cid, Status stat, string fileIn, string so_name, JobID numReducers, string dfsMaster, uint16_t dfsPort) : jid(jid), stat(stat)
@@ -28,13 +29,15 @@ struct MapJob
 		prop["DFS_MASTER"] = dfsMaster;
 		stringConverter << dfsPort;
 		prop["DFS_PORT"] = stringConverter.str();
-	}
+		staleness = 0;
+	};
 };
 
 struct ReduceJob
 {
 	JobID jid;
 	Status stat;
+	uint64_t staleness;
 	Properties prop;
 	ReduceJob () {};
 	ReduceJob (JobID jid, PartID pid, Status stat, string fileOut, string so_name, string dfsMaster, uint16_t dfsPort) : jid(jid), stat(stat)
@@ -48,7 +51,8 @@ struct ReduceJob
 		stringConverter.str("");
 		stringConverter << dfsPort;
 		prop["DFS_PORT"] = stringConverter.str();
-	}
+		staleness = 0;
+	};
 };
 
 #endif

@@ -16,6 +16,7 @@ using namespace std;
 #include "Node.h"
 #include "HDFS.h"
 #include "Minnie.h"
+#include "assert.h"
 
 class Master {
 	public:
@@ -35,10 +36,15 @@ class Master {
 	private:
 		void assignMapJob(Node* node, ChunkID cid, string fileIn);		/* assign a map job to a node */
 		void assignReduceJob(Node* node, PartID pid, string fileOut);	/* assign a reduce job to a node */
+		void resubmitMapJob(Node* node, struct MapJob job);			/* resubmit a map job to a node */
+		void resubmitReduceJob(Node* node, struct ReduceJob job);		/* resubmit a reduce job to a node */
 		void updateMaximumMapNode();							/* loops through all nodes and updates the maximum map */
 		void updateMaximumReduceNode();						/* loops through all nodes and updates the maximum reduces */
 		void loadNodesFile(string fileName);						/* load node names from file */
 		void sendAllMappersFinished();							/* send all maps finished to all nodes */
+		void printMaps(map<string, Node*> nodes); 				/* print and resubmit currently running maps */
+		void printReduces(map<string, Node*> nodes);				/* print and resubmit currently running reduces */
+		void broadcastKill();
 		map<string, Node*> nodes;								/* maintain string list of all node names */
 		Node* nodeWithMaxMapJobs;								/* node with maximum remaining map jobs */
 		JobID maximumMapJobsCount;							/* the number of jobs assigned to highest map loaded node */
