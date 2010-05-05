@@ -8,8 +8,9 @@ using namespace std;
 class WordCounter: public Mapper {
   public:
 	virtual void Map (MapInput* input) {
-		const string& text = input->value();	
-		const int n = text.size();
+		char* text;
+		int n = input->key_value(&text);
+			
 		for(int i = 0; i < n; ) {
 			//skip through the leading whitespace
 			while((i < n) && isspace(text[i]))

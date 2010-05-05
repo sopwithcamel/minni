@@ -30,7 +30,7 @@ class MapInput {
   public:
 	MapInput() {};
 	~MapInput() {};
-	virtual void key_value(char* str); 
+	virtual int key_value(char** str); 
   private:
 	ChunkID chunk_id;   
 	string file_location;	
