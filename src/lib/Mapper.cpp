@@ -208,9 +208,6 @@ task* MapperWrapperTask::execute() {
 	{
 		cout<<"Mapper: Executing loop for i = "<<i<<endl;
 		string final_path = GetLocalFilename(path,jobid,i);
-		File f1;
-		f1.name = final_path;	
-		my_Filelist.push_back(f1);
 		cout<<"Mapper: I am going to write the file "<<final_path<<endl;
 	 	FILE* fptr = fopen(final_path.c_str(), "w");
 		cout<<"I should have opened the file "<<final_path<<endl;
@@ -226,7 +223,13 @@ task* MapperWrapperTask::execute() {
 		}
 		cout<<"Mapper: I am closing the file "<<final_path<<endl;
 		fclose(fptr);
+		cout<<"Mapper: Going to tell the workdaemon about the file \n";
+		File f1(jobid, i, final_path);
+		cout<<"Pushed back the file to worker daemon list \n";
+		my_Filelist.push_back(f1);
+
 	}
+	
 
 	
 	filereg->recordComplete(my_Filelist);
