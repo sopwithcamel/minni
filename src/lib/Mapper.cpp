@@ -30,27 +30,22 @@ Mapper::~Mapper() {
 void Map (MapInput* input) {
 	cout<<"Mapper: entered the map phase\n";
 	cout<<"Mapper: I will be reading from HDFS soon\n";
-	
-		char* text;
-		
-                int n = input->key_value(&text);
-
+	char* text;
+	int n = input->key_value(&text);
 	cout<<"Mapper: I have read from HDFS\n";
-                for(int i = 0; i < n; ) {
-                        //skip through the leading whitespace
-                        while((i < n) && isspace(text[i]))
-                                i++;
-
-                        //Find word end
-                        int start = i;
-                        while ((i < n) && !isspace(text[i]))
-                                i++;
-                        //if(start < i)
-                                //Emit();
-                }
+        for(int i = 0; i < n; ) {
+             //skip through the leading whitespace
+             while((i < n) && isspace(text[i]))
+        	          i++;
+             //Find word end
+             int start = i;
+             while ((i < n) && !isspace(text[i]))
+                 i++;
+             if(start < i)
+                   //Emit();
+        }
 	cout<<"Mapper: Done with map job\n";
 }
-
 
 
 void Mapper::Emit (string key, string value) { //Partial aggregation going on here
