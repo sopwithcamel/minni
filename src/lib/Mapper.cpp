@@ -61,19 +61,13 @@ void Mapper::Map (MapInput* input) {
              while ((i < n) && !isspace(text[i]))
                  i++;
 		
-	    
-		
-             if(start < i)
+	     if(start < i)
 	     {
 		cout<<"Mapper: The word is ";
-		for(int j = start; j < i; j++)
-		{
-			putc(text[j],stdout);
-		}
+		string key(text[start],(i-start));
+		cout<<key;
 		cout<<endl;
-		
-		  
-                   //Emit();
+	//	Emit();
              }
         }
 	cout<<"Mapper: Done with map job\n";
