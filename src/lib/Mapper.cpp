@@ -188,12 +188,16 @@ task* MapperWrapperTask::execute() {
 	//	return NULL; 
 	//}
 	cout<<"Mapper: User map too is successful "<<endl;
-	//instantiating my mapper 	
+	//instantiating my mapper 
+	cout<<"Mapper: Instantiating the mapper \n";	
 	Mapper* my_mapper = new Mapper();
+	cout<<"Mapper: Setting the number of partitions on the mapper to "<<my_mapper->num_partition<<endl;
 	my_mapper->num_partition = npart;
+	
 	cout<<"The number of partitions that it gets is "<<npart<<"\n";
 	//my_mapper->num_partition = 10;
 	//npart = 10;
+	cout<<"Mapper: starting to push back the aggregators\n";
 	for(int i = 0; i < npart; i++)
 	{
 		my_mapper->aggregs.push_back(new Aggregator);
