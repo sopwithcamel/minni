@@ -4,7 +4,7 @@
 
 //MapInput Class
 
-int MapInput::key_value(char** value) {
+uint64_t MapInput::key_value(char** value) {
 
 	cout<<"Mapper: HDFS: Connecting to HDFS"<<endl;
 	HDFS myhdfs(master_name,port);
@@ -24,8 +24,17 @@ int MapInput::key_value(char** value) {
 	cout<<"Mapper: HDFS: It told me that the chunk size of this file is "<<length<<endl;
 	*value = (char*) malloc(length+1);
 	cout<<"Mapper: HDFS: Reading chunks from HDFS"<<endl;
-	int k = myhdfs.readChunkOffset(file_location, (uint64_t) 0, *value, length);
-	myhdfs.disconnect();
+	uint64_t k = myhdfs.readChunkOffset(file_location, (uint64_t) 0, *value, length);
+	if(k == -1)
+		cout<<"Mapper: HDFS: Reading failed! :( "<<endl;
+	else
+		cout<<"Mapper: HDFS: Read number of blocks: "<<k<<endl;
+	bool disconn = myhdfs.disconnect();
+	if(!disconn)
+		cout<<"Mapper: HDFS: Unable to disconnect \n";
+	else
+		cout<<"Mapper: HDFS: Able to disconnect \n";
+
 	return length;
 }
 
@@ -41,7 +50,7 @@ void Mapper::Map (MapInput* input) {
 	cout<<"Mapper: entered the map phase\n";
 	cout<<"Mapper: I will be reading from HDFS soon\n";
 	char* text;
-	int n = input->key_value(&text);
+	uint64_t n = input->key_value(&text);
 	cout<<"Mapper: I have read from HDFS\n";
         for(int i = 0; i < n; ) {
              //skip through the leading whitespace
@@ -198,8 +207,8 @@ task* MapperWrapperTask::execute() {
 	//instantiating my mapper 
 	cout<<"Mapper: Instantiating the mapper \n";	
 	Mapper* my_mapper = new Mapper();
-	cout<<"Mapper: Setting the number of partitions on the mapper to "<<my_mapper->num_partition<<endl;
 	my_mapper->num_partition = npart;
+	cout<<"Mapper: Setting the number of partitions to "<<my_mapper->num_partition<<endl;
 	
 	cout<<"The number of partitions that it gets is "<<npart<<"\n";
 	//my_mapper->num_partition = 10;
