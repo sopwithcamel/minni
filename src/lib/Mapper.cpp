@@ -123,13 +123,13 @@ int MapperWrapperTask::UserMapLinking(string soname)  { //TODO link Partial aggr
 	}
 	
 	//load the symbols
-	create_fn = (create_mapper_t*) dlsym(wordcount, "create_mapper");	
-	destroy_fn = (destroy_mapper_t*) dlsym(wordcount, "destroy_mapper");
+	//create_fn = (create_mapper_t*) dlsym(wordcount, "create_mapper");	
+	//destroy_fn = (destroy_mapper_t*) dlsym(wordcount, "destroy_mapper");
 
-	if(!create_fn || !destroy_fn) {
-		taskreg->setStatus(jobid, jobstatus::DEAD);
-		return 1;
-	}
+	//if(!create_fn || !destroy_fn) {
+	//	taskreg->setStatus(jobid, jobstatus::DEAD);
+	//	return 1;
+	//}
 	return 0;
 }
 
