@@ -367,6 +367,7 @@ void GrabberRegistry::reportDone(){
 string GrabberRegistry::toString(){
   stringstream ss;
   bool first = true;
+  ss << "Finished = " << finished << endl;
   ss << "URLs = {";
   for(set<URL>::iterator it = urls.begin(); it != urls.end(); it++){
     if(!first){
