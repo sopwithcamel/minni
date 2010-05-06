@@ -115,8 +115,6 @@ int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
 	ss3 >> num_partitions; 
 	cout<<"Mapper: number of partitions - the string version is "<<(*prop)["NUM_REDUCERS"]<<endl;
 	cout<<"Mapper: number of partions is converted version"<<num_partitions<<endl;
-	if(num_partitions > 10)
-		num_partitions = 10;
 	return 0;	
 }
 
@@ -194,8 +192,8 @@ task* MapperWrapperTask::execute() {
 	Mapper* my_mapper = new Mapper();
 	my_mapper->num_partition = npart;
 	cout<<"The number of partitions that it gets is "<<npart<<"\n";
-	my_mapper->num_partition = 10;
-	npart = 10;
+	//my_mapper->num_partition = 10;
+	//npart = 10;
 	for(int i = 0; i < npart; i++)
 	{
 		my_mapper->aggregs.push_back(new Aggregator);
