@@ -63,11 +63,11 @@ void Mapper::Map (MapInput* input) {
 		
 	     if(start < i)
 	     {
-		cout<<"Mapper: The word is ";
+		//cout<<"Mapper: The word is ";
 		string key(&text[start],(i-start));
-		cout<<key;
-		cout<<endl;
-	//	Emit();
+		//cout<<key;
+		//cout<<endl;
+		Emit(key,"1");
              }
         }
 	cout<<"Mapper: Done with map job\n";
@@ -77,7 +77,9 @@ void Mapper::Map (MapInput* input) {
 void Mapper::Emit (string key, string value) { //Partial aggregation going on here
 	
 	//Case1: New key value - insert into map
+	cout<<"Mapper: Emit: Partition function called\n";
 	int i = GetPartition(key);
+	cout<<"Mapper: Emit: Partition value is "<<i<<"\n";
 	
 	Aggregator::iterator found = (*(aggregs[i])).find(key);
 	if(found == (aggregs[i])->end()) {
