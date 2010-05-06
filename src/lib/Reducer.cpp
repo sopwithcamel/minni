@@ -45,9 +45,11 @@ int ReducerWrapperTask::ParseProperties(string& soname) {//TODO checking and pri
 	ss >> my_partition;
 	myoutput.master_name = (*prop)["DFS_MASTER"];
         string port_temp = (*prop)["DFS_PORT"];
+	ss.str("");
         ss << port_temp;
+	stringstream ss1;
 	int port_int;
-	ss >> port_int;
+	ss1 >> port_int;
 	myoutput.port = (uint16_t) port_int;
 	return SUCCESS_EXIT;
 }
