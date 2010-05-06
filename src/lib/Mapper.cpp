@@ -42,7 +42,9 @@ void Map (MapInput* input) {
              while ((i < n) && !isspace(text[i]))
                  i++;
              if(start < i)
+	     {
                    //Emit();
+             }
         }
 	cout<<"Mapper: Done with map job\n";
 }
