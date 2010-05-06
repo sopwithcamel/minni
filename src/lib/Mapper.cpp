@@ -195,7 +195,7 @@ task* MapperWrapperTask::execute() {
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 
-	my_mapper->Map(myinput);
+	my_mapper->Map(&myinput);
 
 	cout<<"Mapper: Supposedly done with mapping"<<endl;
 	string path = GetCurrentPath();
