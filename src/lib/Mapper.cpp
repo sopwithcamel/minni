@@ -64,7 +64,7 @@ void Mapper::Map (MapInput* input) {
 	     if(start < i)
 	     {
 		cout<<"Mapper: The word is ";
-		string key(text[start],(i-start));
+		string key(&text[start],(i-start));
 		cout<<key;
 		cout<<endl;
 	//	Emit();
