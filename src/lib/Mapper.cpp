@@ -108,7 +108,7 @@ int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
 	cout<<"Mapper: number of partions is "<<num_partitions<<endl;
 	if(num_partitions > 10)
 		num_partitions = 10;
-	return 0	
+	return 0;	
 }
 
 int MapperWrapperTask::UserMapLinking(string soname)  { //TODO link Partial aggregates also
