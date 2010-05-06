@@ -160,7 +160,7 @@ task* ReducerWrapperTask::execute() {
 		curr_stat = grabreg->getStatus(my_partition);
 	}
 
-	HDFS myhdfs(myoutput.master_name,myoutput.port);
+	/*HDFS myhdfs(myoutput.master_name,myoutput.port);
 	myhdfs.connect();
 	stringstream ss1;
 	ss1 << my_partition;
@@ -177,7 +177,7 @@ task* ReducerWrapperTask::execute() {
 		string out = Write(k, val);
 		myhdfs.writeToFile(file_location,out.c_str(),out.size());
 	}
-	myhdfs.disconnect();
+	myhdfs.disconnect();*/
 
 	taskreg->setStatus(jobid, jobstatus::DONE);
 	return NULL;
