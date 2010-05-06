@@ -27,7 +27,7 @@ Mapper::~Mapper() {
       //  }
 }
 
-void Map (MapInput* input) {
+void Mapper::Map (MapInput* input) {
 	cout<<"Mapper: entered the map phase\n";
 	cout<<"Mapper: I will be reading from HDFS soon\n";
 	char* text;
