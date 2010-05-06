@@ -101,12 +101,12 @@ int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
 	uint16_t port_int;
 	ss >> port_int;
 	//myinput.port = (uint16_t) port_int;
-	cout<<"Mapper: port - the string version is "<<*(prop)["DFS_PORT"]<<endl;
+	cout<<"Mapper: port - the string version is "<<(*prop)["DFS_PORT"]<<endl;
 	cout<<"Mapper: port is -converted version "<<myinput.port<<endl;
 	string part = (*prop)["NUM_REDUCERS"];
 	ss << part;
 	ss >> num_partitions; 
-	cout<<"Mapper: number of partitions - the string version is "<<*(prop)["NUM_REDUCERS"]<<endl;
+	cout<<"Mapper: number of partitions - the string version is "<<(*prop)["NUM_REDUCERS"]<<endl;
 	cout<<"Mapper: number of partions is converted version"<<num_partitions<<endl;
 	if(num_partitions > 10)
 		num_partitions = 10;
@@ -195,7 +195,7 @@ task* MapperWrapperTask::execute() {
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 
-	my_mapper->Map(&myinput);
+	my_mapper->Map(myinput);
 
 	cout<<"Mapper: Supposedly done with mapping"<<endl;
 	string path = GetCurrentPath();
