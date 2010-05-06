@@ -193,6 +193,7 @@ public:
 
   // Sounds the all clear when all mappers are done
   void allMapsDone(){
+    cout << id++ << ": Master reporting that all maps are done..." << endl;
     grab_reg.reportDone();
   }
   
