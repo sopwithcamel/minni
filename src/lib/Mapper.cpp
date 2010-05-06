@@ -6,18 +6,24 @@
 
 int MapInput::key_value(char** value) {
 
-	cout<<"Mapper: Connecting to HDFS"<<endl;
+	cout<<"Mapper: HDFS: Connecting to HDFS"<<endl;
 	HDFS myhdfs(master_name,port);
-	cout<<"The master name is "<<master_name<<endl;
-	cout<<"The port is "<<port;
+	cout<<"Mapper: HDFS: The master name is "<<master_name<<endl;
+	cout<<"Mapper: HDFS: The port is "<<port<<endl;
 	bool conn = myhdfs.connect();
 	if(!conn)
-		cout<<"Unable to establish connection :( \n";
+		cout<<"Mapper: HDFS: Unable to establish connection :( \n";
+	else
+		cout<<"Mapper: HDFS: Able to establish connection :) \n";
+
+	cout<<"Mapper:  HDFS: I am looking for file "<<file_location<<endl;
 	if(myhdfs.checkExistence(file_location))
-		cout<<"Mapper: file not in location!!\n";
+		cout<<"Mapper: HDFS: file in location!!\n";
+	
 	uint64_t length = myhdfs.getChunkSize(file_location);
+	cout<<"Mapper: HDFS: It told me that the chunk size of this file is "<<length<<endl;
 	*value = (char*) malloc(length+1);
-	cout<<"Reading chunks from HDFS"<<endl;
+	cout<<"Mapper: HDFS: Reading chunks from HDFS"<<endl;
 	int k = myhdfs.readChunkOffset(file_location, (uint64_t) 0, *value, length);
 	myhdfs.disconnect();
 	return length;
