@@ -28,10 +28,14 @@ Mapper::~Mapper() {
 }
 
 void Map (MapInput* input) {
+	cout<<"Mapper: entered the map phase\n";
+	cout<<"Mapper: I will be reading from HDFS soon\n";
 	
 		char* text;
+		
                 int n = input->key_value(&text);
 
+	cout<<"Mapper: I have read from HDFS\n";
                 for(int i = 0; i < n; ) {
                         //skip through the leading whitespace
                         while((i < n) && isspace(text[i]))
@@ -44,6 +48,7 @@ void Map (MapInput* input) {
                         //if(start < i)
                                 //Emit();
                 }
+	cout<<"Mapper: Done with map job\n";
 }
 
 
