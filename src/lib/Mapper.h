@@ -71,7 +71,7 @@ class MapperWrapperTask : public task {
 	Properties* prop;
 	TaskRegistry* taskreg;
 	LocalFileRegistry* filereg;
-	int ParseProperties(string& soname, int& num_partitions);
+	int ParseProperties(string& soname, uint64_t& num_partitions);
 	int UserMapLinking(string soname);
 	string GetCurrentPath();
 	string GetLocalFilename(string path, JobID jobid, int i);	
