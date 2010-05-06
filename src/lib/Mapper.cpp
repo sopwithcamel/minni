@@ -23,7 +23,7 @@ uint64_t MapInput::key_value(char** value) {
 	uint64_t length = myhdfs.getChunkSize(file_location);
 	cout<<"Mapper: HDFS: It told me that the chunk size of this file is "<<length<<endl;
 	*value = (char*) malloc(length+1);
-	cout<<"Mapper: HDFS: Reading chunks from HDFS"<<endl;
+	cout<<"Mapper: HDFS: Going to read chunks from HDFS"<<endl;
 	uint64_t k = myhdfs.readChunkOffset(file_location, (uint64_t) 0, *value, length);
 	if(k == -1)
 		cout<<"Mapper: HDFS: Reading failed! :( "<<endl;
