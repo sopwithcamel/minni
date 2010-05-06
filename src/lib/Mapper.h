@@ -30,7 +30,7 @@ class MapInput {
   public:
 	MapInput() {};
 	~MapInput() {};
-	virtual int key_value(char** str); 
+	virtual uint64_t key_value(char** str); 
   private:
 	ChunkID chunk_id;   
 	string file_location;	
@@ -52,15 +52,15 @@ class Mapper {
 };
 
 //the type of class factories
-typedef Mapper* create_mapper_t();
-typedef void destroy_mapper_t (Mapper*);
+//typedef Mapper* create_mapper_t();
+//typedef void destroy_mapper_t (Mapper*);
 
 
 
 class MapperWrapperTask : public task {
   public:
-	create_mapper_t* create_fn;
-	destroy_mapper_t* destroy_fn;
+//	create_mapper_t* create_fn;
+//	destroy_mapper_t* destroy_fn;
 	//create_partialagg_t* create_agg_fn;
 	//destroy_partialagg_t* destroy_agg_fn;
 	MapInput myinput;
