@@ -101,11 +101,13 @@ int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
 	uint16_t port_int;
 	ss >> port_int;
 	//myinput.port = (uint16_t) port_int;
-	cout<<"Mapper: port is "<<myinput.port<<endl;
+	cout<<"Mapper: port - the string version is "<<*(prop)["DFS_PORT"]<<endl;
+	cout<<"Mapper: port is -converted version "<<myinput.port<<endl;
 	string part = (*prop)["NUM_REDUCERS"];
 	ss << part;
 	ss >> num_partitions; 
-	cout<<"Mapper: number of partions is "<<num_partitions<<endl;
+	cout<<"Mapper: number of partitions - the string version is "<<*(prop)["NUM_REDUCERS"]<<endl;
+	cout<<"Mapper: number of partions is converted version"<<num_partitions<<endl;
 	if(num_partitions > 10)
 		num_partitions = 10;
 	return 0;	
@@ -187,7 +189,6 @@ task* MapperWrapperTask::execute() {
 	cout<<"The number of partitions that it gets is "<<npart<<"\n";
 	my_mapper->num_partition = 10;
 	npart = 10;
-
 	for(int i = 0; i < npart; i++)
 	{
 		my_mapper->aggregs.push_back(new Aggregator);
