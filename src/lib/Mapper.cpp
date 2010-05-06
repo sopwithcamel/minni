@@ -97,13 +97,15 @@ int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
   	myinput.master_name = (*prop)["DFS_MASTER"];
 	cout<<"Mapper: dfs master is "<<myinput.master_name<<endl;
         string port_temp = (*prop)["DFS_PORT"];
+	ss.str("");
 	ss <<port_temp;
 	uint16_t port_int;
 	ss >> port_int;
-	//myinput.port = (uint16_t) port_int;
+	myinput.port =  port_int;
 	cout<<"Mapper: port - the string version is "<<(*prop)["DFS_PORT"]<<endl;
 	cout<<"Mapper: port is -converted version "<<myinput.port<<endl;
 	string part = (*prop)["NUM_REDUCERS"];
+	ss.str("");
 	ss << part;
 	ss >> num_partitions; 
 	cout<<"Mapper: number of partitions - the string version is "<<(*prop)["NUM_REDUCERS"]<<endl;
