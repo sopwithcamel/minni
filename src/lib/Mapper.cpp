@@ -106,8 +106,9 @@ int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
 	ss << part;
 	ss >> num_partitions; 
 	cout<<"Mapper: number of partions is "<<num_partitions<<endl;
-	num_partitions = 10;
-	return 0;
+	if(num_partitions > 10)
+		num_partitions = 10;
+	return 0	
 }
 
 int MapperWrapperTask::UserMapLinking(string soname)  { //TODO link Partial aggregates also
@@ -172,6 +173,7 @@ task* MapperWrapperTask::execute() {
 		cout<<"Parse properties something wrong. I am leaving!"<<endl;
 		return NULL; 
 	}
+	
 	cout<<"Mapper: Parse happened properly! "<<endl;
 	//dynamically loading the classes
 	//if(UserMapLinking(soname) == 1) { //TODO
@@ -182,6 +184,9 @@ task* MapperWrapperTask::execute() {
 	//instantiating my mapper 	
 	Mapper* my_mapper = new Mapper();
 	my_mapper->num_partition = npart;
+	cout<<"The number of partitions that it gets is "<<npart<<"\n";
+	my_mapper->num_partition = 10;
+	npart = 10;
 
 	for(int i = 0; i < npart; i++)
 	{
