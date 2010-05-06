@@ -84,7 +84,7 @@ MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p, TaskRegistry * 
 	filereg = f;
 }
 
-int MapperWrapperTask::ParseProperties(string& soname, int& num_partitions) {//TODO checking and printing error reports!	
+int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions) {//TODO checking and printing error reports!	
 	stringstream ss;
 	soname = (*prop)["SO_NAME"];
 	cout<<"Mapper: soname is "<<soname<<endl;
@@ -98,9 +98,9 @@ int MapperWrapperTask::ParseProperties(string& soname, int& num_partitions) {//T
 	cout<<"Mapper: dfs master is "<<myinput.master_name<<endl;
         string port_temp = (*prop)["DFS_PORT"];
 	ss <<port_temp;
-	int port_int;
+	uint16_t port_int;
 	ss >> port_int;
-	myinput.port = (uint16_t) port_int;
+	//myinput.port = (uint16_t) port_int;
 	cout<<"Mapper: port is "<<myinput.port<<endl;
 	string part = (*prop)["NUM_REDUCERS"];
 	ss << part;
@@ -166,7 +166,7 @@ void serialize(FILE* fileOut, char type, uint64_t keyLength, const char* key, ui
 
 task* MapperWrapperTask::execute() {
 	string soname;
-	int npart;
+	uint64_t npart;
 	if(ParseProperties(soname,npart) == 1)  { //TODO
 		cout<<"Parse properties something wrong. I am leaving!"<<endl;
 		return NULL; 
@@ -204,6 +204,7 @@ task* MapperWrapperTask::execute() {
 		my_Filelist.push_back(f1);
 		cout<<"Mapper: I am going to write the file "<<final_path<<endl;
 	 	FILE* fptr = fopen(final_path.c_str(), "w");
+		cout<<"I should have opened the file "<<final_path<<endl;
 		Aggregator::iterator aggiter;
 		for(aggiter = (my_mapper->aggregs[i])->begin(); aggiter != (my_mapper->aggregs[i])->end(); ++aggiter)
 		{
