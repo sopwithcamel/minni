@@ -106,6 +106,7 @@ int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
 	ss << part;
 	ss >> num_partitions; 
 	cout<<"Mapper: number of partions is "<<num_partitions<<endl;
+	num_partitions = 10;
 	return 0;
 }
 
