@@ -145,6 +145,7 @@ task* ReducerWrapperTask::execute() {
 	grabreg->setupGrabber(my_partition); //setting up the grabber
 	PartStatus curr_stat = grabreg->getStatus(my_partition);
 	while(curr_stat != partstatus::DONE || curr_stat != partstatus::DNE)	{
+		cout<<"Current status is "<<curr_status<<endl;
 		if(curr_stat == partstatus::BLOCKED)
 		{
 			if(sleeptime <= MAX_SLEEPTIME)
@@ -159,6 +160,7 @@ task* ReducerWrapperTask::execute() {
 			sleeptime = BASE_SLEEPTIME;
 		}
 		curr_stat = grabreg->getStatus(my_partition);
+		
 	}
 
 	/*HDFS myhdfs(myoutput.master_name,myoutput.port);
