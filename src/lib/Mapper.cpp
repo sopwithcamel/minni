@@ -24,7 +24,7 @@ uint64_t MapInput::key_value(char** value) {
 	cout<<"Mapper: HDFS: It told me that the chunk size of this file is "<<length<<endl;
 	*value = (char*) malloc(length+1); /*freed in line 73 Map fn aft using all data that is passed*/
 	cout<<"Mapper: HDFS: Going to read chunks from HDFS"<<endl;
-	uint64_t k = myhdfs.readChunkOffset(file_location, (uint64_t) 0, *value, length);
+	int64_t k = myhdfs.readChunkOffset(file_location, (uint64_t) 0, *value, length);
 	if(k == -1)
 		cout<<"Mapper: HDFS: Reading failed! :( "<<endl;
 	else
@@ -45,19 +45,22 @@ Mapper::~Mapper() {
     //            delete my_file_streams[i];
       //  }
 }
+ 
 
-void Mapper::Map (MapInput* input) {
+
+void Mapper::Map(MapInput* input) {
 	cout<<"Mapper: entered the map phase\n";
 	cout<<"Mapper: I will be reading from HDFS soon\n";
 	char* text;
 	uint64_t n = input->key_value(&text);
 	cout<<"Mapper: I have read from HDFS\n";
-        for(int i = 0; i < n; ) {
+        unsigned int i;
+	for( i = 0; i < n; ) {
              //skip through the leading whitespace
              while((i < n) && isspace(text[i]))
         	          i++;
              //Find word end
-             int start = i;
+             unsigned int start = i;
              while ((i < n) && !isspace(text[i]))
                  i++;
 		
@@ -223,7 +226,7 @@ task* MapperWrapperTask::execute() {
 	//my_mapper->num_partition = 10;
 	//npart = 10;
 	cout<<"Mapper: starting to push back the aggregators\n";
-	for(int i = 0; i < npart; i++)
+	for(unsigned int i = 0; i < npart; i++)
 	{
 		my_mapper->aggregs.push_back(new Aggregator());
 	}
@@ -237,7 +240,7 @@ task* MapperWrapperTask::execute() {
 	vector<File> my_Filelist;
 	cout<<"Mapper: About to start writing into files and my npart is "<<npart<<"\n";
 	//now i need to start writing into file
-	for(int i = 0; i < npart ; i++)
+	for(unsigned int i = 0; i < npart ; i++)
 	{
 		cout<<"Mapper: Executing loop for i = "<<i<<endl;
 		string final_path = GetLocalFilename(path,jobid,i);
@@ -263,7 +266,7 @@ task* MapperWrapperTask::execute() {
 
 	}
 
-	for(int i = 0; i < npart ; i++)
+	for(unsigned int i = 0; i < npart ; i++)
         {
 		 Aggregator::iterator aggiter;
                 for(aggiter = (my_mapper->aggregs[i])->begin(); aggiter != (my_mapper->aggregs[i])->end(); ++aggiter)
