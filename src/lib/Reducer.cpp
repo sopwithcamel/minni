@@ -144,8 +144,8 @@ task* ReducerWrapperTask::execute() {
 	int sleeptime = BASE_SLEEPTIME;
 	grabreg->setupGrabber(my_partition); //setting up the grabber
 	PartStatus curr_stat = grabreg->getStatus(my_partition);
-	while(curr_stat != partstatus::DONE || curr_stat != partstatus::DNE)	{
-		cout<<"Current status for partition"<<my_partition<<"is "<<curr_stat<<endl;
+	while(curr_stat != partstatus::DONE && curr_stat != partstatus::DNE)	{
+		cout<<"Reducer: Current status for partition"<<my_partition<<"is "<<curr_stat<<endl;
 		if(curr_stat == partstatus::BLOCKED)
 		{
 			if(sleeptime <= MAX_SLEEPTIME)
