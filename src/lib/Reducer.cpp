@@ -88,7 +88,6 @@ string ReducerWrapperTask::GetLocalFilename(string path, JobID jobid) {
        	return ss.str();
 }
 
-
 int deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint64_t* valueLength, char** value)
 {
 	if (feof(fileIn)) return -1;
@@ -108,7 +107,6 @@ int deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint6
 	cout<<"Reducer: The values are key= "<<*key<<" value= "<<*value<<endl;
 	return 0;
 }
-
 
 void ReducerWrapperTask::DoReduce(string filename) {
 	cout<<"I am here to do reduce on "<<filename<<endl;
@@ -141,10 +139,8 @@ void ReducerWrapperTask::DoReduce(string filename) {
 
 string ReducerWrapperTask::Write(string result_key, string result_value) {
 	string out = result_key + " " + result_value + "\n";
+	return out;
 }
-
-
-
 
 task* ReducerWrapperTask::execute() {
 	string soname;
@@ -217,6 +213,7 @@ task* ReducerWrapperTask::execute() {
 		string k = aggiter->first;
 		PartialAgg* curr_par = aggiter->second;
 		string val = curr_par->value;
+		cout << "Key: " << k << " " << " val: " << val << endl;
 		string out = Write(k, val);
 		cout<<"Reducer: The value that it writes is "<<out<<endl;
 		myhdfs.writeToFile(file_location,out.c_str(),out.size());
