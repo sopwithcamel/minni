@@ -760,7 +760,7 @@ uint32_t WorkDaemon_sendData_result::read(::apache::thrift::protocol::TProtocol*
     {
       case 0:
         if (ftype == ::apache::thrift::protocol::T_STRING) {
-          xfer += iprot->readString(this->success);
+          xfer += iprot->readBinary(this->success);
           this->__isset.success = true;
         } else {
           xfer += iprot->skip(ftype);
@@ -786,7 +786,7 @@ uint32_t WorkDaemon_sendData_result::write(::apache::thrift::protocol::TProtocol
 
   if (this->__isset.success) {
     xfer += oprot->writeFieldBegin("success", ::apache::thrift::protocol::T_STRING, 0);
-    xfer += oprot->writeString(this->success);
+    xfer += oprot->writeBinary(this->success);
     xfer += oprot->writeFieldEnd();
   }
   xfer += oprot->writeFieldStop();
@@ -816,7 +816,7 @@ uint32_t WorkDaemon_sendData_presult::read(::apache::thrift::protocol::TProtocol
     {
       case 0:
         if (ftype == ::apache::thrift::protocol::T_STRING) {
-          xfer += iprot->readString((*(this->success)));
+          xfer += iprot->readBinary((*(this->success)));
           this->__isset.success = true;
         } else {
           xfer += iprot->skip(ftype);

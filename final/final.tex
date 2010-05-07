@@ -130,13 +130,13 @@ The first major difference is the WD that sits on each node that mediates all co
 
 There are three advantages to this approach. The first is that mapper threads can free system resources by closing immediately upon completion. This is especially important in systems where memory is scarce. This property has a secondary advantage: it entirely removes a failure case. Jobs no longer need to be rerun if mappers crash after completion since the daemon is responsible for all RPC with the reducers. Additionally, since worker communication is centralized by the WD we can reduce network overhead by batching messages.
 
-The principle disadvantage of the WD approach is that the WD takes the node down when it crashes.  Essentially, a node is removed from the MapReduce pool if the WD crashes. However, since the WD is isolated from the user's code and data we expect this to be a somewhat rare event.
+The principle disadvantage of the WD approach is that the WD takes the node down when it crashes. In our failure model a node is removed from the MapReduce pool if the WD crashes. However, since the WD is isolated from the user's code and data we expect this to be a somewhat rare event.
 
 \subsubsection{Accumulator-PartialHash}
 
 The second major difference is the adoption of the APH aggregation scheme. \citet{yu2009distributed} describes the original MapReduce approach as the \emph{FullSort} method: all the records are gathered in memory and sorted by intermediate key immediately following the map phase\footnote{If there are too many key-value pairs to store in memory then they are sorted externally.}. This method has two principle disadvantages: it may be memory intensive (unless we always sort externally in which case it is slow), and requires every key-value pair to be present in memory before sorting. 
 
- APH aggregation alleviates both these problems. APH essentially combines the sort phase with the initial reduction. Each reduction task has a hashtable that maps keys to partial aggregation objects (PAOs). These PAOs, intuitively, are some sufficient description of an incomplete aggregation such that:
+ APH aggregation alleviates both these problems. APH essentially combines the sort phase an initial reduction. Each reduction task has a hashtable that maps keys to partial aggregation objects (PAOs). These PAOs, intuitively, are some sufficient description of an incomplete aggregation such that:
 \begin{itemize}
  \item a new key-value pair can be \emph{added} to the PAO to yield a new PAO (\emph{i.e.} $p^t = p^{t-1} + v^t$);
  \item two PAOs can be \emph{merged} to form a new PAO (\emph{i.e.} $p^s = p^q \oplus p^r$).
