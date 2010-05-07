@@ -170,8 +170,10 @@ public:
   Status mapperStatus() {
     cout << id++ << ": Mapper status..." << endl;
     if(task_reg.mapper_still_running()){
+      cout << "\tJob inprogress." << endl;
       return jobstatus::INPROGRESS;
     }
+    cout << "\tJob done." << endl;
     return jobstatus::DONE;
   }
 

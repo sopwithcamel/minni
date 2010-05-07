@@ -60,8 +60,7 @@ void LocalFileRegistry::bufferData(string &_return, const PartID pid, const Bloc
     file.seekg(start, ios_base::beg);
     file.read(memblock, len);
     file.close();
-    memblock[len] = '\0';
-    _return.assign(memblock);
+    _return.assign(memblock, len);
     return;
   }
 }
