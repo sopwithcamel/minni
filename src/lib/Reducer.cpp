@@ -165,6 +165,7 @@ task* ReducerWrapperTask::execute() {
 	int sleeptime = BASE_SLEEPTIME;
 	grabreg->setupGrabber(my_partition); //setting up the grabber
 	PartStatus curr_stat = grabreg->getStatus(my_partition);
+	int flag = 0;
 	while(curr_stat != partstatus::DONE && curr_stat != partstatus::DNE)	{
 		cout<<"Reducer: Current status for partition"<<my_partition<<"is "<<curr_stat<<endl;
 		if(curr_stat == partstatus::BLOCKED)
@@ -176,6 +177,7 @@ task* ReducerWrapperTask::execute() {
 		}
 		else if(curr_stat == partstatus::READY)
 		{
+			flag = 1;
 			cout<<"Reducer: Reached Ready state!! \n";
 			grabreg->getMore(my_partition, filename);
 			cout<<"Reducer: Going to do reduce on the file "<<filename<<endl;
@@ -187,7 +189,10 @@ task* ReducerWrapperTask::execute() {
 		curr_stat = grabreg->getStatus(my_partition);
 		
 	}
-
+	if(flag == 0)
+		cout<<"Reducer: Never entered ready state before coming here! How does that happen?\n";
+	else
+		cout<<"Reducer: This is normal! I saw a ready before coming here\n";
 	cout<<"Reducer: The master is "<<myoutput.master_name<<endl;
 	cout<<"Reducer: The output port is "<<myoutput.port<<endl;
 
@@ -206,10 +211,14 @@ task* ReducerWrapperTask::execute() {
 	myhdfs.createFile(file_location);
 	if(myhdfs.checkExistence(file_location))
 		cout<<"Reducer: file in location!!\n";
+	else
+		cout<<"Reducer: no file available\n";
 	Aggregator::iterator aggiter;
 	Aggregator* temp = (my_reducer->aggreg);
+	cout<<"Reducer: goin to read from the aggregators\n";
 	for(aggiter = temp->begin(); aggiter != temp->end(); ++aggiter)
 	{	
+		cout<<"Reducer: Inside reading from the aggregators\n";
 		string k = aggiter->first;
 		PartialAgg* curr_par = aggiter->second;
 		string val = curr_par->value;
@@ -218,6 +227,7 @@ task* ReducerWrapperTask::execute() {
 		cout<<"Reducer: The value that it writes is "<<out<<endl;
 		myhdfs.writeToFile(file_location,out.c_str(),out.size());
 	}
+	cout<<"Reducer: Outside the loop\n";
 	myhdfs.closeFile(file_location);
 	bool disconn = 	myhdfs.disconnect();
 	if(!disconn)
