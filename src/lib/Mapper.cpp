@@ -77,9 +77,9 @@ void Mapper::Map (MapInput* input) {
 void Mapper::Emit (string key, string value) { //Partial aggregation going on here
 	
 	//Case1: New key value - insert into map
-	cout<<"Mapper: Emit: Partition function called\n";
+	//cout<<"Mapper: Emit: Partition function called\n";
 	int i = GetPartition(key);
-	cout<<"Mapper: Emit: Partition value is "<<i<<"\n";
+	//cout<<"Mapper: Emit: Partition value is "<<i<<"\n";
 	
 	Aggregator::iterator found = (*(aggregs[i])).find(key);
 	if(found == (aggregs[i])->end()) {
