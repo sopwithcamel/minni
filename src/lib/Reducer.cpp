@@ -164,8 +164,11 @@ task* ReducerWrapperTask::execute() {
 		
 	}
 
+	cout<<"Reducer: The master is "<<myoutput.master_name<<endl;
+	cout<<"Reducer: The output port is "<<myoutput.port<<endl;
 
 	HDFS myhdfs(myoutput.master_name,myoutput.port);
+	
 	cout<<"Reducer: Opening the HDFS\n";
 	bool conn = myhdfs.connect();
 	if(!conn)
