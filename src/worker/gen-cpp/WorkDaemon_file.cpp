@@ -53,7 +53,7 @@ void LocalFileRegistry::bufferData(string &_return, const PartID pid, const Bloc
     Count start = (bid - sum) * File::block_size;
     Count len = min(File::block_size, it->length - start);
     cout << "start = " << start << ", len = " << len << endl;
-    ifstream file(it->name.c_str(), ios::in);
+    ifstream file(it->name.c_str(), ios::in | ios::binary);
     assert(file.is_open());
     // Read the block
     char memblock[File::block_size + 1];
@@ -153,7 +153,7 @@ TransferStatus Transfer::getFile(string outfile){
   // Get the next block and append.
   cout << "Fetching..."  << endl;
   string buffer;
-  fstream fs (outfile.c_str(), fstream::app | fstream::out);
+  fstream fs (outfile.c_str(), fstream::app | fstream::out | fstream::binary);
     assert(!fs.fail());
   transport->open();
   for(;progress < total;progress++){
