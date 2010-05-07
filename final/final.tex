@@ -159,35 +159,35 @@ If a job dies unexpectedly then the master will reschedule it. Notice that becau
 
 If the entire node goes down (\textit{i.e.} the WD has not checked in for a while), then the master sends a \rpc{Kill} to the WD for all of its jobs, then \rpc{ReportFail}'s any reducer that are still waiting for PAOs from that node. Notice that since we ensure that all or no PAOs from a \emph{final reducer}, a node crash cannot leave us with a case where we have used some but not all of a \emph{initial reducer's} PAOs. Finally, the master reschedules all work on the downed node.
 
-\subsection{RPC calls}
-
-Here is a summary of the RPC calls used in our system:
-
-\begin{table}[htdp]
-\caption{Stored procedures on the master.}
-\begin{center}
-\begin{tabular}{|l|l|}\hline
-\textbf{Procedure} & \textbf{Arguments}\\\hline
-\rpc{SubmitJob} & SpecObject\\
-\end{tabular}
-\end{center}
-\label{tab:master_rpc}
-\end{table}%
-
-\begin{table}[htdp]
-\caption{Stored procedures on the worker daemon}
-\begin{center}
-\begin{tabular}{|l|l|}\hline
-\textbf{Procedure} & \textbf{Arguments}\\\hline
-\rpc{StartMapper} & JobID, JobProperties\\
-\rpc{StartReducer} & JobID,  JobProperties\\
-\rpc{ReportData} & \\
-\rpc{ReportFail} & Mapper IP, Mapper JobID\\
-\rpc{SendData} & JobID, Key\\
-\end{tabular}
-\end{center}
-\label{tab:worker_rpc}
-\end{table}%
+%\subsection{RPC calls}
+%
+%Here is a summary of the RPC calls used in our system:
+%
+%\begin{table}[htdp]
+%\caption{Stored procedures on the master.}
+%\begin{center}
+%\begin{tabular}{|l|l|}\hline
+%\textbf{Procedure} & \textbf{Arguments}\\\hline
+%\rpc{SubmitJob} & SpecObject\\\hline
+%\end{tabular}
+%\end{center}
+%\label{tab:master_rpc}
+%\end{table}%
+%
+%\begin{table}[htdp]
+%\caption{Stored procedures on the worker daemon}
+%\begin{center}
+%\begin{tabular}{|l|l|}\hline
+%\textbf{Procedure} & \textbf{Arguments}\\\hline
+%\rpc{StartMapper} & JobID, JobProperties\\
+%\rpc{StartReducer} & JobID,  JobProperties\\
+%\rpc{ReportData} & \\
+%\rpc{ReportFail} & Mapper IP, Mapper JobID\\
+%\rpc{SendData} & JobID, Key\\\hline
+%\end{tabular}
+%\end{center}
+%\label{tab:worker_rpc}
+%\end{table}%
 
 
 
