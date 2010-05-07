@@ -67,6 +67,17 @@ There are several existing MapReduce implementations, such as Disco~\citep{disco
 \end{figure}
 
 
+\begin{figure}[htbp]
+\begin{center}
+\resizebox{\columnwidth}{!}{
+\includegraphics{master.pdf}
+}
+\caption{A diagram of the master system and the components that it communicates with.}
+\label{fig:arch}
+\end{center}
+\end{figure}
+
+
 Our proposed architecture is shown in Figure~\ref{fig:arch}. We first describe the major difference between our proposed architecture and the architecture suggested in prior implementations of MapReduce. We then explain our architecture and the RPCs it uses to communicate by taking the reader through the running of a typical MapReduce job. We finish this section by describing our mechanisms for tolerating faults and summarize the RPCs used in our architecture.
 
 \subsection{Main difference}
