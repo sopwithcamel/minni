@@ -175,10 +175,11 @@ string MapperWrapperTask::GetCurrentPath() {
 string MapperWrapperTask::GetLocalFilename(string path, JobID jobid, int i) {
 	stringstream ss;
        	ss << path;
-        ss << "/";
+        ss << "/job";
        	ss << jobid;
-       	ss << "_";
+       	ss << "_partition";
        	ss << i;
+	ss << ".map";
 	cout<<"The local file name generated is "<<ss.str()<<endl;
         return ss.str();
 }
