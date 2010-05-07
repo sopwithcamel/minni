@@ -151,6 +151,7 @@ task* ReducerWrapperTask::execute() {
 			if(sleeptime <= MAX_SLEEPTIME)
 				sleeptime*=EXPONENT;
 			
+			tbb::this_tbb_thread::sleep(tbb::tick_count::interval_t((double)sleeptime));		
 			//task sleep TBB TODO: Lookup
 		}
 		else if(curr_stat == partstatus::READY)
