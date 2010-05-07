@@ -183,6 +183,7 @@ task* ReducerWrapperTask::execute() {
 	ss1 << my_partition;
 	string file_location = myoutput.path + "final" + ss1.str();
 	cout<<"Reducer: The output file is "<<file_location<<endl;
+	myhdfs.createFile(file_location);
 	if(myhdfs.checkExistence(file_location))
 		cout<<"Reducer: file in location!!\n";
 	Aggregator::iterator aggiter;
@@ -196,6 +197,7 @@ task* ReducerWrapperTask::execute() {
 		cout<<"Reducer: The value that it writes is "<<out<<endl;
 		myhdfs.writeToFile(file_location,out.c_str(),out.size());
 	}
+	myhdfs.closeFile(file_location);
 	bool disconn = 	myhdfs.disconnect();
 	if(!disconn)
 		cout<<"Reducer: Not able to disconnect"<<endl;
