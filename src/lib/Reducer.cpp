@@ -126,10 +126,12 @@ string ReducerWrapperTask::Write(string result_key, string result_value) {
 
 task* ReducerWrapperTask::execute() {
 	string soname;
+	cout<<"Going to call Parse properties \n";
 	if(ParseProperties(soname) == ERROR_EXIT)  {
 		taskreg->setStatus(jobid, jobstatus::DEAD);
 		return NULL;
 	}
+	cout<<"After parse properties\n";
 	//dynamically loading the classes
 	if(UserMapLinking(soname) == ERROR_EXIT) {
 		taskreg->setStatus(jobid, jobstatus::DEAD);
