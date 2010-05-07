@@ -165,6 +165,7 @@ task* ReducerWrapperTask::execute() {
 		else if(curr_stat == partstatus::READY)
 		{
 			grabreg->getMore(my_partition, filename);
+			cout<<"Reducer: Going to do reduce on the file "<<filename<<endl;
 			DoReduce(filename);
 			sleeptime = BASE_SLEEPTIME;
 		}
