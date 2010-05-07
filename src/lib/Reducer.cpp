@@ -75,8 +75,9 @@ string ReducerWrapperTask::GetCurrentPath() {
 string ReducerWrapperTask::GetLocalFilename(string path, JobID jobid) {
 	stringstream ss;
        	ss << path;
-        ss << "/";
+	ss << "/job";
        	ss << jobid;
+	ss << ".reduce";
        	return ss.str();
 }
 
