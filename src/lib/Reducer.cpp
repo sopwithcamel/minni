@@ -50,7 +50,9 @@ int ReducerWrapperTask::ParseProperties(string& soname) {//TODO checking and pri
 	stringstream ss1;
 	uint16_t port_int;
 	ss1 >> port_int;
+	cout<<"Reducer: The port numeer that i have is "<<myoutput.port<<endl;
 	myoutput.port = port_int;
+	
 	return SUCCESS_EXIT;
 }
 
