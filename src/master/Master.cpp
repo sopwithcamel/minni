@@ -39,6 +39,7 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 	/* assign all map jobs */
 	for (iter = inputFiles.begin(); iter < inputFiles.end(); iter++)
 	{
+		if (!dfs.checkExistence(*iter)) continue;
 		cout << "Master: Getting num chunks for" << (*iter) << endl;
 		uint64_t num_chunks = dfs.getNumChunks((*iter));
 		cout << "Master: Got num chunks" << endl;
@@ -89,6 +90,7 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 
 Master::~Master()
 {
+	broadcastKill();
 	map<string, Node*>::iterator nodesIter;
 	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
 	{
@@ -138,11 +140,11 @@ void Master::loadNodesFile(string fileName)
 
 	while (!fileIn.eof())
 	{
-		tempURL = new string();
+		tempURL = new string(); /* deleted in communicator destructor */
 		getline (fileIn,*tempURL);
 		if (!tempURL->empty() && tempURL->compare("\n") && tempURL->compare(""))
 		{
-			nodes["test"] = new Node(tempURL);
+			nodes[*tempURL] = new Node(tempURL); /* deleted in master destructor */
 			cout << "New Node:\t" << *tempURL << endl;
 		}
 	}
@@ -384,10 +386,6 @@ bool Master::checkStatus()
 					{
 						activeMappers--;
 						completedMaps++;
-						if (activeMappers + remainingMappers == 0)
-						{
-							sendAllMappersFinished();
-						}
 						finishedNodes.push_back(*(((*nodesIter).second)->getURL()));
 					}
 				}
@@ -425,10 +423,15 @@ bool Master::checkStatus()
 
 void Master::sendAllMappersFinished()
 {
-	map<string, Node*>::iterator nodesIter;
-	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
+	static bool sent = false;
+	if (!sent)
 	{
-		((*nodesIter).second)->sendAllMapsFinished();
+		map<string, Node*>::iterator nodesIter;
+		for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
+		{
+			((*nodesIter).second)->sendAllMapsFinished();
+		}
+		sent = true;
 	}
 }
 
@@ -453,6 +456,11 @@ void Master::sendFinishedNodes()
 	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
 	{
 		((*nodesIter).second)->reportCompletedJobs(finishedNodes);
+	}
+
+	if (activeMappers + remainingMappers == 0)
+	{
+		sendAllMappersFinished();
 	}
 }
 

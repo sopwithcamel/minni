@@ -13,23 +13,23 @@ int main(int argc, char* args[])
 	{
 		string input = "/input/hello.txt";
 		string output = "/output/";
-		string dfs_master = "128.2.208.113";
+		string dfs_master = "127.0.0.1";
 		string so_name = "wordcount.so";
 		uint16_t dfs_port = 9000;
 		JobID maxJobs = 4;
 		JobID maxMaps = 5000;
-		JobID maxReduces = 2;
-		MapReduceSpecification* spec = new MapReduceSpecification();
-		spec->addInput(input);
-		spec->setOutputPath(output);
-		spec->setDfsMaster(dfs_master);
-		spec->setSoName(so_name);
-		spec->setDfsPort(dfs_port);
-		spec->setMaxJobsPerNode(maxJobs);
-		spec->setMaxMaps(maxMaps);
-		spec->setMaxReduces(maxReduces);
-		HDFS hdfs("localhost", 9000);
-		Master m(spec, hdfs, "example/nodes.conf");
+		JobID maxReduces = 1;
+		MapReduceSpecification spec = MapReduceSpecification();
+		spec.addInput(input);
+		spec.setOutputPath(output);
+		spec.setDfsMaster(dfs_master);
+		spec.setSoName(so_name);
+		spec.setDfsPort(dfs_port);
+		spec.setMaxJobsPerNode(maxJobs);
+		spec.setMaxMaps(maxMaps);
+		spec.setMaxReduces(maxReduces);
+		HDFS hdfs("127.0.0.1", 9000);
+		Master m(&spec, hdfs, "example/nodes.conf");
 		while (m.checkMapStatus()) /* assignment of all maps */
 		{
 			cout << "Assigning and running maps." << endl;
@@ -61,7 +61,6 @@ int main(int argc, char* args[])
 		cout << "Congratulations.  You finished an entire MapReduce Job. [" << m.getNumberOfMapsCompleted() << " maps, " << m.getNumberOfReducesCompleted() << " reduces, " << m.getNumberOfNodes() << " nodes]" << endl;
 
 		MapReduceResult result(m.getNumberOfMapsCompleted(), m.getNumberOfReducesCompleted(), m.getNumberOfNodes());
-	
 		/* return result; */
 
 		return 0; /* return!!! */
