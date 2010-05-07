@@ -93,6 +93,7 @@ void deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint
         fread(valueLength, sizeof(uint64_t), 1, fileIn);
         *value = (char*) malloc(*valueLength);
         fread(*value, sizeof(char), *valueLength, fileIn);
+	cout<<"Reducer: The values are key= "<<*key<<" value= "<<*value<<endl;
 }
 
 
@@ -100,6 +101,7 @@ void ReducerWrapperTask::DoReduce(string filename) {
 	FILE* fptr = fopen(filename.c_str(),"r");
 	char type;
 	string key1, value1;
+	//adding values
 	while(!feof(fptr) == 0)//not end of file //TODO check
 	{
 		char *key2, *value2;
@@ -111,6 +113,8 @@ void ReducerWrapperTask::DoReduce(string filename) {
 		}
 		else if (type == 1)
 		{
+			cout<<"Type is partial aggregate and i am adding "<<"("<<key2<<" "<<value2<<"partial aggregator\n";
+			
 			PartialAgg* newpagg = new PartialAgg(value2);
 			my_reducer->AddPartialAgg(key2, newpagg);
 		}
