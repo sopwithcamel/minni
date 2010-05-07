@@ -89,16 +89,24 @@ string ReducerWrapperTask::GetLocalFilename(string path, JobID jobid) {
 }
 
 
-void deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint64_t* valueLength, char** value)
+int deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint64_t* valueLength, char** value)
 {
+	if (feof(fileIn)) return -1;
         fread(type, sizeof(char), 1, fileIn);
+	if (feof(fileIn)) return -1;
         fread(keyLength, sizeof(uint64_t), 1, fileIn);
+	if (feof(fileIn)) return -1;
         *key = (char*) malloc(*keyLength);
+	if (feof(fileIn)) return -1;
         fread(*key, sizeof(char), *keyLength, fileIn);
+	if (feof(fileIn)) return -1;
         fread(valueLength, sizeof(uint64_t), 1, fileIn);
+	if (feof(fileIn)) return -1;
         *value = (char*) malloc(*valueLength);
+	if (feof(fileIn)) return -1;
         fread(*value, sizeof(char), *valueLength, fileIn);
 	cout<<"Reducer: The values are key= "<<*key<<" value= "<<*value<<endl;
+	return 0;
 }
 
 
@@ -113,7 +121,7 @@ void ReducerWrapperTask::DoReduce(string filename) {
 		cout<<"Inside and now going to read the file "<<endl;
 		char *key2, *value2;
 		uint64_t keylength, valuelength;
-		deSerialize(fptr, &type, &keylength, &key2, &valuelength, &value2);
+		if (deSerialize(fptr, &type, &keylength, &key2, &valuelength, &value2)) break;
 		if(type == 2)
 		{
 			cout<<"Type is key value and I am adding "<<"("<<key2<<" "<<value2<<"key value pair\n";
