@@ -48,7 +48,7 @@ int ReducerWrapperTask::ParseProperties(string& soname) {//TODO checking and pri
 	cout<<"Reducer: The port number as --raw string-- is "<<port_temp<<endl;
 	stringstream ss1;
 	uint16_t port_int;
-	ss2 << port_temp;
+	ss1 << port_temp;
 	ss1 >> port_int;
 	cout<<"Reducer: The port numbeer --parsed-- that i have is "<<port_int<<endl;
 	myoutput.port = port_int;
