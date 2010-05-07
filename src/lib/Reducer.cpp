@@ -7,7 +7,7 @@
 void Reducer::AddKeyVal(string key, string value) {
 	Aggregator::iterator found = (aggreg)->find(key);
 	if(found == (aggreg)->end()) {
-		(*aggreg)[key] = new PartialAgg(value);
+		(*aggreg)[key] = new PartialAgg(value); /*deleted at the end*/
 	}
 	//Existing key value - then add to the partial result
 	else {
@@ -20,7 +20,7 @@ void Reducer::AddPartialAgg(string key, PartialAgg* pagg) {
 	Aggregator::iterator found = (aggreg)->find(key);
 	if(found == (aggreg)->end()) {
 		cout<<"New key "<<key<<" found and adding a new pagg into aggregator\n";
-		(*aggreg)[key] = new PartialAgg(pagg->get_value());
+		(*aggreg)[key] = new PartialAgg(pagg->get_value()); /*deleted at the end*/
 		cout<<"The new aggregator addition happened successfully\n";
 	}
 	//Existing key value - then add to the partial result
@@ -95,13 +95,13 @@ int deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint6
 	if (feof(fileIn)) return -1;
         fread(keyLength, sizeof(uint64_t), 1, fileIn);
 	if (feof(fileIn)) return -1;
-        *key = (char*) malloc(*keyLength);
+        *key = (char*) malloc(*keyLength); /*freed line 136 after the particular loop run*/
 	if (feof(fileIn)) return -1;
         fread(*key, sizeof(char), *keyLength, fileIn);
 	if (feof(fileIn)) return -1;
         fread(valueLength, sizeof(uint64_t), 1, fileIn);
 	if (feof(fileIn)) return -1;
-        *value = (char*) malloc(*valueLength);
+        *value = (char*) malloc(*valueLength); /*freed line 137 after the particular loop run*/
 	if (feof(fileIn)) return -1;
         fread(*value, sizeof(char), *valueLength, fileIn);
 	cout<<"Reducer: The values are key= "<<*key<<" value= "<<*value<<endl;
@@ -128,11 +128,13 @@ void ReducerWrapperTask::DoReduce(string filename) {
 		else if (type == 1)
 		{
 			cout<<"Type is partial aggregate and i am adding "<<"("<<key2<<" "<<value2<<"partial aggregator\n";
-			
-			PartialAgg* newpagg = new PartialAgg(value2);
+			PartialAgg* newpagg = new PartialAgg(value2); /*deleted after adding value*/
 			my_reducer->AddPartialAgg(key2, newpagg);
+			delete newpagg;
 			cout<<"Added the partial aggregate\n";
 		}
+		free(key2);
+		free(value2);
 	}
 	fclose(fptr);
 }
@@ -155,8 +157,8 @@ task* ReducerWrapperTask::execute() {
 		taskreg->setStatus(jobid, jobstatus::DEAD);
 		return NULL;
 	}
-	my_reducer = new Reducer();
-	my_reducer->aggreg = new Aggregator();
+	my_reducer = new Reducer(); /*deleted at the end*/
+	my_reducer->aggreg = new Aggregator(); /*deleted at the end*/
 		
 	//filename for the results
 	string curr_path = GetCurrentPath();
@@ -235,6 +237,17 @@ task* ReducerWrapperTask::execute() {
 	else
 		cout<<"Reducer: Able to disconnect"<<endl;
 	taskreg->setStatus(jobid, jobstatus::DONE);
+	
+	//deleting things
+	for(aggiter = temp->begin(); aggiter != temp->end(); ++aggiter)
+	{	
+		delete (aggiter->second);
+	}
+
+	delete my_reducer->aggreg;
+	delete my_reducer;
+	
+
 	return NULL;
 }
  
