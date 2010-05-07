@@ -48,9 +48,9 @@ int ReducerWrapperTask::ParseProperties(string& soname) {//TODO checking and pri
 	ss.str("");
         ss << port_temp;
 	stringstream ss1;
-	int port_int;
+	uint16_t port_int;
 	ss1 >> port_int;
-	myoutput.port = (uint16_t) port_int;
+	myoutput.port = port_int;
 	return SUCCESS_EXIT;
 }
 
