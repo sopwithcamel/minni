@@ -22,11 +22,13 @@ struct MapJob
 		ostringstream stringConverter;
 		stringConverter << cid;
 		prop["CID"] = stringConverter.str();
-		stringConverter.str("");
 		prop["FILE_IN"] = fileIn;
 		prop["SO_NAME"] = so_name;
-		prop["NUM_REDUCERS"] = numReducers;
+		stringConverter.str("");
+		stringConverter << numReducers;
+		prop["NUM_REDUCERS"] = stringConverter.str();
 		prop["DFS_MASTER"] = dfsMaster;
+		stringConverter.str("");
 		stringConverter << dfsPort;
 		prop["DFS_PORT"] = stringConverter.str();
 		staleness = 0;

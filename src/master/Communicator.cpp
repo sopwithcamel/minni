@@ -9,13 +9,13 @@ void Communicator::sendMap(struct MapJob map, uint16_t retries)
 {
 	cout  << "Sending Map To: " << *url << endl;
 
-	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT);
+	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT); /* thrift deletes!? */
 	boost::shared_ptr<TSocket> socket(temp);
 
-	TBufferedTransport* temp1 = new TBufferedTransport(socket);
+	TBufferedTransport* temp1 = new TBufferedTransport(socket); /* thrift deletes!? */
 	boost::shared_ptr<TTransport> transport(temp1);
 
-	TBinaryProtocol* temp2 = new TBinaryProtocol(transport);
+	TBinaryProtocol* temp2 = new TBinaryProtocol(transport); /* thrift deletes!? */
 	boost::shared_ptr<TProtocol> protocol(temp2);
 
 	WorkDaemonClient client(protocol);
@@ -23,6 +23,13 @@ void Communicator::sendMap(struct MapJob map, uint16_t retries)
 	try {
 		transport->open();
 		client.startMapper(map.jid, map.prop);
+		istringstream isDebug(map.prop["NUM_REDUCERS"].c_str()), isDebug2(map.prop["DFS_PORT"].c_str());
+		JobID reducers;
+		uint16_t port;
+		isDebug >> reducers;
+		isDebug2 >> port;
+		cout << "NUM_REDUCERS " << reducers << endl;
+		cout << "DFS_PORT " << port << endl;
 		transport->close();
 	} catch (TTransportException reason){
 		cout << "Caught Exception: Sending MAP."  << endl;
@@ -34,13 +41,13 @@ void Communicator::sendReduce(struct ReduceJob reduce, uint16_t retries)
 {
 	cout  << "Sending Reduce["<< reduce.jid << "] To: " << *url << endl;
 
-	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT);
+	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT); /* thrift deletes!? */
 	boost::shared_ptr<TSocket> socket(temp);
 
-	TBufferedTransport* temp1 = new TBufferedTransport(socket);
+	TBufferedTransport* temp1 = new TBufferedTransport(socket); /* thrift deletes!? */
 	boost::shared_ptr<TTransport> transport(temp1);
 
-	TBinaryProtocol* temp2 = new TBinaryProtocol(transport);
+	TBinaryProtocol* temp2 = new TBinaryProtocol(transport); /* thrift deletes!? */
 	boost::shared_ptr<TProtocol> protocol(temp2);
 
 	WorkDaemonClient client(protocol);
@@ -48,6 +55,7 @@ void Communicator::sendReduce(struct ReduceJob reduce, uint16_t retries)
 	try {
 		transport->open();
 		client.startReducer(reduce.jid, reduce.prop);
+		cout << "DFS_PORT " << reduce.prop["DFS_PORT"] << endl;
 		transport->close();
 	} catch (TTransportException reason){
 		cout << "Caught Exception: Sending REDUCE."  << endl;
@@ -59,13 +67,13 @@ void Communicator::sendListStatus(std::map<JobID, Status> & _return, uint16_t re
 {
 	cout  << "Sending ListStatus To: " << *url << endl;
 
-	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT);
+	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT); /* thrift deletes!? */
 	boost::shared_ptr<TSocket> socket(temp);
 
-	TBufferedTransport* temp1 = new TBufferedTransport(socket);
+	TBufferedTransport* temp1 = new TBufferedTransport(socket); /* thrift deletes!? */
 	boost::shared_ptr<TTransport> transport(temp1);
 
-	TBinaryProtocol* temp2 = new TBinaryProtocol(transport);
+	TBinaryProtocol* temp2 = new TBinaryProtocol(transport); /* thrift deletes!? */
 	boost::shared_ptr<TProtocol> protocol(temp2);
 
 	WorkDaemonClient client(protocol);
@@ -85,13 +93,13 @@ void Communicator::sendReportCompletedJobs(const std::vector<URL> & done, uint16
 	if (done.size() == 0) return;
 	cout  << "Sending reportCompletedJobs To: " << *url << endl;
 
-	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT);
+	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT); /* thrift deletes!? */
 	boost::shared_ptr<TSocket> socket(temp);
 
-	TBufferedTransport* temp1 = new TBufferedTransport(socket);
+	TBufferedTransport* temp1 = new TBufferedTransport(socket); /* thrift deletes!? */
 	boost::shared_ptr<TTransport> transport(temp1);
 
-	TBinaryProtocol* temp2 = new TBinaryProtocol(transport);
+	TBinaryProtocol* temp2 = new TBinaryProtocol(transport); /* thrift deletes!? */
 	boost::shared_ptr<TProtocol> protocol(temp2);
 
 	WorkDaemonClient client(protocol);
@@ -110,13 +118,13 @@ void Communicator::sendAllMapsDone(uint16_t retries)
 {
 	cout  << "Sending allMapsDone To: " << *url << endl;
 
-	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT);
+	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT); /* thrift deletes!? */
 	boost::shared_ptr<TSocket> socket(temp);
 
-	TBufferedTransport* temp1 = new TBufferedTransport(socket);
+	TBufferedTransport* temp1 = new TBufferedTransport(socket); /* thrift deletes!? */
 	boost::shared_ptr<TTransport> transport(temp1);
 
-	TBinaryProtocol* temp2 = new TBinaryProtocol(transport);
+	TBinaryProtocol* temp2 = new TBinaryProtocol(transport); /* thrift deletes!? */
 	boost::shared_ptr<TProtocol> protocol(temp2);
 
 	WorkDaemonClient client(protocol);
@@ -135,13 +143,13 @@ void Communicator::sendKill(uint16_t retries)
 {
 	cout  << "Sending kill To: " << *url << endl;
 
-	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT);
+	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT); /* thrift deletes!? */
 	boost::shared_ptr<TSocket> socket(temp);
 
-	TBufferedTransport* temp1 = new TBufferedTransport(socket);
+	TBufferedTransport* temp1 = new TBufferedTransport(socket); /* thrift deletes!? */
 	boost::shared_ptr<TTransport> transport(temp1);
 
-	TBinaryProtocol* temp2 = new TBinaryProtocol(transport);
+	TBinaryProtocol* temp2 = new TBinaryProtocol(transport); /* thrift deletes!? */
 	boost::shared_ptr<TProtocol> protocol(temp2);
 
 	WorkDaemonClient client(protocol);
@@ -160,13 +168,13 @@ void Communicator::sendState(string &_return, uint16_t retries)
 {
 	cout  << "Sending state To: " << *url << endl;
 
-	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT);
+	TSocket* temp = new TSocket(url->c_str(), WORKER_PORT); /* thrift deletes!? */
 	boost::shared_ptr<TSocket> socket(temp);
 
-	TBufferedTransport* temp1 = new TBufferedTransport(socket);
+	TBufferedTransport* temp1 = new TBufferedTransport(socket); /* thrift deletes!? */
 	boost::shared_ptr<TTransport> transport(temp1);
 
-	TBinaryProtocol* temp2 = new TBinaryProtocol(transport);
+	TBinaryProtocol* temp2 = new TBinaryProtocol(transport); /* thrift deletes!? */
 	boost::shared_ptr<TProtocol> protocol(temp2);
 
 	WorkDaemonClient client(protocol);
