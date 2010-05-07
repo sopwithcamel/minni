@@ -16,13 +16,18 @@ void Reducer::AddKeyVal(string key, string value) {
 }
 
 void Reducer::AddPartialAgg(string key, PartialAgg* pagg) {
+	cout<<"addin a pagg whose value is "<<pagg->get_value()<<endl;
 	Aggregator::iterator found = (aggreg)->find(key);
 	if(found == (aggreg)->end()) {
+		cout<<"New key "<<key<<" found and adding a new pagg into aggregator\n";
 		(*aggreg)[key] = new PartialAgg(pagg->get_value());
+		cout<<"The new aggregator addition happened successfully\n";
 	}
 	//Existing key value - then add to the partial result
 	else {
+		cout<<"Existing key "<<key<<"found and adding to partial reuslt"<<endl;
 		(*aggreg)[key]->merge(pagg);
+		cout<<"Added the existing key to aggreg\n";
 	}
 }
 
@@ -120,6 +125,7 @@ void ReducerWrapperTask::DoReduce(string filename) {
 			
 			PartialAgg* newpagg = new PartialAgg(value2);
 			my_reducer->AddPartialAgg(key2, newpagg);
+			cout<<"Added the partial aggregate\n";
 		}
 	}
 	fclose(fptr);
