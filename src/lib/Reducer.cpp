@@ -164,13 +164,20 @@ task* ReducerWrapperTask::execute() {
 		
 	}
 
-	/*HDFS myhdfs(myoutput.master_name,myoutput.port);
-	myhdfs.connect();
+
+	HDFS myhdfs(myoutput.master_name,myoutput.port);
+	cout<<"Reducer: Opening the HDFS\n";
+	bool conn = myhdfs.connect();
+	if(!conn)
+		cout<<"Reducer: Unable to connect :(\n";
+	else
+		cout<<"Reducer: Able to connect :) \n";
 	stringstream ss1;
 	ss1 << my_partition;
-	string file_location = myoutput.path + ss1.str();
+	string file_location = myoutput.path + "final" + ss1.str();
+	cout<<"Reducer: The output file is "<<file_location<<endl;
 	if(myhdfs.checkExistence(file_location))
-		cout<<"file not in location!!\n";
+		cout<<"Reducer: file in location!!\n";
 	Aggregator::iterator aggiter;
 	Aggregator* temp = (my_reducer->aggreg);
 	for(aggiter = temp->begin(); aggiter != temp->end(); ++aggiter)
@@ -179,10 +186,14 @@ task* ReducerWrapperTask::execute() {
 		PartialAgg* curr_par = aggiter->second;
 		string val = curr_par->value;
 		string out = Write(k, val);
+		cout<<"Reducer: The value that it writes is "<<out<<endl;
 		myhdfs.writeToFile(file_location,out.c_str(),out.size());
 	}
-	myhdfs.disconnect();*/
-
+	bool disconn = 	myhdfs.disconnect();
+	if(!disconn)
+		cout<<"Reducer: Not able to disconnect"<<endl;
+	else
+		cout<<"Reducer: Able to disconnect"<<endl;
 	taskreg->setStatus(jobid, jobstatus::DONE);
 	return NULL;
 }
