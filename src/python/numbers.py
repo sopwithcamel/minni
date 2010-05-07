@@ -12,3 +12,4 @@ b = int(high)
 for i in xrange(0,number):
     N = random.randint(a,b)
     f.write(str(N) + " ")
+f.close()
