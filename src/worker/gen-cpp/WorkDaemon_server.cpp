@@ -173,7 +173,7 @@ public:
       cout << "\tJob inprogress." << endl;
       return jobstatus::INPROGRESS;
     }
-    cout << "\tJob done." << endl;
+    cout << "\tJob done." << endl;2
     return jobstatus::DONE;
   }
 
