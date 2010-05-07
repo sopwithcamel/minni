@@ -8,7 +8,7 @@
 ***File***
 **********/
 
-const Length File::block_size = 10;
+const Length File::block_size = 4096;
 
 File::File(JobID j, PartID p, string n): 
   jid(j), pid(p), name(n){
