@@ -103,7 +103,7 @@ void ReducerWrapperTask::DoReduce(string filename) {
 	char type;
 	string key1, value1;
 	//adding values
-	while(!feof(fptr))//not end of file //TODO check
+	while(feof(fptr)==0)//not end of file //TODO check
 	{
 		cout<<"Inside and now going to read the file "<<endl;
 		char *key2, *value2;
