@@ -22,7 +22,7 @@ uint64_t MapInput::key_value(char** value) {
 	
 	uint64_t length = myhdfs.getChunkSize(file_location);
 	cout<<"Mapper: HDFS: It told me that the chunk size of this file is "<<length<<endl;
-	*value = (char*) malloc(length+1);
+	*value = (char*) malloc(length+1); /*freed in line 73 Map fn aft using all data that is passed*/
 	cout<<"Mapper: HDFS: Going to read chunks from HDFS"<<endl;
 	uint64_t k = myhdfs.readChunkOffset(file_location, (uint64_t) 0, *value, length);
 	if(k == -1)
@@ -70,6 +70,7 @@ void Mapper::Map (MapInput* input) {
 		Emit(key,"1");
              }
         }
+	free(text);
 	cout<<"Mapper: Done with map job\n";
 }
 
@@ -224,9 +225,10 @@ task* MapperWrapperTask::execute() {
 	cout<<"Mapper: starting to push back the aggregators\n";
 	for(int i = 0; i < npart; i++)
 	{
-		my_mapper->aggregs.push_back(new Aggregator);
+		my_mapper->aggregs.push_back(new Aggregator());
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
+	
 
 	my_mapper->Map(&myinput);
 
@@ -260,7 +262,24 @@ task* MapperWrapperTask::execute() {
 		my_Filelist.push_back(f1);
 
 	}
-	
+
+	for(int i = 0; i < npart ; i++)
+        {
+		 Aggregator::iterator aggiter;
+                for(aggiter = (my_mapper->aggregs[i])->begin(); aggiter != (my_mapper->aggregs[i])->end(); ++aggiter)
+                {
+			delete (aggiter->second);
+		}
+
+
+	}
+
+	vector<Aggregator*>::iterator itervec;
+	for(itervec = (my_mapper->aggregs).begin(); itervec != (my_mapper->aggregs).end(); itervec++ )
+	{
+		delete *itervec; 
+	}
+	delete my_mapper;	
 
 	
 	filereg->recordComplete(my_Filelist);
