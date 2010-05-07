@@ -98,17 +98,20 @@ void deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint
 
 
 void ReducerWrapperTask::DoReduce(string filename) {
+	cout<<"I am here to do reduce on "<<filename<<endl;
 	FILE* fptr = fopen(filename.c_str(),"r");
 	char type;
 	string key1, value1;
 	//adding values
-	while(!feof(fptr) == 0)//not end of file //TODO check
+	while(!feof(fptr))//not end of file //TODO check
 	{
+		cout<<"Inside and now going to read the file "<<endl;
 		char *key2, *value2;
 		uint64_t keylength, valuelength;
 		deSerialize(fptr, &type, &keylength, &key2, &valuelength, &value2);
 		if(type == 2)
 		{
+			cout<<"Type is key value and I am adding "<<"("<<key2<<" "<<value2<<"key value pair\n";
 			my_reducer->AddKeyVal(key2,value2);
 		}
 		else if (type == 1)
@@ -160,15 +163,17 @@ task* ReducerWrapperTask::execute() {
 				sleeptime*=EXPONENT;
 			
 			tbb::this_tbb_thread::sleep(tbb::tick_count::interval_t((double)sleeptime));		
-			//task sleep TBB TODO: Lookup
 		}
 		else if(curr_stat == partstatus::READY)
 		{
+			cout<<"Reducer: Reached Ready state!! \n";
 			grabreg->getMore(my_partition, filename);
 			cout<<"Reducer: Going to do reduce on the file "<<filename<<endl;
 			DoReduce(filename);
+			cout<<"Reducer: Done with reducing \n";
 			sleeptime = BASE_SLEEPTIME;
 		}
+		
 		curr_stat = grabreg->getStatus(my_partition);
 		
 	}
