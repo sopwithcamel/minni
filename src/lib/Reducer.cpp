@@ -45,12 +45,11 @@ int ReducerWrapperTask::ParseProperties(string& soname) {//TODO checking and pri
 	ss >> my_partition;
 	myoutput.master_name = (*prop)["DFS_MASTER"];
         string port_temp = (*prop)["DFS_PORT"];
-	ss.str("");
-        ss << port_temp;
+	cout<<"Reducer: The port number as --raw string-- is "<<port_temp<<endl;
 	stringstream ss1;
 	uint16_t port_int;
 	ss1 >> port_int;
-	cout<<"Reducer: The port numeer that i have is "<<myoutput.port<<endl;
+	cout<<"Reducer: The port numbeer --parsed-- that i have is "<<port_int<<endl;
 	myoutput.port = port_int;
 	
 	return SUCCESS_EXIT;
