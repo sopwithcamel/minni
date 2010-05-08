@@ -1,7 +1,7 @@
 # Setup
 TEX=pdflatex
 BIB=bibtex
-NAME=interm
+NAME=final
 
 all: pdf
 

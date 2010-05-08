@@ -168,7 +168,8 @@ void Master::broadcastKill()
 	for (nodesIter = nodes.begin() ; nodesIter != nodes.end(); nodesIter++ )
 	{
 		(((*nodesIter).second))->sendKill();
-	}	
+	}
+	checkState();
 }
 
 void Master::assignMaps()

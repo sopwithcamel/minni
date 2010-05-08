@@ -15,12 +15,12 @@ echo " "
 PROCESS=$1
 IGNORE=$2
 
-echo `UNIX95= ps -e -o vsz=Kbytes -o ruser -o pid,args=Command-Line | sort -rnk1 | grep -v Kbytes | grep $PROCESS| grep -v $IGNORE  | grep -v grep | grep -v $0`
+#echo `UNIX95= ps -e -o vsz=Kbytes -o ruser -o pid,args=Command-Line | sort -rnk1 | grep -v Kbytes | grep $PROCESS| grep -v $IGNORE  | grep -v grep | grep -v $0`
 
-echo `UNIX95= ps -e -o rsz=Kbytes -o ruser -o pid,args=Command-Line | sort -rnk1 | grep -v Kbytes | grep $PROCESS| grep -v $IGNORE  | grep -v grep | grep -v $0`
+#echo `UNIX95= ps -e -o rsz=Kbytes -o ruser -o pid,args=Command-Line | sort -rnk1 | grep -v Kbytes | grep $PROCESS| grep -v $IGNORE  | grep -v grep | grep -v $0`
 
 vsize=0
-for sz in `UNIX95= ps -e -o vsz=Kbytes -o ruser -o pid,args=Command-Line | sort -rnk1 | grep -v Kbytes | grep $PROCESS | grep -v $IGNORE  | grep -v grep | grep -v $0 | awk '{print $1}'` 
+for sz in `UNIX95= ps -e -o vsz=Kbytes -o ruser -o pid,args=Command-Line | sort -rnk1 | grep -v Kbytes | grep -e $PROCESS -e tasktracker | grep -v $IGNORE | grep -v grep | grep -v $0 | awk '{print $1}'` 
 do
 	vsize=`expr $vsize + $sz`
 done
@@ -28,7 +28,7 @@ done
 echo "Virtual Memory claimed by $PROCESS: $vsize KBytes."
 
 rssize=0
-for sz in `UNIX95= ps -e -o rsz=Kbytes -o ruser -o pid,args=Command-Line | sort -rnk1 | grep -v Kbytes | grep $PROCESS | grep -v $IGNORE | grep -v grep | grep -v $0 | awk '{print $1}'` 
+for sz in `UNIX95= ps -e -o rsz=Kbytes -o ruser -o pid,args=Command-Line | sort -rnk1 | grep -v Kbytes | grep -e $PROCESS -e tasktracker | grep -v $IGNORE | grep -v grep | grep -v $0 | awk '{print $1}'` 
 do
 	rssize=`expr $rssize + $sz`
 done
