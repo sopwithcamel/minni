@@ -1,5 +1,6 @@
 # Makefile for Search
 # Erik Zawadzki --- Nov. 10, 2009
+# Modified by wolf --- June 5, 2010
 
 #SRC := $(wildcard *.cpp)
 #OBJ = $(SRC:.cpp=.o)
@@ -25,27 +26,28 @@ THR_OBJ = $(THR_SRC:.cpp=.o)
 THR_INC = -I/usr/local/include/thrift
 THR_LIB = -L/usr/local/lib -lthrift 
 
+# Customize
 JAVA_HOME=/usr/lib/jvm/default-java
 HADOOP_HOME=/home/wolf/Dropbox/CMU/hadoop-0.20.2
 
-INCLUDE_HADOOP=$(HADOOP_HOME)/src/c++/libhdfs
-INCLUDE_JAVA=$(JAVA_HOME)/include
-INCLUDE_LINUX_JAVA=$(JAVA_INCLUDE)/linux
+INCLUDE_HADOOP=-I$(HADOOP_HOME)/src/c++/libhdfs
+INCLUDE_JAVA=-I$(JAVA_HOME)/include
+INCLUDE_LINUX_JAVA=-I$(JAVA_INCLUDE)/linux
 
-LIB_HDFS=$(HADOOP_HOME)/build/c++/Linux-amd64-64/lib
-LIB_JAVA=$(JAVA_HOME)/jre/lib/amd64/server
+LIB_HDFS=-L$(HADOOP_HOME)/build/c++/Linux-amd64-64/lib
+LIB_JAVA=-L$(JAVA_HOME)/jre/lib/amd64/server
 
 LINK_HDFS=hdfs
 LINK_JVM=jvm
 
 # DIR
-MASTER = ../../master
-WRAPPER = ../../lib
+MASTER=../../master
+WRAPPER=../../lib
 
-INCLUDES = $(THR_INC) $(TBB_INC)
+INCLUDES = $(THR_INC) $(TBB_INC) -I$(MASTER) -I$(WRAPPER)  $(INCLUDE_HADOOP) $(INCLUDE_JAVA) $(INCLUDE_LINUX_JAVA) -I$(WRAPPER) -I. -I$(MASTER)
 # -I$(INCLUDE_HADOOP) -I$(INCLUDE_JAVA) -I$(INCLUDE_LINUX_JAVA) -I$(WRAPPER) -I. -I$(MASTER)
-#LINK= -l$(LINK_HDFS) -l$(LINK_JVM) -lm
-LIBFLAGS =  $(THR_LIB) $(TBB_LIB)
+LINK= -l$(LINK_HDFS) -l$(LINK_JVM) -lm
+LIBFLAGS = $(LIB_HDFS) $(LIB_JAVA) $(LINK) $(THR_LIB) $(TBB_LIB)
 # -L$(LIB_JAVA) -L$(LIB_HDFS) $(LINK)
 
 
@@ -74,8 +76,6 @@ build_wrapper: $(WOBJ)
 $(TEST) : $(TOBJ)
 	@printf "\n*** building test ***\n"
 	$(CXX) $(LIBFLAGS) $(TOBJ) -o $(TEST)
-
-
 
 $(SERVER) : $(SOBJ)
 	@printf "\n*** building server ***\n"

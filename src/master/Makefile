@@ -1,8 +1,9 @@
-JAVA_HOME=/usr/lib/jvm/default-java
+# Customize the next lines
 HADOOP_HOME=/home/wolf/Dropbox/CMU/hadoop-0.20.2
-
+JAVA_HOME=/usr/lib/jvm/default-java
 INCLUDE_THRIFT=/usr/local/include/thrift
 INCLUDE_TBB=/usr/include/tbb
+
 INCLUDE_HADOOP=$(HADOOP_HOME)/src/c++/libhdfs
 INCLUDE_JAVA=$(JAVA_HOME)/include
 INCLUDE_LINUX_JAVA=$(JAVA_INCLUDE)/linux
@@ -21,13 +22,13 @@ INCLUDE=-I$(INCLUDE_THRIFT) -I$(INCLUDE_TBB) -I$(INCLUDE_HADOOP) -I$(INCLUDE_JAV
 LIB=-L$(LIB_TBB) -L$(LIB_JAVA) -L$(LIB_HDFS)
 LINK=-l$(LINK_THRIFT) -l$(LINK_TBB) -l$(LINK_HDFS) -l$(LINK_JVM) -lm
 
-CFLAGS=-Wall -g $(INCLUDE) $(LIB)  $(LINK)
+CFLAGS=-Wall $(INCLUDE) $(LIB) $(LINK)
 CXX=g++
 THRIFT=thrift
 
 WORKER_DAEMON_STUFF=-I../worker/gen-cpp ../worker/gen-cpp/daemon_types.cpp ../worker/gen-cpp/daemon_constants.cpp ../worker/gen-cpp/WorkDaemon.cpp -I./
 
-all:
+all: hdfs
 	$(CXX) $(CFLAGS) gen-cpp/master_types.cpp gen-cpp/master_constants.cpp gen-cpp/Master.cpp gen-cpp/Master_Server.cpp -o server
 
 daemon:
@@ -53,7 +54,5 @@ hdfsobj:
 	
 
 clean:
-	@rm client
 	@rm server
-	@rm -r gen-cpp
 	@rm hdfs

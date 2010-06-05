@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#define LAG 5
+#define LAG 3
 #define HDFS_TEST 0
 #define PRODUCTION_TEST 1
 #define HDFS_TEST_PATH "/test/foo.log"
@@ -11,14 +11,16 @@ int main(int argc, char* args[])
 {
 	if (PRODUCTION_TEST)
 	{
-		string input = "/input/hello.txt";
+		//string input = "/input/hello.txt";
+		string input = "/input/1GB_random.dat";
+		//string input = "/input/10GB_random.dat"; 
 		string output = "/output/";
 		string dfs_master = "127.0.0.1";
 		string so_name = "wordcount.so";
 		uint16_t dfs_port = 9000;
 		JobID maxJobs = 4;
 		JobID maxMaps = 5000;
-		JobID maxReduces = 1;
+		JobID maxReduces = 10;
 		MapReduceSpecification spec = MapReduceSpecification();
 		spec.addInput(input);
 		spec.setOutputPath(output);
@@ -62,7 +64,6 @@ int main(int argc, char* args[])
 
 		MapReduceResult result(m.getNumberOfMapsCompleted(), m.getNumberOfReducesCompleted(), m.getNumberOfNodes());
 		/* return result; */
-
 		return 0; /* return!!! */
 	}
 

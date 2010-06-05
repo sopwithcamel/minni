@@ -1,0 +1,72 @@
+Required Software and Dependencies
+--------------------------------------
+gcc and g++
+Thrift RPC Library (developer version)
+Intel's Thread Building Blocks (TBB) Library (developer version)
+Boost Libraries (developer versions)
+libfhdfs -- Hadoop File System C++ JNI interface
+
+
+
+Building libhdfs
+--------------------------------------
+1) Building libhdfs
+	# Reference URL:
+	# http://www.mail-archive.com/common-user@hadoop.apache.org/msg01812.html
+	# This line compiles it!	
+	JAVA_HOME=/usr/lib/jvm/default-java ant compile -Dcompile.c++=true -Dlibhdfs=true
+
+2) Running HDFS
+	a) Format filesystem:	bin/hadoop namenode -format
+	b) Run DFS:		bin/start-dfs.sh
+
+
+
+Building Minni
+--------------------------------------
+
+*** Note: Full system builds have only been completed under Ubuntu 10.04 LTS.
+
+cd src/
+make
+
+
+
+Running Minni
+--------------------------------------
+
+Start up HDFS, then all worker nodes.  Then start master/MapReduce application.
+
+cd master/ && make test
+
+That will cause a test to run of the MapReduce system (things should be
+mostly built already).
+
+
+
+Notes
+--------------------------------------
+
+[General]
+
++ Only supported DFS is HDFS currently.  KFS is targeted for future support.
+
+[Master]
+
++ The master has some Thrift RPC code, but currently it only acts as
+a client to a hard-coded list of Worker nodes.  There is no uninitiated
+communication from nodes to the master (all polling-based communication).
+
++ The master is currently single-threaded (not depending on TBB) because
+that is simple for now (ease of development and debugging), and it wasn't necessary yet.
+
++ src/master/example/Driver.cpp shows a sample MapReduce application
+using our current style (not very abstract yet).
+
+[Worker Node]
+
+STUB
+
+[Client API]
+
+STUB
