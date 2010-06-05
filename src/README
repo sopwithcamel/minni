@@ -27,6 +27,9 @@ Building Minni
 
 *** Note: Full system builds have only been completed under Ubuntu 10.04 LTS.
 
+1) Modify all Makefiles to customize paths
+2) Run:
+
 cd src/
 make
 
