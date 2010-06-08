@@ -54,6 +54,8 @@ Notes
 
 + Only supported DFS is HDFS currently.  KFS is targeted for future support.
 
++ Would like to have XML logging interface for easy instrumentation.
+
 [Master]
 
 + The master has some Thrift RPC code, but currently it only acts as
