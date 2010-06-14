@@ -15,11 +15,20 @@ AC_PROG_CPP
 AC_PROG_MAKE_SET
 
 # Checks for libraries.
-AC_CHECK_LIB([hdfs], [hdfsConnect])
-AC_CHECK_LIB([jvm], [JNI_CreateJavaVM])
-AC_CHECK_LIB([m], [cos])
-AC_CHECK_LIB([tbb], [parallel_for])
-AC_CHECK_LIB([thrift],[_init])
+#AC_CHECK_LIB([hdfs], [hdfsConnect], [], [echo "Error.  libhdfs not found." 
+#	      				 exit -1])
+
+#AC_CHECK_LIB([jvm], [JNI_CreateJavaVM], [], [echo "Error.  libjvm not found."
+#	      				     exit -1])
+
+#AC_CHECK_LIB([m], [cos], [], [echo "Error. lm not found."
+#	      		      exit -1])
+
+#AC_CHECK_LIB([tbb], [parallel_for], [], [echo "Error. libtbb not found."
+#	      				 exit -1])
+
+#AC_CHECK_LIB([thrift],[_init], [], [echo "Error.  libthrift not found."
+#	      			    exit -1])
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h stdlib.h string.h unistd.h])
@@ -38,7 +47,8 @@ AC_TYPE_UINT64_T
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([memset socket])
 
-AC_CONFIG_FILES([src/Makefile
+AC_CONFIG_FILES([Makefile
+		 src/Makefile
                  src/lib/Makefile
                  src/master/Makefile
                  src/worker/gen-cpp/Makefile])
