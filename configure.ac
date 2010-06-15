@@ -14,6 +14,9 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_MAKE_SET
 
+# Needed large file support 
+AC_SYS_LARGEFILE
+
 # Checks for libraries.
 PKG_CHECK_MODULES(TBB, tbb >= 2.1)
 PKG_CHECK_MODULES(THRIFT, thrift >= 0.2.0)
@@ -53,5 +56,6 @@ AC_CONFIG_FILES([Makefile
 		 src/Makefile
                  src/lib/Makefile
                  src/master/Makefile
+		 src/worker/Makefile
                  src/worker/gen-cpp/Makefile])
 AC_OUTPUT
