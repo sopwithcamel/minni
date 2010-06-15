@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([minni], [0.1], [wolf@cs.cmu.edu])
+AC_INIT([Minni], [0.1], [wolf@cs.cmu.edu])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 AC_CONFIG_SRCDIR([src/scripts/plot/plot_memory.m])
 AC_CONFIG_HEADERS([config.h])
@@ -15,6 +15,8 @@ AC_PROG_CPP
 AC_PROG_MAKE_SET
 
 # Checks for libraries.
+PKG_CHECK_MODULES(TBB, tbb >= 2.1)
+PKG_CHECK_MODULES(THRIFT, thrift >= 0.2.0)
 #AC_CHECK_LIB([hdfs], [hdfsConnect], [], [echo "Error.  libhdfs not found." 
 #	      				 exit -1])
 

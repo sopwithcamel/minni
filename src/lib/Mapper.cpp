@@ -6,34 +6,34 @@
 
 uint64_t MapInput::key_value(char** value) {
 
-	cout<<"Mapper: HDFS: Connecting to HDFS"<<endl;
-	HDFS myhdfs(master_name,port);
-	cout<<"Mapper: HDFS: The master name is "<<master_name<<endl;
-	cout<<"Mapper: HDFS: The port is "<<port<<endl;
+	cout<<"Mapper: KFS: Connecting to KFS"<<endl;
+	KFS myhdfs(master_name,port);
+	cout<<"Mapper: KFS: The master name is "<<master_name<<endl;
+	cout<<"Mapper: KFS: The port is "<<port<<endl;
 	bool conn = myhdfs.connect();
 	if(!conn)
-		cout<<"Mapper: HDFS: Unable to establish connection :( \n";
+		cout<<"Mapper: KFS: Unable to establish connection :( \n";
 	else
-		cout<<"Mapper: HDFS: Able to establish connection :) \n";
+		cout<<"Mapper: KFS: Able to establish connection :) \n";
 
-	cout<<"Mapper:  HDFS: I am looking for file "<<file_location<<endl;
+	cout<<"Mapper:  KFS: I am looking for file "<<file_location<<endl;
 	if(myhdfs.checkExistence(file_location))
-		cout<<"Mapper: HDFS: file in location!!\n";
+		cout<<"Mapper: KFS: file in location!!\n";
 	
 	uint64_t length = myhdfs.getChunkSize(file_location);
-	cout<<"Mapper: HDFS: It told me that the chunk size of this file is "<<length<<endl;
+	cout<<"Mapper: KFS: It told me that the chunk size of this file is "<<length<<endl;
 	*value = (char*) malloc(length+1); /*freed in line 73 Map fn aft using all data that is passed*/
-	cout<<"Mapper: HDFS: Going to read chunks from HDFS"<<endl;
+	cout<<"Mapper: KDFS: Going to read chunks from KDFS"<<endl;
 	int64_t k = myhdfs.readChunkOffset(file_location, (uint64_t) 0, *value, length);
 	if(k == -1)
-		cout<<"Mapper: HDFS: Reading failed! :( "<<endl;
+		cout<<"Mapper: KFS: Reading failed! :( "<<endl;
 	else
-		cout<<"Mapper: HDFS: Read number of blocks: "<<k<<endl;
+		cout<<"Mapper: KFS: Read number of blocks: "<<k<<endl;
 	bool disconn = myhdfs.disconnect();
 	if(!disconn)
-		cout<<"Mapper: HDFS: Unable to disconnect \n";
+		cout<<"Mapper: KFS: Unable to disconnect \n";
 	else
-		cout<<"Mapper: HDFS: Able to disconnect \n";
+		cout<<"Mapper: KFS: Able to disconnect \n";
 
 	return length;
 }
@@ -50,10 +50,10 @@ Mapper::~Mapper() {
 
 void Mapper::Map(MapInput* input) {
 	cout<<"Mapper: entered the map phase\n";
-	cout<<"Mapper: I will be reading from HDFS soon\n";
+	cout<<"Mapper: I will be reading from KFS soon\n";
 	char* text;
 	uint64_t n = input->key_value(&text);
-	cout<<"Mapper: I have read from HDFS\n";
+	cout<<"Mapper: I have read from KFS\n";
         unsigned int i;
 	for( i = 0; i < n; ) {
              //skip through the leading whitespace

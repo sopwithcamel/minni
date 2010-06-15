@@ -17,7 +17,7 @@
 #include <dlfcn.h>
 #include <map>
 #include "PartialAgg.h"
-#include "HDFS.h"
+#include "KFS.h"
 #define GetCurrentDir getcwd
 
 using namespace std;
