@@ -4,7 +4,7 @@ test_SOURCES = example/Driver.cpp \
 	       Master.cpp \
 	       Node.cpp \
 	       Communicator.cpp \
-	       HDFS.cpp \
+	       KFS.cpp \
 	       $(srcdir)/../worker/gen-cpp/daemon_types.cpp \
 	       $(srcdir)/../daemon_constants.cpp \
 	       $(srcdir)/../WorkDaemon.cpp
