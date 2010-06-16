@@ -1,3 +1,4 @@
+#include "common.h"
 #include "WorkDaemon_tasks.h"
 #include <fstream>
 #include <sstream>

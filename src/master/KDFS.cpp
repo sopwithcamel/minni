@@ -53,8 +53,8 @@ uint64_t KDFS::getNumChunks(string path)
 
 void KDFS::getChunkLocations(string path, ChunkID cid, vector<string> & _return)
 {
-	/*vector< vector<string> > locations;
-	if (fs->GetDataLocation(path.c_str(), (off_t) (cid*getChunkSize(path)), (off_t) getChunkSize(path), &locations) > 0)
+	vector< vector<string> > locations;
+	if (fs->GetDataLocation(path.c_str(), (off_t) (cid*(this->getChunkSize(path))), (off_t) (this->getChunkSize(path)), locations) > 0)
 	{
 		for (int i = 0; i < locations.size(); i++)
 		{
@@ -68,7 +68,7 @@ void KDFS::getChunkLocations(string path, ChunkID cid, vector<string> & _return)
 	else
 	{
 		throw("Error looking up locations for chunk.");
-	}*/
+	}
 }
 
 bool KDFS::createFile(string path)

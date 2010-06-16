@@ -14,7 +14,7 @@ using namespace std;
 
 #include "Communicator.h"
 #include "Node.h"
-#include "HDFS.h"
+#include "KDFS.h"
 #include "Minnie.h"
 
 class Master {

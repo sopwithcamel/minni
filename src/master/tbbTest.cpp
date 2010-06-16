@@ -25,7 +25,7 @@
     invalidate any other reasons why the executable file might be covered by
     the GNU General Public License.
 */
-
+#include "config.h"
 #include <iostream>
 #include <string>
 #include <algorithm>

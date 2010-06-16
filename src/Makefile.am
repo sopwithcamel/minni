@@ -1,2 +1,2 @@
 SUBDIRS = worker lib master 
-EXTRA_DIST = README master/NOTES master/TODO scripts  
+EXTRA_DIST = scripts  

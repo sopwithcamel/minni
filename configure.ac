@@ -3,9 +3,11 @@
 
 AC_PREREQ([2.65])
 AC_INIT([Minni], [0.1], [wolf@cs.cmu.edu])
+AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 AC_CONFIG_SRCDIR([src/scripts/plot/plot_memory.m])
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([src/common/config.h])
 
 # Checks for programs.
 AC_PROG_AWK
@@ -13,6 +15,9 @@ AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_MAKE_SET
+
+# Initialize libtool
+LT_INIT
 
 # Needed large file support 
 AC_SYS_LARGEFILE

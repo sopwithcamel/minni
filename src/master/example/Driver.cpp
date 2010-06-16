@@ -1,11 +1,12 @@
+#include "common.h"
 #include "Master.h"
 #include <unistd.h>
 #include <string.h>
 
 #define LAG 3
-#define HDFS_TEST 0
+#define KDFS_TEST 0
 #define PRODUCTION_TEST 1
-#define HDFS_TEST_PATH "/test/foo.log"
+#define KDFS_TEST_PATH "/test/foo.log"
 
 int main(int argc, char* args[])
 {
@@ -30,7 +31,7 @@ int main(int argc, char* args[])
 		spec.setMaxJobsPerNode(maxJobs);
 		spec.setMaxMaps(maxMaps);
 		spec.setMaxReduces(maxReduces);
-		HDFS hdfs("127.0.0.1", 9000);
+		KDFS hdfs("127.0.0.1", 40000);
 		Master m(&spec, hdfs, "example/nodes.conf");
 		while (m.checkMapStatus()) /* assignment of all maps */
 		{
@@ -67,29 +68,29 @@ int main(int argc, char* args[])
 		return 0; /* return!!! */
 	}
 
-	if (HDFS_TEST)
+	if (KDFS_TEST)
 	{
 		char buf[256];
 		char hello[12] = {'h','e','l','l','o',' ','w','o','r','l','d','\0'};
 		char jello[12] = {'j','e','l','l','o',' ','w','a','l','l','a','\0'};
 		memset(buf, 0, 256);
-		HDFS hdfs("localhost", 9000);
+		KDFS hdfs("localhost", 40000);
 		cout << "Connecting to DFS" << endl;
 		hdfs.connect();
 		cout << "Connected to DFS" << endl;
-		cout << "Creating '" << HDFS_TEST_PATH << "': " << hdfs.createFile(HDFS_TEST_PATH) << endl;
-		cout << "/test/foo.log exists: " << hdfs.checkExistence(HDFS_TEST_PATH) << endl;
-		cout << "Writing \"jello walla\" to '" << HDFS_TEST_PATH "':"
-			<< hdfs.writeToFile(HDFS_TEST_PATH, jello, strlen(jello)) << endl;
-		cout << "Writing \"hello world\" to '" << HDFS_TEST_PATH << "': "
-			<< hdfs.writeToFile(HDFS_TEST_PATH, hello, strlen(hello)) << endl;
-		cout << "Closing file " << HDFS_TEST_PATH << ":" << hdfs.closeFile(HDFS_TEST_PATH) << endl;
-		cout << "Reading from file '" << HDFS_TEST_PATH << "': " << hdfs.readChunkOffset(HDFS_TEST_PATH, (uint64_t)0, buf, (uint64_t)256)
+		cout << "Creating '" << KDFS_TEST_PATH << "': " << hdfs.createFile(KDFS_TEST_PATH) << endl;
+		cout << "/test/foo.log exists: " << hdfs.checkExistence(KDFS_TEST_PATH) << endl;
+		cout << "Writing \"jello walla\" to '" << KDFS_TEST_PATH "':"
+			<< hdfs.writeToFile(KDFS_TEST_PATH, jello, strlen(jello)) << endl;
+		cout << "Writing \"hello world\" to '" << KDFS_TEST_PATH << "': "
+			<< hdfs.writeToFile(KDFS_TEST_PATH, hello, strlen(hello)) << endl;
+		cout << "Closing file " << KDFS_TEST_PATH << ":" << hdfs.closeFile(KDFS_TEST_PATH) << endl;
+		cout << "Reading from file '" << KDFS_TEST_PATH << "': " << hdfs.readChunkOffset(KDFS_TEST_PATH, (uint64_t)0, buf, (uint64_t)256)
 			<< "\t" << buf << endl;
-		cout << "Chunksize for '" << HDFS_TEST_PATH << "': " << hdfs.getChunkSize(HDFS_TEST_PATH) << endl;
-		cout << "Chunks for '" << HDFS_TEST_PATH << "': " << hdfs.getNumChunks(HDFS_TEST_PATH) << endl;
+		cout << "Chunksize for '" << KDFS_TEST_PATH << "': " << hdfs.getChunkSize(KDFS_TEST_PATH) << endl;
+		cout << "Chunks for '" << KDFS_TEST_PATH << "': " << hdfs.getNumChunks(KDFS_TEST_PATH) << endl;
 		vector<string> _return;
-		hdfs.getChunkLocations(HDFS_TEST_PATH, 0, _return);
+		hdfs.getChunkLocations(KDFS_TEST_PATH, 0, _return);
 		for(unsigned int i = 0; i < _return.size(); i++)
 		{
 			cout << "\tChunk at: " << _return[i] << endl;

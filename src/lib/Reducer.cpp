@@ -1,3 +1,4 @@
+#include "config.h"
 #include "Reducer.h"
 
 //ReduceOutput class
@@ -198,9 +199,9 @@ task* ReducerWrapperTask::execute() {
 	cout<<"Reducer: The master is "<<myoutput.master_name<<endl;
 	cout<<"Reducer: The output port is "<<myoutput.port<<endl;
 
-	KFS myhdfs(myoutput.master_name,myoutput.port);
+	KDFS myhdfs(myoutput.master_name,myoutput.port);
 	
-	cout<<"Reducer: Opening the KFS\n";
+	cout<<"Reducer: Opening the KDFS\n";
 	bool conn = myhdfs.connect();
 	if(!conn)
 		cout<<"Reducer: Unable to connect :(\n";

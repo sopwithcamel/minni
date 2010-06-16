@@ -1,9 +1,12 @@
-bin_PROGRAMS = lib 
+lib_LTLIBRARIES = libminni.la 
 
-lib_SOURCES =  PartialAgg.cpp \
-	       Mapper.cpp \
-	       Reducer.cpp
+EXTRA_DIST = PartialAgg.h Mapper.h Reducer.h Minnie.h
 
-lib_CPPFLAGS = -I$(srcdir)/../worker/gen-cpp \
-	       -I$(srcdir)/../master/ \
-	       -c
+libminni_la_SOURCES =  PartialAgg.cpp \
+		       Mapper.cpp \
+		       Reducer.cpp
+
+libminni_la_CPPFLAGS = $(TBB_CFLAGS) $(THRIFT_CFLAGS) \
+		       -I$(srcdir)/../worker/gen-cpp \
+		       -I$(srcdir)/../master \
+		       -I$(srcdir)/../common

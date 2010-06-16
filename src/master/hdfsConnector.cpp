@@ -1,3 +1,4 @@
+#include "config.h"
 #include "hdfs.h"
 
 int main(int argc, char ** argv)

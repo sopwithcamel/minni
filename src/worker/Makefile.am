@@ -1,1 +1,1 @@
-subdirs = gen-cpp
+SUBDIRS = gen-cpp

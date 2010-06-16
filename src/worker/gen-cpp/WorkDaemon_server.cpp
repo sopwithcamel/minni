@@ -2,6 +2,7 @@
   WorkDaemon prototype for 15-712 OS project
   Erik Zawadzki February 22, 2010
 */
+#include "common.h"
 #include <iostream>
 #include "WorkDaemon.h"
 #include "WorkDaemon_tasks.h"

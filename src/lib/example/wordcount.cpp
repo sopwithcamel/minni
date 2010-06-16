@@ -1,3 +1,4 @@
+#include "common.h"
 #include "Mapper.h"
 #include <stdlib.h>
 #include <iostream>

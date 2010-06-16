@@ -1,3 +1,4 @@
+#include "config.h"
 #include "PartialAgg.h"
 
 PartialAgg::PartialAgg() {

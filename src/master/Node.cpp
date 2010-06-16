@@ -1,3 +1,4 @@
+#include "config.h"
 #include "Node.h"
 
 Node::Node(string* URL) : communicator(URL)

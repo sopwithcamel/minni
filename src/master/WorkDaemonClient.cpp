@@ -1,3 +1,4 @@
+#include "config.h"
 #include "WorkDaemon.h"  // As an example
 
 #include <transport/TSocket.h>

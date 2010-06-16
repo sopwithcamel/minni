@@ -30,8 +30,10 @@ Building Minni
 1) Modify all Makefiles to customize paths
 2) Run:
 
-cd src/
+LDFLAGS=-L/home/wolf/Desktop/kosmostest/kfs-0.5/build/lib/ CPPFLAGS=-I/home/wolf/Desktop/kosmostest/kfs-0.5/build/include/kfs/ ./configure
 make
+
+3) Make sure you replace the KFS paths properly for your system.
 
 
 
