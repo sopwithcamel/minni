@@ -94,24 +94,24 @@ int deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint6
 	size_t result;
 	if (feof(fileIn)) return -1;
         result = fread(type, sizeof(char), 1, fileIn);
-	if(result != sizeof(char)) {cout<<"Reading error"; exit(1);}
+	if(result != sizeof(char)) {cout<<"Reading error"; return -1;}
 	if (feof(fileIn)) return -1;
         result = fread(keyLength, sizeof(uint64_t), 1, fileIn);
-        if(result != sizeof(char)) {cout<<"Reading error"; exit(1);}
+        if(result != sizeof(char)) {cout<<"Reading error"; return -1;}
 	if (feof(fileIn)) return -1;
         *key = (char*) malloc(*keyLength); /*freed line 136 after the particular loop run*/
 	if (feof(fileIn)) return -1;
         result = fread(*key, sizeof(char), *keyLength, fileIn);
-        if(result != (*keyLength)*sizeof(char)) {cout<<"Reading error"; exit(1);}
+        if(result != (*keyLength)*sizeof(char)) {cout<<"Reading error"; return -1;}
 	if (feof(fileIn)) return -1;
         result = fread(valueLength, sizeof(uint64_t), 1, fileIn);
-        if(result != sizeof(uint64_t)) {cout<<"Reading error"; exit(1);}
+        if(result != sizeof(uint64_t)) {cout<<"Reading error"; return -1;}
 
 	if (feof(fileIn)) return -1;
         *value = (char*) malloc(*valueLength); /*freed line 137 after the particular loop run*/
 	if (feof(fileIn)) return -1;
         result = fread(*value, sizeof(char), *valueLength, fileIn);
-        if(result != (*valueLength)*sizeof(char)){cout<<"Reading error"; exit(1);}
+        if(result != (*valueLength)*sizeof(char)){cout<<"Reading error"; return -1;}
 	cout<<"Reducer: The values are key= "<<*key<<" value= "<<*value<<endl;
 	return 0;
 }
