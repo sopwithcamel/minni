@@ -1,2 +1,2 @@
-SUBDIRS = worker lib master 
+SUBDIRS = dfs lib worker master 
 EXTRA_DIST = scripts  

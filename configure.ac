@@ -59,6 +59,7 @@ AC_CHECK_FUNCS([memset socket])
 
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
+		 src/dfs/Makefile
                  src/lib/Makefile
                  src/master/Makefile
 		 src/worker/Makefile

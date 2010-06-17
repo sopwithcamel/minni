@@ -7,15 +7,22 @@ workdaemon_SOURCES = WorkDaemon.cpp \
 		     daemon_types.cpp \
 		     WorkDaemon_server.cpp \
 		     WorkDaemon_tasks.cpp \
-		     WorkDaemon_file.cpp \
-		     $(srcdir)/../../master/KDFS.cpp \
-		     $(srcdir)/../../lib/Reducer.cpp \
-		     $(srcdir)/../../lib/Mapper.cpp \
-		     $(srcdir)/../../lib/PartialAgg.cpp
+		     WorkDaemon_file.cpp
 
 workdaemon_CPPFLAGS = $(TBB_CFLAGS) $(THRIFT_CFLAGS) \
 		      -I$(srcdir)/../../lib \
 		      -I$(srcdir)/../../master \
-		      -I$(srcdir)/../../common
+		      -I$(srcdir)/../../common \
+		      -I$(srcdir)/../../dfs
 
-workdaemon_LDFLAGS = $(TBB_LIBS) $(THRIFT_LIBS) -lm -lkfsClient -lkfsIO -lkfsCommon -lqcdio -lboost_regex
+workdaemon_LDADD = $(srcdir)/../../dfs/libdfs.la \
+		   $(srcdir)/../../lib/libminni.la
+
+workdaemon_LDFLAGS = $(TBB_LIBS) \
+		     $(THRIFT_LIBS) \
+		     -lm \
+		     -lkfsClient \
+		     -lkfsIO \
+		     -lkfsCommon \
+		     -lqcdio \
+		     -lboost_regex
