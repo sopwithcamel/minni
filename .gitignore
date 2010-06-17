@@ -8,3 +8,14 @@
 *.bbl
 *.pdf
 *.blg
+m4
+aclocal.m4
+build-aux
+config.guess
+config.sub
+configure
+depcomp
+install-sh
+ltmain.sh
+*.gz
+missing
