@@ -1,0 +1,10 @@
+*.so
+*.log
+*~
+*.o
+*.in
+*.old
+*.aux
+*.bbl
+*.pdf
+*.blg
