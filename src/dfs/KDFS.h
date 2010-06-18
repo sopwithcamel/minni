@@ -23,6 +23,7 @@ class KDFS : public DFS
 	private:
 		KfsClientPtr fs;
 		map<string, int> fileCache;
+		int openFileCacheLookup(string &path, int options);
 	public:
 		KDFS(string host, uint16_t port = 9000) : DFS(host, port) {};					/* constructor */
 		~KDFS();															/* destructor */
@@ -35,10 +36,8 @@ class KDFS : public DFS
 		void getChunkLocations(string path, ChunkID cid, vector<string> & _return);	/* 	returns server urls -- caller must clean up the
 																			vector, free memory  */
 		bool createFile(string path);											/* creates a file, false on failure */
-		//@BEGIN UNSUPPORTED
-		int64_t appendToFile(string path, char* buf, uint64_t length);					/* DO NOT USE */
-		int64_t writeToFileOffset(string path, uint64_t offset, char* buf, uint64_t length);	/* DO NOT USE */
-		//@END UNSUPPORTED
+		int64_t appendToFile(string path, char* buf, uint64_t length);					/* untested with KFS now */
+		int64_t writeToFileOffset(string path, uint64_t offset, char* buf, uint64_t length);	/* untested with KFS now */
 		int64_t writeToFile(string path, const char* buf, uint64_t length);					/* only approved writing method, -1 on error */
 		int64_t closeFile(string path);											/* closes a file after writing */
 };

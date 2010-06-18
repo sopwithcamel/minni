@@ -20,6 +20,7 @@ bool KDFS::connect()
 	return true;
 }
 
+/* KFS doesn't appear to have an explicit shutdown or disconnect */
 bool KDFS::disconnect()
 {
 	return true;
@@ -33,11 +34,9 @@ bool KDFS::checkExistence(string path)
 int64_t KDFS::readChunkOffset(string path, uint64_t offset, char* buf, uint64_t length)
 {
 	int64_t ret = 0;
-	int fd = fs->Open(path.c_str(), O_RDONLY);
-	if (fd < 0) throw("Error opening file read only.");
+	int fd = openFileCacheLookup(path, O_RDONLY);
 	if (fs->Seek(fd, offset) < 0) throw("Error seeking to offset in file for read.");
 	ret = (int64_t) fs->Read(fd, buf, (size_t) length);
-	fs->Close(fd);
 	return ret;
 }
 
@@ -80,54 +79,34 @@ bool KDFS::createFile(string path)
 	}
 	else
 	{
+		/* unknown options on this fd (under-specified), just close */
 		fs->Close(fd);
 		return true;
 	}
 }
 
-/* dangerous and unsafe */
 int64_t KDFS::appendToFile(string path, char* buf, uint64_t length)
 {
 	int64_t ret = 0;
-	int fd = fs->Open(path.c_str(), O_WRONLY);
-	if (fd < 0) return -1;
+	int fd = openFileCacheLookup(path, O_RDWR);
 	ret = fs->AtomicRecordAppend(fd, buf, (int)length);
-	if (fs->Close(fd) < 0) return -1;
 	return ret;
 }
 
 int64_t KDFS::writeToFileOffset(string path, uint64_t offset, char* buf, uint64_t length)
 {
 	int64_t ret = 0;
-	int fd = fs->Open(path.c_str(), O_WRONLY);
-	if (fd < 0) throw("Error opening file write only.");
+	int fd = openFileCacheLookup(path, O_RDWR);
 	if (fs->Seek(fd, offset) < 0) throw("Error seeking to offset in file for writing to offset.");
 	ret = (int64_t) fs->Write(fd, buf, (size_t) length);
-	if (fs->Close(fd) < 0) throw("Error closing file when writing to offest.");
 	return ret;
 }
 
+/* TODO: should this just be append? */
 int64_t KDFS::writeToFile(string path, const char* buf, uint64_t length)
 {
 	int64_t ret = 0;
-	int fd;
-	if (fileCache.find(path) != fileCache.end())
-	{
-		cout << "Pulling open file from fileCache" << endl;
-		fd = fileCache[path];
-	}
-	else
-	{
-		cout << "Opening file for writing." << endl;
-		if (fd = fs->Open(path.c_str(), O_WRONLY) > 0)
-		{
-			fileCache[path] = fd;
-		}
-		else
-		{
-			throw("Error opening file for writing.");
-		}
-	}
+	int fd = openFileCacheLookup(path, O_RDWR);
 	ret = fs->Write(fd, buf, (size_t) length);
 	return ret;
 }
@@ -145,4 +124,27 @@ int64_t KDFS::closeFile(string path)
 	{
 		return -1;
 	}
+}
+
+int KDFS::openFileCacheLookup(string &path, int options)
+{
+		int fd;
+		if (fileCache.find(path) != fileCache.end())
+		{
+			cout << "Pulling open file from fileCache" << endl;
+			fd = fileCache[path];
+		}
+		else
+		{
+			cout << "Opening file for writing." << endl;
+			if (fd = fs->Open(path.c_str(), options) > 0)
+			{
+				fileCache[path] = fd;
+			}
+			else
+			{
+				throw("Error opening file, missed cache.");
+			}
+		}
+		return fd;
 }

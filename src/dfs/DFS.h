@@ -11,6 +11,8 @@ using namespace std;
 /* NOT assumed to be thread safe... */
 class DFS
 {
+	private:
+		virtual int openFileCacheLookup(string &path, int options) = 0;
 	public:
 		DFS(string host, uint16_t port) : host(host), port(port) {};
 		~DFS() {};
