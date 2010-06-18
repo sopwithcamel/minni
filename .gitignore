@@ -20,3 +20,11 @@ ltmain.sh
 *.gz
 missing
 autom4te.cache
+libtool
+*.lo
+*.la
+Makefile
+config.status
+.deps
+.libs
+src/common
