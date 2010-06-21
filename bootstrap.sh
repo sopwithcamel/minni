@@ -1,14 +1,17 @@
 #!/bin/bash
 
+# Cleanup directory structure
+./maintainer-clean
 
-if [ ! -d m4 ]
-then
-	mkdir m4
-fi
-
+# Make all necessary dirs
 if [ ! -d build-aux ]
 then
 	mkdir build-aux
+fi
+
+if [ ! -d build-aux/m4 ]
+then
+	mkdir build-aux/m4
 fi
 
 if [ ! -d src/common ]
@@ -16,5 +19,5 @@ then
 	mkdir src/common
 fi
 
-make -k maintainer-clean
+# Generate build scripts
 autoreconf --install --force

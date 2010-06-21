@@ -4,7 +4,7 @@
 AC_PREREQ([2.65])
 AC_INIT([Minni], [0.1], [wolf@cs.cmu.edu])
 AC_CONFIG_AUX_DIR([build-aux])
-AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_MACRO_DIR([build-aux/m4])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 AC_CONFIG_SRCDIR([src/scripts/plot/plot_memory.m])
 AC_CONFIG_HEADERS([src/common/config.h])
