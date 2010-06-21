@@ -1,0 +1,9 @@
+#!/bin/bash
+
+make maintainer-clean && \
+rm -rf build-aux && \
+rm aclocal.m4 && \
+for file in `find -type f -name "Makefile.in"`
+do
+	rm $file
+done
