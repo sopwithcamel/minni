@@ -2,7 +2,7 @@
 *.log
 *~
 *.o
-*.in
+Makefile.in
 *.old
 *.aux
 *.bbl

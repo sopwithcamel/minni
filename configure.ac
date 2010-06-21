@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([Minni], [0.1], [wolf@cs.cmu.edu])
+AC_INIT([Minni], [0.1],[wolf@cs.cmu.edu],[http://gateway.fawn.cs.cmu.edu:8080/indefero/p/minni/issues/],[minni],[http://gateway.fawn.cs.cmu.edu:8080/indefero/p/minni/])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux/m4])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
@@ -57,11 +57,16 @@ AC_TYPE_UINT64_T
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([memset socket])
 
+# libminni substitutions
+AC_SUBST([MINNI_SO_VERSION], [0:0:0])
+AC_SUBST([MINNI_API_VERSION], [1.0])
+
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 src/dfs/Makefile
                  src/lib/Makefile
-                 src/master/Makefile
+		 src/lib/libminni-${MINNI_API_VERSION}.pc:src/lib/libminni.pc.in
+		 src/master/Makefile
 		 src/worker/Makefile
                  src/worker/gen-cpp/Makefile])
 AC_OUTPUT
