@@ -1,11 +1,4 @@
 #!/bin/bash
 
 make -k maintainer-clean && \
-rm -rf build-aux && \
-rm -rf autom4te.cache && \
-rm -rf src/common && \
-rm -f aclocal.m4 && \
-for file in `find -type f -name "Makefile.in"`
-do
-	rm $file
-done
+git clean -dxf
