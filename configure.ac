@@ -6,8 +6,10 @@ AC_INIT([Minni], [0.1],[libminni@googlegroups.com],[http://gateway.fawn.cs.cmu.e
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux/m4])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
+AM_SILENT_RULES
 AC_CONFIG_SRCDIR([src/scripts/plot/plot_memory.m])
 AC_CONFIG_HEADERS([src/common/config.h])
+
 
 # Checks for programs.
 AC_PROG_AWK
@@ -25,20 +27,6 @@ AC_SYS_LARGEFILE
 # Checks for libraries.
 PKG_CHECK_MODULES(TBB, tbb >= 2.1)
 PKG_CHECK_MODULES(THRIFT, thrift >= 0.2.0)
-#AC_CHECK_LIB([hdfs], [hdfsConnect], [], [echo "Error.  libhdfs not found." 
-#	      				 exit -1])
-
-#AC_CHECK_LIB([jvm], [JNI_CreateJavaVM], [], [echo "Error.  libjvm not found."
-#	      				     exit -1])
-
-#AC_CHECK_LIB([m], [cos], [], [echo "Error. lm not found."
-#	      		      exit -1])
-
-#AC_CHECK_LIB([tbb], [parallel_for], [], [echo "Error. libtbb not found."
-#	      				 exit -1])
-
-#AC_CHECK_LIB([thrift],[_init], [], [echo "Error.  libthrift not found."
-#	      			    exit -1])
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h stdlib.h string.h unistd.h])
