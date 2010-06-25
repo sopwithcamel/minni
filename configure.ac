@@ -53,7 +53,7 @@ AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 src/dfs/Makefile
                  src/lib/Makefile
-		 src/lib/libminni-${MINNI_API_VERSION}.pc:src/lib/libminni.pc.in
+		 src/lib/libminni.pc:src/lib/libminni.pc.in
 		 src/master/Makefile
 		 src/worker/Makefile
                  src/worker/gen-cpp/Makefile])

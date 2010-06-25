@@ -16,7 +16,7 @@ workdaemon_CPPFLAGS = $(TBB_CFLAGS) $(THRIFT_CFLAGS) \
 		      -I$(srcdir)/../../dfs
 
 workdaemon_LDADD = $(srcdir)/../../dfs/libdfs.la \
-		   $(srcdir)/../../lib/libminni-$(MINNI_API_VERSION).la
+		   $(srcdir)/../../lib/libminni.la
 
 workdaemon_LDFLAGS = $(TBB_LIBS) \
 		     $(THRIFT_LIBS) \
