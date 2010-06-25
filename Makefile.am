@@ -1,6 +1,6 @@
 SUBDIRS = src
 
-EXTRA_DIST = README build.sh
+EXTRA_DIST = README build.sh maintainer-clean bootstrap.sh THANKS
 
 DISTCHECK_CONFIGURE_FLAGS = LDFLAGS=-L/home/wolf/Desktop/kosmostest/kfs-0.5/build/lib CPPFLAGS=-I/home/wolf/Desktop/kosmostest/kfs-0.5/build/include/kfs/
 

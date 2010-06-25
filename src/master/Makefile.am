@@ -1,6 +1,6 @@
 bin_PROGRAMS = test
 
-EXTRA_DIST = common.h Communicator.h DFS.h KDFS.h Master.h Node.h Node.h TODO NOTES
+EXTRA_DIST = common.h Communicator.h Master.h Node.h Node.h TODO NOTES
 
 test_SOURCES = example/Driver.cpp \
 	       Master.cpp \
