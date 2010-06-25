@@ -4,7 +4,7 @@ gcc and g++
 Thrift RPC Library (developer version)
 Intel's Thread Building Blocks (TBB) Library (developer version)
 Boost Libraries (developer versions)
-libfhdfs -- Hadoop File System C++ JNI interface
+libfkfsClient -- Kosmos File System + Dependencies
 
 
 
@@ -27,13 +27,16 @@ Building Minni
 
 *** Note: Full system builds have only been completed under Ubuntu 10.04 LTS.
 
-1) Modify all Makefiles to customize paths
-2) Run:
+1) For git build run:
 
-LDFLAGS=-L/home/wolf/Desktop/kosmostest/kfs-0.5/build/lib/ CPPFLAGS=-I/home/wolf/Desktop/kosmostest/kfs-0.5/build/include/kfs/ ./configure
+./bootstrap.sh
+./configure --with-kfs=/home/wolf/Desktop/kosmostest/kfs-0.5/build/
 make
 
-3) Make sure you replace the KFS paths properly for your system.
+2) For tarball build run:
+
+./configure --with-kfs=/home/wolf/Desktop/kosmostest/kfs-0.5/build/
+make
 
 
 
@@ -54,7 +57,7 @@ Notes
 
 [General]
 
-+ Only supported DFS is HDFS currently.  KFS is targeted for future support.
++ Only supported DFS is KFS currently.  Both HDFS and KFS is targeted for future support.
 
 + Would like to have XML logging interface for easy instrumentation.
 

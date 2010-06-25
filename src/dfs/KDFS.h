@@ -2,7 +2,7 @@
 #define MINNIE_MASTER_KDFS_H
 
 #include "DFS.h"
-#include "KfsClient.h"
+#include "kfs/KfsClient.h"
 #include "daemon_types.h"
 #include <fcntl.h>
 #include <math.h>

@@ -10,7 +10,6 @@ AM_SILENT_RULES([yes])
 AC_CONFIG_SRCDIR([src/scripts/plot/plot_memory.m])
 AC_CONFIG_HEADERS([src/common/config.h])
 
-
 # Checks for programs.
 AC_PROG_AWK
 AC_PROG_CXX
@@ -25,6 +24,8 @@ LT_INIT
 AC_SYS_LARGEFILE
 
 # Checks for libraries.
+AC_ARG_WITH([kfs], [AS_HELP_STRING([--with-kfs=DIR], [look for libkfs in DIR])])
+FIND_LIBRARY([kfs], [kfsClient], [KFS::ErrorCodeToStr], [kfs/KfsClient.h], [$with_kfs /usr/local /usr])
 PKG_CHECK_MODULES(TBB, tbb >= 2.1)
 PKG_CHECK_MODULES(THRIFT, thrift >= 0.2.0)
 
