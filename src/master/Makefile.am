@@ -17,7 +17,7 @@ test_CPPFLAGS = $(TBB_CFLAGS) \
 		-I$(srcdir)/../common \
 		-I$(srcdir)/../dfs
 
-test_LDADD = $(srcdir)/../dfs/libdfs.la
+test_LDADD = ../dfs/libdfs.la
 
 test_LDFLAGS = $(TBB_LIBS) \
 	       $(THRIFT_LIBS) \
