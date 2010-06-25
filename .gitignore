@@ -28,3 +28,4 @@ config.status
 .deps
 .libs
 src/common
+src/lib/libminni.pc
