@@ -6,7 +6,7 @@ AC_INIT([Minni], [0.1],[libminni@googlegroups.com],[minni],[https://sourcery.cmc
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux/m4])
 AM_INIT_AUTOMAKE([1.11 foreign -Wall -Werror])
-AM_SILENT_RULES
+AM_SILENT_RULES([yes])
 AC_CONFIG_SRCDIR([src/scripts/plot/plot_memory.m])
 AC_CONFIG_HEADERS([src/common/config.h])
 
