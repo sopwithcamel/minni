@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([Minni], [0.1],[libminni@googlegroups.com],[http://gateway.fawn.cs.cmu.edu:8080/indefero/p/minni/issues/],[minni],[http://gateway.fawn.cs.cmu.edu:8080/indefero/p/minni/])
+AC_INIT([Minni], [0.1],[libminni@googlegroups.com],[minni],[https://sourcery.cmcl.cs.cmu.edu/indefero/p/minni/])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux/m4])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
