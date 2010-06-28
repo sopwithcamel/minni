@@ -5,10 +5,7 @@ EXTRA_DIST = common.h Communicator.h Master.h Node.h Node.h TODO NOTES
 test_SOURCES = example/Driver.cpp \
 	       Master.cpp \
 	       Node.cpp \
-	       Communicator.cpp \
-	       $(srcdir)/../worker/gen-cpp/daemon_types.cpp \
-	       $(srcdir)/../worker/gen-cpp/daemon_constants.cpp \
-	       $(srcdir)/../worker/gen-cpp/WorkDaemon.cpp
+	       Communicator.cpp
 
 test_CPPFLAGS = $(TBB_CFLAGS) \
 		$(THRIFT_CFLAGS) \
@@ -17,7 +14,8 @@ test_CPPFLAGS = $(TBB_CFLAGS) \
 		-I$(srcdir)/../common \
 		-I$(srcdir)/../dfs
 
-test_LDADD = ../dfs/libdfs.la
+test_LDADD = ../dfs/libdfs.la \
+	     ../worker/gen-cpp/libdaemon.la
 
 test_LDFLAGS = $(TBB_LIBS) \
 	       $(THRIFT_LIBS) \
