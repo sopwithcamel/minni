@@ -37,6 +37,7 @@ int64_t KDFS::readChunkOffset(string path, uint64_t offset, char* buf, uint64_t 
 	int fd = openFileCacheLookup(path, O_RDONLY);
 	if (fs->Seek(fd, offset) < 0) throw("Error seeking to offset in file for read.");
 	ret = (int64_t) fs->Read(fd, buf, (size_t) length);
+	if (ret < 0) cout << "ERROR: " << ErrorCodeToStr(ret) << endl;
 	return ret;
 }
 
@@ -136,13 +137,14 @@ int KDFS::openFileCacheLookup(string &path, int options)
 		}
 		else
 		{
-			cout << "Opening file for writing." << endl;
-			if (fd = fs->Open(path.c_str(), options) > 0)
+			cout << "Opening file." << endl;
+			if ((fd = fs->Open(path.c_str(), options)) >= 0)
 			{
 				fileCache[path] = fd;
 			}
 			else
 			{
+				cout << "Failed opening " << path << " with options " << options << " fd is " << fd << endl;
 				throw("Error opening file, missed cache.");
 			}
 		}

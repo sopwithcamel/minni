@@ -1,3 +1,5 @@
+SUBDIRS = . tools
+
 noinst_LTLIBRARIES = libdfs.la
 
 EXTRA_DIST = DFS.h KDFS.h

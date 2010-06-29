@@ -53,6 +53,7 @@ AC_SUBST([MINNI_API_VERSION], [1.0])
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 src/dfs/Makefile
+		 src/dfs/tools/Makefile
                  src/lib/Makefile
 		 src/lib/libminni.pc:src/lib/libminni.pc.in
 		 src/master/Makefile
