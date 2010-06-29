@@ -4,11 +4,11 @@
 #include "KDFS.h"
 #include "stdlib.h"
 #include "stdint.h"
-#include "sys/mman.h"
-#include "fcntl.h"
+#include "unistd.h"
 #include <iostream>
 #include <sstream>
 
 #define USAGE "cpFromDFS <local file> <dfs path> <metaserver> <port>"
+#define BUFFER_SIZE 65536
 
 #endif

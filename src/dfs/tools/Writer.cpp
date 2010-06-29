@@ -1,3 +1,4 @@
+#include "config.h"
 #include "Writer.h"
 
 int main(int argc, char* args[])
@@ -8,20 +9,19 @@ int main(int argc, char* args[])
 		return EXIT_FAILURE;
 	}
 
-	void* mmapFile;
+	char* buf[BUFFER_SIZE];
 	string localFile(args[1]);
 	string dfsPath(args[2]);
 	string metaServer(args[3]);
 	istringstream in(args[4]);
 	uint16_t port;
 	int fd;
-	struct stat st;
-	off_t size;
-	uint64_t chunkSize, pos = 0;
+	struct stat64 st;
+	uint64_t size;
 	int64_t wrote;
 	in >> port;
 	KDFS dfs(metaServer, port);
-	fd = open(localFile.c_str(), O_RDONLY);
+	fd = open64(localFile.c_str(), O_RDONLY);
 	
 	if (!dfs.connect())
 	{
@@ -30,15 +30,9 @@ int main(int argc, char* args[])
 
 	cout << "Copying " << localFile << " to " << dfsPath << " on " << metaServer << ":" << port << endl;
 
-	stat(localFile.c_str(), &st);
+	stat64(localFile.c_str(), &st);
 	size = st.st_size;
 	cout << "File Size [bytes]: " << size << endl;
-	mmapFile = mmap(NULL, size, PROT_READ, MAP_SHARED | MAP_POPULATE, fd, 0);
-
-	if (mmapFile == MAP_FAILED)
-	{
-		cout << "Failed opening " << localFile << " for memory mapped IO" << endl;
-	}
 
 	if (!dfs.createFile(dfsPath))
 	{
@@ -46,31 +40,49 @@ int main(int argc, char* args[])
 		return EXIT_FAILURE;
 	}
 
-	chunkSize = dfs.getChunkSize(dfsPath);
-
-	cout << "Chunk Size [bytes]: " << chunkSize << endl;
-
-	while ((int64_t)size - (int64_t)chunkSize >= 0)
+	while ((int64_t)size - (int64_t)BUFFER_SIZE >= 0)
 	{
-		cout << "Writing a chunk..." << endl;
-		wrote = dfs.writeToFile(dfsPath, &(((char*)mmapFile)[pos]), chunkSize);
-		if (wrote != chunkSize)
+		if (read(fd, buf, BUFFER_SIZE) != BUFFER_SIZE)
 		{
-			cout << "Error writing chunk." << endl;
+			cout << "Error reading from file to buffer." << endl;
 			return EXIT_FAILURE;
 		}
-		size -= wrote; /* record written bytes */
-		pos += wrote; /* move pointer up */
+
+		if (dfs.writeToFile(dfsPath, (const char*)buf, BUFFER_SIZE) != BUFFER_SIZE)
+		{
+			cout << "Error writing buffer to DFS." << endl;
+			return EXIT_FAILURE;
+		}
+
+		size -= BUFFER_SIZE; /* record written bytes */
 	}
 
 	if (size > 0)
 	{
 		cout << "Writing " << size << " bytes" << endl;
-		dfs.writeToFile(dfsPath, &(((char*)mmapFile)[pos]), size);
+		if (read(fd, buf, size) != size)
+		{
+			cout << "Error reading from file to buffer." << endl;
+			return EXIT_FAILURE;
+		}
+
+		if (dfs.writeToFile(dfsPath, (const char*)buf, size) != size)
+		{
+			cout << "Error writing buffer to DFS." << endl;
+			return EXIT_FAILURE;
+		}
+
 	}
 
 	dfs.closeFile(dfsPath);
 
-	munmap(mmapFile, st.st_size);
+	if (close(fd) < 0)
+	{
+		cout << "Error closing file descriptor from read." << endl;
+		return EXIT_FAILURE;
+	}
+
+	cout << "File successfully written to DFS." << endl;
+	
 	return EXIT_SUCCESS;
 }

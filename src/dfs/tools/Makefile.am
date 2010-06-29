@@ -13,12 +13,14 @@ cpFromDFS_LDADD = ../libdfs.la
 cpToDFS_CPPFLAGS = $(TBB_CFLAGS) \
 		   $(THRIFT_CFLAGS) \
 		   -I$(srcdir)/../ \
-		   -I$(srcdir)/../../worker/gen-cpp
+		   -I$(srcdir)/../../worker/gen-cpp \
+		   -I$(srcdir)/../../config
 
 cpFromDFS_CPPFLAGS = $(TBB_CFLAGS) \
 		     $(THRIFT_CFLAGS) \
 		     -I$(srcdir)/../ \
-		     -I$(srcdir)/../../worker/gen-cpp
+		     -I$(srcdir)/../../worker/gen-cpp \
+		     -I$(srcdir)/../../config
 
 cpToDFS_LDFLAGS = -lkfsClient \
 		  -lkfsIO \

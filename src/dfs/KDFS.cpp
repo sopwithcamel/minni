@@ -132,7 +132,6 @@ int KDFS::openFileCacheLookup(string &path, int options)
 		int fd;
 		if (fileCache.find(path) != fileCache.end())
 		{
-			cout << "Pulling open file from fileCache" << endl;
 			fd = fileCache[path];
 		}
 		else

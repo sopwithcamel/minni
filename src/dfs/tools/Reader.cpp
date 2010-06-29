@@ -1,3 +1,4 @@
+#include "config.h"
 #include "Reader.h"
 
 int main(int argc, char* args[])
@@ -8,19 +9,18 @@ int main(int argc, char* args[])
 		return EXIT_FAILURE;
 	}
 
-	void* mmapFile;
+	char* buf[BUFFER_SIZE];
 	string localFile(args[1]);
 	string dfsPath(args[2]);
 	string metaServer(args[3]);
 	istringstream in(args[4]);
 	uint16_t port;
 	int fd;
-	off_t size;
-	uint64_t chunkSize, pos = 0;
+	uint64_t chunkSize, size, pos = 0;
 	int64_t wrote;
 	in >> port;
 	KDFS dfs = KDFS(metaServer, port);
-	fd = open(localFile.c_str(), O_CREAT | O_RDWR, 00644);
+	fd = open(localFile.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 00644);
 	
 	if (fd < 0)
 	{
@@ -42,47 +42,66 @@ int main(int argc, char* args[])
 
 	cout << "File Size [bytes]: " << size << endl;
 
-	lseek(fd, size-1, SEEK_SET);
-	if (write(fd, (char *)&pos, 1) != 1)
+	while ((int64_t)size - (int64_t)BUFFER_SIZE >= 0)
 	{
-		cout << "Error preallocating file space to write into." << endl;
-		return EXIT_FAILURE;
-	}
-	lseek(fd, 0, SEEK_SET);
-	mmapFile = mmap(NULL, size, PROT_WRITE, MAP_SHARED, fd, 0);
-
-	if (mmapFile == MAP_FAILED)
-	{
-		cout << "Failed opening " << localFile << " for memory mapped IO" << endl;
-		return EXIT_FAILURE;
-	}
-
-	while ((int64_t)size - (int64_t)chunkSize >= 0)
-	{
-		cout << "Writing a chunk..." << endl;
-		wrote = dfs.readChunkOffset(dfsPath, pos, &(((char*)mmapFile)[pos]), chunkSize);
+		wrote = dfs.readChunkOffset(dfsPath, pos, (char*) buf, BUFFER_SIZE);
+		
 		if (wrote < 0)
 		{
-			cout << "Error writing chunk." << endl;
+			cout << "Error reading from DFS." << endl;
 			return EXIT_FAILURE;
 		}
+
+		if (wrote == 0)
+		{
+			size = 0;
+			break; /* EOF */
+		}
+
+		wrote = write(fd, buf, wrote);
+
+		if (wrote < 0)
+		{
+			cout << "Error writing to local file." << endl;
+			return EXIT_FAILURE;
+		}
+
 		size -= wrote; /* record written bytes */
-		pos += wrote; /* move pointer up */
+		pos += wrote;
 	}
 
 	if (size > 0)
 	{
 		cout << "Writing " << size << " bytes" << endl;
-		if ((wrote = dfs.readChunkOffset(dfsPath, pos, &(((char*)mmapFile)[pos]), size)) < 0)
+		if ((wrote = dfs.readChunkOffset(dfsPath, pos, (char*) buf, size)) < 0)
 		{
-			cout << "Error on final read/write." << endl;
+			cout << "Error on final read from DFS." << endl;
 			return EXIT_FAILURE;
 		}
+
+		if ((wrote = write(fd, buf, size)) < 0)
+		{
+			cout << "Error on final write to file." << endl;
+			return EXIT_FAILURE;
+		}	
 		pos += wrote;
 	}
 
 	dfs.closeFile(dfsPath);
+	
+	if (ftruncate(fd, pos) < 0)
+	{
+		cout << "Error truncating file to read byte size." << endl;
+		return EXIT_FAILURE;
+	}
+	
+	if (close(fd) < 0)
+	{
+		cout << "Error closing file descriptor for written out and truncated file." << endl;
+		return EXIT_FAILURE;
+	}
 
-	munmap(mmapFile, pos);
+	cout << "File successfully read from DFS." << endl;
+
 	return EXIT_SUCCESS;
 }
