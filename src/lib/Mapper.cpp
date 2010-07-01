@@ -30,6 +30,7 @@ uint64_t MapInput::key_value(char** value) {
 		cout<<"Mapper: KDFS: Reading failed! :( "<<endl;
 	else
 		cout<<"Mapper: KDFS: Read number of blocks: "<<k<<endl;
+	myhdfs.closeFile(file_location);
 	bool disconn = myhdfs.disconnect();
 	if(!disconn)
 		cout<<"Mapper: KDFS: Unable to disconnect \n";
