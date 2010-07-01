@@ -37,7 +37,7 @@ uint64_t MapInput::key_value(char** value) {
 	else
 		cout<<"Mapper: KDFS: Able to disconnect \n";
 
-	return length;
+	return k;
 }
 
 //Mapper
