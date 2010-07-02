@@ -443,7 +443,7 @@ void Master::sendFinishedNodes()
 	vector<string>::iterator finishedIter;
 	for (finishedIter = finishedNodes.begin(); finishedIter < finishedNodes.end(); finishedIter++)
 	{
-		if (alreadySentFinishedNodes.find(*finishedIter) != alreadySentFinishedNodes.end())
+		if (alreadySentFinishedNodes.find(*finishedIter) == alreadySentFinishedNodes.end())
 		{
 			alreadySentFinishedNodes.insert(*finishedIter);
 		}
