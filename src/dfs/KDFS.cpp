@@ -6,11 +6,7 @@ using namespace std;
 
 KDFS::~KDFS()
 {
-	map<string, int>::iterator iter;
-	for (iter = fileCache.begin(); iter != fileCache.end(); iter++)
-	{
-		fs->Close((*iter).second);
-	}
+	this->disconnect();
 }
 
 bool KDFS::connect()
@@ -23,6 +19,11 @@ bool KDFS::connect()
 /* KFS doesn't appear to have an explicit shutdown or disconnect */
 bool KDFS::disconnect()
 {
+	map<string, int>::iterator iter;
+	for (iter = fileCache.begin(); iter != fileCache.end(); iter++)
+	{
+		fs->Close((*iter).second);
+	}
 	return true;
 }
 
