@@ -731,41 +731,6 @@ class WorkDaemon_reportCompletedJobs_pargs {
 
 };
 
-class WorkDaemon_reportCompletedJobs_result {
- public:
-
-  WorkDaemon_reportCompletedJobs_result() {
-  }
-
-  virtual ~WorkDaemon_reportCompletedJobs_result() throw() {}
-
-
-  bool operator == (const WorkDaemon_reportCompletedJobs_result & /* rhs */) const
-  {
-    return true;
-  }
-  bool operator != (const WorkDaemon_reportCompletedJobs_result &rhs) const {
-    return !(*this == rhs);
-  }
-
-  bool operator < (const WorkDaemon_reportCompletedJobs_result & ) const;
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-class WorkDaemon_reportCompletedJobs_presult {
- public:
-
-
-  virtual ~WorkDaemon_reportCompletedJobs_presult() throw() {}
-
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-
-};
-
 class WorkDaemon_allMapsDone_args {
  public:
 
@@ -846,7 +811,6 @@ class WorkDaemonClient : virtual public WorkDaemonIf {
   Count recv_blockCount();
   void reportCompletedJobs(const std::vector<URL> & done);
   void send_reportCompletedJobs(const std::vector<URL> & done);
-  void recv_reportCompletedJobs();
   void allMapsDone();
   void send_allMapsDone();
  protected:
