@@ -13,15 +13,15 @@ int main(int argc, char* args[])
 	if (PRODUCTION_TEST)
 	{
 		//string input = "/input/hello.txt";
-		string input = "/input/1GB_random.dat";
+		string input = "/input/test.sample";
 		//string input = "/input/10GB_random.dat"; 
 		string output = "/output/";
 		string dfs_master = "127.0.0.1";
 		string so_name = "wordcount.so";
-		uint16_t dfs_port = 9000;
-		JobID maxJobs = 4;
-		JobID maxMaps = 5000;
-		JobID maxReduces = 10;
+		uint16_t dfs_port = 20000;
+		JobID maxJobs = 2;
+		JobID maxMaps = 1;
+		JobID maxReduces = 1;
 		MapReduceSpecification spec = MapReduceSpecification();
 		spec.addInput(input);
 		spec.setOutputPath(output);
@@ -31,7 +31,7 @@ int main(int argc, char* args[])
 		spec.setMaxJobsPerNode(maxJobs);
 		spec.setMaxMaps(maxMaps);
 		spec.setMaxReduces(maxReduces);
-		KDFS hdfs("127.0.0.1", 40000);
+		KDFS hdfs("127.0.0.1", 20000);
 		Master m(&spec, hdfs, "example/nodes.conf");
 		while (m.checkMapStatus()) /* assignment of all maps */
 		{

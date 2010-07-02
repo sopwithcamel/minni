@@ -19,6 +19,6 @@ service WorkDaemon {
 	binary sendData(1:PartID kid, 2:BlockID bid),
 	Status mapperStatus(),
 	Count blockCount(1:PartID pid),
-	oneway void reportCompletedJobs(1:list<URL> done),
+	void reportCompletedJobs(1:list<URL> done),
 	oneway void allMapsDone()
 }
