@@ -11,23 +11,31 @@
 using namespace std;
 
 #include "PartialAgg.h"
+#define GetCurrentDir getcwd
 
 class ExtendableHashtable {
 	public:
-		ExtendableHashtable(uint64_t capacity); /* constructor */
-		ExtendableHashtable(uint64_t capacity, const string &path); /* load constructor, from a "dump" file */
+		ExtendableHashtable(uint64_t capacity, uint64_t partid); /* constructor */
+		ExtendableHashtable(uint64_t capacity, uint64_t partid, const string &path); /* load constructor, from a "dump" file */
 		~ExtendableHashtable(); /* destructor */
-		PartialAgg insert(string key, PartialAgg pao); /* returns PAO from map, or pao if not in map already */
-		PartialAgg get(const string &key); /* returns matching PAO or null on miss */
-		bool finalize(const string &path); /* true on success, false otherwise */
+		map<string, PartialAgg*>::iterator find(const string &key); /* returns matching PAO or null on miss */
+		bool add(const string &key, const string &value); /* add to existing PAO */
+		bool finalize(FILE*); /* true on success, false otherwise */
+		bool clear();
 
 	private:
-		map<string, PartialAgg> hashtable;
+		map<string, PartialAgg*> hashtable;
 		uint64_t capacity; /* maximum capacity of map before dumping */
 		uint64_t dumpNumber; /* monotonically increasing dump sequence number */
 		string dumpFile; /* current dumpFile on disk */
+
+		bool insert(string key, PartialAgg* pao); /* returns PAO from map, or pao if not in map already */
 		bool dumpHashtable(string fname); /* true if dump succeeds, false otherwise */
+		string getDumpFileName();
+		void serialize(FILE*, char, uint64_t, const char*, uint64_t, const char*);
 
 };
+
+typedef ExtendableHashtable MapperAggregator;
 
 #endif

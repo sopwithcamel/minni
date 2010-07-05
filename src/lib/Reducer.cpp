@@ -3,7 +3,6 @@
 
 //ReduceOutput class
 
-
 //Reducer class
 void Reducer::AddKeyVal(string key, string value) {
 	Aggregator::iterator found = (aggreg)->find(key);

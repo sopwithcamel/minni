@@ -87,14 +87,7 @@ void Mapper::Emit (string key, string value) { //Partial aggregation going on he
 	int i = GetPartition(key);
 	//cout<<"Mapper: Emit: Partition value is "<<i<<"\n";
 	
-	Aggregator::iterator found = (*(aggregs[i])).find(key);
-	if(found == (aggregs[i])->end()) {
-		(*(aggregs[i]))[key] = new PartialAgg(value);
-	}
-	//Existing key value - then add to the partial result
-	else {
-		(*(aggregs[i]))[key]->add(value);
-	}
+	(*(aggregs[i])).add(key, value);
 }
 
 int Mapper::GetPartition (string key) {//, int key_size) {
@@ -230,7 +223,8 @@ task* MapperWrapperTask::execute() {
 	cout<<"Mapper: starting to push back the aggregators\n";
 	for(unsigned int i = 0; i < npart; i++)
 	{
-		my_mapper->aggregs.push_back(new Aggregator());
+//		my_mapper->aggregs.push_back(new MapperAggregator());
+		my_mapper->aggregs.push_back(new MapperAggregator(10000, i));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	
@@ -249,7 +243,8 @@ task* MapperWrapperTask::execute() {
 		cout<<"Mapper: I am going to write the file "<<final_path<<endl;
 	 	FILE* fptr = fopen(final_path.c_str(), "w");
 		cout<<"I should have opened the file "<<final_path<<endl;
-		Aggregator::iterator aggiter;
+/*
+		MapperAggregator::iterator aggiter;
 		for(aggiter = (my_mapper->aggregs[i])->begin(); aggiter != (my_mapper->aggregs[i])->end(); ++aggiter)
 		{
 			string k = aggiter->first;
@@ -259,6 +254,10 @@ task* MapperWrapperTask::execute() {
 			serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str());
 			
 		}
+*/
+// Call to finalize: merge the final contents of hashtable with most recent dumpfile
+		my_mapper->aggregs[i]->finalize(fptr);
+		
 		cout<<"Mapper: I am closing the file "<<final_path<<endl;
 		fclose(fptr);
 		cout<<"Mapper: Going to tell the workdaemon about the file \n";
@@ -267,23 +266,13 @@ task* MapperWrapperTask::execute() {
 		my_Filelist.push_back(f1);
 
 	}
-
+	
 	for(unsigned int i = 0; i < npart ; i++)
         {
-		 Aggregator::iterator aggiter;
-                for(aggiter = (my_mapper->aggregs[i])->begin(); aggiter != (my_mapper->aggregs[i])->end(); ++aggiter)
-                {
-			delete (aggiter->second);
-		}
-
-
+		my_mapper->aggregs[i]->clear();
+		delete my_mapper->aggregs[i];
 	}
 
-	vector<Aggregator*>::iterator itervec;
-	for(itervec = (my_mapper->aggregs).begin(); itervec != (my_mapper->aggregs).end(); itervec++ )
-	{
-		delete *itervec; 
-	}
 	delete my_mapper;	
 
 	

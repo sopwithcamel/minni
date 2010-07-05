@@ -18,6 +18,7 @@
 #include <map>
 #include "PartialAgg.h"
 #include "KDFS.h"
+#include "ExtendableHashtable.h"
 #define GetCurrentDir getcwd
 
 using namespace std;
@@ -47,7 +48,7 @@ class Mapper {
 	virtual int GetPartition (string key); //the default parititioner. This can be overriden
 	//vector <ofstream*>  my_file_streams; //TODO actually needed?
 	int num_partition;
-	vector<Aggregator*> aggregs;
+	vector<MapperAggregator*> aggregs;
 
 };
 

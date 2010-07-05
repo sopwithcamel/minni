@@ -20,11 +20,6 @@ class PartialAgg {
 	string value;
 };
 
-typedef map<string, PartialAgg*> Aggregator;
-
-
-
-
 #endif
 
 

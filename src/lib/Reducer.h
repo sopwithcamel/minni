@@ -25,6 +25,8 @@
 #define MAX_SLEEPTIME 10
 #define MAX_STRING_LENGTH 100000
 
+typedef map<string, PartialAgg*> Aggregator;
+
 
 class ReduceTaskWrapper;
 class ReduceOutput { 
