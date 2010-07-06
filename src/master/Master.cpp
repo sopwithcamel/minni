@@ -310,7 +310,7 @@ void Master::printMaps(map<string, Node*> nodes)
 		{
 			(*jobIter)->staleness++;
 			cout << "Job[" << (*jobIter)->jid << "] Staleness: " << (*jobIter)->staleness << endl;
-			if ((*jobIter)->staleness >= 100)
+			if ((*jobIter)->staleness >= 100000)
 			{
 				cout << "Resubmitting a map job: " << (*jobIter)->jid << endl;
 				activeMappers--;
@@ -334,7 +334,7 @@ void Master::printReduces(map<string, Node*> nodes)
 		{
 			(*jobIter)->staleness++;
 			cout << "Job[" << (*jobIter)->jid << "] Staleness: " << (*jobIter)->staleness << endl;
-			if ((*jobIter)->staleness >= 100)
+			if ((*jobIter)->staleness >= 100000)
 			{
 				cout << "Resubmitting a reduce job: " << (*jobIter)->jid << endl;
 				activeReducers--;
