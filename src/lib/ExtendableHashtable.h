@@ -21,7 +21,7 @@ class ExtendableHashtable {
 		~ExtendableHashtable(); /* destructor */
 		map<string, PartialAgg*>::iterator find(const string &key); /* returns matching PAO or null on miss */
 		bool add(const string &key, const string &value); /* add to existing PAO */
-		bool finalize(FILE*); /* true on success, false otherwise */
+		bool finalize(string fname); /* true on success, false otherwise */
 		bool clear();
 
 	private:

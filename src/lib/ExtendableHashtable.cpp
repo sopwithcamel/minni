@@ -32,7 +32,7 @@ ExtendableHashtable::~ExtendableHashtable()
 bool ExtendableHashtable::insert(string key, PartialAgg* pao)
 {
 	cout << "Size " << hashtable.size() << ", cap: " << capacity << endl;
-	if (hashtable.size() + 1 == capacity) {
+	if (hashtable.size() + 1 > capacity) {
 		cout << "Hit Hashtable capacity!" << endl;
 		string fname = getDumpFileName(dumpNumber);
 		dumpHashtable(fname);
@@ -76,17 +76,13 @@ void ExtendableHashtable::serialize(FILE* fileOut, char type, uint64_t keyLength
 /* essentially just dump the hashtable info the passed
  * path--user facing function (not internal helper)
  * call dumpHashtable */
-bool ExtendableHashtable::finalize(FILE* fptr)
+bool ExtendableHashtable::finalize(string fname)
 {
-// For now, I just dump the entire hashtable in memory onto disk. Need to merge!
-	map<string,PartialAgg*>::iterator aggiter;
-	for (aggiter = hashtable.begin(); aggiter != hashtable.end(); aggiter++) {
-		string k = aggiter->first;
-		PartialAgg* curr_par = aggiter->second;
-		string val = curr_par->value;
-		char type = 1;
-		serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str()); 
-	}	
+	string lastDumpfile = getDumpFileName(dumpNumber);
+	dumpHashtable(lastDumpfile);
+	if (rename(lastDumpfile.c_str(), fname.c_str())) {
+		cout << "Error renaming file " << lastDumpfile << " to " << fname << endl;
+	}
 }
 
 /* loop through PAO's in current hashtable writing to fname
@@ -96,10 +92,11 @@ bool ExtendableHashtable::finalize(FILE* fptr)
  * and saving serialized PAO's into fname */
 bool ExtendableHashtable::dumpHashtable(string fname)
 {
-	FILE* fptr = fopen(fname.c_str(), "w");
+	FILE* fptr = fopen(fname.c_str(), "wb");
 	if (dumpNumber == 0) {
 		map<string,PartialAgg*>::iterator aggiter;
 		for (aggiter = hashtable.begin(); aggiter != hashtable.end(); aggiter++) {
+			cout << "Writing to dumpfile 0" << endl;
 			string k = aggiter->first;
 			PartialAgg* curr_par = aggiter->second;
 			string val = curr_par->value;
@@ -108,31 +105,50 @@ bool ExtendableHashtable::dumpHashtable(string fname)
 		}	
 	}
 	else {
-		string prevDumpFile = getDumpFileName(dumpNumber);
+		string prevDumpFile = getDumpFileName(dumpNumber - 1);
+		cout << "Previous dump file " << prevDumpFile << endl;
 		char *p_key, *p_value, type;
 		uint64_t p_key_length, p_value_length;
-		FILE* pdf = fopen(prevDumpFile.c_str(), "r");
+		FILE* pdf = fopen(prevDumpFile.c_str(), "rb");
 		map<string,PartialAgg*>::iterator aggiter;
 		aggiter = hashtable.begin();
+		PartialAgg tempPAO;
+		bool readNextRecord = true;
 		while (aggiter != hashtable.end() && feof(pdf) == 0) {
 			string k = aggiter->first;
-			if (deSerialize(pdf, &type, &p_key_length, &p_key, &p_value_length, &p_value)) break;
+			if (readNextRecord) {
+				if (deSerialize(pdf, &type, &p_key_length, &p_key, &p_value_length, &p_value)) break;
+				readNextRecord = false;
+			}
+			cout << "type: " << type << " kl: " << p_key_length << " key: " << p_key << " vl: " << p_value_length << " val: " << p_value << endl;
 			if (type == 2) {
 				cout << "Type is key-value. Should not be!";
 			}
-			if (k.compare(p_key) < 0) {
+			int keyDiff = k.compare(p_key);
+			if (keyDiff < 0) {
 				PartialAgg* curr_par = aggiter->second;
 				string val = curr_par->value;
 				char type = 1;
 				serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str());
 				aggiter++;
 			}
+			else if (keyDiff == 0) {
+				tempPAO.set_val(p_value);
+				aggiter->second->merge(&tempPAO);
+				string val = aggiter->second->value;
+				char type = 1;
+				serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str());
+				aggiter++;
+				readNextRecord = true;
+			}
 			else {
 				char type = 1;
-				serialize(fptr, type, p_key_length, p_key, p_value_length, p_value);
+				serialize(fptr, type, p_key_length - 1, p_key, p_value_length - 1, p_value);
+				free(p_key);
+				free(p_value);
+				readNextRecord = true;
 			}
-			free(p_key);
-			free(p_value);
+			
 		}
 		while (aggiter != hashtable.end()) {
 			string k = aggiter->first;
@@ -142,13 +158,23 @@ bool ExtendableHashtable::dumpHashtable(string fname)
 			serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str());
 			aggiter++;
 		}
+		if (!readNextRecord) {
+			char type = 1;
+			serialize(fptr, type, p_key_length - 1, p_key, p_value_length - 1, p_value);
+			free(p_key);
+			free(p_value);
+			readNextRecord = true;
+		}
 		while (feof(pdf)==0) {
 			if (deSerialize(pdf, &type, &p_key_length, &p_key, &p_value_length, &p_value)) break;
-			serialize(fptr, type, p_key_length, p_key, p_value_length, p_value);
+			cout << "type: " << type << " kl: " << p_key_length << " key: " << p_key << " vl: " << p_value_length << " val: " << p_value << endl;
+			serialize(fptr, type, p_key_length - 1, p_key, p_value_length - 1, p_value);
 			free(p_key);
 			free(p_value);
 		}
+		fclose(pdf);
 	}
+	fclose(fptr);
 }
 	
 /* returns the appropriate dumpfile name
@@ -172,6 +198,7 @@ int ExtendableHashtable::deSerialize(FILE* fileIn, char* type, uint64_t* keyLeng
 	size_t result;
 	if (feof(fileIn)) return -1;
         result = fread(type, sizeof(char), 1, fileIn);
+	cout << "---> Bytes read for type " << result << endl;
 	if(result != 1) {cout<<"Reading error: TYPE "<<result<<endl; return -1;}
 	if (feof(fileIn)) return -1;
         result = fread(keyLength, sizeof(uint64_t), 1, fileIn);

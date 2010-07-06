@@ -224,7 +224,7 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		my_mapper->aggregs.push_back(new MapperAggregator(1000, i));
+		my_mapper->aggregs.push_back(new MapperAggregator(100, i));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	
@@ -232,7 +232,7 @@ task* MapperWrapperTask::execute() {
 	my_mapper->Map(&myinput);
 
 	cout<<"Mapper: Supposedly done with mapping"<<endl;
-	string path = GetCurrentPath();
+	string path = "/localfs/hamur/";
 	vector<File> my_Filelist;
 	cout<<"Mapper: About to start writing into files and my npart is "<<npart<<"\n";
 	//now i need to start writing into file
@@ -241,25 +241,11 @@ task* MapperWrapperTask::execute() {
 		cout<<"Mapper: Executing loop for i = "<<i<<endl;
 		string final_path = GetLocalFilename(path,jobid,i);
 		cout<<"Mapper: I am going to write the file "<<final_path<<endl;
-	 	FILE* fptr = fopen(final_path.c_str(), "w");
-		cout<<"I should have opened the file "<<final_path<<endl;
-/*
-		MapperAggregator::iterator aggiter;
-		for(aggiter = (my_mapper->aggregs[i])->begin(); aggiter != (my_mapper->aggregs[i])->end(); ++aggiter)
-		{
-			string k = aggiter->first;
-			PartialAgg* curr_par = aggiter->second;
-			string val = curr_par->value;
-			char type = 1;
-			serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str());
-			
-		}
-*/
+
 // Call to finalize: merge the final contents of hashtable with most recent dumpfile
-		my_mapper->aggregs[i]->finalize(fptr);
+
+		my_mapper->aggregs[i]->finalize(final_path);
 		
-		cout<<"Mapper: I am closing the file "<<final_path<<endl;
-		fclose(fptr);
 		cout<<"Mapper: Going to tell the workdaemon about the file \n";
 		File f1(jobid, i, final_path);
 		cout<<"Pushed back the file to worker daemon list \n";
