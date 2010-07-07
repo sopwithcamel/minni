@@ -57,7 +57,7 @@ bool ExtendableHashtable::add(const string &key, const string &value)
 
 /* lookup in hashtable, if miss return error value
  * if hit, return corresponding PAO */
-map<string,PartialAgg*>::iterator ExtendableHashtable::find(const string &key)
+Hash::iterator ExtendableHashtable::find(const string &key)
 {
 	return hashtable.find(key);
 }
@@ -93,16 +93,16 @@ bool ExtendableHashtable::finalize(string fname)
 bool ExtendableHashtable::dumpHashtable(string fname)
 {
 	FILE* fptr = fopen(fname.c_str(), "wb");
-	if (dumpNumber == 0) {
-		map<string,PartialAgg*>::iterator aggiter;
-		for (aggiter = hashtable.begin(); aggiter != hashtable.end(); aggiter++) {
-			cout << "Writing to dumpfile 0" << endl;
-			string k = aggiter->first;
-			PartialAgg* curr_par = aggiter->second;
-			string val = curr_par->value;
-			char type = 1;
-			serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str()); 
-		}	
+	Hash::iterator aggiter;
+	for (aggiter = hashtable.begin(); aggiter != hashtable.end(); aggiter++) {
+		cout << "Writing to " << fname << endl;
+		string k = aggiter->first;
+		PartialAgg* curr_par = aggiter->second;
+		string val = curr_par->value;
+		char type = 1;
+		serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str()); 
+	}
+/*	
 	}
 	else {
 		string prevDumpFile = getDumpFileName(dumpNumber - 1);
@@ -110,7 +110,7 @@ bool ExtendableHashtable::dumpHashtable(string fname)
 		char *p_key, *p_value, type;
 		uint64_t p_key_length, p_value_length;
 		FILE* pdf = fopen(prevDumpFile.c_str(), "rb");
-		map<string,PartialAgg*>::iterator aggiter;
+		unordered_map<string,PartialAgg*>::iterator aggiter;
 		aggiter = hashtable.begin();
 		PartialAgg tempPAO;
 		bool readNextRecord = true;
@@ -174,6 +174,7 @@ bool ExtendableHashtable::dumpHashtable(string fname)
 		}
 		fclose(pdf);
 	}
+*/
 	fclose(fptr);
 }
 	

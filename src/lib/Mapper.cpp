@@ -204,6 +204,8 @@ task* MapperWrapperTask::execute() {
 		return NULL; 
 	}
 	
+	time_t ltime = time(NULL);
+	cout << "Hri: Start of map phase" << asctime(localtime(&ltime));
 	cout<<"Mapper: Parse happened properly! "<<endl;
 	//dynamically loading the classes
 	//if(UserMapLinking(soname) == 1) { //TODO
@@ -224,7 +226,7 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		my_mapper->aggregs.push_back(new MapperAggregator(100, i));
+		my_mapper->aggregs.push_back(new MapperAggregator(10, i));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	
@@ -243,7 +245,6 @@ task* MapperWrapperTask::execute() {
 		cout<<"Mapper: I am going to write the file "<<final_path<<endl;
 
 // Call to finalize: merge the final contents of hashtable with most recent dumpfile
-
 		my_mapper->aggregs[i]->finalize(final_path);
 		
 		cout<<"Mapper: Going to tell the workdaemon about the file \n";
@@ -252,6 +253,8 @@ task* MapperWrapperTask::execute() {
 		my_Filelist.push_back(f1);
 
 	}
+	ltime = time(NULL);
+	cout << "Hri: End of map phase" << asctime(localtime(&ltime));
 	
 	for(unsigned int i = 0; i < npart ; i++)
         {

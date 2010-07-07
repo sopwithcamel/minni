@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <map>
+#include <tr1/unordered_map>
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -14,18 +14,20 @@ using namespace std;
 #include "PartialAgg.h"
 #define GetCurrentDir getcwd
 
+typedef std::tr1::unordered_map<string, PartialAgg*> Hash;
+
 class ExtendableHashtable {
 	public:
 		ExtendableHashtable(uint64_t capacity, uint64_t partid); /* constructor */
 		ExtendableHashtable(uint64_t capacity, uint64_t partid, const string &path); /* load constructor, from a "dump" file */
 		~ExtendableHashtable(); /* destructor */
-		map<string, PartialAgg*>::iterator find(const string &key); /* returns matching PAO or null on miss */
+		Hash::iterator find(const string &key); /* returns matching PAO or null on miss */
 		bool add(const string &key, const string &value); /* add to existing PAO */
 		bool finalize(string fname); /* true on success, false otherwise */
 		bool clear();
 
 	private:
-		map<string, PartialAgg*> hashtable;
+		Hash hashtable;
 		uint64_t partid;
 		uint64_t capacity; /* maximum capacity of map before dumping */
 		uint64_t dumpNumber; /* monotonically increasing dump sequence number */
