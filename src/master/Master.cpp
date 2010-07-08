@@ -44,16 +44,19 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 		cout << "Master: Getting num chunks for" << (*iter) << endl;
 		uint64_t num_chunks = dfs.getNumChunks((*iter));
 		cout << "Master: Got num chunks" << endl;
+		uint64_t cids_per_map = (uint64_t) floor(((double)num_chunks / (double)spec->getMaxMaps()) + 0.5);
+		cout << "Master: CIDs per Map -- " << cids_per_map << endl;
 		cout << "Inspecting input file: " << ((*iter)) << endl;
-		for (uint64_t i = 0; i < num_chunks; i++)
+		for (uint64_t i = 0; i < num_chunks; i+=cids_per_map)
 		{
 			vector<string> locations;
 			Node* min = (*(nodes.begin())).second;
 			JobID minNumJobs = UINT64_MAX;
 			vector<string>::iterator location_iter;
+			dfs.getChunkLocations(*iter, i, locations);
 			for (location_iter = locations.begin(); location_iter < locations.end(); location_iter++)
 			{
-				cout << "Node[" << *location_iter << " has chunk " << i << endl;
+				cout << "Node[" << *location_iter << "] has chunk " << i << " to " << i+cids_per_map-1 << endl;
 				if (nodes.find(*location_iter) != nodes.end())
 				{
 					if (nodes[*location_iter]->numRemainingJobs() < minNumJobs)
@@ -64,7 +67,14 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 					}
 				}
 			}
-			assignMapJob(min, i, (*iter));
+			if (i+cids_per_map-1 < num_chunks)
+			{
+				assignMapJob(min, i, i+cids_per_map-1, (*iter));
+			}
+			else
+			{
+				assignMapJob(min, i, num_chunks-1, (*iter));
+			}
 		}
 	}
 	cout << "All maps assigned." << endl;
@@ -99,9 +109,9 @@ Master::~Master()
 	}
 }
 
-void Master::assignMapJob(Node* node, ChunkID cid, string fileIn)
+void Master::assignMapJob(Node* node, ChunkID cid_start, ChunkID cid_end, string fileIn)
 {
-	struct MapJob job(jidCounter*2, cid, jobstatus::INPROGRESS, fileIn, spec->getSoName(), spec->getMaxReduces(), spec->getDfsMaster(), spec->getDfsPort());
+	struct MapJob job(jidCounter*2, cid_start, cid_end, jobstatus::INPROGRESS, fileIn, spec->getSoName(), spec->getMaxReduces(), spec->getDfsMaster(), spec->getDfsPort());
 	node->addMap(job);
 	remainingMappers++;
 	jidCounter++;

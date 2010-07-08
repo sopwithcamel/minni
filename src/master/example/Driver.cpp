@@ -13,9 +13,9 @@ int main(int argc, char* args[])
 	if (PRODUCTION_TEST)
 	{
 		//string input = "/input/hello.txt";
-		string input = "/input/test.sample";
+		string input = "/webs.txt";
 		//string input = "/input/10GB_random.dat"; 
-		string output = "/output/";
+		string output = "/";
 		string dfs_master = "127.0.0.1";
 		string so_name = "wordcount.so";
 		uint16_t dfs_port = 20000;

@@ -34,7 +34,7 @@ class Master {
 		JobID getNumberOfMapsCompleted();						/* return number of maps finished */
 		JobID getNumberOfReducesCompleted();					/* return number of reduces finished */
 	private:
-		void assignMapJob(Node* node, ChunkID cid, string fileIn);		/* assign a map job to a node */
+		void assignMapJob(Node* node, ChunkID cid_start, ChunkID cid_end, string fileIn); /* assign a map job to a node */
 		void assignReduceJob(Node* node, PartID pid, string fileOut);	/* assign a reduce job to a node */
 		void resubmitMapJob(Node* node, struct MapJob job);			/* resubmit a map job to a node */
 		void resubmitReduceJob(Node* node, struct ReduceJob job);		/* resubmit a reduce job to a node */

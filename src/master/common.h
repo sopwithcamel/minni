@@ -17,11 +17,13 @@ struct MapJob
 	uint64_t staleness;
 	Properties prop;
 	MapJob () {};
-	MapJob (JobID jid, ChunkID cid, Status stat, string fileIn, string so_name, JobID numReducers, string dfsMaster, uint16_t dfsPort) : jid(jid), stat(stat)
+	MapJob (JobID jid, ChunkID cid_start, ChunkID cid_end, Status stat, string fileIn, string so_name, JobID numReducers, string dfsMaster, uint16_t dfsPort) : jid(jid), stat(stat)
 	{
 		ostringstream stringConverter;
-		stringConverter << cid;
-		prop["CID"] = stringConverter.str();
+		stringConverter << cid_start;
+		prop["CID_START"] = stringConverter.str();
+		stringConverter << cid_end;
+		prop["CID_END"] = stringConverter.str();
 		prop["FILE_IN"] = fileIn;
 		prop["SO_NAME"] = so_name;
 		stringConverter.str("");
