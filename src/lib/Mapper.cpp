@@ -226,7 +226,7 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		my_mapper->aggregs.push_back(new MapperAggregator(10, i));
+		my_mapper->aggregs.push_back(new MapperAggregator(10000, i));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	

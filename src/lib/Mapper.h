@@ -18,8 +18,10 @@
 #include <map>
 #include "PartialAgg.h"
 #include "KDFS.h"
-//#include "ExtendableMap.h"
-#include "ExtendableHashtable.h"
+#include "ExtendableMap.h"
+//#include "ExtendableHashtable.h"
+//#include "AppendMap.h"
+//#include "AppGoogDenseHash.h"
 #define GetCurrentDir getcwd
 
 using namespace std;
