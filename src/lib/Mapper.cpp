@@ -5,7 +5,7 @@
 
 //MapInput Class
 
-uint64_t MapInput::key_value(char** value) {
+uint64_t MapInput::key_value(char** value, ChunkID id) {
 
 	cout<<"Mapper: KDFS: Connecting to KDFS"<<endl;
 	KDFS myhdfs(master_name,port);
@@ -26,6 +26,8 @@ uint64_t MapInput::key_value(char** value) {
 	*value = (char*) malloc(length+1); /*freed in line 73 Map fn aft using all data that is passed*/
 	cout<<"Mapper: KDFS: Going to read chunks from KDFS"<<endl;
 	int64_t k = myhdfs.readChunkOffset(file_location, (uint64_t) 0, *value, length);
+	uint64_t offset = id*length;
+	int64_t k = myhdfs.readChunkOffset(file_location, offset, *value, length);
 	if(k == -1)
 		cout<<"Mapper: KDFS: Reading failed! :( "<<endl;
 	else
@@ -53,27 +55,29 @@ Mapper::~Mapper() {
 void Mapper::Map(MapInput* input) {
 	cout<<"Mapper: entered the map phase\n";
 	cout<<"Mapper: I will be reading from KDFS soon\n";
-	char* text;
-	uint64_t n = input->key_value(&text);
-	cout<<"Mapper: I have read from KDFS\n";
-        unsigned int i;
-	for( i = 0; i < n; ) {
-             //skip through the leading whitespace
-             while((i < n) && isspace(text[i]))
-        	          i++;
-             //Find word end
-             unsigned int start = i;
-             while ((i < n) && !isspace(text[i]))
-                 i++;
+	for (ChunkID id = input->chunk_id_start; id <= input->chunk_id_end; id++)
+	{
+		char* text;
+		uint64_t n = input->key_value(&text,id);
+		cout<<"Mapper: I have read from KDFS\n";
+		unsigned int i;
+		for( i = 0; i < n; ) {
+		//skip through the leading whitespace
+			while((i < n) && isspace(text[i]))
+				i++;
+			//Find word end
+			unsigned int start = i;
+			while ((i < n) && !isspace(text[i]))
+				i++;
 		
-	     if(start < i)
-	     {
-		//cout<<"Mapper: The word is ";
-		string key(&text[start],(i-start));
-		//cout<<key;
-		//cout<<endl;
-		Emit(key,"1");
-             }
+		if(start < i)
+		{
+			//cout<<"Mapper: The word is ";
+			string key(&text[start],(i-start));
+			//cout<<key;
+			//cout<<endl;
+			Emit(key,"1");
+		}
         }
 	free(text);
 	cout<<"Mapper: Done with map job\n";
@@ -117,10 +121,15 @@ int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
 	cout<<"Mapper: soname is "<<soname<<endl;
   	myinput.file_location = (*prop)["FILE_IN"];
 	cout<<"Mapper: file location is "<<myinput.file_location<<endl;
-	string chunk_temp = (*prop)["CID"];
-	ss <<chunk_temp;
-	ss >> myinput.chunk_id;
-	cout<<"Mapper: chunk id is "<<myinput.chunk_id<<endl;
+	string chunk_temp_start = (*prop)["CID_START"];
+	ss <<chunk_temp_start;
+	ss >> myinput.chunk_id_start;
+	string chunk_temp_end = (*prop)["CID_END"];
+	stringstream ss4;
+	ss4 <<chunk_temp_end;
+	ss4 >> myinput.chunk_id_end;
+	cout<<"Mapper: chunk id  start is "<<myinput.chunk_id_start<<endl;
+	cout<<"Mapper: chunk id end is "<<myinput.chunk_id_end<<endl;
   	myinput.master_name = (*prop)["DFS_MASTER"];
 	cout<<"Mapper: dfs master is "<<myinput.master_name<<endl;
         string port_temp = (*prop)["DFS_PORT"];

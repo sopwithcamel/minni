@@ -34,9 +34,9 @@ class MapInput {
   public:
 	MapInput() {};
 	~MapInput() {};
-	virtual uint64_t key_value(char** str); 
-  private:
-	ChunkID chunk_id;   
+	virtual uint64_t key_value(char** str, ChunkID id);
+	ChunkID chunk_id_start;
+	ChunkID chunk_id_end;
 	string file_location;	
 	uint16_t port;
 	string master_name;
