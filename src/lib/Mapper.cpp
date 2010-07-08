@@ -25,7 +25,6 @@ uint64_t MapInput::key_value(char** value, ChunkID id) {
 	cout<<"Mapper: KDFS: It told me that the chunk size of this file is "<<length<<endl;
 	*value = (char*) malloc(length+1); /*freed in line 73 Map fn aft using all data that is passed*/
 	cout<<"Mapper: KDFS: Going to read chunks from KDFS"<<endl;
-	int64_t k = myhdfs.readChunkOffset(file_location, (uint64_t) 0, *value, length);
 	uint64_t offset = id*length;
 	int64_t k = myhdfs.readChunkOffset(file_location, offset, *value, length);
 	if(k == -1)
@@ -70,17 +69,18 @@ void Mapper::Map(MapInput* input) {
 			while ((i < n) && !isspace(text[i]))
 				i++;
 		
-		if(start < i)
-		{
-			//cout<<"Mapper: The word is ";
-			string key(&text[start],(i-start));
-			//cout<<key;
-			//cout<<endl;
-			Emit(key,"1");
-		}
-        }
-	free(text);
-	cout<<"Mapper: Done with map job\n";
+			if(start < i)
+			{
+				//cout<<"Mapper: The word is ";
+				string key(&text[start],(i-start));
+				//cout<<key;
+				//cout<<endl;
+				Emit(key,"1");
+			}
+        	}
+		free(text);
+		cout<<"Mapper: Done with map job\n";
+	}	
 }
 
 
