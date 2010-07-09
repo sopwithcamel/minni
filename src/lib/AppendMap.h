@@ -14,6 +14,9 @@ using namespace std;
 #include "PartialAgg.h"
 #define GetCurrentDir getcwd
 
+#define REGULAR_SERIALIZE	0
+#define NSORT_SERIALIZE		1
+
 class AppendMap {
 	public:
 		AppendMap(uint64_t capacity, uint64_t partid); /* constructor */
@@ -23,9 +26,11 @@ class AppendMap {
 		bool add(const string &key, const string &value); /* add to existing PAO */
 		bool finalize(string fname); /* true on success, false otherwise */
 		bool clear();
+		void setSerializeFormat(int);
 
 	private:
 		map<string, PartialAgg*> hashtable;
+		bool regularSerialize; /* Regular serialize? */
 		uint64_t partid;
 		uint64_t capacity; /* maximum capacity of map before dumping */
 		uint64_t dumpNumber; /* monotonically increasing dump sequence number */
@@ -35,6 +40,7 @@ class AppendMap {
 		bool dumpHashtable(string fname); /* true if dump succeeds, false otherwise */
 		string getDumpFileName(uint64_t);
 		void serialize(FILE*, char, uint64_t, const char*, uint64_t, const char*);
+		void serialize(FILE*, string, string); /* serialize to nsort input format */
 		int deSerialize(FILE*, char*, uint64_t*, char**, uint64_t*, char**);
 
 };
