@@ -102,8 +102,7 @@ bool AppendMap::dumpHashtable(string fname)
 {
 	FILE* fptr = fopen(fname.c_str(), "ab");
 	map<string, PartialAgg*>::iterator aggiter;
-	for (aggiter = hashtable.begin(); aggiter != hashtable.end(); aggiter++) {
-		cout << "Writing to " << fname << endl;
+	for (aggiter = hashtable.begin(); aggiter != hashtable.end();) {
 		string k = aggiter->first;
 		PartialAgg* curr_par = aggiter->second;
 		string val = curr_par->value;
@@ -112,7 +111,8 @@ bool AppendMap::dumpHashtable(string fname)
 			serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str()); 
 		else
 			serialize(fptr, k, val); 
-			
+		map<string, PartialAgg*>::iterator erase_element = aggiter++;
+		delete erase_element->second;			
 	}
 	fclose(fptr);
 	hashtable.clear();

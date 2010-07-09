@@ -1,4 +1,3 @@
-#include "config.h"
 #include "ExtendableHashtable.h"
 
 /* Just initialize capacity, dumpNumber, dumpFile */
@@ -102,8 +101,8 @@ bool ExtendableHashtable::dumpHashtable(string fname)
 {
 	FILE* fptr = fopen(fname.c_str(), "ab");
 	Hash::iterator aggiter;
-	for (aggiter = hashtable.begin(); aggiter != hashtable.end(); aggiter++) {
-		cout << "Writing to " << fname << endl;
+	for (aggiter = hashtable.begin(); aggiter != hashtable.end();) {
+//		cout << "Writing to " << fname << endl;
 		string k = aggiter->first;
 		PartialAgg* curr_par = aggiter->second;
 		string val = curr_par->value;
@@ -112,6 +111,9 @@ bool ExtendableHashtable::dumpHashtable(string fname)
 			serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str()); 
 		else
 			serialize(fptr, k, val); 
+		Hash::iterator erase_element = aggiter++;
+		delete erase_element->second;
+		hashtable.erase(erase_element);
 	}
 	fclose(fptr);
 	hashtable.clear();
