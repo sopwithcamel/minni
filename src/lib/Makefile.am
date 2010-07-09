@@ -1,9 +1,9 @@
 lib_LTLIBRARIES = libminni.la 
 
-EXTRA_DIST = PartialAgg.h Mapper.h Reducer.h Minnie.h ExtendableMap.h ExtendableHashtable.h AppendMap.h AppGoogDenseHash.h
+EXTRA_DIST = PartialAgg.h AggSortMapper.h Reducer.h Minnie.h ExtendableMap.h ExtendableHashtable.h AppendMap.h AppGoogDenseHash.h
 
 libminni_la_SOURCES =  PartialAgg.cpp \
-		       Mapper.cpp \
+		       AggSortMapper.cpp \
 		       Reducer.cpp \
 		       ExtendableMap.cpp \
 		       ExtendableHashtable.cpp \
@@ -23,7 +23,7 @@ libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION)
 
 minni_includedir = $(includedir)/libminni/libminni
 
-minni_include_HEADERS = Minnie.h PartialAgg.h Mapper.h Reducer.h \
+minni_include_HEADERS = Minnie.h PartialAgg.h AggSortMapper.h Reducer.h \
 			ExtendableMap.h ExtendableHashtable.h AppendMap.h AppGoogDenseHash.h
 
 pkgconfigdir = $(libdir)/pkgconfig
