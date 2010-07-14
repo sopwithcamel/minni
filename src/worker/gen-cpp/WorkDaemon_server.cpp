@@ -202,6 +202,8 @@ public:
   
     // Crash the node.
   void kill(){
+    if (id > 0)
+	exit(0);
     cout << id++ << ": Kill..." << endl;
     cout << "---NEW EPOCH---" << endl;
     file_reg.clear();
