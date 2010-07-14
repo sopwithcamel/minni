@@ -3,6 +3,8 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <stdlib.h>
+#include <stdio.h>
 
 using namespace std;
 
