@@ -1,5 +1,8 @@
 #include "config.h"
 #include "PartialAgg.h"
+#include <iostream>
+
+using namespace std;
 
 PartialAgg::PartialAgg() {
 	value = "0"; 
@@ -18,14 +21,15 @@ void PartialAgg::add (string v) {
 	int curr_val = atoi(value.c_str());
 	curr_val += val;
 	sprintf(tot, "%d", curr_val);
+//	cout << "Value was: " << value.c_str() << ", is " << tot << endl; 
 	value.assign(tot);
 	free(tot);
 }
 
 void PartialAgg::merge (PartialAgg* add_agg) {
 	char* tot = (char*)malloc(10);
-	int val = atoi(add_agg->value);
-	int curr_val = atoi(value);
+	int val = atoi(add_agg->value.c_str());
+	int curr_val = atoi(value.c_str());
 	curr_val += val;
 	sprintf(tot, "%d", curr_val);
 	value.assign(tot);
