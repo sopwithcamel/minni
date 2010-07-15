@@ -5,9 +5,13 @@
 #include <fstream>
 #include <string>
 #include <tr1/unordered_map>
+#include <iterator>
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 using namespace std;
 
@@ -36,10 +40,13 @@ class ExtendableHashtable {
 		uint64_t partid;
 		uint64_t capacity; /* maximum capacity of map before dumping */
 		uint64_t dumpNumber; /* monotonically increasing dump sequence number */
-		string dumpFile; /* current dumpFile on disk */
+		string evictFileName; /* current dumpFile on disk */
+		FILE* evictFile;
+		Hash::iterator beg;
 
 		bool insert(string key, PartialAgg* pao); /* returns PAO from map, or pao if not in map already */
-		bool dumpHashtable(string fname); /* true if dump succeeds, false otherwise */
+		bool dumpHashtable(); /* true if dump succeeds, false otherwise */
+		bool evict();
 		string getDumpFileName(uint64_t);
 		void serialize(FILE*, string, string);
 		void serialize(FILE*, char, uint64_t, const char*, uint64_t, const char*);

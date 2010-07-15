@@ -7,9 +7,9 @@ ExtendableHashtable::ExtendableHashtable(uint64_t cap, uint64_t pid)
 	capacity = cap;
 	dumpNumber = 0;	
 	regularSerialize = true;
-	string fname = getDumpFileName(dumpNumber);
-	FILE *fptr = fopen(fname.c_str(), "w");
-	fclose(fptr);
+	evictFileName = getDumpFileName(dumpNumber);
+	evictFile = fopen(evictFileName.c_str(), "w");
+	beg = hashtable.end();
 }
 
 /* perform finalize, send to default
@@ -33,10 +33,10 @@ void ExtendableHashtable::setSerializeFormat(int sformat)
 bool ExtendableHashtable::insert(string key, PartialAgg* pao)
 {
 //	cout << "Size " << hashtable.size() << ", cap: " << capacity << endl;
+	static uint64_t hitcapctr = 0;
 	if (hashtable.size() + 1 > capacity) {
-		cout << "Hit Hashtable capacity!" << endl;
-		string fname = getDumpFileName(dumpNumber);
-		dumpHashtable(fname);
+//		cout << "Hit Hashtable capacity! " << hitcapctr++ << endl;
+		evict();
 	}
 	hashtable[key] = pao;
 	return true;
@@ -44,12 +44,14 @@ bool ExtendableHashtable::insert(string key, PartialAgg* pao)
 
 bool ExtendableHashtable::add(const string &key, const string &value)
 {
-	if (hashtable.find(key) == hashtable.end()) {
+//	cout << "Key: " << key << endl;
+	Hash::iterator agg = hashtable.find(key);	
+	if (agg == hashtable.end()) {
 		insert(key, new PartialAgg(value));
-//		cout << "Insert for new key " << key.c_str() << ", size " << hashtable.size() << endl;
+//		cout << "inserted" << endl;
 	}
 	else {
-		hashtable[key]->add(value);
+		agg->second->add(value);
 	}
 	return true;
 }
@@ -63,10 +65,16 @@ Hash::iterator ExtendableHashtable::find(const string &key)
 
 void ExtendableHashtable::serialize(FILE* fileOut, string key, string value)
 {
+	static uint64_t syncCtr = 0;
         fwrite(key.c_str(), sizeof(char), key.size(), fileOut);
         fwrite(" ", sizeof(char), 1, fileOut);
         fwrite(value.c_str(), sizeof(char), value.size(), fileOut);
         fwrite("\n", sizeof(char), 1, fileOut);
+	if (syncCtr++ % 10000000 == 0) {
+		syncCtr = 1;
+//		fsync(fileOut);
+		cout << "-------------------------------Syncing..." << endl;
+	}
 }
 
 void ExtendableHashtable::serialize(FILE* fileOut, char type, uint64_t keyLength, const char* key, uint64_t valueLength, const char* value)
@@ -85,38 +93,53 @@ void ExtendableHashtable::serialize(FILE* fileOut, char type, uint64_t keyLength
  * call dumpHashtable */
 bool ExtendableHashtable::finalize(string fname)
 {
-	string lastDumpfile = getDumpFileName(dumpNumber);
-	dumpHashtable(lastDumpfile);
-	if (rename(lastDumpfile.c_str(), fname.c_str())) {
-		cout << "Error renaming file " << lastDumpfile << " to " << fname << endl;
+	if (evictFile == NULL)
+		evictFile = fopen(evictFileName.c_str(), "ab");
+	dumpHashtable();
+	fclose(evictFile);
+	evictFile = NULL;
+	if (rename(evictFileName.c_str(), fname.c_str())) {
+		cout << "Error renaming file " << evictFileName << " to " << fname << endl;
 	}
 }
 
-/* loop through PAO's in current hashtable writing to fname
- * according to merge logic *if* dumpNumber is not 0
- * meaning a dump file already exists, then also deserialize
- * loop through the existing dump file too properly merging
- * and saving serialized PAO's into fname */
-bool ExtendableHashtable::dumpHashtable(string fname)
+bool ExtendableHashtable::dumpHashtable()
 {
-	FILE* fptr = fopen(fname.c_str(), "ab");
 	Hash::iterator aggiter;
 	for (aggiter = hashtable.begin(); aggiter != hashtable.end();) {
-//		cout << "Writing to " << fname << endl;
 		string k = aggiter->first;
 		PartialAgg* curr_par = aggiter->second;
 		string val = curr_par->value;
 		char type = 1;
 		if (regularSerialize)
-			serialize(fptr, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str()); 
+			serialize(evictFile, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str()); 
 		else
-			serialize(fptr, k, val); 
+			serialize(evictFile, k, val); 
 		Hash::iterator erase_element = aggiter++;
-		delete erase_element->second;
-		hashtable.erase(erase_element);
+		delete erase_element->second;	
 	}
-	fclose(fptr);
 	hashtable.clear();
+}
+
+inline bool ExtendableHashtable::evict()
+{
+	if (evictFile == NULL)
+		evictFile = fopen(evictFileName.c_str(), "ab");
+//	unsigned long del_el = rand() % hashtable.size();
+	if (beg == hashtable.end())
+		beg = hashtable.begin();
+	Hash::iterator aggiter = beg++;
+//	advance(aggiter, del_el);
+//	cout << "Key " << aggiter->first << "with " << aggiter->second->value << " deleted" << endl; 
+	string k = aggiter->first;
+	string val = aggiter->second->value;
+	char type = 1;
+	if (regularSerialize)
+		serialize(evictFile, type, uint64_t (k.size()), k.c_str(), uint64_t (val.size()), val.c_str()); 
+	else
+		serialize(evictFile, k, val);
+	delete aggiter->second;
+	hashtable.erase(aggiter);
 }
 	
 /* returns the appropriate dumpfile name
