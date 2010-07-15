@@ -17,6 +17,7 @@
 #include <dlfcn.h>
 #include <map>
 #include "PartialAgg.h"
+#include "TimeLog.h"
 #include "KDFS.h"
 //#include "ExtendableMap.h"
 #include "ExtendableHashtable.h"
@@ -56,6 +57,7 @@ class Mapper {
 	//vector <ofstream*>  my_file_streams; //TODO actually needed?
 	int num_partition;
 	vector<MapperAggregator*> aggregs;
+	TimeLog tl;
 
 };
 

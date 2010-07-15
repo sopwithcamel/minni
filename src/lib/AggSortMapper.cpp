@@ -67,10 +67,20 @@ void Mapper::EmitPartAggregKeyValues(MapInput *input)
 {
 	for (ChunkID id = input->chunk_id_start; id <= input->chunk_id_end; id++)
 	{
-		char* text;
+		char *text, *spl;
 		uint64_t n = input->key_value(&text,id);
 		cout<<"Mapper: I have read from KDFS\n";
 		unsigned int i;
+		text[n-1] = '\0';
+		spl = strtok(text, " ");
+		bool flag = true;
+		while (spl != NULL) {
+			string key(spl);
+			Emit(key, "1");
+//			cout << "AKey: " << spl << ", " << strlen(spl) << endl;
+			spl = strtok(NULL, " ");
+		}
+/*
 		for( i = 0; i < n; ) {
 		//skip through the leading whitespace
 			while((i < n) && isspace(text[i]))
@@ -84,11 +94,11 @@ void Mapper::EmitPartAggregKeyValues(MapInput *input)
 			{
 				//cout<<"Mapper: The word is ";
 				string key(&text[start],(i-start));
-				//cout<<key;
-				//cout<<endl;
+				cout << key << endl;
 				Emit(key, "1");
 			}
         	}
+*/
 		free(text);
 	}
 }
@@ -111,19 +121,23 @@ void Mapper::Map(MapInput* input) {
 	cout << "Reading from KDFS and partial aggregating before spilling to local dump file" << endl;
 	for (int i=0; i < num_partition; i++)
 		aggregs[i]->setSerializeFormat(NSORT_SERIALIZE);
+	tl.addTimeStamp("Starting presort aggregation");
 	EmitPartAggregKeyValues(input);
+	cout << "Finished mapping and ready to nsort" << endl;
 	// Make sure all the hashtables are flushed to disk
 	// TODO: This only works for a single reducer!!!
 	// Make dumpfiles contain partition IDs
 	string unsortedagg = "/localfs/hamur/unsortedPartAgg.txt";
 	for (int i=0; i < num_partition; i++)
 		aggregs[i]->finalize(unsortedagg);
+	tl.addTimeStamp("Finished presort aggregation");
 
 	// Call nsort on the mapdumpfile
 	// TODO: need to call nsort for each partition's dump file
 	cout << "Issuing nsort command " << endl;
 	string sortedagg = "/localfs/hamur/sortedPartAgg.txt";
 	ExternalSort(unsortedagg, sortedagg);
+	tl.addTimeStamp("Finished nsort");
 
 	// Read from sorted file and emit to aggregators
 	for (int i=0; i < num_partition; i++)
@@ -138,21 +152,24 @@ void Mapper::Map(MapInput* input) {
 		fstr >> s_value;
 		if (fstr.eof()) break;
 		Emit(s_key, s_value);
-		cout << "Emitted " << s_key << ", " << s_value << endl;
+//		cout << "Emitted " << s_key << ", " << s_value << endl;
 	}
+	tl.addTimeStamp("Finished emitting to full aggregator");
+	free(s_key);
+	free(s_value);
 	cout<<"Mapper: Done with map job\n";
+	tl.dumpLog();
 }
 
 /* This function will simply write unaggregated key values to local disk
 */
 void Mapper::Emit (string key, string value) {
-	
 	int i = GetPartition(key);
 	(*(aggregs[i])).add(key, value);
 }
 
 int Mapper::GetPartition (string key) {//, int key_size) {
-	unsigned long hash = 5381;
+/*	unsigned long hash = 5381;
 	char* str =  (char*) key.c_str();
 	int key_size = key.length();
 	int i;	
@@ -161,6 +178,8 @@ int Mapper::GetPartition (string key) {//, int key_size) {
 		hash = ((hash << 5) + hash) + ((int) str[i]);
 	}
 	return hash % num_partition;
+*/
+	return 0;
 }
 
 //Mapper wrapper task
@@ -242,7 +261,8 @@ string MapperWrapperTask::GetLocalFilename(string path, JobID jobid, int i) {
        	ss << path;
         ss << "/job";
        	ss << jobid;
-       	ss << "_partition";
+//       	ss << "_partition";
+       	ss << "_part";
        	ss << i;
 	ss << ".map";
 	cout<<"The local file name generated is "<<ss.str()<<endl;
