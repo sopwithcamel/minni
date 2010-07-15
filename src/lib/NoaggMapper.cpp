@@ -67,10 +67,26 @@ void Mapper::serialize(FILE* fileOut, string key, string value)
 void Mapper::Map(MapInput* input) {
 	cout<<"Mapper: entered the map phase\n";
 	cout<<"Mapper: I will be reading from KDFS soon\n";
+
 	string mdf = GetLocalMapDumpFile();
 	FILE *fptr = fopen(mdf.c_str(), "w");
+	tl.addTimeStamp("Starting map");
 	for (ChunkID id = input->chunk_id_start; id <= input->chunk_id_end; id++)
 	{
+		char *text, *spl;
+		uint64_t n = input->key_value(&text,id);
+		cout<<"Mapper: I have read from KDFS\n";
+		unsigned int i;
+		text[n-1] = '\0';
+		spl = strtok(text, " ");
+		bool flag = true;
+		while (spl != NULL) {
+			string key(spl);
+			serialize(fptr, key, "1");
+//			cout << "AKey: " << spl << ", " << strlen(spl) << endl;
+			spl = strtok(NULL, " ");
+		}
+/*
 		char* text;
 		uint64_t n = input->key_value(&text,id);
 		cout<<"Mapper: I have read from KDFS\n";
@@ -93,9 +109,11 @@ void Mapper::Map(MapInput* input) {
 				serialize(fptr, key, "1");
 			}
         	}
+*/
 		free(text);
 	}
 	fclose(fptr);
+	tl.addTimeStamp("Stopping map");
 	// Call nsort on the mapdumpfile
 	cout << "Issuing nsort command " << endl;
 	stringstream nsortCommand;
@@ -105,19 +123,23 @@ void Mapper::Map(MapInput* input) {
 	nsortCommand << " -o ";
 	nsortCommand << sortedMapDumpFileName;
 	system(nsortCommand.str().c_str());
+	tl.addTimeStamp("Done sorting");
+
 
 	// Read from sorted file and emit to aggregators
 
 	cout << "Emitting to aggregators" << endl;
-	ifstream fstr(sortedMapDumpFileName.c_str());
+	FILE* ifile = fopen(sortedMapDumpFileName.c_str(), "r");
 	char* s_key = (char*)malloc(100);
 	char* s_value = (char*)malloc(100);
-	while (!fstr.eof()) {
-		fstr >> s_key;
-		fstr >> s_value;
+	int i = 0;
+	while (!feof(ifile)) {
+		fscanf(ifile, "%s %s\n", s_key, s_value);
 		Emit(s_key, s_value);
 	}
+	tl.addTimeStamp("Done emitting");
 	cout<<"Mapper: Done with map job\n";
+	tl.dumpLog();
 }
 
 /* This function will simply write unaggregated key values to local disk
@@ -219,7 +241,7 @@ string MapperWrapperTask::GetLocalFilename(string path, JobID jobid, int i) {
        	ss << path;
         ss << "/job";
        	ss << jobid;
-       	ss << "_partition";
+       	ss << "_part";
        	ss << i;
 	ss << ".map";
 	cout<<"The local file name generated is "<<ss.str()<<endl;
@@ -258,7 +280,7 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		my_mapper->aggregs.push_back(new MapperAggregator(100000, i));
+		my_mapper->aggregs.push_back(new MapperAggregator(1, i));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	
