@@ -19,10 +19,8 @@
 #include "PartialAgg.h"
 #include "TimeLog.h"
 #include "KDFS.h"
-//#include "ExtendableMap.h"
-#include "ExtendableHashtable.h"
-//#include "AppendMap.h"
-//#include "AppGoogDenseHash.h"
+//#include "ExtendableHashtable.h"
+#include "EHFullEvict.h"
 #define GetCurrentDir getcwd
 
 using namespace std;
