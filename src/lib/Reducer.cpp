@@ -16,18 +16,18 @@ void Reducer::AddKeyVal(string key, string value) {
 }
 
 void Reducer::AddPartialAgg(string key, PartialAgg* pagg) {
-	cout<<"addin a pagg whose value is "<<pagg->get_value()<<endl;
+//	cout<<"addin a pagg whose value is "<<pagg->get_value()<<endl;
 	Aggregator::iterator found = (aggreg)->find(key);
 	if(found == (aggreg)->end()) {
-		cout<<"New key "<<key<<" found and adding a new pagg into aggregator\n";
+//		cout<<"New key "<<key<<" found and adding a new pagg into aggregator\n";
 		(*aggreg)[key] = new PartialAgg(pagg->get_value()); /*deleted at the end*/
-		cout<<"The new aggregator addition happened successfully\n";
+//		cout<<"The new aggregator addition happened successfully\n";
 	}
 	//Existing key value - then add to the partial result
 	else {
-		cout<<"Existing key "<<key<<"found and adding to partial reuslt"<<endl;
+//		cout<<"Existing key "<<key<<"found and adding to partial reuslt"<<endl;
 		(*aggreg)[key]->merge(pagg);
-		cout<<"Added the existing key to aggreg\n";
+//		cout<<"Added the existing key to aggreg\n";
 	}
 }
 
@@ -111,34 +111,34 @@ int deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint6
 	if (feof(fileIn)) return -1;
         result = fread(*value, sizeof(char), *valueLength, fileIn);
         if(result != *valueLength){cout<<"Reading error: VALUE VALUE "<<result<<endl; return -1;}
-	cout<<"Reducer: The values are key= "<<*key<<" value= "<<*value<<endl;
+//	cout<<"Reducer: The values are key= "<<*key<<" value= "<<*value<<endl;
 	return 0;
 }
 
 void ReducerWrapperTask::DoReduce(string filename) {
-	cout<<"I am here to do reduce on "<<filename<<endl;
+//	cout<<"I am here to do reduce on "<<filename<<endl;
 	FILE* fptr = fopen(filename.c_str(),"rb");
 	char type;
 	string key1, value1;
 	//adding values
 	while(feof(fptr)==0)//not end of file //TODO check
 	{
-		cout<<"Inside and now going to read the file "<<endl;
+//		cout<<"Inside and now going to read the file "<<endl;
 		char *key2, *value2;
 		uint64_t keylength, valuelength;
 		if (deSerialize(fptr, &type, &keylength, &key2, &valuelength, &value2)) break;
 		if(type == 2)
 		{
-			cout<<"Type is key value and I am adding "<<"("<<key2<<" "<<value2<<"key value pair\n";
+//			cout<<"Type is key value and I am adding "<<"("<<key2<<" "<<value2<<"key value pair\n";
 			my_reducer->AddKeyVal(key2,value2);
 		}
 		else if (type == 1)
 		{
-			cout<<"Type is partial aggregate and i am adding "<<"("<<key2<<" "<<value2<<"partial aggregator\n";
+//			cout<<"Type is partial aggregate and i am adding "<<"("<<key2<<" "<<value2<<"partial aggregator\n";
 			PartialAgg* newpagg = new PartialAgg(value2); /*deleted after adding value*/
 			my_reducer->AddPartialAgg(key2, newpagg);
 			delete newpagg;
-			cout<<"Added the partial aggregate\n";
+//			cout<<"Added the partial aggregate\n";
 		}
 		free(key2);
 		free(value2);
@@ -189,7 +189,7 @@ task* ReducerWrapperTask::execute() {
 			flag = 1;
 			cout<<"Reducer: Reached Ready state!! \n";
 			grabreg->getMore(my_partition, filename);
-			cout<<"Reducer: Going to do reduce on the file "<<filename<<endl;
+//			cout<<"Reducer: Going to do reduce on the file "<<filename<<endl;
 			DoReduce(filename);
 			cout<<"Reducer: Done with reducing \n";
 			sleeptime = BASE_SLEEPTIME;
@@ -224,19 +224,19 @@ task* ReducerWrapperTask::execute() {
 		cout<<"Reducer: no file available\n";
 	Aggregator::iterator aggiter;
 	Aggregator* temp = (my_reducer->aggreg);
-	cout<<"Reducer: goin to read from the aggregators\n";
+//	cout<<"Reducer: goin to read from the aggregators\n";
 	for(aggiter = temp->begin(); aggiter != temp->end(); ++aggiter)
 	{	
-		cout<<"Reducer: Inside reading from the aggregators\n";
+//		cout<<"Reducer: Inside reading from the aggregators\n";
 		string k = aggiter->first;
 		PartialAgg* curr_par = aggiter->second;
 		string val = curr_par->value;
-		cout << "Key: " << k << " " << " val: " << val << endl;
+//		cout << "Key: " << k << " " << " val: " << val << endl;
 		string out = Write(k, val);
-		cout<<"Reducer: The value that it writes is "<<out<<endl;
+//		cout<<"Reducer: The value that it writes is "<<out<<endl;
 		myhdfs.writeToFile(file_location,out.c_str(),out.size());
 	}
-	cout<<"Reducer: Outside the loop\n";
+//	cout<<"Reducer: Outside the loop\n";
 	myhdfs.closeFile(file_location);
 	bool disconn = 	myhdfs.disconnect();
 	if(!disconn)
