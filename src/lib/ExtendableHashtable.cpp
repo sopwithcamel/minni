@@ -95,6 +95,7 @@ bool ExtendableHashtable::finalize(string fname)
 {
 	if (evictFile == NULL)
 		evictFile = fopen(evictFileName.c_str(), "ab");
+	cout << "Calling dumpHashtable in finalize" << endl;
 	dumpHashtable();
 	fclose(evictFile);
 	evictFile = NULL;
@@ -123,11 +124,16 @@ bool ExtendableHashtable::dumpHashtable()
 
 inline bool ExtendableHashtable::evict()
 {
-	if (evictFile == NULL)
+	if (evictFile == NULL) {
 		evictFile = fopen(evictFileName.c_str(), "ab");
+		cout << "Opening evictfile again" << endl;
+		beg = hashtable.end();
+	}
 //	unsigned long del_el = rand() % hashtable.size();
 	if (beg == hashtable.end())
 		beg = hashtable.begin();
+	if (beg == hashtable.end())
+		cout << "Hashtable empty, but not being caught!!" << endl;
 	Hash::iterator aggiter = beg++;
 //	advance(aggiter, del_el);
 //	cout << "Key " << aggiter->first << "with " << aggiter->second->value << " deleted" << endl; 
