@@ -78,38 +78,14 @@ void Mapper::Map(MapInput* input) {
 		cout<<"Mapper: I have read from KDFS\n";
 		unsigned int i;
 		text[n-1] = '\0';
-		spl = strtok(text, " ");
+		spl = strtok(text, " \n\r,.-+_|*[](){}\"\'\t?;:!\\\/");
 		bool flag = true;
 		while (spl != NULL) {
 			string key(spl);
 			serialize(fptr, key, "1");
 //			cout << "AKey: " << spl << ", " << strlen(spl) << endl;
-			spl = strtok(NULL, " ");
+			spl = strtok(NULL, " \n\r,.-+_|*[](){}\"\'\t?;:!\\\/");
 		}
-/*
-		char* text;
-		uint64_t n = input->key_value(&text,id);
-		cout<<"Mapper: I have read from KDFS\n";
-		unsigned int i;
-		for( i = 0; i < n; ) {
-		//skip through the leading whitespace
-			while((i < n) && isspace(text[i]))
-				i++;
-			//Find word end
-			unsigned int start = i;
-			while ((i < n) && !isspace(text[i]))
-				i++;
-		
-			if(start < i)
-			{
-				//cout<<"Mapper: The word is ";
-				string key(&text[start],(i-start));
-				//cout<<key;
-				//cout<<endl;
-				serialize(fptr, key, "1");
-			}
-        	}
-*/
 		free(text);
 	}
 	fclose(fptr);
@@ -129,15 +105,18 @@ void Mapper::Map(MapInput* input) {
 	// Read from sorted file and emit to aggregators
 
 	cout << "Emitting to aggregators" << endl;
-	FILE* ifile = fopen(sortedMapDumpFileName.c_str(), "r");
+	ifstream fstr(sortedMapDumpFileName.c_str());
 	char* s_key = (char*)malloc(100);
 	char* s_value = (char*)malloc(100);
-	int i = 0;
-	while (!feof(ifile)) {
-		fscanf(ifile, "%s %s\n", s_key, s_value);
+	while (true) {
+		fstr >> s_key;
+		fstr >> s_value;
+		if (fstr.eof()) break;
 		Emit(s_key, s_value);
 	}
-	tl.addTimeStamp("Done emitting");
+	tl.addTimeStamp("Finished emitting to full aggregator");
+	free(s_key);
+	free(s_value);
 	cout<<"Mapper: Done with map job\n";
 	tl.dumpLog();
 }
