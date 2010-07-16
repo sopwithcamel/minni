@@ -72,13 +72,13 @@ void Mapper::EmitPartAggregKeyValues(MapInput *input)
 		cout<<"Mapper: I have read from KDFS\n";
 		unsigned int i;
 		text[n-1] = '\0';
-		spl = strtok(text, " ");
+		spl = strtok(text, " \n\r,.-+_|*[](){}\"\'\t?;:!\\\/");
 		bool flag = true;
 		while (spl != NULL) {
 			string key(spl);
 			Emit(key, "1");
 //			cout << "AKey: " << spl << ", " << strlen(spl) << endl;
-			spl = strtok(NULL, " ");
+			spl = strtok(NULL, " \n\r,.-+_|*[](){}\"\'\t?;:!\\\/");
 		}
 /*
 		for( i = 0; i < n; ) {
@@ -301,7 +301,7 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		my_mapper->aggregs.push_back(new MapperAggregator(100000, i));
+		my_mapper->aggregs.push_back(new MapperAggregator(100, i));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	
