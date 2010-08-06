@@ -22,7 +22,18 @@ class TimeLog {
 		}
 		~TimeStamp() {};
 	};
+	class Other {
+	public:
+		string tag;
+		uint64_t value;
+		Other(string t, uint64_t val) {
+			tag = t;
+			value = val;
+		}
+		~Other() {};
+	};
 	vector<TimeStamp> timelog;
+	vector<Other> otherlog;
 public:
 	TimeLog() {};
 	~TimeLog() {};
@@ -33,12 +44,21 @@ public:
 		ts = new TimeStamp(str, ltime);
 		timelog.push_back(*ts);		
 	}
+	void addLogValue(string str, uint64_t val)
+	{
+		Other* ot;
+		ot = new Other(str, val);
+		otherlog.push_back(*ot);
+	}
 	void dumpLog() {
 		ofstream of;
 		of.open("/localfs/hamur/timelog");
 		vector<TimeStamp>::iterator it;
+		vector<Other>::iterator otit;
 		for (it = timelog.begin(); it != timelog.end(); it++)
 			of << it->tag << ": " << it->tim << endl;
+		for (otit = otherlog.begin(); otit != otherlog.end(); otit++)
+			of << otit->tag << ": " << otit->value << endl;
 		of.close();
 	}
 };
