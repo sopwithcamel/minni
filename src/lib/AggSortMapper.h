@@ -19,8 +19,9 @@
 #include "PartialAgg.h"
 #include "TimeLog.h"
 #include "KDFS.h"
-//#include "ExtendableHashtable.h"
-#include "EHFullEvict.h"
+#include "ExtendableHashtable.h"
+//#include "EHFullEvict.h"
+//#include "EHNotFreqUsedEvict.h"
 #define GetCurrentDir getcwd
 
 using namespace std;

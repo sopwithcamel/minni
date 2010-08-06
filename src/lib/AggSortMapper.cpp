@@ -72,33 +72,14 @@ void Mapper::EmitPartAggregKeyValues(MapInput *input)
 		cout<<"Mapper: I have read from KDFS\n";
 		unsigned int i;
 		text[n-1] = '\0';
-		spl = strtok(text, " \n\r,.-+_|*[](){}\"\'\t?;:!\\\/");
+		spl = strtok(text, " \n\r,.-+_|*[](){}\"\'\t?;:!\\/");
 		bool flag = true;
 		while (spl != NULL) {
 			string key(spl);
 			Emit(key, "1");
 //			cout << "AKey: " << spl << ", " << strlen(spl) << endl;
-			spl = strtok(NULL, " \n\r,.-+_|*[](){}\"\'\t?;:!\\\/");
+			spl = strtok(NULL, " \n\r,.-+_|*[](){}\"\'\t?;:!\\/");
 		}
-/*
-		for( i = 0; i < n; ) {
-		//skip through the leading whitespace
-			while((i < n) && isspace(text[i]))
-				i++;
-			//Find word end
-			unsigned int start = i;
-			while ((i < n) && !isspace(text[i]))
-				i++;
-		
-			if(start < i)
-			{
-				//cout<<"Mapper: The word is ";
-				string key(&text[start],(i-start));
-				cout << key << endl;
-				Emit(key, "1");
-			}
-        	}
-*/
 		free(text);
 	}
 }
@@ -107,6 +88,7 @@ void Mapper::ExternalSort(string unsorted, string sorted)
 {
 	stringstream nsortCommand;
 	nsortCommand << "nsort ";
+	nsortCommand << "-memory=4M ";
 	nsortCommand << unsorted;
 	nsortCommand << " -o ";
 	nsortCommand << sorted;
@@ -301,7 +283,7 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		my_mapper->aggregs.push_back(new MapperAggregator(100, i));
+		my_mapper->aggregs.push_back(new MapperAggregator(1000, i));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	
