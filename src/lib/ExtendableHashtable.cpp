@@ -65,16 +65,10 @@ Hash::iterator ExtendableHashtable::find(const string &key)
 
 void ExtendableHashtable::serialize(FILE* fileOut, string key, string value)
 {
-	static uint64_t syncCtr = 0;
         fwrite(key.c_str(), sizeof(char), key.size(), fileOut);
         fwrite(" ", sizeof(char), 1, fileOut);
         fwrite(value.c_str(), sizeof(char), value.size(), fileOut);
         fwrite("\n", sizeof(char), 1, fileOut);
-	if (syncCtr++ % 10000000 == 0) {
-		syncCtr = 1;
-//		fsync(fileOut);
-		cout << "-------------------------------Syncing..." << endl;
-	}
 }
 
 void ExtendableHashtable::serialize(FILE* fileOut, char type, uint64_t keyLength, const char* key, uint64_t valueLength, const char* value)
