@@ -41,11 +41,9 @@ class EHFawn {
 		EHFawn(uint64_t capacity, uint64_t partid); /* constructor */
 		EHFawn(uint64_t capacity, uint64_t partid, const string &path); /* load constructor, from a "dump" file */
 		~EHFawn(); /* destructor */
-		Hash::iterator find(const string &key); /* returns matching PAO or null on miss */
-		bool add(const string &key, const string &value); /* add to existing PAO */
+		bool add(char* key, char* value); /* add to existing PAO */
 		bool finalize(string fname);
 		bool finalize(); 
-		bool clear();
 		void setSerializeFormat(int);
 
 		uint64_t evict_ctr;
@@ -63,9 +61,10 @@ class EHFawn {
 		string evictHashName;
 		FawnDS<FawnDS_Flash> *evictHash;
 		FILE *evictFile;
-		tr1::unordered_map<string, bool> bufferedKeys;
+		PartialAgg* bufferList[WRITEBUFFERELEMENTS];
+		uint32_t bufferListPtr;
 
-		bool insert(string key, PartialAgg* pao); /* returns PAO from map, or pao if not in map already */
+		bool insert(PartialAgg* pao); /* returns PAO from map, or pao if not in map already */
 		bool evict();
 		void merge(Hash::iterator it);
 		void serialize(FILE*, char, uint64_t, const char*, uint64_t, const char*);

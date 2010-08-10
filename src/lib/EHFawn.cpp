@@ -15,6 +15,7 @@ EHFawn::EHFawn(uint64_t cap, uint64_t pid)
 	insert_ctr = 0;
 	evict_ctr = 0;
 	found_in_fds_ctr = 0;
+	bufferListPtr = 0;
 }
 
 /* perform finalize, send to default
@@ -35,7 +36,7 @@ void EHFawn::setSerializeFormat(int sformat)
  * do dumpHashtable(fname) to default filename plus dumpNumber
  * insert <key,pao> into hashtable
  */
-bool EHFawn::insert(string key, PartialAgg* pao)
+bool EHFawn::insert(PartialAgg* pao)
 {
 //	cout << "Size " << hashtable.size() << ", cap: " << capacity << endl;
 	if (hashtable.size() + 1 > capacity) {
@@ -43,11 +44,18 @@ bool EHFawn::insert(string key, PartialAgg* pao)
 		evict();
 		evict_ctr++;
 	}
-	hashtable[key] = pao;
+	hashtable[pao->key] = pao;
 	return true;
 }
 
-bool EHFawn::add(const string &key, const string &value)
+/*
+ * Memory has been allocated for the key in the tokenizing
+ * already. It will be freed there as well.
+ * We however need to allocate memory for the value from the 
+ * heap. This will be freed when the object is evicted and 
+ * flushed.
+ */
+bool EHFawn::add(char* key, char* value)
 {
 //	cout << "Key: " << key;
 	Hash::iterator agg = hashtable.find(key);
@@ -57,17 +65,17 @@ bool EHFawn::add(const string &key, const string &value)
 		agg->second->add(value);
 	}
 	else {
-		insert(key, new PartialAgg(value));
+		char* new_key = (char*)malloc(strlen(key)+1);
+//		char* new_key = (char*)malloc(30);
+		char* new_val = (char*)malloc(10);
+		strcpy(new_key, key);
+		strcpy(new_val, value);
+		PartialAgg* new_pao = new PartialAgg(new_key, new_val);
+//		printf("New PAO created: key %s at %p, value at %p\n", new_pao->key, new_pao->key, new_pao->value);
+		insert(new_pao);
 //		cout << " inserted" << endl;
 	}
 	return true;
-}
-
-/* lookup in hashtable, if miss return error value
- * if hit, return corresponding PAO */
-Hash::iterator EHFawn::find(const string &key)
-{
-	return hashtable.find(key);
 }
 
 void EHFawn::serialize(FILE* fileOut, string key, string value)
@@ -97,7 +105,7 @@ bool EHFawn::finalize(string fname)
 {
 	
 	FILE *f = fopen(fname.c_str(), "w");
-	cout << "Dumping contents of FawnDS in finalize" << endl;
+//	cout << "Dumping contents of FawnDS in finalize" << endl;
 	set<string>::iterator it;
 	char k[DBID_LENGTH];
 	uint32_t key_length;
@@ -113,51 +121,59 @@ bool EHFawn::finalize(string fname)
 			continue;
 		}
 		string key(k, key_length);
-		cout << "dumping key " << key << ", " << val << endl;
+//		cout << "dumping key " << key << ", " << val << endl;
 //		assert(evictHash->Delete(k, strlen(k)));
 		serialize(f, type, uint64_t (key.size()), key.c_str(), uint64_t (val.size()), val.c_str()); 
 	}
 	fclose(f);
 }
 
+/*
+ * No need to free key here since it will be freed in the 
+ * tokenizing code.
+ * In this function,
+ * 	Insert into FawnDS
+ *	If the insert caused a flush
+ *		Free elements in buffer
+ * 		Reset pointer
+ *	Add newly evicted element to the buffer
+ */
 void EHFawn::merge(Hash::iterator it)
 {
 	string ret_value;
         static int mctr = 0;
-//	cout << "merge counter " << mctr++ << endl;
+//	cout << "Going to read and aggregate, ";
+	PartialAgg* pao = it->second;
+	char* k = pao->key;
+	char* val = pao->value;
+
+//	printf("Minni: key %s is chosen for eviction\n", k);
+/*
+	if (evictHash->Get(k, strlen(k), ret_value)) {
+		// ret_value needs to be added to val
+		int _val = atoi(val);
+		_val += atoi(ret_value.c_str());
+		sprintf(val, "%d", _val);
+//		cout << " found, "; 
+//		pao->add(ret_value.c_str());
+	}
+*/
+//	cout << " aggregated, ";
+	assert(evictHash->Insert(k, strlen(k), val, strlen(val)));
 
 	if (evictHash->checkWriteBufFlush()) {
-		tr1::unordered_map<string, bool>::iterator del_it;
 //		cout << "Responding to flush..." << endl;
-		for (del_it=bufferedKeys.begin(); del_it != bufferedKeys.end(); del_it++) {
-			delete hashtable[del_it->first];
-			hashtable.erase(del_it->first);
+		for (int i=0; i<bufferListPtr; i++) {
+//			printf("Freeing %s value %s\n", bufferList[i]->key, bufferList[i]->value);
+			free(bufferList[i]->value);
+			free(bufferList[i]->key);
 		}
-		bufferedKeys.clear();
+		bufferListPtr = 0;
 	}
-
-	bufferedKeys[it->first] = true;
-	string k = it->first;
-	string val = it->second->value;
- 
-//	cout << "Trying to get " << k << endl;
-	if (evictHash->Get(k.c_str(), k.size(), ret_value)) {
-
-		char *tot = (char*)malloc(10);
-		// ret_value needs to be added to val
-		int _val = atoi(val.c_str());
-		_val += atoi(ret_value.c_str());
-		sprintf(tot, "%d", _val);
-		(it->second->value).assign(tot);
-		free(tot);
-//		cout << "Found " << k << " in FDS; old value: " << ret_value << ", new value " << it->second->value << endl;
-	}
-
-//	cout << "Minni: Trying to insert " << k << ", " << it->second->value << endl;
-	printf("Minni: it->first points to %p, %p\n", &(it->first), (it->first).c_str());
-
-	assert(evictHash->Insert((it->first).c_str(), k.size(), (it->second->value).c_str(), (it->second->value).size()));
-//	serialize(evictFile, 1, k.size(), k.c_str(), val.size(), val.c_str());
+//	cout << "inserted, ";
+	
+	bufferList[bufferListPtr++] = pao;
+//	cout << "added to bufferList" << endl;
 }
 
 /*
@@ -166,11 +182,10 @@ void EHFawn::merge(Hash::iterator it)
 bool EHFawn::finalize()
 {
 	Hash::iterator aggiter;
+	printf("hashtable size: %d\n", hashtable.size());
 	for (aggiter = hashtable.begin(); aggiter != hashtable.end(); aggiter++) {
-		if (bufferedKeys.find(aggiter->first) == bufferedKeys.end()) {
-			merge(aggiter);
-//			cout << "Inserting " << aggiter->first << ", " << aggiter->second->value << endl;
-		}
+//		cout << "Dumping in finalize: " << aggiter->second->key << ", " << aggiter->second->value << endl;
+		merge(aggiter);
 	}
 	fclose(evictFile);
 	hashtable.clear();
@@ -182,31 +197,14 @@ bool EHFawn::evict()
 		beg = hashtable.begin();
 		beg_ctr++;
 	}
-        uint32_t ctr = 0;
-	while (bufferedKeys.find(beg->first) != bufferedKeys.end()) {
-//		cout << beg->first << " found in buf keys" << endl;
-		beg++;
-//		ctr++;
-		if (beg == hashtable.end()) {
-			beg = hashtable.begin();
-			beg_ctr++;
-		}
-	}
-//       cout << "trouble: " << ctr << endl;
-	if (beg == hashtable.end())
-		cout << "We're in trouble here!!" << endl;
-	Hash::iterator aggiter = beg;
+	Hash::iterator aggiter = beg++;
 //	cout << "Eviction: Key " << aggiter->first << "with " << aggiter->second->value << " selected for eviction" << endl; 
 	merge(aggiter);
 //	delete aggiter->second;
-//	hashtable.erase(aggiter);
+//	cout << "Evicted" << endl;
+	hashtable.erase(aggiter);
 }
 	
-bool EHFawn::clear()
-{
-	hashtable.clear();
-}
-
 int EHFawn::deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint64_t* valueLength, char** value)
 {
 	size_t result;
