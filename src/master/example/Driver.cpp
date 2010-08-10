@@ -12,8 +12,9 @@ int main(int argc, char* args[])
 {
 	if (PRODUCTION_TEST)
 	{
-		//string input = "/input/hello.txt";
-		string input = "/webs.txt";
+//		string input = "/ring.txt";
+		string input = "/medgutfile.txt";
+//		string input = "/shake.txt";
 		//string input = "/input/10GB_random.dat"; 
 		string output = "/";
 		string dfs_master = "127.0.0.1";

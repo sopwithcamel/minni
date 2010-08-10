@@ -5,21 +5,22 @@
 #include <map>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 using namespace std;
 
 class PartialAgg {
   public:
-	PartialAgg();
-	PartialAgg (string v);
+	PartialAgg(char*);
+	PartialAgg (char* k, char* v);
 	~PartialAgg();
-	virtual void add (string value);
+	virtual void add (const char* val);
 	virtual void merge (PartialAgg* add_agg);
-	string get_value();
-	void set_val(string v);
-	//string serialize(string key);
+	char* get_value();
+	void set_val(char* v);
 
-	string value;
+	char* key;
+	char* value;
 };
 
 #endif

@@ -24,7 +24,9 @@ libdaemon_la_CPPFLAGS = $(TBB_CFLAGS) \
 			$(THRIFT_CFLAGS)
 
 workdaemon_LDADD = ../../dfs/libdfs.la \
-		   ../../lib/libminni.la
+		   ../../lib/libminni.la \
+			/home/hamur/fawnkv/fawnds/libfawnds.la \
+			/home/hamur/fawnkv/utils/libfawnkvutils.la
 
 workdaemon_LDFLAGS = $(TBB_LIBS) \
 		     $(THRIFT_LIBS) \

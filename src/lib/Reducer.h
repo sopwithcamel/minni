@@ -44,8 +44,8 @@ class Reducer {
   public:
 	Reducer() {};
 	~Reducer(){};
-	void AddKeyVal(string key, string value);
-	void AddPartialAgg(string key, PartialAgg* pagg);
+	void AddKeyVal(char* key, char* value);
+	void AddPartialAgg(char* key, PartialAgg* pagg);
   	Aggregator* aggreg;
 };
 

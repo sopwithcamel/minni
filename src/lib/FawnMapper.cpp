@@ -67,14 +67,22 @@ void Mapper::EmitPartAggregKeyValues(MapInput *input)
 //		spl = strtok(text, " \n\r");
 		bool flag = true;
 		while (spl != NULL) {
-			string key(spl);
-			Emit(key, "1");
+			Emit(spl, "1");
 //			cout << "AKey: " << spl << ", " << strlen(spl) << endl;
 			spl = strtok(NULL, " \n\r,.-+_|*[](){}\"\'\t?;:!\\/");
 //			spl = strtok(NULL, " \n\r");
 		}
 		free(text);
 	}
+	FinalizeEmit();
+}
+
+void Mapper::FinalizeEmit()
+{
+	tl.addTimeStamp("Starting to finalize...");
+	for (int i=0; i < num_partition; i++)
+		aggregs[i]->finalize();
+	tl.addTimeStamp("Finished presort aggregation");
 }
 
 void Mapper::Map(MapInput* input) {
@@ -90,20 +98,16 @@ void Mapper::Map(MapInput* input) {
 	// Make sure all the hashtables are flushed to disk
 	// TODO: This only works for a single reducer!!!
 	// Make dumpfiles contain partition IDs
-	tl.addTimeStamp("Starting to finalize...");
-	for (int i=0; i < num_partition; i++)
-		aggregs[i]->finalize();
-	tl.addTimeStamp("Finished presort aggregation");
 }
 
 /* This function will simply write unaggregated key values to local disk
 */
-void Mapper::Emit (string key, string value) {
+void Mapper::Emit (char* key, char* value) {
 	int i = GetPartition(key);
 	(*(aggregs[i])).add(key, value);
 }
 
-int Mapper::GetPartition (string key) {//, int key_size) {
+int Mapper::GetPartition (const char* key) {//, int key_size) {
 /*	unsigned long hash = 5381;
 	char* str =  (char*) key.c_str();
 	int key_size = key.length();
@@ -236,7 +240,7 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		my_mapper->aggregs.push_back(new MapperAggregator(1, i));
+		my_mapper->aggregs.push_back(new MapperAggregator(10000, i));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	
@@ -274,7 +278,6 @@ task* MapperWrapperTask::execute() {
 	
 	for(unsigned int i = 0; i < npart ; i++)
         {
-		my_mapper->aggregs[i]->clear();
 		delete my_mapper->aggregs[i];
 	}
 

@@ -4,10 +4,10 @@
 //ReduceOutput class
 
 //Reducer class
-void Reducer::AddKeyVal(string key, string value) {
+void Reducer::AddKeyVal(char* key, char* value) {
 	Aggregator::iterator found = (aggreg)->find(key);
 	if(found == (aggreg)->end()) {
-		(*aggreg)[key] = new PartialAgg(value); /*deleted at the end*/
+		(*aggreg)[key] = new PartialAgg(key, value); /*deleted at the end*/
 	}
 	//Existing key value - then add to the partial result
 	else {
@@ -15,7 +15,7 @@ void Reducer::AddKeyVal(string key, string value) {
 	}
 }
 
-void Reducer::AddPartialAgg(string key, PartialAgg* pagg) {
+void Reducer::AddPartialAgg(char* key, PartialAgg* pagg) {
 //	cout<<"addin a pagg whose value is "<<pagg->get_value()<<endl;
 	Aggregator::iterator found = (aggreg)->find(key);
 	if(found == (aggreg)->end()) {

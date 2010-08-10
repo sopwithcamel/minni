@@ -49,10 +49,11 @@ class Mapper {
 	Mapper() {};
 	~Mapper();
 	virtual void Map (MapInput* mapinp); //will be overloaded
-	virtual void Emit (string key, string value);
+	virtual void Emit (char* key, char* value);
 	virtual string GetLocalMapDumpFile();
 	virtual void EmitPartAggregKeyValues(MapInput*);
-	virtual int GetPartition (string key); //the default parititioner. This can be overriden
+	virtual void FinalizeEmit();
+	virtual int GetPartition (const char* key); //the default parititioner. This can be overriden
 	//vector <ofstream*>  my_file_streams; //TODO actually needed?
 	int num_partition;
 	vector<MapperAggregator*> aggregs;
