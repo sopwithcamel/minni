@@ -84,7 +84,7 @@ void Mapper::Map(MapInput* input) {
 			string key(spl);
 			serialize(fptr, key, "1");
 //			cout << "AKey: " << spl << ", " << strlen(spl) << endl;
-			spl = strtok(NULL, " \n\r,.-+_|*[](){}\"\'\t?;:!\\\/");
+			spl = strtok(NULL, " \n\r,.-+_|*[](){}\"\'\t?;:!\\");
 		}
 		free(text);
 	}
@@ -94,6 +94,7 @@ void Mapper::Map(MapInput* input) {
 	cout << "Issuing nsort command " << endl;
 	stringstream nsortCommand;
 	nsortCommand << "nsort ";
+	nsortCommand << "-memory=4M ";
 	nsortCommand << mdf;
 	string sortedMapDumpFileName = "/localfs/hamur/sortedMapOut.txt"; 
 	nsortCommand << " -o ";
@@ -259,7 +260,7 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		my_mapper->aggregs.push_back(new MapperAggregator(1, i));
+		my_mapper->aggregs.push_back(new MapperAggregator(10000, i));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	

@@ -16,7 +16,7 @@
 #include "WorkDaemon_tasks.h"
 #include <dlfcn.h>
 #include <map>
-#include "PartialAgg.h"
+#include "PartialAggString.h"
 #include "TimeLog.h"
 #include "KDFS.h"
 //#include "ExtendableMap.h"
