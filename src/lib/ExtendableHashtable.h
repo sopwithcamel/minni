@@ -16,7 +16,7 @@
 
 using namespace std;
 
-#include "PartialAgg.h"
+#include "PartialAggString.h"
 #define GetCurrentDir getcwd
 
 #define REGULAR_SERIALIZE	0
