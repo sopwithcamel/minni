@@ -14,7 +14,7 @@ EHFawn::EHFawn(uint64_t cap, uint64_t pid)
 	beg_ctr = 0;
 	insert_ctr = 0;
 	evict_ctr = 0;
-	found_in_fds_ctr = 0;
+	fds_read_ctr = 0;
 	bufferListPtr = 0;
 }
 
@@ -126,6 +126,7 @@ bool EHFawn::finalize(string fname)
 		serialize(f, type, uint64_t (key.size()), key.c_str(), uint64_t (val.size()), val.c_str()); 
 	}
 	fclose(f);
+        fds_read_ctr = evictHash->getReadCtr();
 }
 
 /*
@@ -148,17 +149,17 @@ void EHFawn::merge(Hash::iterator it)
 	char* val = pao->value;
 
 //	printf("Minni: key %s is chosen for eviction\n", k);
-/*
+
 	if (evictHash->Get(k, strlen(k), ret_value)) {
 		// ret_value needs to be added to val
 		int _val = atoi(val);
 		_val += atoi(ret_value.c_str());
 		sprintf(val, "%d", _val);
 //		cout << " found, "; 
-//		pao->add(ret_value.c_str());
+		pao->add(ret_value.c_str());
 	}
-*/
 //	cout << " aggregated, ";
+
 	assert(evictHash->Insert(k, strlen(k), val, strlen(val)));
 
 	if (evictHash->checkWriteBufFlush()) {
@@ -167,6 +168,7 @@ void EHFawn::merge(Hash::iterator it)
 //			printf("Freeing %s value %s\n", bufferList[i]->key, bufferList[i]->value);
 			free(bufferList[i]->value);
 			free(bufferList[i]->key);
+			delete bufferList[i];
 		}
 		bufferListPtr = 0;
 	}
@@ -193,16 +195,25 @@ bool EHFawn::finalize()
 
 bool EHFawn::evict()
 {
-	if (beg == hashtable.end()) {
-		beg = hashtable.begin();
-		beg_ctr++;
+	Hash::iterator lfu;
+	int i = 0, lfu_val = INT_MAX;
+	while (i < 1) {
+		if (beg == hashtable.end()) {
+			beg = hashtable.begin();
+			beg_ctr++;
+		}
+		if (atoi(beg->second->value) < lfu_val) {
+			lfu = beg;
+			lfu_val = atoi(beg->second->value);
+		}
+		beg++;
+		i++;
 	}
-	Hash::iterator aggiter = beg++;
 //	cout << "Eviction: Key " << aggiter->first << "with " << aggiter->second->value << " selected for eviction" << endl; 
-	merge(aggiter);
+	merge(lfu);
 //	delete aggiter->second;
 //	cout << "Evicted" << endl;
-	hashtable.erase(aggiter);
+	hashtable.erase(lfu);
 }
 	
 int EHFawn::deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint64_t* valueLength, char** value)

@@ -7,6 +7,7 @@
 #include <tr1/unordered_map>
 #include <set>
 #include <iterator>
+#include <climits>
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -49,7 +50,7 @@ class EHFawn {
 		uint64_t evict_ctr;
 		uint64_t insert_ctr;
 		uint64_t beg_ctr;
-		uint64_t found_in_fds_ctr;
+		uint64_t fds_read_ctr;
 
 	private:
 		Hash hashtable;
