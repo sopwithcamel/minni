@@ -240,7 +240,7 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		my_mapper->aggregs.push_back(new MapperAggregator(10000, i));
+		my_mapper->aggregs.push_back(new MapperAggregator(1, i));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	
@@ -263,8 +263,8 @@ task* MapperWrapperTask::execute() {
 		my_mapper->tl.addTimeStamp("Finished dumping to FawnDB");
 		my_mapper->tl.addLogValue("Insert ctr", my_mapper->aggregs[i]->insert_ctr);
 		my_mapper->tl.addLogValue("Evict ctr", my_mapper->aggregs[i]->evict_ctr);
-		my_mapper->tl.addLogValue("Beg ctr", my_mapper->aggregs[i]->beg_ctr);
-		my_mapper->tl.addLogValue("Found in FDS ctr", my_mapper->aggregs[i]->found_in_fds_ctr);
+//		my_mapper->tl.addLogValue("Beg ctr", my_mapper->aggregs[i]->beg_ctr);
+		my_mapper->tl.addLogValue("FDS read ctr", my_mapper->aggregs[i]->fds_read_ctr);
 		
 		cout<<"Mapper: Going to tell the workdaemon about the file \n";
 		File f1(jobid, i, final_path);
