@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <pthread.h>
 
 using namespace std;
 
@@ -33,7 +34,7 @@ using fawn::HashUtil;
 #define REGULAR_SERIALIZE	0
 #define NSORT_SERIALIZE		1
 
-#define EVICT_CACHE_SIZE	1024
+#define EVICT_CACHE_SIZE	64
 
 typedef std::tr1::unordered_map<string, PartialAgg*> Hash;
 
@@ -64,10 +65,25 @@ class EHFawn {
 		FILE *evictFile;
 		PartialAgg* bufferList[WRITEBUFFERELEMENTS];
 		uint32_t bufferListPtr;
+		pthread_t evict_thread;
+		PartialAgg* evictList[2][EVICT_CACHE_SIZE];
+		pthread_mutex_t evictListLock[2];
+		uint64_t evictListCtr[2];
+/* Condition used to indicate that I/O thread has work to do*/
+		pthread_cond_t emptyListFull; 
+		PartialAgg** fillList;
+		PartialAgg** emptyList;
+		pthread_mutex_t* fillLock;
+		pthread_mutex_t* emptyLock;
+		uint64_t* fillListCtr;
+		uint64_t* emptyListCtr;
+		
 
 		bool insert(PartialAgg* pao); /* returns PAO from map, or pao if not in map already */
 		bool evict();
-		void merge(Hash::iterator it);
+		void queueForMerge(PartialAgg*);
+		static void *merge_helper(void *context) {((EHFawn*)context)->merge(); return NULL;}
+		void merge();
 		void serialize(FILE*, char, uint64_t, const char*, uint64_t, const char*);
 		void serialize(FILE*, string, string);
 		int deSerialize(FILE*, char*, uint64_t*, char**, uint64_t*, char**);

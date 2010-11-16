@@ -18,7 +18,8 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 		       -I$(srcdir)/../common \
 		       -I$(srcdir)/../dfs \
 			-I/home/hamur/fawnkv/fawnds \
-			-I/home/hamur/fawnkv/utils
+			-I/home/hamur/fawnkv/utils \
+			-lpthread
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION)
 

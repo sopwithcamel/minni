@@ -16,6 +16,19 @@ EHFawn::EHFawn(uint64_t cap, uint64_t pid)
 	evict_ctr = 0;
 	fds_read_ctr = 0;
 	bufferListPtr = 0;
+// Create pthread to do I/O
+	assert(!pthread_create(&evict_thread, NULL, merge_helper, this));
+	for (int i=0; i<2; i++) {
+		evictListCtr[i] = 0;
+		evictListLock[i] = PTHREAD_MUTEX_INITIALIZER;
+	}
+	fillList = evictList[0];
+	emptyList = evictList[1];
+	fillListCtr = &evictListCtr[0];
+	emptyListCtr = &evictListCtr[1];
+	fillLock = &evictListLock[0];
+	emptyLock = &evictListLock[1];
+	emptyListFull = PTHREAD_COND_INITIALIZER;
 }
 
 /* perform finalize, send to default
@@ -139,43 +152,76 @@ bool EHFawn::finalize(string fname)
  * 		Reset pointer
  *	Add newly evicted element to the buffer
  */
-void EHFawn::merge(Hash::iterator it)
+void EHFawn::merge()
 {
 	string ret_value;
         static int mctr = 0;
-//	cout << "Going to read and aggregate, ";
-	PartialAgg* pao = it->second;
-	char* k = pao->key;
-	char* val = pao->value;
+// pick up empty list lock
+	assert(!pthread_mutex_lock(emptyLock));
+// wait for signal indicating I have work to do
+	while (*emptyListCtr == 0)
+		assert(!pthread_cond_wait(&emptyListFull, emptyLock));
+	while (*emptyListCtr > 0) {
+		PartialAgg* pao = emptyList[EVICT_CACHE_SIZE - *emptyListCtr];
+		char* k = pao->key;
+		char* val = pao->value;
 
 //	printf("Minni: key %s is chosen for eviction\n", k);
 
-	if (evictHash->Get(k, strlen(k), ret_value)) {
+		if (evictHash->Get(k, strlen(k), ret_value)) {
 		// ret_value needs to be added to val
-		int _val = atoi(val);
-		_val += atoi(ret_value.c_str());
-		sprintf(val, "%d", _val);
-//		cout << " found, "; 
-		pao->add(ret_value.c_str());
-	}
-//	cout << " aggregated, ";
-
-	assert(evictHash->Insert(k, strlen(k), val, strlen(val)));
-
-	if (evictHash->checkWriteBufFlush()) {
-//		cout << "Responding to flush..." << endl;
-		for (int i=0; i<bufferListPtr; i++) {
-//			printf("Freeing %s value %s\n", bufferList[i]->key, bufferList[i]->value);
-			free(bufferList[i]->value);
-			free(bufferList[i]->key);
-			delete bufferList[i];
+			int _val = atoi(val);
+			_val += atoi(ret_value.c_str());
+			sprintf(val, "%d", _val);
+//			cout << " found, "; 
+			pao->add(ret_value.c_str());
 		}
-		bufferListPtr = 0;
-	}
-//	cout << "inserted, ";
+//		cout << " aggregated, ";
+
+		assert(evictHash->Insert(k, strlen(k), val, strlen(val)));
+
+		if (evictHash->checkWriteBufFlush()) {
+//			cout << "Responding to flush..." << endl;
+			for (int i=0; i<bufferListPtr; i++) {
+//				printf("Freeing %s value %s\n", bufferList[i]->key, bufferList[i]->value);
+				free(bufferList[i]->value);
+				free(bufferList[i]->key);
+				delete bufferList[i];
+			}
+			bufferListPtr = 0;
+		}
+//		cout << "inserted, ";
 	
-	bufferList[bufferListPtr++] = pao;
-//	cout << "added to bufferList" << endl;
+		bufferList[bufferListPtr++] = pao;
+//		cout << "added to bufferList" << endl;
+		(*emptyListCtr)--;
+	}
+	assert(!pthread_mutex_unlock(emptyLock));
+}
+
+void EHFawn::queueForMerge(PartialAgg* p)
+{
+	pthread_mutex_lock(fillLock);
+	if (*fillListCtr == EVICT_CACHE_SIZE) {
+		pthread_mutex_lock(emptyLock);
+		PartialAgg** tmpList = fillList;
+		fillList = emptyList;
+		emptyList = tmpList;
+
+		uint64_t* tmpCtr = fillListCtr;
+		fillListCtr = emptyListCtr;
+		emptyListCtr = tmpCtr; 
+
+		pthread_mutex_t* tmpLock = fillLock;
+		fillLock = emptyLock;
+		emptyLock = tmpLock;
+
+		pthread_mutex_unlock(emptyLock);
+		assert(!pthread_cond_signal(&emptyListFull));
+	}
+	fillList[*fillListCtr] = p;
+	(*fillListCtr)++;
+	pthread_mutex_unlock(fillLock);
 }
 
 /*
@@ -187,7 +233,7 @@ bool EHFawn::finalize()
 	printf("hashtable size: %d\n", hashtable.size());
 	for (aggiter = hashtable.begin(); aggiter != hashtable.end(); aggiter++) {
 //		cout << "Dumping in finalize: " << aggiter->second->key << ", " << aggiter->second->value << endl;
-		merge(aggiter);
+		queueForMerge(aggiter->second);
 	}
 	fclose(evictFile);
 	hashtable.clear();
@@ -210,8 +256,7 @@ bool EHFawn::evict()
 		i++;
 	}
 //	cout << "Eviction: Key " << aggiter->first << "with " << aggiter->second->value << " selected for eviction" << endl; 
-	merge(lfu);
-//	delete aggiter->second;
+	queueForMerge(lfu->second);
 //	cout << "Evicted" << endl;
 	hashtable.erase(lfu);
 }
