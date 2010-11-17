@@ -20,8 +20,10 @@ EHFawn::EHFawn(uint64_t cap, uint64_t pid)
 	assert(!pthread_create(&evict_thread, NULL, merge_helper, this));
 	for (int i=0; i<2; i++) {
 		evictListCtr[i] = 0;
-		evictListLock[i] = PTHREAD_MUTEX_INITIALIZER;
+		evictListLock[i] = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
 	}
+	wakeupLock = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
+	wakeup = false;
 	fillList = evictList[0];
 	emptyList = evictList[1];
 	fillListCtr = &evictListCtr[0];
@@ -29,6 +31,10 @@ EHFawn::EHFawn(uint64_t cap, uint64_t pid)
 	fillLock = &evictListLock[0];
 	emptyLock = &evictListLock[1];
 	emptyListFull = PTHREAD_COND_INITIALIZER;
+	exitThread = false;
+	touched = true;
+	emptyListTouched = PTHREAD_COND_INITIALIZER;
+	touchLock = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
 }
 
 /* perform finalize, send to default
@@ -142,6 +148,8 @@ bool EHFawn::finalize(string fname)
         fds_read_ctr = evictHash->getReadCtr();
 }
 
+//#define DEBUG_P
+
 /*
  * No need to free key here since it will be freed in the 
  * tokenizing code.
@@ -157,10 +165,28 @@ void EHFawn::merge()
 	string ret_value;
         static int mctr = 0;
 // pick up empty list lock
-	assert(!pthread_mutex_lock(emptyLock));
+ 
+	assert(!pthread_mutex_lock(&wakeupLock));
+#ifdef DEBUG_P
+	cout << "HRI: Cons: Picking up wakeup lock\n";
+#endif
 // wait for signal indicating I have work to do
-	while (*emptyListCtr == 0)
-		assert(!pthread_cond_wait(&emptyListFull, emptyLock));
+wait_again:
+#ifdef DEBUG_P
+	cout << "HRI: Cons: Waiting for signal..." << endl;
+#endif
+	while (wakeup == false)
+		assert(!pthread_cond_wait(&emptyListFull, &wakeupLock));
+#ifdef DEBUG_P
+	cout << "HRI: Cons: Woke up." << endl;
+#endif
+// Reset condition for next time
+	emptyListFull = PTHREAD_COND_INITIALIZER;
+	wakeup = false;
+	assert(!pthread_mutex_lock(emptyLock));
+#ifdef DEBUG_P
+	cout << "HRI: Cons: Picking up empty list lock\n";
+#endif
 	while (*emptyListCtr > 0) {
 		PartialAgg* pao = emptyList[EVICT_CACHE_SIZE - *emptyListCtr];
 		char* k = pao->key;
@@ -196,13 +222,36 @@ void EHFawn::merge()
 //		cout << "added to bufferList" << endl;
 		(*emptyListCtr)--;
 	}
+	pthread_mutex_lock(&touchLock);
+	touched = true;
+	pthread_mutex_unlock(&touchLock);
+	assert(!pthread_cond_signal(&emptyListTouched));
 	assert(!pthread_mutex_unlock(emptyLock));
+#ifdef DEBUG_P
+	cout << "HRI: Cons: Releasing empty list lock\n";
+#endif
+	if (!exitThread)
+		goto wait_again;
+	pthread_mutex_unlock(&wakeupLock);
+	fclose(evictFile);
 }
 
 void EHFawn::queueForMerge(PartialAgg* p)
 {
 	pthread_mutex_lock(fillLock);
+#ifdef DEBUG_P
+	cout << "HRI: Prod: Picking up fill lock at " << fillLock << endl;
+#endif
 	if (*fillListCtr == EVICT_CACHE_SIZE) {
+#ifdef DEBUG_P
+		cout << "HRI: Prod: Fill list full\n";
+#endif
+		pthread_mutex_lock(&touchLock);
+		while (touched == false)
+			pthread_cond_wait(&emptyListTouched, &touchLock);
+#ifdef DEBUG_P
+		cout << "HRI: Prod: Picking up empty lock at " << emptyLock << endl;
+#endif
 		pthread_mutex_lock(emptyLock);
 		PartialAgg** tmpList = fillList;
 		fillList = emptyList;
@@ -216,12 +265,35 @@ void EHFawn::queueForMerge(PartialAgg* p)
 		fillLock = emptyLock;
 		emptyLock = tmpLock;
 
+		touched = false;
+		pthread_mutex_unlock(&touchLock);
+
+		fillList[*fillListCtr] = p;
+		(*fillListCtr)++;
+		pthread_mutex_unlock(fillLock);
+#ifdef DEBUG_P
+		cout << "HRI: Prod: Releasing fill lock at " << fillLock << "; ctr: " << *fillListCtr << endl;
+#endif
+
 		pthread_mutex_unlock(emptyLock);
+#ifdef DEBUG_P
+		cout << "HRI: Prod: Releasing empty lock at " << emptyLock << endl;
+#endif
+		pthread_mutex_lock(&wakeupLock);
+		wakeup = true;
+		pthread_mutex_unlock(&wakeupLock);
 		assert(!pthread_cond_signal(&emptyListFull));
+#ifdef DEBUG_P
+		cout << "HRI: Prod: Sending signal to work!\n";
+#endif
+	} else {
+		fillList[*fillListCtr] = p;
+		(*fillListCtr)++;
+		pthread_mutex_unlock(fillLock);
+#ifdef DEBUG_P
+		cout << "HRI: Prod: Releasing fill lock at " << fillLock << "; ctr: " << *fillListCtr << endl;
+#endif
 	}
-	fillList[*fillListCtr] = p;
-	(*fillListCtr)++;
-	pthread_mutex_unlock(fillLock);
 }
 
 /*
@@ -235,7 +307,8 @@ bool EHFawn::finalize()
 //		cout << "Dumping in finalize: " << aggiter->second->key << ", " << aggiter->second->value << endl;
 		queueForMerge(aggiter->second);
 	}
-	fclose(evictFile);
+	exitThread = true;
+	assert(!pthread_cond_signal(&emptyListFull));
 	hashtable.clear();
 }
 

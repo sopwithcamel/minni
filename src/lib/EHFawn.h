@@ -69,15 +69,20 @@ class EHFawn {
 		PartialAgg* evictList[2][EVICT_CACHE_SIZE];
 		pthread_mutex_t evictListLock[2];
 		uint64_t evictListCtr[2];
+		pthread_mutex_t wakeupLock;
+		bool wakeup;
 /* Condition used to indicate that I/O thread has work to do*/
-		pthread_cond_t emptyListFull; 
+		bool touched;
+		pthread_cond_t emptyListTouched;
+		pthread_mutex_t touchLock;
+		pthread_cond_t emptyListFull;
 		PartialAgg** fillList;
 		PartialAgg** emptyList;
 		pthread_mutex_t* fillLock;
 		pthread_mutex_t* emptyLock;
 		uint64_t* fillListCtr;
 		uint64_t* emptyListCtr;
-		
+		bool exitThread;		
 
 		bool insert(PartialAgg* pao); /* returns PAO from map, or pao if not in map already */
 		bool evict();
