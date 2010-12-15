@@ -8,7 +8,7 @@ EHFawn::EHFawn(uint64_t cap, uint64_t pid)
 	dumpNumber = 0;	
 	regularSerialize = true;
 	evictHashName = "/localfs/hamur/fawnds_hashdump";
-	evictHash = FawnDS<FawnDS_Flash>::Create_FawnDS(evictHashName.c_str(), 10000000, 0.9, 0.8, TEXT_KEYS);
+	evictHash = FawnDS<FawnDS_Flash>::Create_FawnDS(evictHashName.c_str(), 500000000, 0.9, 0.8, TEXT_KEYS);
 	evictFile = fopen("/localfs/hamur/fawnds_test", "w");
 	beg = hashtable.end();
 	beg_ctr = 0;
