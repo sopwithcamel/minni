@@ -8,7 +8,7 @@ EHFawn::EHFawn(uint64_t cap, uint64_t pid)
 	dumpNumber = 0;	
 	regularSerialize = true;
 	evictHashName = "/localfs/hamur/fawnds_hashdump";
-	evictHash = FawnDS<FawnDS_Flash>::Create_FawnDS(evictHashName.c_str(), 500000000, 0.9, 0.8, TEXT_KEYS);
+	evictHash = FawnDS<FawnDS_Flash>::Create_FawnDS(evictHashName.c_str(), 100000000, 0.9, 0.8, TEXT_KEYS);
 	evictFile = fopen("/localfs/hamur/fawnds_test", "w");
 	beg = hashtable.end();
 	beg_ctr = 0;
@@ -78,7 +78,17 @@ bool EHFawn::add(char* key, char* value)
 {
 //	cout << "Key: " << key;
 	Hash::iterator agg = hashtable.find(key);
-	insert_ctr++;
+	if (insert_ctr++ % 1000000 == 0) {
+		char buffer[30];
+		struct timeval tv;
+		time_t curtime;
+		gettimeofday(&tv, NULL); 
+		curtime=tv.tv_sec;
+		strftime(buffer,30,"%m-%d-%Y  %T.",localtime(&curtime));
+		printf("%s%ld\n",buffer,tv.tv_usec);
+		printf("Insert ctr: %llu\n", insert_ctr);
+		printf("Evict ctr: %llu\n", evict_ctr);
+	}
 	if (agg != hashtable.end()) {
 //		cout << " found" << endl;
 		agg->second->add(value);
