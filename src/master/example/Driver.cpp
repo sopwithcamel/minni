@@ -12,8 +12,8 @@ int main(int argc, char* args[])
 {
 	if (PRODUCTION_TEST)
 	{
-//		string input = "/ring.txt";
-		string input = "/medgutfile.txt";
+//		string input = "/medgutfile.txt";
+		string input = "/500x26e4x12.txt";
 //		string input = "/shake.txt";
 		//string input = "/input/10GB_random.dat"; 
 		string output = "/";
