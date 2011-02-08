@@ -23,7 +23,7 @@
 //#include "ExtendableHashtable.h"
 //#include "EHFullEvict.h"
 //#include "EHNotFreqUsedEvict.h"
-#include "EHFawn.h"
+#include "EHBucket.h"
 #define GetCurrentDir getcwd
 
 using namespace std;
