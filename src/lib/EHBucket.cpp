@@ -50,9 +50,10 @@ EHBucket::~EHBucket()
 
 uint64_t uniformPartition(char *k)
 {
-	int len = strlen(k);
-	if (len > 1)
-		return k[0] % EVICT_BUCKETS;
+	int tot = 0, len = strlen(k);
+	for (int i=0; i<len; i++)
+		tot += k[i];
+	return tot % EVICT_BUCKETS;
 }
 
 void EHBucket::setSerializeFormat(int sformat)
