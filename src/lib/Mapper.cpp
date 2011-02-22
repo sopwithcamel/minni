@@ -49,53 +49,91 @@ Mapper::~Mapper() {
       //  }
 }
  
+string Mapper::GetLocalMapDumpFile()
+{
+	return "/localfs/hamur/mapdumpfile";
+}
 
+void Mapper::EmitPartAggregKeyValues(MapInput *input)
+{
+	for (ChunkID id = input->chunk_id_start; id <= input->chunk_id_end; id++)
+	{
+		char *text, *spl;
+		uint64_t n = input->key_value(&text,id);
+		cout<<"Mapper: I have read from KDFS\n";
+		unsigned int i;
+		text[n-1] = '\0';
+		spl = strtok(text, " \n\r,.-+_|*[](){}\"\'\t?;:!\\/");
+//		spl = strtok(text, " \n\r");
+		bool flag = true;
+		while (spl != NULL) {
+			Emit(spl, "1");
+//			cout << "AKey: " << spl << ", " << strlen(spl) << endl;
+			spl = strtok(NULL, " \n\r,.-+_|*[](){}\"\'\t?;:!\\/");
+//			spl = strtok(NULL, " \n\r");
+		}
+		free(text);
+	}
+	FinalizeEmit();
+}
+
+void Mapper::FinalizeEmit()
+{
+	for (int i=0; i < num_partition; i++)
+		aggregs[i]->finalize();
+}
 
 void Mapper::Map(MapInput* input) {
 	cout<<"Mapper: entered the map phase\n";
 	cout<<"Mapper: I will be reading from KDFS soon\n";
-	for (ChunkID id = input->chunk_id_start; id <= input->chunk_id_end; id++)
-	{
-		char* text;
-		uint64_t n = input->key_value(&text,id);
-		cout<<"Mapper: I have read from KDFS\n";
-		unsigned int i;
-		for( i = 0; i < n; ) {
-		//skip through the leading whitespace
-			while((i < n) && isspace(text[i]))
-				i++;
-			//Find word end
-			unsigned int start = i;
-			while ((i < n) && !isspace(text[i]))
-				i++;
-		
-			if(start < i)
-			{
-				//cout<<"Mapper: The word is ";
-				string key(&text[start],(i-start));
-				//cout<<key;
-				//cout<<endl;
-				Emit(key,"1");
-			}
-        	}
-		free(text);
-		cout<<"Mapper: Done with map job\n";
-	}	
+
+	// Emit unaggregated key value pairs to disk
+	cout << "Reading from KDFS and partial aggregating before spilling to local dump file" << endl;
+	for (int i=0; i < num_partition; i++)
+		aggregs[i]->setSerializeFormat(NSORT_SERIALIZE);
+	tl.addTimeStamp("Starting map-and-bucket");
+	EmitPartAggregKeyValues(input);
+	tl.addTimeStamp("Finished map-and-bucket and starting final aggreg. pass");
+	// Make sure all the hashtables are flushed to disk
+	// TODO: This only works for a single reducer!!!
+	// Make dumpfiles contain partition IDs
+	char* s_key = (char*)malloc(100);
+	char* s_value = (char*)malloc(100);
+	string final_path = "/localfs/hamur/outputfile";
+	for (int i=0; i < EVICT_BUCKETS; i++) {
+		stringstream ss;
+		ss << i;
+		string bucket_name = "/localfs/hamur/bucket" + ss.str();
+		cout << bucket_name << endl;
+//		FILE* f_bucket = fopen(bucket_name.c_str(), "r");
+
+		ifstream fstr(bucket_name.c_str());
+		while (true) {
+			fstr >> s_key;
+			fstr >> s_value;
+			if (fstr.eof()) break;
+//			cout << s_key << ", " << s_value << endl;
+//			cout << "coming here " << endl;
+			Emit(s_key, s_value);
+		}
+		// Write output of aggregation pass to final output file
+		aggregs[0]->finalize(final_path);
+		tl.addTimeStamp("Finished aggregating bucket");
+	}
+
+	free(s_key);
+	free(s_value);	
 }
 
-
-void Mapper::Emit (string key, string value) { //Partial aggregation going on here
-	
-	//Case1: New key value - insert into map
-	//cout<<"Mapper: Emit: Partition function called\n";
+/* This function will simply write unaggregated key values to local disk
+*/
+void Mapper::Emit (char* key, char* value) {
 	int i = GetPartition(key);
-	//cout<<"Mapper: Emit: Partition value is "<<i<<"\n";
-	
 	(*(aggregs[i])).add(key, value);
 }
 
-int Mapper::GetPartition (string key) {//, int key_size) {
-	unsigned long hash = 5381;
+int Mapper::GetPartition (const char* key) {//, int key_size) {
+/*	unsigned long hash = 5381;
 	char* str =  (char*) key.c_str();
 	int key_size = key.length();
 	int i;	
@@ -104,6 +142,8 @@ int Mapper::GetPartition (string key) {//, int key_size) {
 		hash = ((hash << 5) + hash) + ((int) str[i]);
 	}
 	return hash % num_partition;
+*/
+	return 0;
 }
 
 //Mapper wrapper task
@@ -185,22 +225,12 @@ string MapperWrapperTask::GetLocalFilename(string path, JobID jobid, int i) {
        	ss << path;
         ss << "/job";
        	ss << jobid;
-       	ss << "_partition";
+//       	ss << "_partition";
+       	ss << "_part";
        	ss << i;
 	ss << ".map";
 	cout<<"The local file name generated is "<<ss.str()<<endl;
         return ss.str();
-}
-
-void serialize(FILE* fileOut, char type, uint64_t keyLength, const char* key, uint64_t valueLength, const char* value)
-{
-        keyLength = keyLength + 1; /* write \0 */
-        valueLength = valueLength + 1; /* write \0 */
-        fwrite(&type, sizeof(char), 1, fileOut);
-        fwrite(&keyLength, sizeof(uint64_t), 1, fileOut);
-        fwrite(key, sizeof(char), keyLength, fileOut);
-        fwrite(&valueLength, sizeof(uint64_t), 1, fileOut);
-        fwrite(value, sizeof(char), valueLength, fileOut);
 }
 
 
@@ -235,7 +265,7 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		my_mapper->aggregs.push_back(new MapperAggregator(100000, i));
+		my_mapper->aggregs.push_back(new MapperAggregator(1000000, i));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	
@@ -243,31 +273,25 @@ task* MapperWrapperTask::execute() {
 	my_mapper->Map(&myinput);
 
 	cout<<"Mapper: Supposedly done with mapping"<<endl;
-	string path = "/localfs/hamur/";
 	vector<File> my_Filelist;
 	cout<<"Mapper: About to start writing into files and my npart is "<<npart<<"\n";
 	//now i need to start writing into file
 	for(unsigned int i = 0; i < npart ; i++)
 	{
 		cout<<"Mapper: Executing loop for i = "<<i<<endl;
-		string final_path = GetLocalFilename(path,jobid,i);
-		cout<<"Mapper: I am going to write the file "<<final_path<<endl;
 
-// Call to finalize: merge the final contents of hashtable with most recent dumpfile
-		my_mapper->aggregs[i]->finalize(final_path);
-		
 		cout<<"Mapper: Going to tell the workdaemon about the file \n";
-		File f1(jobid, i, final_path);
+//		File f1(jobid, i, final_path);
 		cout<<"Pushed back the file to worker daemon list \n";
-		my_Filelist.push_back(f1);
+//		my_Filelist.push_back(f1);
 
 	}
 	ltime = time(NULL);
 	cout << "Hri: End of map phase" << asctime(localtime(&ltime));
+	my_mapper->tl.dumpLog();
 	
 	for(unsigned int i = 0; i < npart ; i++)
         {
-		my_mapper->aggregs[i]->clear();
 		delete my_mapper->aggregs[i];
 	}
 

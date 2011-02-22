@@ -16,12 +16,14 @@
 #include "WorkDaemon_tasks.h"
 #include <dlfcn.h>
 #include <map>
+#include <set>
 #include "PartialAgg.h"
+#include "TimeLog.h"
 #include "KDFS.h"
-#include "ExtendableMap.h"
 //#include "ExtendableHashtable.h"
-//#include "AppendMap.h"
-//#include "AppGoogDenseHash.h"
+//#include "EHFullEvict.h"
+//#include "EHNotFreqUsedEvict.h"
+#include "Bucket.h"
 #define GetCurrentDir getcwd
 
 using namespace std;
@@ -47,11 +49,15 @@ class Mapper {
 	Mapper() {};
 	~Mapper();
 	virtual void Map (MapInput* mapinp); //will be overloaded
-	virtual void Emit (string key, string value);
-	virtual int GetPartition (string key); //the default parititioner. This can be overriden
+	virtual void Emit (char* key, char* value);
+	virtual string GetLocalMapDumpFile();
+	virtual void EmitPartAggregKeyValues(MapInput*);
+	virtual void FinalizeEmit();
+	virtual int GetPartition (const char* key); //the default parititioner. This can be overriden
 	//vector <ofstream*>  my_file_streams; //TODO actually needed?
 	int num_partition;
 	vector<MapperAggregator*> aggregs;
+	TimeLog tl;
 
 };
 

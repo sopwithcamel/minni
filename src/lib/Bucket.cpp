@@ -1,21 +1,26 @@
-#include "EHFawn.h"
+#include "Bucket.h"
+
+uint64_t uniformPartition(char*);
 
 /* Just initialize capacity, dumpNumber, dumpFile */
-EHFawn::EHFawn(uint64_t cap, uint64_t pid)
+Bucket::Bucket(uint64_t cap, uint64_t pid)
 {
 	partid = pid;
 	capacity = cap;
 	dumpNumber = 0;	
 	regularSerialize = true;
-	evictHashName = "/localfs/hamur/fawnds_hashdump";
-	evictHash = FawnDS<FawnDS_Flash>::Create_FawnDS(evictHashName.c_str(), 100000000, 0.9, 0.8, TEXT_KEYS);
-	evictFile = fopen("/localfs/hamur/fawnds_test", "w");
+	for (int i=0; i < EVICT_BUCKETS; i++) {
+		stringstream ss;
+		ss << i;
+		string evictBucketName = "/localfs/hamur/bucket" + ss.str();
+		evictBucket[i] = fopen(evictBucketName.c_str(), "w");
+	}
+	evictPartition = uniformPartition;
 	beg = hashtable.end();
 	beg_ctr = 0;
 	insert_ctr = 0;
 	evict_ctr = 0;
 	fds_read_ctr = 0;
-	bufferListPtr = 0;
 // Create pthread to do I/O
 	assert(!pthread_create(&evict_thread, NULL, merge_helper, this));
 	for (int i=0; i<2; i++) {
@@ -39,11 +44,19 @@ EHFawn::EHFawn(uint64_t cap, uint64_t pid)
 
 /* perform finalize, send to default
  * filename (crash dump file) */
-EHFawn::~EHFawn()
+Bucket::~Bucket()
 {
 }
 
-void EHFawn::setSerializeFormat(int sformat)
+uint64_t uniformPartition(char *k)
+{
+	int tot = 0, len = strlen(k);
+	for (int i=0; i<len; i++)
+		tot += k[i];
+	return tot % EVICT_BUCKETS;
+}
+
+void Bucket::setSerializeFormat(int sformat)
 {
 	if (sformat == NSORT_SERIALIZE)
 		regularSerialize = false;
@@ -55,7 +68,7 @@ void EHFawn::setSerializeFormat(int sformat)
  * do dumpHashtable(fname) to default filename plus dumpNumber
  * insert <key,pao> into hashtable
  */
-bool EHFawn::insert(PartialAgg* pao)
+bool Bucket::insert(PartialAgg* pao)
 {
 //	cout << "Size " << hashtable.size() << ", cap: " << capacity << endl;
 	if (hashtable.size() + 1 > capacity) {
@@ -74,7 +87,7 @@ bool EHFawn::insert(PartialAgg* pao)
  * heap. This will be freed when the object is evicted and 
  * flushed.
  */
-bool EHFawn::add(char* key, char* value)
+bool Bucket::add(char* key, char* value)
 {
 //	cout << "Key: " << key;
 	Hash::iterator agg = hashtable.find(key);
@@ -94,6 +107,7 @@ bool EHFawn::add(char* key, char* value)
 		agg->second->add(value);
 	}
 	else {
+//		cout << " created" << endl;
 		char* new_key = (char*)malloc(strlen(key)+1);
 //		char* new_key = (char*)malloc(30);
 		char* new_val = (char*)malloc(10);
@@ -102,12 +116,11 @@ bool EHFawn::add(char* key, char* value)
 		PartialAgg* new_pao = new PartialAgg(new_key, new_val);
 //		printf("New PAO created: key %s at %p, value at %p\n", new_pao->key, new_pao->key, new_pao->value);
 		insert(new_pao);
-//		cout << " inserted" << endl;
 	}
 	return true;
 }
 
-void EHFawn::serialize(FILE* fileOut, string key, string value)
+void Bucket::serialize(FILE* fileOut, string key, string value)
 {
 	static uint64_t syncCtr = 0;
         fwrite(key.c_str(), sizeof(char), key.size(), fileOut);
@@ -116,7 +129,7 @@ void EHFawn::serialize(FILE* fileOut, string key, string value)
         fwrite("\n", sizeof(char), 1, fileOut);
 }
 
-void EHFawn::serialize(FILE* fileOut, char type, uint64_t keyLength, const char* key, uint64_t valueLength, const char* value)
+void Bucket::serialize(FILE* fileOut, char type, uint64_t keyLength, const char* key, uint64_t valueLength, const char* value)
 {
         keyLength = keyLength + 1; /* write \0 */
         valueLength = valueLength + 1; /* write \0 */
@@ -128,35 +141,27 @@ void EHFawn::serialize(FILE* fileOut, char type, uint64_t keyLength, const char*
 }
 
 /* 
- * Dump contents of FawnDS to the passed file
+ * Dump contents of hashtable to the passed file
  */
-bool EHFawn::finalize(string fname)
-{
-	
-	FILE *f = fopen(fname.c_str(), "w");
-//	cout << "Dumping contents of FawnDS in finalize" << endl;
-	set<string>::iterator it;
-	char k[DBID_LENGTH];
-	uint32_t key_length;
-	bool valid, remove;
-	char type = 1;
-	string val;
 
-	evictHash->split_init("");
-	DBID se("a"); // some key
-	while (evictHash->split_next(&se, &se, k, key_length, val, valid, remove)) {
-		if (!valid) {
-//			cout << k << " not valid" << endl;
-			continue;
-		}
-		string key(k, key_length);
-//		cout << "dumping key " << key << ", " << val << endl;
-//		assert(evictHash->Delete(k, strlen(k)));
-		serialize(f, type, uint64_t (key.size()), key.c_str(), uint64_t (val.size()), val.c_str()); 
+bool Bucket::finalize(string fname)
+{	
+	FILE *f = fopen(fname.c_str(), "w");
+	Hash::iterator aggiter;
+	char type = 1;
+	for (aggiter = hashtable.begin(); aggiter != hashtable.end(); aggiter++) {
+		char* k = aggiter->second->key;
+		char* val = aggiter->second->value;
+
+		serialize(f, type, strlen(k), k, strlen(val), val);
+		free(k);
+		free(val);
+		delete aggiter->second;
 	}
+	hashtable.clear();
 	fclose(f);
-        fds_read_ctr = evictHash->getReadCtr();
 }
+
 
 //#define DEBUG_P
 
@@ -170,7 +175,7 @@ bool EHFawn::finalize(string fname)
  * 		Reset pointer
  *	Add newly evicted element to the buffer
  */
-void EHFawn::merge()
+void Bucket::merge()
 {
 	string ret_value;
         static int mctr = 0;
@@ -197,39 +202,17 @@ wait_again:
 #ifdef DEBUG_P
 	cout << "HRI: Cons: Picking up empty list lock\n";
 #endif
+	char type = 1;
 	while (*emptyListCtr > 0) {
 		PartialAgg* pao = emptyList[EVICT_CACHE_SIZE - *emptyListCtr];
 		char* k = pao->key;
 		char* val = pao->value;
 
-//	printf("Minni: key %s is chosen for eviction\n", k);
-
-		if (evictHash->Get(k, strlen(k), ret_value)) {
-		// ret_value needs to be added to val
-			int _val = atoi(val);
-			_val += atoi(ret_value.c_str());
-			sprintf(val, "%d", _val);
-//			cout << " found, "; 
-			pao->add(ret_value.c_str());
-		}
-//		cout << " aggregated, ";
-
-		assert(evictHash->Insert(k, strlen(k), val, strlen(val)));
-
-		if (evictHash->checkWriteBufFlush()) {
-//			cout << "Responding to flush..." << endl;
-			for (int i=0; i<bufferListPtr; i++) {
-//				printf("Freeing %s value %s\n", bufferList[i]->key, bufferList[i]->value);
-				free(bufferList[i]->value);
-				free(bufferList[i]->key);
-				delete bufferList[i];
-			}
-			bufferListPtr = 0;
-		}
-//		cout << "inserted, ";
-	
-		bufferList[bufferListPtr++] = pao;
-//		cout << "added to bufferList" << endl;
+//		serialize(evictBucket[evictPartition(k)], type, strlen(k), k, strlen(val), val);
+		serialize(evictBucket[evictPartition(k)], string(k), string(val));
+		free(val);
+		free(k);
+		delete pao;
 		(*emptyListCtr)--;
 	}
 	pthread_mutex_lock(&touchLock);
@@ -243,10 +226,11 @@ wait_again:
 	if (!exitThread)
 		goto wait_again;
 	pthread_mutex_unlock(&wakeupLock);
-	fclose(evictFile);
+	for (int i=0; i<EVICT_BUCKETS; i++)
+		fclose(evictBucket[i]);
 }
 
-void EHFawn::queueForMerge(PartialAgg* p)
+void Bucket::queueForMerge(PartialAgg* p)
 {
 	pthread_mutex_lock(fillLock);
 #ifdef DEBUG_P
@@ -309,7 +293,7 @@ void EHFawn::queueForMerge(PartialAgg* p)
 /*
  * Dump contents of hashtable to FawnDS
  */
-bool EHFawn::finalize()
+bool Bucket::finalize()
 {
 	Hash::iterator aggiter;
 	printf("hashtable size: %d\n", hashtable.size());
@@ -322,7 +306,7 @@ bool EHFawn::finalize()
 	hashtable.clear();
 }
 
-bool EHFawn::evict()
+bool Bucket::evict()
 {
 	Hash::iterator lfu;
 	int i = 0, lfu_val = INT_MAX;
@@ -344,7 +328,7 @@ bool EHFawn::evict()
 	hashtable.erase(lfu);
 }
 	
-int EHFawn::deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint64_t* valueLength, char** value)
+uint64_t Bucket::deserialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint64_t* valueLength, char** value)
 {
 	size_t result;
 	if (feof(fileIn)) return -1;

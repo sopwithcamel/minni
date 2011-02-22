@@ -1,11 +1,11 @@
 lib_LTLIBRARIES = libminni.la 
 
-EXTRA_DIST = PartialAgg.h FawnMapper.h Reducer.h Minnie.h EHBucket.h
+EXTRA_DIST = PartialAgg.h Mapper.h Reducer.h Minnie.h Bucket.h
 
 libminni_la_SOURCES =  PartialAgg.cpp \
-		       FawnMapper.cpp \
+		       Mapper.cpp \
 		       Reducer.cpp \
-			EHBucket.cpp
+		       Bucket.cpp
 
 libminni_la_LIBADD = ../dfs/libdfs.la
 
@@ -21,7 +21,7 @@ libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION)
 
 minni_includedir = $(includedir)/libminni/libminni
 
-minni_include_HEADERS = Minnie.h PartialAgg.h FawnMapper.h EHBucket.h
+minni_include_HEADERS = Minnie.h PartialAgg.h Mapper.h Bucket.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 

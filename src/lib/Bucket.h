@@ -34,11 +34,11 @@ using namespace std;
 
 typedef std::tr1::unordered_map<string, PartialAgg*> Hash;
 
-class EHBucket {
+class Bucket {
 	public:
-		EHBucket(uint64_t capacity, uint64_t partid); /* constructor */
-		EHBucket(uint64_t capacity, uint64_t partid, const string &path); /* load constructor, from a "dump" file */
-		~EHBucket(); /* destructor */
+		Bucket(uint64_t capacity, uint64_t partid); /* constructor */
+		Bucket(uint64_t capacity, uint64_t partid, const string &path); /* load constructor, from a "dump" file */
+		~Bucket(); /* destructor */
 		bool add(char* key, char* value); /* add to existing PAO */
 		bool finalize(string fname);
 		bool finalize(); 
@@ -82,13 +82,13 @@ class EHBucket {
 		void merge();
 		void queueForMerge(PartialAgg*);
 		uint64_t (*evictPartition)(char*);	
-		static void *merge_helper(void *context) {((EHBucket*)context)->merge(); return NULL;}
+		static void *merge_helper(void *context) {((Bucket*)context)->merge(); return NULL;}
 		void serialize(FILE*, char, uint64_t, const char*, uint64_t, const char*);
 		void serialize(FILE*, string, string);
 		uint64_t deserialize(FILE*, char*, uint64_t*, char**, uint64_t*, char**);
 
 };
 
-typedef EHBucket MapperAggregator;
+typedef Bucket MapperAggregator;
 
 #endif
