@@ -79,10 +79,8 @@ void Mapper::EmitPartAggregKeyValues(MapInput *input)
 
 void Mapper::FinalizeEmit()
 {
-	tl.addTimeStamp("Starting to finalize...");
 	for (int i=0; i < num_partition; i++)
 		aggregs[i]->finalize();
-	tl.addTimeStamp("Finished presort aggregation");
 }
 
 void Mapper::Map(MapInput* input) {
@@ -93,11 +91,38 @@ void Mapper::Map(MapInput* input) {
 	cout << "Reading from KDFS and partial aggregating before spilling to local dump file" << endl;
 	for (int i=0; i < num_partition; i++)
 		aggregs[i]->setSerializeFormat(NSORT_SERIALIZE);
-	tl.addTimeStamp("Starting presort aggregation");
+	tl.addTimeStamp("Starting map-and-bucket");
 	EmitPartAggregKeyValues(input);
+	tl.addTimeStamp("Finished map-and-bucket and starting final aggreg. pass");
 	// Make sure all the hashtables are flushed to disk
 	// TODO: This only works for a single reducer!!!
 	// Make dumpfiles contain partition IDs
+	char* s_key = (char*)malloc(100);
+	char* s_value = (char*)malloc(100);
+	string final_path = "/localfs/hamur/outputfile";
+	for (int i=0; i < EVICT_BUCKETS; i++) {
+		stringstream ss;
+		ss << i;
+		string bucket_name = "/localfs/hamur/bucket" + ss.str();
+		cout << bucket_name << endl;
+//		FILE* f_bucket = fopen(bucket_name.c_str(), "r");
+
+		ifstream fstr(bucket_name.c_str());
+		while (true) {
+			fstr >> s_key;
+			fstr >> s_value;
+			if (fstr.eof()) break;
+//			cout << s_key << ", " << s_value << endl;
+//			cout << "coming here " << endl;
+			Emit(s_key, s_value);
+		}
+		// Write output of aggregation pass to final output file
+		aggregs[0]->finalize(final_path);
+		tl.addTimeStamp("Finished aggregating bucket");
+	}
+
+	free(s_key);
+	free(s_value);	
 }
 
 /* This function will simply write unaggregated key values to local disk
@@ -240,7 +265,7 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		my_mapper->aggregs.push_back(new MapperAggregator(1000000, i));
+		my_mapper->aggregs.push_back(new MapperAggregator(10000000, i));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	
@@ -248,28 +273,17 @@ task* MapperWrapperTask::execute() {
 	my_mapper->Map(&myinput);
 
 	cout<<"Mapper: Supposedly done with mapping"<<endl;
-	string path = "/localfs/hamur/";
 	vector<File> my_Filelist;
 	cout<<"Mapper: About to start writing into files and my npart is "<<npart<<"\n";
 	//now i need to start writing into file
 	for(unsigned int i = 0; i < npart ; i++)
 	{
 		cout<<"Mapper: Executing loop for i = "<<i<<endl;
-		string final_path = GetLocalFilename(path,jobid,i);
-		cout<<"Mapper: I am going to write the file "<<final_path<<endl;
 
-// Call to finalize: merge the final contents of hashtable with most recent dumpfile
-		my_mapper->aggregs[i]->finalize(final_path);
-		my_mapper->tl.addTimeStamp("Finished dumping to FawnDB");
-		my_mapper->tl.addLogValue("Insert ctr", my_mapper->aggregs[i]->insert_ctr);
-		my_mapper->tl.addLogValue("Evict ctr", my_mapper->aggregs[i]->evict_ctr);
-//		my_mapper->tl.addLogValue("Beg ctr", my_mapper->aggregs[i]->beg_ctr);
-		my_mapper->tl.addLogValue("FDS read ctr", my_mapper->aggregs[i]->fds_read_ctr);
-		
 		cout<<"Mapper: Going to tell the workdaemon about the file \n";
-		File f1(jobid, i, final_path);
+//		File f1(jobid, i, final_path);
 		cout<<"Pushed back the file to worker daemon list \n";
-		my_Filelist.push_back(f1);
+//		my_Filelist.push_back(f1);
 
 	}
 	ltime = time(NULL);

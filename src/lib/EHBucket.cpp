@@ -107,6 +107,7 @@ bool EHBucket::add(char* key, char* value)
 		agg->second->add(value);
 	}
 	else {
+//		cout << " created" << endl;
 		char* new_key = (char*)malloc(strlen(key)+1);
 //		char* new_key = (char*)malloc(30);
 		char* new_val = (char*)malloc(10);
@@ -115,7 +116,6 @@ bool EHBucket::add(char* key, char* value)
 		PartialAgg* new_pao = new PartialAgg(new_key, new_val);
 //		printf("New PAO created: key %s at %p, value at %p\n", new_pao->key, new_pao->key, new_pao->value);
 		insert(new_pao);
-//		cout << " inserted" << endl;
 	}
 	return true;
 }
@@ -141,36 +141,25 @@ void EHBucket::serialize(FILE* fileOut, char type, uint64_t keyLength, const cha
 }
 
 /* 
- * Dump contents of FawnDS to the passed file
+ * Dump contents of hashtable to the passed file
  */
 
 bool EHBucket::finalize(string fname)
-{
-/*	
+{	
 	FILE *f = fopen(fname.c_str(), "w");
-//	cout << "Dumping contents of FawnDS in finalize" << endl;
-	set<string>::iterator it;
-	char k[DBID_LENGTH];
-	uint32_t key_length;
-	bool valid, remove;
+	Hash::iterator aggiter;
 	char type = 1;
-	string val;
+	for (aggiter = hashtable.begin(); aggiter != hashtable.end(); aggiter++) {
+		char* k = aggiter->second->key;
+		char* val = aggiter->second->value;
 
-	evictHash->split_init("");
-	DBID se("a"); // some key
-	while (evictHash->split_next(&se, &se, k, key_length, val, valid, remove)) {
-		if (!valid) {
-//			cout << k << " not valid" << endl;
-			continue;
-		}
-		string key(k, key_length);
-//		cout << "dumping key " << key << ", " << val << endl;
-//		assert(evictHash->Delete(k, strlen(k)));
-		serialize(f, type, uint64_t (key.size()), key.c_str(), uint64_t (val.size()), val.c_str()); 
+		serialize(f, type, strlen(k), k, strlen(val), val);
+		free(k);
+		free(val);
+		delete aggiter->second;
 	}
+	hashtable.clear();
 	fclose(f);
-        fds_read_ctr = evictHash->getReadCtr();
-*/
 }
 
 
@@ -219,7 +208,8 @@ wait_again:
 		char* k = pao->key;
 		char* val = pao->value;
 
-		serialize(evictBucket[evictPartition(k)], type, strlen(k), k, strlen(val), val);
+//		serialize(evictBucket[evictPartition(k)], type, strlen(k), k, strlen(val), val);
+		serialize(evictBucket[evictPartition(k)], string(k), string(val));
 		free(val);
 		free(k);
 		delete pao;
