@@ -92,6 +92,7 @@ void Mapper::Map(MapInput* input) {
 	for (int i=0; i < num_partition; i++)
 		aggregs[i]->setSerializeFormat(NSORT_SERIALIZE);
 	tl.addTimeStamp("Starting map-and-bucket");
+
 	EmitPartAggregKeyValues(input);
 	tl.addTimeStamp("Finished map-and-bucket and starting final aggreg. pass");
 	// Make sure all the hashtables are flushed to disk
@@ -100,12 +101,15 @@ void Mapper::Map(MapInput* input) {
 	char* s_key = (char*)malloc(100);
 	char* s_value = (char*)malloc(100);
 	string final_path = "/localfs/hamur/outputfile";
+	// set eviction to happen to the final output file and not to buckets
+	// TODO: This only works for a single reducer!!!
+	aggregs[0]->setToMapOutput(final_path);
 	for (int i=0; i < EVICT_BUCKETS; i++) {
 		stringstream ss;
 		ss << i;
 		string bucket_name = "/localfs/hamur/bucket" + ss.str();
 		cout << bucket_name << endl;
-//		FILE* f_bucket = fopen(bucket_name.c_str(), "r");
+		FILE* f_bucket = fopen(bucket_name.c_str(), "r");
 
 		ifstream fstr(bucket_name.c_str());
 		while (true) {
@@ -117,7 +121,9 @@ void Mapper::Map(MapInput* input) {
 			Emit(s_key, s_value);
 		}
 		// Write output of aggregation pass to final output file
-		aggregs[0]->finalize(final_path);
+		// TODO: This only works for a single reducer!!!
+		aggregs[0]->finalize();
+		cout << "Done finalizing\n";
 		tl.addTimeStamp("Finished aggregating bucket");
 	}
 

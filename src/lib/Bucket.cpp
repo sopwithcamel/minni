@@ -38,6 +38,7 @@ Bucket::Bucket(uint64_t cap, uint64_t pid)
 	emptyListFull = PTHREAD_COND_INITIALIZER;
 	exitThread = false;
 	touched = true;
+	bucketFlag = true;
 	emptyListTouched = PTHREAD_COND_INITIALIZER;
 	touchLock = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
 }
@@ -62,6 +63,15 @@ void Bucket::setSerializeFormat(int sformat)
 		regularSerialize = false;
 	else
 		regularSerialize = true;
+}
+
+void Bucket::setToMapOutput(string fname)
+{
+	mapOutFile = fopen(fname.c_str(), "w");
+	if (mapOutFile == NULL) {
+		perror("Unable to open file to dump hashtable to!\n");
+	}
+	bucketFlag = false;
 }
 
 /* if hashtable.size() + 1 == capacity
@@ -129,51 +139,9 @@ void Bucket::serialize(FILE* fileOut, string key, string value)
         fwrite("\n", sizeof(char), 1, fileOut);
 }
 
-void Bucket::serialize(FILE* fileOut, char type, uint64_t keyLength, const char* key, uint64_t valueLength, const char* value)
-{
-        keyLength = keyLength + 1; /* write \0 */
-        valueLength = valueLength + 1; /* write \0 */
-        fwrite(&type, sizeof(char), 1, fileOut);
-        fwrite(&keyLength, sizeof(uint64_t), 1, fileOut);
-        fwrite(key, sizeof(char), keyLength, fileOut);
-        fwrite(&valueLength, sizeof(uint64_t), 1, fileOut);
-        fwrite(value, sizeof(char), valueLength, fileOut);
-}
-
-/* 
- * Dump contents of hashtable to the passed file
- */
-
-bool Bucket::finalize(string fname)
-{	
-	FILE *f = fopen(fname.c_str(), "w");
-	Hash::iterator aggiter;
-	char type = 1;
-	for (aggiter = hashtable.begin(); aggiter != hashtable.end(); aggiter++) {
-		char* k = aggiter->second->key;
-		char* val = aggiter->second->value;
-
-		serialize(f, type, strlen(k), k, strlen(val), val);
-		free(k);
-		free(val);
-		delete aggiter->second;
-	}
-	hashtable.clear();
-	fclose(f);
-}
-
-
 //#define DEBUG_P
 
 /*
- * No need to free key here since it will be freed in the 
- * tokenizing code.
- * In this function,
- * 	Insert into FawnDS
- *	If the insert caused a flush
- *		Free elements in buffer
- * 		Reset pointer
- *	Add newly evicted element to the buffer
  */
 void Bucket::merge()
 {
@@ -185,11 +153,12 @@ void Bucket::merge()
 #ifdef DEBUG_P
 	cout << "HRI: Cons: Picking up wakeup lock\n";
 #endif
-// wait for signal indicating I have work to do
+// wait for signal indicating there is work to do
 wait_again:
 #ifdef DEBUG_P
 	cout << "HRI: Cons: Waiting for signal..." << endl;
 #endif
+	// wait for signal that there is a full list to empty
 	while (wakeup == false)
 		assert(!pthread_cond_wait(&emptyListFull, &wakeupLock));
 #ifdef DEBUG_P
@@ -202,19 +171,21 @@ wait_again:
 #ifdef DEBUG_P
 	cout << "HRI: Cons: Picking up empty list lock\n";
 #endif
-	char type = 1;
 	while (*emptyListCtr > 0) {
 		PartialAgg* pao = emptyList[EVICT_CACHE_SIZE - *emptyListCtr];
 		char* k = pao->key;
 		char* val = pao->value;
 
-//		serialize(evictBucket[evictPartition(k)], type, strlen(k), k, strlen(val), val);
-		serialize(evictBucket[evictPartition(k)], string(k), string(val));
+		if (bucketFlag)
+			serialize(evictBucket[evictPartition(k)], string(k), string(val));
+		else
+			serialize(mapOutFile, string(k), string(val));
 		free(val);
 		free(k);
 		delete pao;
 		(*emptyListCtr)--;
 	}
+	// if the main thread is waiting for list to become empty, fire off a signal
 	pthread_mutex_lock(&touchLock);
 	touched = true;
 	pthread_mutex_unlock(&touchLock);
@@ -225,6 +196,7 @@ wait_again:
 #endif
 	if (!exitThread)
 		goto wait_again;
+	// Ok, to unlock only here because the cond_wait internally unlocks ...
 	pthread_mutex_unlock(&wakeupLock);
 	for (int i=0; i<EVICT_BUCKETS; i++)
 		fclose(evictBucket[i]);
@@ -232,38 +204,52 @@ wait_again:
 
 void Bucket::queueForMerge(PartialAgg* p)
 {
+	// pick up lock protecting fill list
 	pthread_mutex_lock(fillLock);
 #ifdef DEBUG_P
 	cout << "HRI: Prod: Picking up fill lock at " << fillLock << endl;
 #endif
+	// check if the fill list is already full
 	if (*fillListCtr == EVICT_CACHE_SIZE) {
 #ifdef DEBUG_P
 		cout << "HRI: Prod: Fill list full\n";
 #endif
 		pthread_mutex_lock(&touchLock);
+		// if I/O thread is still emptying the other list, then wait
+		// have while loop to handle false wakeups 
 		while (touched == false)
 			pthread_cond_wait(&emptyListTouched, &touchLock);
 #ifdef DEBUG_P
 		cout << "HRI: Prod: Picking up empty lock at " << emptyLock << endl;
 #endif
+		// Ok, the I/O thread has cleared out the empty list
+		// so safe to switch pointers now
+
+		// pick up other lock
 		pthread_mutex_lock(emptyLock);
+		// switch pointers
 		PartialAgg** tmpList = fillList;
 		fillList = emptyList;
 		emptyList = tmpList;
 
+		// switch counter pointers
 		uint64_t* tmpCtr = fillListCtr;
 		fillListCtr = emptyListCtr;
 		emptyListCtr = tmpCtr; 
 
+		// switch lock pointers
 		pthread_mutex_t* tmpLock = fillLock;
 		fillLock = emptyLock;
 		emptyLock = tmpLock;
 
+		// TODO: why set to false here?
 		touched = false;
 		pthread_mutex_unlock(&touchLock);
 
+		// add to new fill list
 		fillList[*fillListCtr] = p;
 		(*fillListCtr)++;
+		// release fill list lock first
 		pthread_mutex_unlock(fillLock);
 #ifdef DEBUG_P
 		cout << "HRI: Prod: Releasing fill lock at " << fillLock << "; ctr: " << *fillListCtr << endl;
@@ -273,6 +259,7 @@ void Bucket::queueForMerge(PartialAgg* p)
 #ifdef DEBUG_P
 		cout << "HRI: Prod: Releasing empty lock at " << emptyLock << endl;
 #endif
+		// time to wakeup I/O thread ...
 		pthread_mutex_lock(&wakeupLock);
 		wakeup = true;
 		pthread_mutex_unlock(&wakeupLock);

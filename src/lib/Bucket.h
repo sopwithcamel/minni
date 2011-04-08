@@ -30,7 +30,7 @@ using namespace std;
 #define NSORT_SERIALIZE		1
 
 #define EVICT_CACHE_SIZE	64
-#define EVICT_BUCKETS		4
+#define EVICT_BUCKETS		1
 
 typedef std::tr1::unordered_map<string, PartialAgg*> Hash;
 
@@ -40,9 +40,9 @@ class Bucket {
 		Bucket(uint64_t capacity, uint64_t partid, const string &path); /* load constructor, from a "dump" file */
 		~Bucket(); /* destructor */
 		bool add(char* key, char* value); /* add to existing PAO */
-		bool finalize(string fname);
 		bool finalize(); 
 		void setSerializeFormat(int);
+		void setToMapOutput(string fname);
 
 		uint64_t evict_ctr;
 		uint64_t insert_ctr;
@@ -56,6 +56,8 @@ class Bucket {
 		uint64_t capacity; /* maximum capacity of map before dumping */
 		uint64_t dumpNumber; /* monotonically increasing dump sequence number */
 		Hash::iterator beg;
+		bool bucketFlag;
+		FILE *mapOutFile;
 		FILE *evictBucket[EVICT_BUCKETS];
 		pthread_t evict_thread;
 		PartialAgg* evictList[2][EVICT_CACHE_SIZE];
