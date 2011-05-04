@@ -1,7 +1,7 @@
 #include "config.h"
 #include "Mapper.h"
-
-
+#include "HashAggregator.h"
+#include "MapperAggregator.h"
 
 //MapInput Class
 
@@ -48,108 +48,12 @@ Mapper::~Mapper() {
     //            delete my_file_streams[i];
       //  }
 }
- 
-string Mapper::GetLocalMapDumpFile()
-{
-	return "/localfs/hamur/mapdumpfile";
-}
 
-void Mapper::EmitPartAggregKeyValues(MapInput *input)
-{
-	for (ChunkID id = input->chunk_id_start; id <= input->chunk_id_end; id++)
-	{
-		char *text, *spl;
-		uint64_t n = input->key_value(&text,id);
-		cout<<"Mapper: I have read from KDFS\n";
-		unsigned int i;
-		text[n-1] = '\0';
-		spl = strtok(text, " \n\r,.-+_|*[](){}\"\'\t?;:!\\/");
-//		spl = strtok(text, " \n\r");
-		bool flag = true;
-		while (spl != NULL) {
-			Emit(spl, "1");
-//			cout << "AKey: " << spl << ", " << strlen(spl) << endl;
-			spl = strtok(NULL, " \n\r,.-+_|*[](){}\"\'\t?;:!\\/");
-//			spl = strtok(NULL, " \n\r");
-		}
-		free(text);
-	}
-	FinalizeEmit();
-}
 
-void Mapper::FinalizeEmit()
-{
-	for (int i=0; i < num_partition; i++)
-		aggregs[i]->finalize();
-}
-
-void Mapper::Map(MapInput* input) {
+void Mapper::Map() {
 	cout<<"Mapper: entered the map phase\n";
 	cout<<"Mapper: I will be reading from KDFS soon\n";
-
-	// Emit unaggregated key value pairs to disk
-	cout << "Reading from KDFS and partial aggregating before spilling to local dump file" << endl;
-	for (int i=0; i < num_partition; i++)
-		aggregs[i]->setSerializeFormat(NSORT_SERIALIZE);
-	tl.addTimeStamp("Starting map-and-bucket");
-
-	EmitPartAggregKeyValues(input);
-	tl.addTimeStamp("Finished map-and-bucket and starting final aggreg. pass");
-	// Make sure all the hashtables are flushed to disk
-	// TODO: This only works for a single reducer!!!
-	// Make dumpfiles contain partition IDs
-	char* s_key = (char*)malloc(100);
-	char* s_value = (char*)malloc(100);
-	string final_path = "/localfs/hamur/outputfile";
-	// set eviction to happen to the final output file and not to buckets
-	// TODO: This only works for a single reducer!!!
-	aggregs[0]->setToMapOutput(final_path);
-	for (int i=0; i < EVICT_BUCKETS; i++) {
-		stringstream ss;
-		ss << i;
-		string bucket_name = "/localfs/hamur/bucket" + ss.str();
-		cout << bucket_name << endl;
-		FILE* f_bucket = fopen(bucket_name.c_str(), "r");
-
-		ifstream fstr(bucket_name.c_str());
-		while (true) {
-			fstr >> s_key;
-			fstr >> s_value;
-			if (fstr.eof()) break;
-//			cout << s_key << ", " << s_value << endl;
-//			cout << "coming here " << endl;
-			Emit(s_key, s_value);
-		}
-		// Write output of aggregation pass to final output file
-		// TODO: This only works for a single reducer!!!
-		aggregs[0]->finalize();
-		cout << "Done finalizing\n";
-		tl.addTimeStamp("Finished aggregating bucket");
-	}
-
-	free(s_key);
-	free(s_value);	
-}
-
-/* This function will simply write unaggregated key values to local disk
-*/
-void Mapper::Emit (char* key, char* value) {
-	int i = GetPartition(key);
-	(*(aggregs[i])).add(key, value);
-}
-
-int Mapper::GetPartition (const char* key) {//, int key_size) {
-/*	unsigned long hash = 5381;
-	char* str =  (char*) key.c_str();
-	int key_size = key.length();
-	int i;	
-	for (i = 0; i < key_size; i++)
-	{
-		hash = ((hash << 5) + hash) + ((int) str[i]);
-	}
-	return hash % num_partition;
-*/
-	return 0;
+	aggregs[0]->runPipeline();
 }
 
 //Mapper wrapper task
@@ -271,12 +175,12 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		my_mapper->aggregs.push_back(new MapperAggregator(1000000, i));
+		my_mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new HashAggregator(1000000, i, &myinput)));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	
 
-	my_mapper->Map(&myinput);
+	my_mapper->Map();
 
 	cout<<"Mapper: Supposedly done with mapping"<<endl;
 	vector<File> my_Filelist;

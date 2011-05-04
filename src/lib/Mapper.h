@@ -20,10 +20,8 @@
 #include "PartialAgg.h"
 #include "TimeLog.h"
 #include "KDFS.h"
-//#include "ExtendableHashtable.h"
-//#include "EHFullEvict.h"
-//#include "EHNotFreqUsedEvict.h"
-#include "Bucket.h"
+#include "MapperAggregator.h"
+
 #define GetCurrentDir getcwd
 
 using namespace std;
@@ -48,12 +46,7 @@ class Mapper {
   public:
 	Mapper() {};
 	~Mapper();
-	virtual void Map (MapInput* mapinp); //will be overloaded
-	virtual void Emit (char* key, char* value);
-	virtual string GetLocalMapDumpFile();
-	virtual void EmitPartAggregKeyValues(MapInput*);
-	virtual void FinalizeEmit();
-	virtual int GetPartition (const char* key); //the default parititioner. This can be overriden
+	virtual void Map (); //will be overloaded
 	//vector <ofstream*>  my_file_streams; //TODO actually needed?
 	int num_partition;
 	vector<MapperAggregator*> aggregs;
