@@ -18,7 +18,7 @@ int main(int argc, char* args[])
 		//string input = "/input/10GB_random.dat"; 
 		string output = "/";
 		string dfs_master = "127.0.0.1";
-		string so_name = "wordcount.so";
+		string so_name = "/home/hamur/minni/src/lib/example/wordcount.la";
 		uint16_t dfs_port = 20000;
 		JobID maxJobs = 2;
 		JobID maxMaps = 1;

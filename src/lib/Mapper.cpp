@@ -2,6 +2,7 @@
 #include "Mapper.h"
 #include "HashAggregator.h"
 #include "MapperAggregator.h"
+#include <dlfcn.h>
 
 //MapInput Class
 
@@ -65,6 +66,22 @@ MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p, TaskRegistry * 
 	filereg = f;
 }
 
+/* TODO: destroy all PAO's created */
+MapperWrapperTask::~MapperWrapperTask()
+{
+	const char* err;
+	void* (*__libminni_map_destroy)(Mapper* m);
+	__libminni_map_destroy = (void* (*)(Mapper* m)) lt_dlsym(handle, "__libminni_map_destroy");
+	if ((err = lt_dlerror()))
+	{
+		fprintf(stderr, "Error locating symbol mapreduce_lib_map_destroy in %s\n", err);
+		exit(-1);
+	}
+	__libminni_map_destroy(mapper);
+	lt_dlclose(handle);
+	lt_dlexit();
+}
+
 int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions) {//TODO checking and printing error reports!	
 	stringstream ss;
 	soname = (*prop)["SO_NAME"];
@@ -100,20 +117,30 @@ int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
 }
 
 int MapperWrapperTask::UserMapLinking(string soname)  { //TODO link Partial aggregates also
-	void* wordcount =  dlopen(soname.c_str(), RTLD_LAZY);
-	if(!wordcount)	{
-		taskreg->setStatus(jobid, jobstatus::DEAD);
+	fprintf(stdout, "Given path: %s\n", soname.c_str());
+	lt_dladvise dladvise;
+	lt_dladvise_init(&dladvise);
+	lt_dladvise_local(&dladvise);
+	handle = lt_dlopen(soname.c_str());
+	lt_dladvise_destroy(&dladvise);
+	const char* err;
+	if ((err = lt_dlerror()))
+	{
+		fprintf(stderr, "Error loading %s: %s\n", soname.c_str(), err);
 		return 1;
 	}
-	
-	//load the symbols
-	//create_fn = (create_mapper_t*) dlsym(wordcount, "create_mapper");	
-	//destroy_fn = (destroy_mapper_t*) dlsym(wordcount, "destroy_mapper");
+	Mapper* (*__libminni_map_create)(PartialAgg* (*)(string));
+	__libminni_map_create = (Mapper* (*)(PartialAgg* (*)(string))) lt_dlsym(handle, "__libminni_map_create");
+	if ((err = lt_dlerror()))
+	{
+		fprintf(stderr, "Error locating symbol __libminni_map_create in %s: %s\n", soname.c_str(), err);
+		return 1;
+	}
 
-	//if(!create_fn || !destroy_fn) {
-	//	taskreg->setStatus(jobid, jobstatus::DEAD);
-	//	return 1;
-	//}
+	__libminni_create_pao = (PartialAgg* (*)(string)) lt_dlsym(handle, "__libminni_pao_create");
+	__libminni_destroy_pao = (void (*)(PartialAgg*)) lt_dlsym(handle, "__libminni_pao_destroy");
+	mapper = (*__libminni_map_create)(__libminni_create_pao);
+
 	return 0;
 }
 
@@ -152,15 +179,14 @@ task* MapperWrapperTask::execute() {
 		cout<<"Parse properties something wrong. I am leaving!"<<endl;
 		return NULL; 
 	}
-	
 	time_t ltime = time(NULL);
 	cout << "Hri: Start of map phase" << asctime(localtime(&ltime));
 	cout<<"Mapper: Parse happened properly! "<<endl;
 	//dynamically loading the classes
-	//if(UserMapLinking(soname) == 1) { //TODO
-	//	cout<<"User map linking not happening very successfully!"<<endl;
-	//	return NULL; 
-	//}
+	if(UserMapLinking(soname) == 1) { //TODO
+		cout<<"User map linking not happening very successfully!"<<endl;
+		return NULL; 
+	}
 	cout<<"Mapper: User map too is successful "<<endl;
 	//instantiating my mapper 
 	cout<<"Mapper: Instantiating the mapper \n";	

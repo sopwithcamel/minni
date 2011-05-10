@@ -14,6 +14,7 @@
 #include "daemon_types.h"
 #include "WorkDaemon_file.h"
 #include "WorkDaemon_tasks.h"
+#include <ltdl.h>
 #include <dlfcn.h>
 #include <map>
 #include <set>
@@ -22,6 +23,8 @@
 #include "KDFS.h"
 #include "MapperAggregator.h"
 
+#define REGISTER_MAPPER(x) extern "C" Mapper* __libminni_map_create(PartialAgg* (*__libminni_create_pao)(char*)) {return new x(__libminni_create_pao);} \
+	                extern "C" void __libminni_map_destroy(Mapper* m) {delete m;}
 #define GetCurrentDir getcwd
 
 using namespace std;
@@ -62,13 +65,15 @@ class Mapper {
 
 class MapperWrapperTask : public task {
   public:
-//	create_mapper_t* create_fn;
-//	destroy_mapper_t* destroy_fn;
-	//create_partialagg_t* create_agg_fn;
-	//destroy_partialagg_t* destroy_agg_fn;
+	Mapper* mapper;	
+	PartialAgg* (*__libminni_create_pao)(string v);
+	void (*__libminni_destroy_pao)(PartialAgg* pao);
+	string so_path;
+	lt_dlhandle handle;
 	MapInput myinput;
 	MapperWrapperTask (JobID jid, Properties * p, TaskRegistry * t, LocalFileRegistry * f);
 	task* execute();
+	~MapperWrapperTask();
   private:
 	JobID jobid;
 	Properties* prop;

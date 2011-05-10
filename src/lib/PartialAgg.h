@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#define REGISTER_PAO(x) extern "C" PartialAgg* __libminni_pao_create(char* val) {return new x(val);} \
+	                extern "C" void __libminni_pao_destroy(PartialAgg* pao) {delete pao;}
+
 
 using namespace std;
 

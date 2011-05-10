@@ -1,3 +1,5 @@
+SUBDIRS = example
+
 lib_LTLIBRARIES = libminni.la 
 
 EXTRA_DIST = PartialAgg.h Mapper.h Reducer.h Minnie.h FileReader.h Tokenizer.h \
@@ -19,7 +21,8 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 		       -I$(srcdir)/../dfs \
 			-lpthread -ltbb
 
-libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION)
+libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
+			-lltdl
 
 minni_includedir = $(includedir)/libminni/libminni
 
