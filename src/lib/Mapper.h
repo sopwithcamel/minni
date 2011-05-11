@@ -23,8 +23,6 @@
 #include "KDFS.h"
 #include "MapperAggregator.h"
 
-#define REGISTER_MAPPER(x) extern "C" Mapper* __libminni_map_create(PartialAgg* (*__libminni_create_pao)(char*)) {return new x(__libminni_create_pao);} \
-	                extern "C" void __libminni_map_destroy(Mapper* m) {delete m;}
 #define GetCurrentDir getcwd
 
 using namespace std;
@@ -46,15 +44,15 @@ class MapInput {
 };
 
 class Mapper {
-  public:
-	Mapper() {};
+public:
+	Mapper(PartialAgg* (*MapFunc)(const char* t));
 	~Mapper();
-	virtual void Map (); //will be overloaded
+	PartialAgg* (*Map)(const char* token); 
 	//vector <ofstream*>  my_file_streams; //TODO actually needed?
 	int num_partition;
 	vector<MapperAggregator*> aggregs;
 	TimeLog tl;
-
+private:
 };
 
 //the type of class factories
@@ -66,7 +64,7 @@ class Mapper {
 class MapperWrapperTask : public task {
   public:
 	Mapper* mapper;	
-	PartialAgg* (*__libminni_create_pao)(string v);
+	PartialAgg* (*__libminni_create_pao)(const char* v);
 	void (*__libminni_destroy_pao)(PartialAgg* pao);
 	string so_path;
 	lt_dlhandle handle;
@@ -80,7 +78,7 @@ class MapperWrapperTask : public task {
 	TaskRegistry* taskreg;
 	LocalFileRegistry* filereg;
 	int ParseProperties(string& soname, uint64_t& num_partitions);
-	int UserMapLinking(string soname);
+	int UserMapLinking(const char* soname);
 	string GetCurrentPath();
 	string GetLocalFilename(string path, JobID jobid, int i);	
 };

@@ -23,19 +23,21 @@
 template <typename KeyType>
 class Tokenizer : public tbb::filter {
 public:
-	Tokenizer();
+	Tokenizer(PartialAgg* (*MapFunc)(const char* t));
 	~Tokenizer();
 private:
 	typedef std::vector< std::pair<KeyType, PartialAgg*> > KVVector;
 	size_t next_buffer;
 	KVVector kv_vector[NUM_BUFFERS];
 	KVVector* kv;
+	PartialAgg* (*Map)(const char* token);
 	void* operator()(void* pao);
 };
 
 template <typename KeyType>
-Tokenizer<KeyType>::Tokenizer() :
-		filter(serial_in_order)
+Tokenizer<KeyType>::Tokenizer(PartialAgg* (*MapFunc)(const char* t)) :
+		filter(serial_in_order),
+		Map(MapFunc)
 {
 }
 
@@ -64,11 +66,7 @@ void* Tokenizer<KeyType>::operator()(void* buffer)
 		return NULL;
 	}
 	while (1) {
-		new_key = (char*)malloc(strlen(spl)+1);
-		new_val = (char*)malloc(VALUE_SIZE);
-		strcpy(new_key, spl);
-		strcpy(new_val, "1");
-		PartialAgg* new_pao = new PartialAgg(new_key, new_val);
+		PartialAgg* new_pao = Map(spl); 
 		kv->push_back(std::pair<char*, PartialAgg*>(new_key, new_pao));
 
 		spl = strtok(NULL, " \n");

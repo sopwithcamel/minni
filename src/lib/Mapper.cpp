@@ -4,6 +4,8 @@
 #include "MapperAggregator.h"
 #include <dlfcn.h>
 
+//#define lt__PROGRAM__LTX_preloaded_symbols lt_libltdl_LTX_preloaded_symbols
+
 //MapInput Class
 
 uint64_t MapInput::key_value(char** value, ChunkID id) {
@@ -43,6 +45,11 @@ uint64_t MapInput::key_value(char** value, ChunkID id) {
 }
 
 //Mapper
+Mapper::Mapper(PartialAgg* (*MapFunc)(const char* t)):
+		Map(MapFunc)
+{
+}
+
 Mapper::~Mapper() {
 //	for (int i = 0; i < my_file_streams.size(); i++)
   //      {
@@ -50,12 +57,6 @@ Mapper::~Mapper() {
       //  }
 }
 
-
-void Mapper::Map() {
-	cout<<"Mapper: entered the map phase\n";
-	cout<<"Mapper: I will be reading from KDFS soon\n";
-	aggregs[0]->runPipeline();
-}
 
 //Mapper wrapper task
 
@@ -84,6 +85,7 @@ MapperWrapperTask::~MapperWrapperTask()
 
 int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions) {//TODO checking and printing error reports!	
 	stringstream ss;
+	string soname_string;
 	soname = (*prop)["SO_NAME"];
 	cout<<"Mapper: soname is "<<soname<<endl;
   	myinput.file_location = (*prop)["FILE_IN"];
@@ -116,30 +118,23 @@ int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
 	return 0;	
 }
 
-int MapperWrapperTask::UserMapLinking(string soname)  { //TODO link Partial aggregates also
-	fprintf(stdout, "Given path: %s\n", soname.c_str());
+int MapperWrapperTask::UserMapLinking(const char* soname)  { //TODO link Partial aggregates also
+	fprintf(stdout, "Given path: %s\n", soname);
+//	LTDL_SET_PRELOADED_SYMBOLS();
 	lt_dladvise dladvise;
 	lt_dladvise_init(&dladvise);
 	lt_dladvise_local(&dladvise);
-	handle = lt_dlopen(soname.c_str());
+	handle = lt_dlopen(soname);
 	lt_dladvise_destroy(&dladvise);
 	const char* err;
 	if ((err = lt_dlerror()))
 	{
-		fprintf(stderr, "Error loading %s: %s\n", soname.c_str(), err);
-		return 1;
-	}
-	Mapper* (*__libminni_map_create)(PartialAgg* (*)(string));
-	__libminni_map_create = (Mapper* (*)(PartialAgg* (*)(string))) lt_dlsym(handle, "__libminni_map_create");
-	if ((err = lt_dlerror()))
-	{
-		fprintf(stderr, "Error locating symbol __libminni_map_create in %s: %s\n", soname.c_str(), err);
+		fprintf(stderr, "Error loading %s: %s\n", soname, err);
 		return 1;
 	}
 
-	__libminni_create_pao = (PartialAgg* (*)(string)) lt_dlsym(handle, "__libminni_pao_create");
-	__libminni_destroy_pao = (void (*)(PartialAgg*)) lt_dlsym(handle, "__libminni_pao_destroy");
-	mapper = (*__libminni_map_create)(__libminni_create_pao);
+	__libminni_create_pao = (PartialAgg* (*)(const char*)) lt_dlsym(handle, "__libminni_pao_create");
+	mapper = new Mapper(__libminni_create_pao);
 
 	return 0;
 }
@@ -174,25 +169,27 @@ string MapperWrapperTask::GetLocalFilename(string path, JobID jobid, int i) {
 
 task* MapperWrapperTask::execute() {
 	string soname;
+	char *s_name;
 	uint64_t npart;
 	if(ParseProperties(soname,npart) == 1)  { //TODO
 		cout<<"Parse properties something wrong. I am leaving!"<<endl;
 		return NULL; 
 	}
+	s_name = (char*)malloc(soname.length());
+	strcpy(s_name, soname.c_str());
+	fprintf(stderr, "SO name: %s\n", s_name);
 	time_t ltime = time(NULL);
 	cout << "Hri: Start of map phase" << asctime(localtime(&ltime));
 	cout<<"Mapper: Parse happened properly! "<<endl;
 	//dynamically loading the classes
-	if(UserMapLinking(soname) == 1) { //TODO
+	if(UserMapLinking(s_name) == 1) { //TODO
 		cout<<"User map linking not happening very successfully!"<<endl;
 		return NULL; 
 	}
 	cout<<"Mapper: User map too is successful "<<endl;
-	//instantiating my mapper 
-	cout<<"Mapper: Instantiating the mapper \n";	
-	Mapper* my_mapper = new Mapper();
-	my_mapper->num_partition = npart;
-	cout<<"Mapper: Setting the number of partitions to "<<my_mapper->num_partition<<endl;
+
+	mapper->num_partition = npart;
+	cout<<"Mapper: Setting the number of partitions to "<<mapper->num_partition<<endl;
 	
 	cout<<"The number of partitions that it gets is "<<npart<<"\n";
 	//my_mapper->num_partition = 10;
@@ -201,12 +198,13 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		my_mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new HashAggregator(1000000, i, &myinput)));
+		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new HashAggregator(1000000, i, &myinput, mapper->Map)));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	
-
-	my_mapper->Map();
+	cout<<"Mapper: entered the map phase\n";
+	cout<<"Mapper: I will be reading from KDFS soon\n";
+	mapper->aggregs[0]->runPipeline();
 
 	cout<<"Mapper: Supposedly done with mapping"<<endl;
 	vector<File> my_Filelist;
@@ -224,14 +222,14 @@ task* MapperWrapperTask::execute() {
 	}
 	ltime = time(NULL);
 	cout << "Hri: End of map phase" << asctime(localtime(&ltime));
-	my_mapper->tl.dumpLog();
+	mapper->tl.dumpLog();
 	
 	for(unsigned int i = 0; i < npart ; i++)
         {
-		delete my_mapper->aggregs[i];
+		delete mapper->aggregs[i];
 	}
 
-	delete my_mapper;	
+	delete mapper;	
 
 	
 	filereg->recordComplete(my_Filelist);

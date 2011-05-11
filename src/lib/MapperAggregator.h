@@ -15,7 +15,7 @@
 
 class MapperAggregator {
 public:
-	MapperAggregator(uint64_t _capacity, uint64_t _partid);
+	MapperAggregator(uint64_t _capacity, uint64_t _partid, PartialAgg* (*MapFunc)(const char* t));
 	~MapperAggregator();
 	void runPipeline();
 	tbb::pipeline pipeline;	
@@ -23,11 +23,15 @@ public:
 private:
 	const uint64_t partid;	// partition ID
 	const uint64_t capacity;	// aggregator capacity
+	PartialAgg* (*Map)(const char* token);
 };
 
-MapperAggregator::MapperAggregator(uint64_t _capacity, uint64_t _partid) :
+MapperAggregator::MapperAggregator(uint64_t _capacity, 
+					uint64_t _partid,
+					PartialAgg* (*MapFunc)(const char* t)) :
 		capacity(_capacity),
-		partid(_partid)
+		partid(_partid),
+		Map(MapFunc)
 {
 }
 

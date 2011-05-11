@@ -1,33 +1,33 @@
 #include "wordcountpao.h"
 
-void WordCountPartialAgg::add (string v) {
-	int val;
-	stringstream ss1(v);
-	ss1 >> val;
-	int curr_val;
-	stringstream ss2(PartialAgg::value);
-	ss2 >> curr_val;
-	curr_val += val;
-	stringstream ss3;
-	ss3 << curr_val;
-	value = ss3.str();
+WordCountPartialAgg::WordCountPartialAgg(const char* token)
+{
+	key = (char*)malloc(strlen(token)+1);
+	value = (char*)malloc(VALUE_SIZE);
+	strcpy(key, token);
+	strcpy(value, "1");
 }
 
-void WordCountPartialAgg::merge (PartialAgg* add_agg) {
-	int val;
-	stringstream ss1(add_agg->value);
-	ss1 >> val;
+WordCountPartialAgg::~WordCountPartialAgg()
+{
+	free(key);
+	free(value);
+}
 
-	int curr_val;
-	stringstream ss2(PartialAgg::value);
-	ss2 >> curr_val;
-
+void WordCountPartialAgg::add (const char* v)
+{
+	int val = atoi(v);
+	int curr_val = atoi(value);
 	curr_val += val;
+	sprintf(value, "%d", curr_val);
+}
 
-	stringstream ss3;
-	ss3 << curr_val;
-
-	value = ss3.str();
+void WordCountPartialAgg::merge (PartialAgg* add_agg)
+{
+	int val = atoi(add_agg->value);
+	int curr_val = atoi(value);
+	curr_val += val;
+	sprintf(value, "%d", curr_val);
 }
 
 REGISTER_PAO(WordCountPartialAgg);

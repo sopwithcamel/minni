@@ -14,6 +14,7 @@ using namespace std;
 
 class PartialAgg {
   public:
+	PartialAgg() {}
 	PartialAgg(char*);
 	PartialAgg (char* k, char* v);
 	~PartialAgg();
