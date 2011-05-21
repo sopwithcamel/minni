@@ -11,6 +11,7 @@
 #include "tbb/tbb_allocator.h"
 
 #include "PartialAgg.h"
+#include "Mapper.h"
 
 /**
  * To be used as the final stage in the pipeline.
