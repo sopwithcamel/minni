@@ -67,7 +67,7 @@ class MapperWrapperTask : public task {
 	PartialAgg* (*__libminni_create_pao)(const char* v);
 	void (*__libminni_destroy_pao)(PartialAgg* pao);
 	string so_path;
-	lt_dlhandle handle;
+	void* handle;
 	MapInput myinput;
 	MapperWrapperTask (JobID jid, Properties * p, TaskRegistry * t, LocalFileRegistry * f);
 	task* execute();

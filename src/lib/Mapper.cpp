@@ -72,15 +72,14 @@ MapperWrapperTask::~MapperWrapperTask()
 {
 	const char* err;
 	void* (*__libminni_map_destroy)(Mapper* m);
-	__libminni_map_destroy = (void* (*)(Mapper* m)) lt_dlsym(handle, "__libminni_map_destroy");
-	if ((err = lt_dlerror()))
+	__libminni_map_destroy = (void* (*)(Mapper* m)) dlsym(handle, "__libminni_map_destroy");
+	if ((err = dlerror()) != NULL)
 	{
 		fprintf(stderr, "Error locating symbol mapreduce_lib_map_destroy in %s\n", err);
 		exit(-1);
 	}
 	__libminni_map_destroy(mapper);
-	lt_dlclose(handle);
-	lt_dlexit();
+	dlclose(handle);
 }
 
 int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions) {//TODO checking and printing error reports!	
@@ -119,21 +118,21 @@ int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
 }
 
 int MapperWrapperTask::UserMapLinking(const char* soname)  { //TODO link Partial aggregates also
+	const char* err;
 	fprintf(stdout, "Given path: %s\n", soname);
 //	LTDL_SET_PRELOADED_SYMBOLS();
-	lt_dladvise dladvise;
-	lt_dladvise_init(&dladvise);
-	lt_dladvise_local(&dladvise);
-	handle = lt_dlopen(soname);
-	lt_dladvise_destroy(&dladvise);
-	const char* err;
-	if ((err = lt_dlerror()))
-	{
-		fprintf(stderr, "Error loading %s: %s\n", soname, err);
+	handle = dlopen(soname, RTLD_LAZY);
+	if (!handle) {
+		fputs (dlerror(), stderr);
 		return 1;
 	}
 
-	__libminni_create_pao = (PartialAgg* (*)(const char*)) lt_dlsym(handle, "__libminni_pao_create");
+	__libminni_create_pao = (PartialAgg* (*)(const char*)) dlsym(handle, "__libminni_pao_create");
+	if ((err = dlerror()) != NULL)
+	{
+		fprintf(stderr, "Error locating symbol __libminni_create_pao in %s\n", err);
+		exit(-1);
+	}
 	mapper = new Mapper(__libminni_create_pao);
 
 	return 0;
