@@ -23,26 +23,28 @@
  * - change to TBB hash_map which is parallel access
  */
 
-template <typename KeyType, typename ValueType, typename HashAlgorithm, typename EqualTest>
+template <typename KeyType, typename HashAlgorithm, typename EqualTest>
 class InternalHasher : public tbb::filter {
 public:
-	InternalHasher();
+	InternalHasher(void (*destroyPAOFunc)(PartialAgg* p));
 	~InternalHasher();
+	void (*destroyPAO)(PartialAgg* p);
 private:
-	typedef std::tr1::unordered_map<KeyType, ValueType, HashAlgorithm, EqualTest> Hash;
-	typedef std::vector< std::pair<KeyType, ValueType> > KVVector;
+	typedef std::tr1::unordered_map<KeyType, PartialAgg*, HashAlgorithm, EqualTest> Hash;
+	typedef std::vector<PartialAgg*> PAOVector;
 	Hash hashtable;
-	void* operator()(void* kv_vector);
+	void* operator()(void* pao_vector);
 };
 
-template <typename KeyType, typename ValueType, typename HashAlgorithm, typename EqualTest>
-InternalHasher<KeyType, ValueType, HashAlgorithm, EqualTest>::InternalHasher() :
-		filter(/*serial=*/true)
+template <typename KeyType, typename HashAlgorithm, typename EqualTest>
+InternalHasher<KeyType, HashAlgorithm, EqualTest>::InternalHasher(void (*destroyPAOFunc)(PartialAgg* p)) :
+		filter(/*serial=*/true),
+		destroyPAO(destroyPAOFunc)
 {
 }
 
-template <typename KeyType, typename ValueType, typename HashAlgorithm, typename EqualTest>
-InternalHasher<KeyType, ValueType, HashAlgorithm, EqualTest>::~InternalHasher()
+template <typename KeyType, typename HashAlgorithm, typename EqualTest>
+InternalHasher<KeyType, HashAlgorithm, EqualTest>::~InternalHasher()
 {
 	typename Hash::iterator it;
 	for (it = hashtable.begin(); it != hashtable.end(); it++) {
@@ -51,20 +53,26 @@ InternalHasher<KeyType, ValueType, HashAlgorithm, EqualTest>::~InternalHasher()
 	hashtable.clear();
 }
 
-template <typename KeyType, typename ValueType, typename HashAlgorithm, typename EqualTest>
-void* InternalHasher<KeyType, ValueType, HashAlgorithm, EqualTest>::operator()(void* kv_vector)
+template <typename KeyType, typename HashAlgorithm, typename EqualTest>
+void* InternalHasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_vector)
 {
-	KVVector* kv = (KVVector*)kv_vector;
+	char *key, *value;
+	PAOVector* paov = (PAOVector*)pao_vector;
 	std::pair<typename Hash::iterator, bool> result;
-	typename KVVector::iterator it;
-	for (it = (*kv).begin(); it != (*kv).end(); it++) { 
-		result = hashtable.insert(std::make_pair(it->first, it->second));
+	typename PAOVector::iterator it;
+	for (it = (*paov).begin(); it != (*paov).end(); it++) {
+		key = (*it)->key;
+		value = (*it)->value;
+		result = hashtable.insert(std::make_pair(key, *it));
 		if (!result.second) { // the insertion didn't occur
-			(result.first->second)->merge(it->second);
-			free(it->first);
+			(result.first->second)->merge(*it);
+			free(key);
+			free(value);
+			destroyPAO(*it);
+			// TODO: explicitly call destructor?
 		}
 	}
-	(*kv).clear();
+	(*paov).clear();
 }
 
 #endif // LIB_INTERNALHASHER_H

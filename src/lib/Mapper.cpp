@@ -45,8 +45,9 @@ uint64_t MapInput::key_value(char** value, ChunkID id) {
 }
 
 //Mapper
-Mapper::Mapper(PartialAgg* (*MapFunc)(const char* t)):
-		Map(MapFunc)
+Mapper::Mapper(PartialAgg* (*MapFunc)(const char* t), void (*__destroyPAO)(PartialAgg* p)):
+		Map(MapFunc),
+		destroyPAO(__destroyPAO)	
 {
 }
 
@@ -128,12 +129,13 @@ int MapperWrapperTask::UserMapLinking(const char* soname)  { //TODO link Partial
 	}
 
 	__libminni_create_pao = (PartialAgg* (*)(const char*)) dlsym(handle, "__libminni_pao_create");
+	__libminni_destroy_pao = (void (*)(PartialAgg*)) dlsym(handle, "__libminni_pao_destroy");
 	if ((err = dlerror()) != NULL)
 	{
 		fprintf(stderr, "Error locating symbol __libminni_create_pao in %s\n", err);
 		exit(-1);
 	}
-	mapper = new Mapper(__libminni_create_pao);
+	mapper = new Mapper(__libminni_create_pao, __libminni_destroy_pao);
 
 	return 0;
 }
@@ -197,7 +199,7 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new HashAggregator(1000000, i, &myinput, mapper->Map)));
+		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new HashAggregator(1000000, i, &myinput, mapper->Map, mapper->destroyPAO)));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	

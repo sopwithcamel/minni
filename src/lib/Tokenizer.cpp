@@ -10,7 +10,7 @@ Tokenizer::Tokenizer(PartialAgg* (*MapFunc)(const char* t)) :
 Tokenizer::~Tokenizer()
 {
 	for (int i=0; i<NUM_BUFFERS; i++)
-		kv_vector[i].clear();
+		pao_vector[i].clear();
 }
 
 /**
@@ -18,11 +18,12 @@ Tokenizer::~Tokenizer()
  */
 void* Tokenizer::operator()(void* buffer)
 {
-	char *spl, *new_key, *new_val;
+	char *spl, *new_val;
 	char* tok_buf = (char*) buffer;	 
+	int tok_ctr = 0;
 
 	/* TODO: don't the next two statements need to executed atomically? */
-	kv = &kv_vector[next_buffer];
+	paov = &pao_vector[next_buffer];
 	next_buffer = (next_buffer + 1) % NUM_BUFFERS;	
 	spl = strtok(tok_buf, " \n");
 	if (spl == NULL) { 
@@ -31,13 +32,14 @@ void* Tokenizer::operator()(void* buffer)
 	}
 	while (1) {
 		PartialAgg* new_pao = Map(spl); 
-		kv->push_back(std::pair<char*, PartialAgg*>(new_key, new_pao));
+//		fprintf(stderr, "tok: %d", tok_ctr++);
+		paov->push_back(new_pao);
 
 		spl = strtok(NULL, " \n");
 		if (spl == NULL) {
 			break;
 		}
 	}
-	return kv;
+	return paov;
 }
 

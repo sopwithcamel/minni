@@ -36,13 +36,15 @@ struct eqstr
 
 class HashAggregator : public MapperAggregator {
 public:
-	HashAggregator(const uint64_t _capacity, const uint64_t _partid, MapInput* _map_input, PartialAgg* (*MapFunc)(const char* t));
+	HashAggregator(const uint64_t _capacity, const uint64_t _partid, 
+			MapInput* _map_input, PartialAgg* (*MapFunc)(const char* t), 
+			void (*destroyPAOFunc)(PartialAgg* p));
 	~HashAggregator();
 private:
 	MapInput* map_input; 
 	DFSReader* reader;
 	Tokenizer* toker;
-	InternalHasher<char*,PartialAgg*,CharHash, eqstr>* hasher;
+	InternalHasher<char*, CharHash, eqstr>* hasher;
 };
 
 #endif // LIB_HASHAGGREGATOR_H

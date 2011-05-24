@@ -45,9 +45,10 @@ class MapInput {
 
 class Mapper {
 public:
-	Mapper(PartialAgg* (*MapFunc)(const char* t));
+	Mapper(PartialAgg* (*MapFunc)(const char* t), void (*__destroyPAO)(PartialAgg* p));
 	~Mapper();
 	PartialAgg* (*Map)(const char* token); 
+	void (*destroyPAO)(PartialAgg* p);
 	//vector <ofstream*>  my_file_streams; //TODO actually needed?
 	int num_partition;
 	vector<MapperAggregator*> aggregs;

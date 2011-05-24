@@ -26,10 +26,10 @@ public:
 	Tokenizer(PartialAgg* (*MapFunc)(const char* t));
 	~Tokenizer();
 private:
-	typedef std::vector< std::pair<char*, PartialAgg*> > KVVector;
+	typedef std::vector<PartialAgg*> PAOVector;
 	size_t next_buffer;
-	KVVector kv_vector[NUM_BUFFERS];
-	KVVector* kv;
+	PAOVector pao_vector[NUM_BUFFERS];
+	PAOVector* paov;
 	PartialAgg* (*Map)(const char* token);
 	void* operator()(void* pao);
 };
