@@ -10,9 +10,6 @@ WordCountPartialAgg::WordCountPartialAgg(const char* token)
 
 WordCountPartialAgg::~WordCountPartialAgg()
 {
-	cout << "PAO destroyed\n";
-	free(key);
-	free(value);
 }
 
 void WordCountPartialAgg::add (const char* v)

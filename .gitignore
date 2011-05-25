@@ -29,3 +29,4 @@ config.status
 .libs
 src/common
 src/lib/libminni.pc
+src/lib/Defs.h

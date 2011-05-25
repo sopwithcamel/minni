@@ -71,16 +71,6 @@ MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p, TaskRegistry * 
 /* TODO: destroy all PAO's created */
 MapperWrapperTask::~MapperWrapperTask()
 {
-	const char* err;
-	void* (*__libminni_map_destroy)(Mapper* m);
-	__libminni_map_destroy = (void* (*)(Mapper* m)) dlsym(handle, "__libminni_map_destroy");
-	if ((err = dlerror()) != NULL)
-	{
-		fprintf(stderr, "Error locating symbol mapreduce_lib_map_destroy in %s\n", err);
-		exit(-1);
-	}
-	__libminni_map_destroy(mapper);
-	dlclose(handle);
 }
 
 int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions) {//TODO checking and printing error reports!	

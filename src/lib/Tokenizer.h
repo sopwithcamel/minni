@@ -21,15 +21,16 @@
  * 
  */
 
+#define LIST_SIZE_INCR	2048
+#define EMPTY_KEY	"mamihlapinatapai"
+
 class Tokenizer : public tbb::filter {
 public:
 	Tokenizer(PartialAgg* (*MapFunc)(const char* t));
 	~Tokenizer();
 private:
-	typedef std::vector<PartialAgg*> PAOVector;
 	size_t next_buffer;
-	PAOVector pao_vector[NUM_BUFFERS];
-	PAOVector* paov;
+	PartialAgg** pao_list[NUM_BUFFERS];
 	PartialAgg* (*Map)(const char* token);
 	void* operator()(void* pao);
 };

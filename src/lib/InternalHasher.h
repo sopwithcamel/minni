@@ -31,9 +31,8 @@ public:
 	void (*destroyPAO)(PartialAgg* p);
 private:
 	typedef std::tr1::unordered_map<KeyType, PartialAgg*, HashAlgorithm, EqualTest> Hash;
-	typedef std::vector<PartialAgg*> PAOVector;
 	Hash hashtable;
-	void* operator()(void* pao_vector);
+	void* operator()(void* pao_list);
 };
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
@@ -54,25 +53,27 @@ InternalHasher<KeyType, HashAlgorithm, EqualTest>::~InternalHasher()
 }
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
-void* InternalHasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_vector)
+void* InternalHasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 {
 	char *key, *value;
-	PAOVector* paov = (PAOVector*)pao_vector;
+	PartialAgg** pao_l = (PartialAgg**)pao_list;
 	std::pair<typename Hash::iterator, bool> result;
-	typename PAOVector::iterator it;
-	for (it = (*paov).begin(); it != (*paov).end(); it++) {
-		key = (*it)->key;
-		value = (*it)->value;
-		result = hashtable.insert(std::make_pair(key, *it));
+	size_t ind = 0;
+	PartialAgg* pao;
+
+	while (strcmp((pao_l[ind])->key, EMPTY_KEY)) { 
+		pao = pao_l[ind];
+		result = hashtable.insert(std::make_pair(pao->key, pao));
 		if (!result.second) { // the insertion didn't occur
-			(result.first->second)->merge(*it);
-			free(key);
-			free(value);
-			destroyPAO(*it);
+			(result.first->second)->merge(pao);
+			free(pao->key);
+			free(pao->value);
+			destroyPAO(pao);
 			// TODO: explicitly call destructor?
 		}
+		ind++;
 	}
-	(*paov).clear();
+	free(pao_l);
 }
 
 #endif // LIB_INTERNALHASHER_H
