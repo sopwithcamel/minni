@@ -23,10 +23,12 @@ uint64_t MapInput::key_value(char** value, ChunkID id) {
 	cout<<"Mapper:  KDFS: I am looking for file "<<file_location<<endl;
 	if(myhdfs.checkExistence(file_location))
 		cout<<"Mapper: KDFS: file in location!!\n";
-	
 	uint64_t length = myhdfs.getChunkSize(file_location);
 	cout<<"Mapper: KDFS: It told me that the chunk size of this file is "<<length<<endl;
-	*value = (char*) malloc(length+1); /*freed in line 73 Map fn aft using all data that is passed*/
+/*	
+	*value = (char*) malloc(length+1); 
+*/
+
 	cout<<"Mapper: KDFS: Going to read chunks from KDFS"<<endl;
 	uint64_t offset = id*length;
 	int64_t k = myhdfs.readChunkOffset(file_location, offset, *value, length);
