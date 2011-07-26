@@ -12,6 +12,7 @@ EXTRA_DIST = 		PartialAgg.h \
 			HashAggregator.h \
 			MapperAggregator.h \
 			Defs.h \
+			Util.h \
 			fnv.h
 
 libminni_la_SOURCES =  	PartialAgg.cpp \
@@ -22,7 +23,8 @@ libminni_la_SOURCES =  	PartialAgg.cpp \
 		       	HashAggregator.cpp \
 		       	FileReader.cpp \
 		       	DFSReader.cpp \
-		       	Tokenizer.cpp
+		       	Tokenizer.cpp \
+			Util.cpp
 
 libminni_la_LIBADD = ../dfs/libdfs.la
 
@@ -48,6 +50,7 @@ minni_include_HEADERS = Minnie.h \
 			HashAggregator.h \
 			MapperAggregator.h \
 			Defs.h \
+			Util.h \
 			fnv.h
 
 pkgconfigdir = $(libdir)/pkgconfig

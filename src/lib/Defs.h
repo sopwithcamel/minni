@@ -5,6 +5,6 @@
 #define	NUM_THREADS		4
 #define BUFSIZE			67108864
 #define	VALUE_SIZE		8
-
+#define EMPTY_KEY	"mamihlapinatapai"
 
 #endif // LIB_DEFS_H

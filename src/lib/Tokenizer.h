@@ -22,14 +22,14 @@
  */
 
 #define LIST_SIZE_INCR	2048
-#define EMPTY_KEY	"mamihlapinatapai"
 
 class Tokenizer : public tbb::filter {
 public:
-	Tokenizer(PartialAgg* (*MapFunc)(const char* t));
+	Tokenizer(PartialAgg* emptyPAO, PartialAgg* (*MapFunc)(const char* t));
 	~Tokenizer();
 private:
 	size_t next_buffer;
+	PartialAgg* emptyPAO;
 	PartialAgg** pao_list[NUM_BUFFERS];
 	PartialAgg* (*Map)(const char* token);
 	void* operator()(void* pao);
