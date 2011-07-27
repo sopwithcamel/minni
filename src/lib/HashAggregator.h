@@ -15,6 +15,7 @@
 #include "DFSReader.h"
 #include "Tokenizer.h"
 #include "InternalHasher.h"
+#include "Serializer.h"
 #include "hashutil.h"
 
 typedef struct 
@@ -45,6 +46,7 @@ private:
 	DFSReader* reader;
 	Tokenizer* toker;
 	InternalHasher<char*, CharHash, eqstr>* hasher;
+	Serializer* serializer;
 };
 
 #endif // LIB_HASHAGGREGATOR_H

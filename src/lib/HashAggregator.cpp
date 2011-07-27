@@ -22,6 +22,9 @@ HashAggregator::HashAggregator(const uint64_t _capacity,
 
 	hasher = new InternalHasher<char*, CharHash, eqstr>(emptyPAO, destroyPAOFunc);
 	pipeline.add_filter(*hasher);
+
+	serializer = new Serializer(1, "/localfs/hamur/");
+	pipeline.add_filter(*serializer);
 }
 
 HashAggregator::~HashAggregator()
