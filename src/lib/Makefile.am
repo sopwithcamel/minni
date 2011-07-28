@@ -8,7 +8,7 @@ EXTRA_DIST = 		PartialAgg.h \
 			Minnie.h \
 			FileReader.h \
 			Tokenizer.h \
-			InternalHasher.h \
+			Hasher.h \
 			Serializer.h \
 			HashAggregator.h \
 			MapperAggregator.h \
@@ -48,7 +48,7 @@ minni_include_HEADERS = Minnie.h \
 			Mapper.h \
 			FileReader.h \
 			Tokenizer.h \
-			InternalHasher.h \
+			Hasher.h \
 			HashAggregator.h \
 			MapperAggregator.h \
 			Defs.h \

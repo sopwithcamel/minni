@@ -19,7 +19,5 @@ MapperAggregator::~MapperAggregator()
 void MapperAggregator::runPipeline()
 {
 	init.initialize(NUM_THREADS);
-	cout << "\t\t\tRunning pipeline!" << endl;
-	printf("Addr2: %p\n", &pipeline);
 	pipeline.run(NUM_BUFFERS);
 }

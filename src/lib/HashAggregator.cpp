@@ -8,9 +8,13 @@ HashAggregator::HashAggregator(const uint64_t _capacity,
 				const uint64_t _partid, 
 				MapInput* _map_input,
 				PartialAgg* (*MapFunc)(const char*),
-				void (*destroyPAOFunc)(PartialAgg*)) :
+				void (*destroyPAOFunc)(PartialAgg*),
+				const uint64_t num_buckets,
+				const char* outfile_prefix) :
 		MapperAggregator(_capacity, _partid, MapFunc, destroyPAOFunc),
-		map_input(_map_input)
+		map_input(_map_input),
+		num_buckets(num_buckets),
+		outfile_prefix(outfile_prefix)
 {
 	PartialAgg* emptyPAO = MapFunc(EMPTY_KEY);
 
@@ -20,10 +24,10 @@ HashAggregator::HashAggregator(const uint64_t _capacity,
 	toker = new Tokenizer(emptyPAO, MapFunc);
 	pipeline.add_filter(*toker);
 
-	hasher = new InternalHasher<char*, CharHash, eqstr>(emptyPAO, destroyPAOFunc);
+	hasher = new Hasher<char*, CharHash, eqstr>(emptyPAO, destroyPAOFunc);
 	pipeline.add_filter(*hasher);
 
-	serializer = new Serializer(1, "/localfs/hamur/");
+	serializer = new Serializer(num_buckets, outfile_prefix);
 	pipeline.add_filter(*serializer);
 }
 

@@ -27,10 +27,10 @@
  */
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
-class InternalHasher : public tbb::filter {
+class Hasher : public tbb::filter {
 public:
-	InternalHasher(PartialAgg* emptyPAO, void (*destroyPAOFunc)(PartialAgg* p));
-	~InternalHasher();
+	Hasher(PartialAgg* emptyPAO, void (*destroyPAOFunc)(PartialAgg* p));
+	~Hasher();
 	void (*destroyPAO)(PartialAgg* p);
 private:
 	typedef std::tr1::unordered_map<KeyType, PartialAgg*, HashAlgorithm, EqualTest> Hash;
@@ -42,7 +42,7 @@ private:
 };
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
-InternalHasher<KeyType, HashAlgorithm, EqualTest>::InternalHasher(PartialAgg* emptyPAO, void (*destroyPAOFunc)(PartialAgg* p)) :
+Hasher<KeyType, HashAlgorithm, EqualTest>::Hasher(PartialAgg* emptyPAO, void (*destroyPAOFunc)(PartialAgg* p)) :
 		filter(/*serial=*/true),
 		emptyPAO(emptyPAO),
 		destroyPAO(destroyPAOFunc),
@@ -51,7 +51,7 @@ InternalHasher<KeyType, HashAlgorithm, EqualTest>::InternalHasher(PartialAgg* em
 }
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
-InternalHasher<KeyType, HashAlgorithm, EqualTest>::~InternalHasher()
+Hasher<KeyType, HashAlgorithm, EqualTest>::~Hasher()
 {
 	typename Hash::iterator it;
 	for (it = hashtable.begin(); it != hashtable.end(); it++) {
@@ -61,7 +61,7 @@ InternalHasher<KeyType, HashAlgorithm, EqualTest>::~InternalHasher()
 }
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
-void* InternalHasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
+void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 {
 	char *key, *value;
 	PartialAgg** pao_l = (PartialAgg**)pao_list;

@@ -14,7 +14,7 @@
 #include "PartialAgg.h"
 #include "DFSReader.h"
 #include "Tokenizer.h"
-#include "InternalHasher.h"
+#include "Hasher.h"
 #include "Serializer.h"
 #include "hashutil.h"
 
@@ -39,14 +39,17 @@ class HashAggregator : public MapperAggregator {
 public:
 	HashAggregator(const uint64_t _capacity, const uint64_t _partid, 
 			MapInput* _map_input, PartialAgg* (*MapFunc)(const char* t), 
-			void (*destroyPAOFunc)(PartialAgg* p));
+			void (*destroyPAOFunc)(PartialAgg* p), 
+			const uint64_t num_buckets, const char* outfile_prefix);
 	~HashAggregator();
 private:
 	MapInput* map_input; 
 	DFSReader* reader;
 	Tokenizer* toker;
-	InternalHasher<char*, CharHash, eqstr>* hasher;
+	Hasher<char*, CharHash, eqstr>* hasher;
 	Serializer* serializer;
+	const uint64_t num_buckets;
+	const char* outfile_prefix;
 };
 
 #endif // LIB_HASHAGGREGATOR_H
