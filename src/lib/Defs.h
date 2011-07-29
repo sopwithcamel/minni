@@ -7,5 +7,6 @@
 #define	VALUE_SIZE		8
 #define EMPTY_KEY	"mamihlapinatapai"
 #define FILENAME_PREFIX_LENGTH		100
+#define LIST_SIZE_INCR	2048
 
 #endif // LIB_DEFS_H

@@ -21,8 +21,6 @@
  * 
  */
 
-#define LIST_SIZE_INCR	2048
-
 class Tokenizer : public tbb::filter {
 public:
 	Tokenizer(PartialAgg* emptyPAO, PartialAgg* (*MapFunc)(const char* t));
