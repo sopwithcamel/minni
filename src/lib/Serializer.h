@@ -22,13 +22,15 @@
 
 class Serializer : public tbb::filter {
 public:
-	Serializer(const uint64_t nb, const char* f_prefix);
+	Serializer(MapperAggregator* agg, const uint64_t nb,
+		const char* f_prefix);
 	~Serializer();
 private:
+	MapperAggregator* aggregator;
 	int num_buckets;
-	void* operator()(void* pao_list);
 	FILE** fl;
 	const char* fname_prefix;
+	void* operator()(void* pao_list);
 };
 
 #endif

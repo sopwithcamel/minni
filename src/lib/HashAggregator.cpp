@@ -18,16 +18,17 @@ HashAggregator::HashAggregator(const uint64_t _capacity,
 {
 	PartialAgg* emptyPAO = MapFunc(EMPTY_KEY);
 
-	reader = new DFSReader(map_input);
+	reader = new DFSReader(this, map_input);
 	pipeline_list[0].add_filter(*reader);
 
-	toker = new Tokenizer(emptyPAO, MapFunc);
+	toker = new Tokenizer(this, emptyPAO, MapFunc);
 	pipeline_list[0].add_filter(*toker);
 
-	hasher = new Hasher<char*, CharHash, eqstr>(emptyPAO, destroyPAOFunc);
+	hasher = new Hasher<char*, CharHash, eqstr>(this, emptyPAO, 
+		destroyPAOFunc);
 	pipeline_list[0].add_filter(*hasher);
 
-	serializer = new Serializer(num_buckets, outfile_prefix);
+	serializer = new Serializer(this, num_buckets, outfile_prefix);
 	pipeline_list[0].add_filter(*serializer);
 }
 

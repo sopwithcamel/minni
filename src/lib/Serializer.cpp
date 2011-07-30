@@ -1,7 +1,8 @@
 #include "config.h"
 #include "Serializer.h"
 
-Serializer::Serializer(const uint64_t nb, const char* f_prefix) :
+Serializer::Serializer(MapperAggregator* agg, const uint64_t nb, const char* f_prefix) :
+		aggregator(agg),
 		filter(serial_in_order),
 		num_buckets(nb),
 		fname_prefix(f_prefix)

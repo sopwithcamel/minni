@@ -12,6 +12,7 @@
 
 #include "PartialAgg.h"
 #include "Mapper.h"
+#include "MapperAggregator.h"
 #include "Util.h"
 
 #define HT_CAPACITY		500000
@@ -29,24 +30,31 @@
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
 class Hasher : public tbb::filter {
 public:
-	Hasher(PartialAgg* emptyPAO, void (*destroyPAOFunc)(PartialAgg* p));
+	Hasher(MapperAggregator* agg, PartialAgg* emptyPAO, 
+			void (*destroyPAOFunc)(PartialAgg* p));
 	~Hasher();
 	void (*destroyPAO)(PartialAgg* p);
 private:
+	MapperAggregator* aggregator;
 	typedef std::tr1::unordered_map<KeyType, PartialAgg*, HashAlgorithm, EqualTest> Hash;
 	PartialAgg* emptyPAO;
 	PartialAgg** evicted_list;
 	size_t ht_size;
 	Hash hashtable;
+	uint64_t tokens_processed;
 	void* operator()(void* pao_list);
 };
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
-Hasher<KeyType, HashAlgorithm, EqualTest>::Hasher(PartialAgg* emptyPAO, void (*destroyPAOFunc)(PartialAgg* p)) :
-		filter(/*serial=*/true),
+Hasher<KeyType, HashAlgorithm, EqualTest>::Hasher(MapperAggregator* agg, 
+			PartialAgg* emptyPAO,
+			void (*destroyPAOFunc)(PartialAgg* p)) :
+		filter(/*serial=*/true),	/* maintains global state which is not yet concurrent access */
+		aggregator(agg),
 		emptyPAO(emptyPAO),
 		destroyPAO(destroyPAOFunc),
-		ht_size(0)
+		ht_size(0),
+		tokens_processed(0)
 {
 }
 
@@ -93,7 +101,6 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 				next_evict++;
 
 				if (evict_list_ctr >= evict_list_size) {
-					PartialAgg** tmp;
 					evict_list_size += LIST_SIZE_INCR;
 					if (call_realloc(&evicted_list, evict_list_size) == NULL) {
 						perror("realloc failed");
@@ -110,6 +117,32 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 		ind++;
 	}
 	free(pao_l);
+
+	/* next bit of code tests whether the input stage has completed. If
+	   it has, and the number of tokens processed by the input stage is
+	   equal to the number processed by this one, then it also adds all
+	   the PAOs in the hash table to the list and clears the hashtable
+           essentially flushing all global state. */
+
+	tokens_processed++;
+	// if the number of buffers > 1 then some might be queued up
+	if (aggregator->input_finished && tokens_processed == 
+			aggregator->tot_input_tokens) {
+		for (typename Hash::iterator it = hashtable.begin(); 
+				it != hashtable.end(); it++) {
+			if (evict_list_ctr >= evict_list_size) {
+				evict_list_size += LIST_SIZE_INCR;
+				if (call_realloc(&evicted_list, evict_list_size) == NULL) {
+					perror("realloc failed");
+					return NULL;
+				}
+			}
+			assert(evict_list_ctr < evict_list_size);
+			evicted_list[evict_list_ctr++] = it->second;
+		}	
+		hashtable.clear();
+	}
+
 	if (evict_list_ctr >= evict_list_size) {
 		evict_list_size++;
 		if (call_realloc(&evicted_list, evict_list_size) == NULL) {

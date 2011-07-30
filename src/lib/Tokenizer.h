@@ -13,6 +13,7 @@
 #include "Defs.h"
 #include "PartialAgg.h"
 #include "Mapper.h"
+#include "MapperAggregator.h"
 
 /**
  * To be used after Reader in the pipeline.
@@ -23,9 +24,11 @@
 
 class Tokenizer : public tbb::filter {
 public:
-	Tokenizer(PartialAgg* emptyPAO, PartialAgg* (*MapFunc)(const char* t));
+	Tokenizer(MapperAggregator* agg, PartialAgg* emptyPAO, 
+			PartialAgg* (*MapFunc)(const char* t));
 	~Tokenizer();
 private:
+	MapperAggregator* aggregator;
 	size_t next_buffer;
 	PartialAgg* emptyPAO;
 	PartialAgg** pao_list[NUM_BUFFERS];

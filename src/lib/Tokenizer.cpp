@@ -2,7 +2,9 @@
 #include "Tokenizer.h"
 #include "Util.h"
 
-Tokenizer::Tokenizer(PartialAgg* emptyPAO, PartialAgg* (*MapFunc)(const char* t)) :
+Tokenizer::Tokenizer(MapperAggregator* agg, PartialAgg* emptyPAO, 
+			PartialAgg* (*MapFunc)(const char* t)) :
+		aggregator(agg),
 		filter(serial_in_order),
 		next_buffer(0),
 		emptyPAO(emptyPAO),

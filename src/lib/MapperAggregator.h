@@ -23,6 +23,8 @@ public:
 	void runPipeline();
 	tbb::pipeline* pipeline_list;	
 	tbb::task_scheduler_init init;
+	bool input_finished;		// indicates if input stage is done
+	uint64_t tot_input_tokens;	// measures total input tokens
 private:
 	const uint64_t num_pipelines; 	// number of pipelines in aggregator
 	const uint64_t partid;	// partition ID

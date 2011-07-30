@@ -9,6 +9,8 @@ MapperAggregator::MapperAggregator(uint64_t num_pipelines,
 		num_pipelines(num_pipelines),
 		capacity(_capacity),
 		partid(_partid),
+		input_finished(false),
+		tot_input_tokens(0),
 		Map(MapFunc),
 		destroyPAO(destroyPAOFunc)
 {
