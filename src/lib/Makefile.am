@@ -12,6 +12,7 @@ EXTRA_DIST = 		PartialAgg.h \
 			Serializer.h \
 			Deserializer.h \
 			HashAggregator.h \
+			BucketAggregator.h \
 			MapperAggregator.h \
 			Defs.h \
 			Util.h \
@@ -23,6 +24,7 @@ libminni_la_SOURCES =  	PartialAgg.cpp \
 		       	hashutil.cpp \
 		       	MapperAggregator.cpp \
 		       	HashAggregator.cpp \
+			BucketAggregator.cpp \
 		       	FileReader.cpp \
 		       	DFSReader.cpp \
 		       	Tokenizer.cpp \
@@ -52,6 +54,7 @@ minni_include_HEADERS = Minnie.h \
 			Tokenizer.h \
 			Hasher.h \
 			HashAggregator.h \
+			BucketAggregator.h \
 			MapperAggregator.h \
 			Serializer.h \
 			Deserializer.h \
