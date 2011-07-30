@@ -210,10 +210,9 @@ task* MapperWrapperTask::execute() {
 		cout<<"Mapper: Executing loop for i = "<<i<<endl;
 
 		cout<<"Mapper: Going to tell the workdaemon about the file \n";
-//		File f1(jobid, i, final_path);
+		File f1(jobid, i, "/localfs/hamur/bucket0");
 		cout<<"Pushed back the file to worker daemon list \n";
-//		my_Filelist.push_back(f1);
-
+		my_Filelist.push_back(f1);
 	}
 	ltime = time(NULL);
 	cout << "Hri: End of map phase" << asctime(localtime(&ltime));

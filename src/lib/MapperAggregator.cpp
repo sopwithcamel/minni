@@ -14,12 +14,12 @@ MapperAggregator::MapperAggregator(uint64_t num_pipelines,
 		Map(MapFunc),
 		destroyPAO(destroyPAOFunc)
 {
-	pipeline_list = (tbb::pipeline*)malloc(num_pipelines * sizeof(tbb::pipeline));
+	pipeline_list = new tbb::pipeline[num_pipelines]; 
 }
 
 MapperAggregator::~MapperAggregator()
 {
-	free(pipeline_list);
+	delete[] pipeline_list;
 }
 
 void MapperAggregator::runPipeline()

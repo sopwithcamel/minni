@@ -36,6 +36,9 @@ void* DFSReader::operator()(void*)
 	id++;
 	chunk_ctr++;
 	aggregator->tot_input_tokens++;
+	if (id > input->chunk_id_end) {
+		aggregator->input_finished = true;
+	}
 	return buffer;
 }
 
