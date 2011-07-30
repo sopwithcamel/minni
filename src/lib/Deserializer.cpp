@@ -3,9 +3,11 @@
 
 #define BUF_SIZE	65535
 
-Deserializer::Deserializer(const uint64_t num_buckets, 
+Deserializer::Deserializer(MapperAggregator* agg,
+			const uint64_t num_buckets, 
 			const char* inp_prefix, 
 			PartialAgg* emptyPAO) :
+		aggregator(agg),
 		filter(serial_in_order),
 		num_buckets(num_buckets),
 		buckets_processed(0),
