@@ -6,13 +6,15 @@
 Deserializer::Deserializer(MapperAggregator* agg,
 			const uint64_t num_buckets, 
 			const char* inp_prefix, 
-			PartialAgg* emptyPAO) :
+			PartialAgg* emptyPAO,
+			PartialAgg* (*MapFunc)(const char* k)) :
 		aggregator(agg),
 		filter(serial_in_order),
 		num_buckets(num_buckets),
 		buckets_processed(0),
 		inputfile_prefix(inp_prefix),
-		emptyPAO(emptyPAO)
+		emptyPAO(emptyPAO),
+		Map(MapFunc)
 {
 }
 
@@ -36,35 +38,28 @@ void* Deserializer::operator()(void*)
 	strcat(file_name, "bucket");
 	strcat(file_name, bnum);
 	inp_file = fopen(file_name, "rb");
+	fprintf(stderr, "opening file %s\n", file_name);
 
 	// Add one element to the list so realloc doesn't complain.
 	pao_list = (PartialAgg**)malloc(sizeof(PartialAgg*));
 
 	while (!feof(inp_file) && !ferror(inp_file)) {
 		fread(buf, BUF_SIZE, 1, inp_file);
-		spl = strtok(buf, " \n");
+		spl = strtok(buf, " \n\r");
 		if (spl == NULL) { 
 			perror("Not good!");
 			return NULL;
 		}
 		while (1) {
-			PartialAgg* new_pao = pao_list[pao_list_ctr]; 
+			PartialAgg* new_pao = Map(spl);
 
-			strcpy(new_pao->key, spl);
-
-			spl = strtok(NULL, " \n");
+			spl = strtok(NULL, " \n\r");
 			if (spl == NULL) {
 				perror("File ended after reading key!");
+				fprintf(stderr, "%s\n", new_pao->key);
 				break;
 			}
-			strcpy(new_pao->value, spl);
-
-			// Read in next key
-			spl = strtok(NULL, " \n");
-			if (spl == NULL) {
-				perror("File ended after reading key!");
-				break;
-			}
+			new_pao->set_val(spl);
 
 			// Add new_pao to list
 			if (pao_list_ctr >= pao_list_size) {
@@ -76,6 +71,13 @@ void* Deserializer::operator()(void*)
 				assert(pao_list_ctr < pao_list_size);
 			}
 			pao_list[pao_list_ctr++] = new_pao;
+
+			// Read in next key
+			spl = strtok(NULL, " \n\r");
+			if (spl == NULL) {
+				perror("File ended after reading key!");
+				break;
+			}
 		}
 	}
 

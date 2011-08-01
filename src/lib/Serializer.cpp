@@ -1,11 +1,13 @@
 #include "config.h"
 #include "Serializer.h"
 
-Serializer::Serializer(MapperAggregator* agg, const uint64_t nb, const char* f_prefix) :
+Serializer::Serializer(MapperAggregator* agg, const uint64_t nb, 
+	const char* f_prefix, void (*destroyPAOFunc)(PartialAgg* p)) :
 		aggregator(agg),
 		filter(serial_in_order),
 		num_buckets(nb),
-		fname_prefix(f_prefix)
+		fname_prefix(f_prefix),
+		destroyPAO(destroyPAOFunc)
 {
 	char num[10];
 	char* gen_fname = (char*)malloc(FILENAME_PREFIX_LENGTH + 10);
@@ -43,12 +45,21 @@ void* Serializer::operator()(void* pao_list)
 	while(strcmp(pao_l[ind]->key, EMPTY_KEY)) {
 		pao = pao_l[ind];
 		// TODO; use another partitioning function later!
-		buc = pao->key[0] % num_buckets;
+		int sum = 0;
+		for (int i=0; i<strlen(pao->key); i++)
+			sum += pao->key[i];
+		buc = sum % num_buckets;
 		strcpy(buf, pao->key);
 		strcat(buf, " ");
 		strcat(buf, pao->value);
-		strcat(buf, " ");
+		strcat(buf, "\n");
+		if (NULL == fl[buc]) {
+			for (int i=0; i<strlen(pao->key); i++)
+				fprintf(stderr, "%c", pao->key[i]);
+			fprintf(stderr, "How possible? %d, %d, %s\n", buc, sum, pao->key);
+		}
 		fwrite(buf, sizeof(char), strlen(buf), fl[buc]);
+		destroyPAO(pao);
 		ind++;
 	}
 	free(buf);

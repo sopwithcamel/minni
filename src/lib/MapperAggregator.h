@@ -21,6 +21,7 @@ public:
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~MapperAggregator();
 	void runPipeline();
+
 	tbb::pipeline* pipeline_list;	
 	tbb::task_scheduler_init init;
 	bool input_finished;		// indicates if input stage is done
@@ -31,6 +32,8 @@ private:
 	const uint64_t capacity;	// aggregator capacity
 	PartialAgg* (*Map)(const char* token);
 	void (*destroyPAO)(PartialAgg* p);
+
+	void resetFlags();
 };
 
 #endif // LIB_MAPPERAGGREGATOR_H

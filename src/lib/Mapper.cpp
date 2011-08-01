@@ -1,6 +1,7 @@
 #include "config.h"
 #include "Mapper.h"
-#include "HashAggregator.h"
+//#include "HashAggregator.h"
+#include "BucketAggregator.h"
 #include "MapperAggregator.h"
 #include <dlfcn.h>
 
@@ -191,8 +192,13 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
+/*
 		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new HashAggregator(
 			1000000, i, &myinput, mapper->Map, mapper->destroyPAO,
+			1, "/localfs/hamur/")));
+*/
+		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new BucketAggregator(
+			10000, i, &myinput, mapper->Map, mapper->destroyPAO,
 			1, "/localfs/hamur/")));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;

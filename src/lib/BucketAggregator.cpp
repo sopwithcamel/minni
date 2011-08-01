@@ -28,11 +28,12 @@ BucketAggregator::BucketAggregator(const uint64_t _capacity,
 			destroyPAOFunc);
 	pipeline_list[0].add_filter(*hasher);
 
-	serializer = new Serializer(this, num_buckets, outfile_prefix);
+	serializer = new Serializer(this, num_buckets, outfile_prefix,
+			destroyPAOFunc);
 	pipeline_list[0].add_filter(*serializer);
 	
 	deserializer = new Deserializer(this, num_buckets, outfile_prefix,
-			emptyPAO);
+			emptyPAO, MapFunc);
 	pipeline_list[1].add_filter(*deserializer);
 
 	bucket_hasher = new Hasher<char*, CharHash, eqstr>(this, emptyPAO,

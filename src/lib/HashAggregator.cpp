@@ -28,7 +28,8 @@ HashAggregator::HashAggregator(const uint64_t _capacity,
 		destroyPAOFunc);
 	pipeline_list[0].add_filter(*hasher);
 
-	serializer = new Serializer(this, num_buckets, outfile_prefix);
+	serializer = new Serializer(this, num_buckets, outfile_prefix, 
+		destroyPAOFunc);
 	pipeline_list[0].add_filter(*serializer);
 }
 

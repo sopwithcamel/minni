@@ -10,6 +10,8 @@ WordCountPartialAgg::WordCountPartialAgg(const char* token)
 
 WordCountPartialAgg::~WordCountPartialAgg()
 {
+	free(key);
+	free(value);
 }
 
 void WordCountPartialAgg::add (const char* v)

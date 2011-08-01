@@ -39,17 +39,5 @@ char* PartialAgg::get_value() {
 
 
 void PartialAgg::set_val(char* v) {
-	value = v;
+	strcpy(value, v);
 }
-
-
-
-
-
-
-
-
-
-
-
-

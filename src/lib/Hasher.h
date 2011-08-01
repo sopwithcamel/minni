@@ -90,8 +90,6 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 		result = hashtable.insert(std::make_pair(pao->key, pao));
 		if (!result.second) { // the insertion didn't occur
 			(result.first->second)->merge(pao);
-			free(pao->key);
-			free(pao->value);
 			destroyPAO(pao);
 		} else { // the PAO was inserted
 			if (ht_size == HT_CAPACITY) { // PAO has to be evicted

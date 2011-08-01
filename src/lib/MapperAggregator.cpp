@@ -25,6 +25,19 @@ MapperAggregator::~MapperAggregator()
 void MapperAggregator::runPipeline()
 {
 	init.initialize(NUM_THREADS);
-	for (int i=0; i<num_pipelines; i++)
+	for (int i=0; i<num_pipelines; i++) {
 		pipeline_list[i].run(NUM_BUFFERS);
+		resetFlags();
+	}
+}
+
+/**
+ * Must be called after the execution of each pipeline if te aggregator
+ * consists of multiple pipelines placed serially (the only case we handle
+ * right now).
+ */
+void MapperAggregator::resetFlags()
+{
+	input_finished = false;
+	tot_input_tokens = 0;
 }
