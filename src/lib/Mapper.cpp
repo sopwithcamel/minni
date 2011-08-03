@@ -195,10 +195,10 @@ task* MapperWrapperTask::execute() {
 /*
 		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new HashAggregator(
 			1000000, i, &myinput, mapper->Map, mapper->destroyPAO,
-			1, "/localfs/hamur/")));
+			1, "/localfs/hamur/mapfile")));
 */
 		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new BucketAggregator(
-			10000, i, &myinput, mapper->Map, mapper->destroyPAO,
+			100000, i, &myinput, mapper->Map, mapper->destroyPAO,
 			1, "/localfs/hamur/")));
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;

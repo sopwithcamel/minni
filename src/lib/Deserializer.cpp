@@ -25,7 +25,11 @@ Deserializer::~Deserializer()
 void* Deserializer::operator()(void*)
 {
 	FILE* inp_file;
-	char* file_name = (char*)malloc(FILENAME_PREFIX_LENGTH + 10);
+
+	if (buckets_processed == num_buckets)
+		return NULL;
+
+	char* file_name = (char*)malloc(FILENAME_LENGTH);
 	char* bnum = (char*)malloc(10);
 	char* buf = (char*)malloc(BUF_SIZE + 1);
 	char* spl;
@@ -43,8 +47,11 @@ void* Deserializer::operator()(void*)
 	// Add one element to the list so realloc doesn't complain.
 	pao_list = (PartialAgg**)malloc(sizeof(PartialAgg*));
 
-	while (!feof(inp_file) && !ferror(inp_file)) {
-		fread(buf, BUF_SIZE, 1, inp_file);
+	size_t ret;
+	while (1) { //!feof(inp_file) && !ferror(inp_file)) {
+		ret = fread(buf, BUF_SIZE, 1, inp_file);
+		if (ret == 0)
+			break;
 		spl = strtok(buf, " \n\r");
 		if (spl == NULL) { 
 			perror("Not good!");
@@ -80,6 +87,8 @@ void* Deserializer::operator()(void*)
 			}
 		}
 	}
+	aggregator->tot_input_tokens++;
+	aggregator->input_finished = true;
 
 	// Add emptyPAO to the list
 	if (pao_list_ctr >= pao_list_size) {

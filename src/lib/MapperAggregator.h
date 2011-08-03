@@ -26,14 +26,14 @@ public:
 	tbb::task_scheduler_init init;
 	bool input_finished;		// indicates if input stage is done
 	uint64_t tot_input_tokens;	// measures total input tokens
+
+	void resetFlags();
 private:
 	const uint64_t num_pipelines; 	// number of pipelines in aggregator
 	const uint64_t partid;	// partition ID
 	const uint64_t capacity;	// aggregator capacity
 	PartialAgg* (*Map)(const char* token);
 	void (*destroyPAO)(PartialAgg* p);
-
-	void resetFlags();
 };
 
 #endif // LIB_MAPPERAGGREGATOR_H

@@ -48,9 +48,10 @@ private:
 	DFSReader* reader;
 	Tokenizer* toker;
 	Hasher<char*, CharHash, eqstr>* hasher;
-	Serializer* serializer;
+	Serializer* bucket_serializer;
 	Deserializer* deserializer;
 	Hasher<char*, CharHash, eqstr>* bucket_hasher;
+	Serializer* final_serializer;
 	const uint64_t num_buckets;
 	const char* outfile_prefix;
 };

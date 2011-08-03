@@ -10,21 +10,17 @@ Serializer::Serializer(MapperAggregator* agg, const uint64_t nb,
 		destroyPAO(destroyPAOFunc)
 {
 	char num[10];
-	char* gen_fname = (char*)malloc(FILENAME_PREFIX_LENGTH + 10);
-	char* fname = (char*)malloc(FILENAME_PREFIX_LENGTH + 10);
+	char* fname = (char*)malloc(FILENAME_LENGTH);
 
 	fl = (FILE**)malloc(num_buckets * sizeof(FILE*));
 
-	strcpy(gen_fname, fname_prefix);
-	strcat(gen_fname, "bucket");
 	for (int i=0; i<num_buckets; i++) {
 		sprintf(num, "%d", i);
-		strcpy(fname, gen_fname);
+		strcpy(fname, fname_prefix);
 		strcat(fname, num);
 
 		fl[i] = fopen(fname, "w");
 	}
-	free(gen_fname);
 	free(fname);
 }
 
@@ -62,6 +58,8 @@ void* Serializer::operator()(void* pao_list)
 		destroyPAO(pao);
 		ind++;
 	}
+	// reset flags
+	aggregator->resetFlags();
 	free(buf);
 	free(pao_l);
 }
