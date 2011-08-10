@@ -30,3 +30,5 @@ config.status
 src/common
 src/lib/libminni.pc
 src/lib/Defs.h
+src/dfs/tools/cpFromDFS
+src/dfs/tools/cpToDFS
