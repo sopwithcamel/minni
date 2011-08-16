@@ -1,5 +1,5 @@
-#ifndef LIB_INTERNALHASHER_H
-#define LIB_INTERNALHASHER_H
+#ifndef LIB_EXTERNALHASHER_H
+#define LIB_EXTERNALHASHER_H
 
 #include <stdlib.h>
 #include <iostream>
@@ -18,8 +18,8 @@
 #define HT_CAPACITY		500000
 
 /**
- * - Consumes: array of PAOs to be aggregated
- * - Produces: array of PAOs evicted from in-memory HT 
+ * - Consumes: array of PAOs to be aggregated into an external hashtable
+ * - Produces: nil
  * 
  * TODO:
  * - overload += operator in user-defined PartialAgg class
@@ -27,26 +27,24 @@
  * - change to TBB hash_map which is parallel access
  */
 
-template <typename KeyType, typename HashAlgorithm, typename EqualTest>
-class Hasher : public tbb::filter {
+class ExternalHasher : public tbb::filter {
 public:
-	Hasher(MapperAggregator* agg, PartialAgg* emptyPAO, 
+	ExternalHasher(MapperAggregator* agg,
+			const char* ht_name,
+			PartialAgg* emptyPAO, 
 			void (*destroyPAOFunc)(PartialAgg* p));
-	~Hasher();
+	~ExternalHasher();
 	void (*destroyPAO)(PartialAgg* p);
 private:
 	MapperAggregator* aggregator;
-	typedef std::tr1::unordered_map<KeyType, PartialAgg*, HashAlgorithm, EqualTest> Hash;
-	PartialAgg* emptyPAO;
-	PartialAgg** evicted_list;
+	FawnDS<FawnDS_Flash> *evictHash;
 	size_t ht_size;
-	Hash hashtable;
 	uint64_t tokens_processed;
 	void* operator()(void* pao_list);
 };
 
-template <typename KeyType, typename HashAlgorithm, typename EqualTest>
-Hasher<KeyType, HashAlgorithm, EqualTest>::Hasher(MapperAggregator* agg, 
+ExternalHasher::ExternalHasher(MapperAggregator* agg, 
+			const char* ht_name,
 			PartialAgg* emptyPAO,
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		filter(/*serial=*/true),	/* maintains global state which is not yet concurrent access */
@@ -58,23 +56,17 @@ Hasher<KeyType, HashAlgorithm, EqualTest>::Hasher(MapperAggregator* agg,
 {
 }
 
-template <typename KeyType, typename HashAlgorithm, typename EqualTest>
-Hasher<KeyType, HashAlgorithm, EqualTest>::~Hasher()
+ExternalHasher::~ExternalHasher()
 {
-	typename Hash::iterator it;
-	for (it = hashtable.begin(); it != hashtable.end(); it++) {
-		free(it->first);
-	}
-	hashtable.clear();
 }
 
-template <typename KeyType, typename HashAlgorithm, typename EqualTest>
-void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
+void* ExternalHasher::operator()(void* pao_list)
 {
 	char *key, *value;
 	PartialAgg** pao_l = (PartialAgg**)pao_list;
 	std::pair<typename Hash::iterator, bool> result;
 	size_t ind = 0;
+	size_t last_flush_ind = 0;
 	PartialAgg* pao;
 
 	size_t evict_list_ctr = 0;
@@ -83,35 +75,19 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 
 	// PAO to be evicted next. We maintain pointer because begin() on an unordered
 	// map is an expensive operation!
-	typename Hash::iterator next_evict = hashtable.end();
+	Hash::iterator next_evict = hashtable.end();
 
-	while (strcmp((pao_l[ind])->key, emptyPAO->key)) { 
+	while (strcmp((pao_l[ind])->key, EMPTY_KEY)) { 
 		pao = pao_l[ind];
-		result = hashtable.insert(std::make_pair(pao->key, pao));
-		if (!result.second) { // the insertion didn't occur
-			(result.first->second)->merge(pao);
-			destroyPAO(pao);
-		} else { // the PAO was inserted
-			if (ht_size == HT_CAPACITY) { // PAO has to be evicted
-				if (next_evict == hashtable.end())
-					next_evict = hashtable.begin();
-				typename Hash::iterator evict_el = next_evict;
-				next_evict++;
 
-				if (evict_list_ctr >= evict_list_size) {
-					evict_list_size += LIST_SIZE_INCR;
-					if (call_realloc(&evicted_list, evict_list_size) == NULL) {
-						perror("realloc failed");
-						return NULL;
-					}
-				}
-				assert(evict_list_ctr < evict_list_size);
-				evicted_list[evict_list_ctr++] = evict_el->second;
-				hashtable.erase(evict_el);				
-			} else {
-				ht_size++;
-			}
-		}
+		assert(evictHash->Insert(pao->key, strlen(pao->key), pao->value, VALUE_SIZE));
+
+		if (evictHash->checkWriteBufFlush()) {                        
+                	for (int i=last_flush_ind+1; i<=ind; i++) {
+				destroyPAO(pao_l[i]);
+                	}                                            
+			last_flush_ind = ind;
+                }
 		ind++;
 	}
 	free(pao_l);
@@ -153,4 +129,4 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 	return evicted_list;
 }
 
-#endif // LIB_INTERNALHASHER_H
+#endif // LIB_EXTERNALHASHER_H

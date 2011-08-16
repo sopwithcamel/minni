@@ -36,8 +36,8 @@ BucketAggregator::BucketAggregator(const uint64_t _capacity,
 	strcpy(bucket_prefix, outfile_prefix);
 	strcat(bucket_prefix, "bucket");
 
-	bucket_serializer = new Serializer(this, num_buckets, bucket_prefix,
-			destroyPAOFunc);
+	bucket_serializer = new Serializer(this, emptyPAO, num_buckets, 
+			bucket_prefix, destroyPAOFunc);
 	pipeline_list[0].add_filter(*bucket_serializer);
 	
 	/* Second pipeline: In this pipeline, a token is an entire bucket. In
@@ -58,7 +58,7 @@ BucketAggregator::BucketAggregator(const uint64_t _capacity,
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
 	strcpy(final_path, outfile_prefix);
 	strcat(final_path, "mapfile");
-	final_serializer = new Serializer(this, (uint64_t)1, final_path, 
+	final_serializer = new Serializer(this, emptyPAO, (uint64_t)1, final_path, 
 			destroyPAOFunc); 
 	pipeline_list[1].add_filter(*final_serializer);
 

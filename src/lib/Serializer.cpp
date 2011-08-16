@@ -1,10 +1,14 @@
 #include "config.h"
 #include "Serializer.h"
 
-Serializer::Serializer(MapperAggregator* agg, const uint64_t nb, 
-	const char* f_prefix, void (*destroyPAOFunc)(PartialAgg* p)) :
-		aggregator(agg),
+Serializer::Serializer(MapperAggregator* agg,
+	PartialAgg* emptyPAO,
+	const uint64_t nb, 
+	const char* f_prefix,
+	void (*destroyPAOFunc)(PartialAgg* p)) :
 		filter(serial_in_order),
+		aggregator(agg),
+		emptyPAO(emptyPAO),
 		num_buckets(nb),
 		fname_prefix(f_prefix),
 		destroyPAO(destroyPAOFunc)
@@ -38,7 +42,7 @@ void* Serializer::operator()(void* pao_list)
 	int ind = 0, buc;
 	PartialAgg** pao_l = (PartialAgg**)pao_list;
 	char* buf = (char*)malloc(VALUE_SIZE * 10);
-	while(strcmp(pao_l[ind]->key, EMPTY_KEY)) {
+	while(strcmp(pao_l[ind]->key, emptyPAO->key)) {
 		pao = pao_l[ind];
 		// TODO; use another partitioning function later!
 		int sum = 0;
