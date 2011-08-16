@@ -8,5 +8,6 @@
 #define EMPTY_KEY	"mamihlapinatapai"
 #define FILENAME_LENGTH		100
 #define LIST_SIZE_INCR	2048
+#define	EXT_HASH_SIZE		100000000
 
 #endif // LIB_DEFS_H
