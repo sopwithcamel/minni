@@ -1,9 +1,22 @@
 #include "config.h"
 #include "Mapper.h"
-//#include "HashAggregator.h"
+
+#ifdef BUCKET_AGG
+#include "BucketAggregator.h"
+#endif
+
+#ifdef EXTHASH_AGG
 #include "ExthashAggregator.h"
-//#include "BucketAggregator.h"
-#include "MapperAggregator.h"
+#endif
+
+#ifdef HASH_AGG
+#include "HashAggregator.h"
+#endif
+
+#ifdef HASHSORT_AGG
+#include "HashsortAggregator.h"
+#endif 
+
 #include <dlfcn.h>
 
 //#define lt__PROGRAM__LTX_preloaded_symbols lt_libltdl_LTX_preloaded_symbols
@@ -193,17 +206,29 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart; i++)
 	{
 //		my_mapper->aggregs.push_back(new MapperAggregator());
-/*
+#ifdef HASH_AGG
 		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new HashAggregator(
 			1000000, i, &myinput, mapper->Map, mapper->destroyPAO,
 			1, "/localfs/hamur/mapfile")));
+#endif
+
+#ifdef BUCKET_AGG
 		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new BucketAggregator(
 			100000, i, &myinput, mapper->Map, mapper->destroyPAO,
 			1, "/localfs/hamur/")));
-*/
+#endif
+
+#ifdef EXTHASH_AGG
 		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new ExthashAggregator(
 			100000, i, &myinput, mapper->Map, mapper->destroyPAO,
 			1, "/localfs/hamur/")));
+#endif
+
+#ifdef HASHSORT_AGG
+		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new HashsortAggregator(
+			100000, i, &myinput, mapper->Map, mapper->destroyPAO,
+			1, "/localfs/hamur/")));
+#endif
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	

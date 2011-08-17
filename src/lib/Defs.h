@@ -10,4 +10,6 @@
 #define LIST_SIZE_INCR	2048
 #define	EXT_HASH_SIZE		100000000
 
+#define HASHSORT_AGG
+
 #endif // LIB_DEFS_H
