@@ -6,15 +6,18 @@ EXTRA_DIST = 		PartialAgg.h \
 			Mapper.h \
 			Reducer.h \
 			Minnie.h \
-			FileReader.h \
-			Tokenizer.h \
-			Hasher.h \
-			ExternalHasher.h \
-			Serializer.h \
 			Deserializer.h \
-			HashAggregator.h \
-			ExthashAggregator.h \
+		       	DFSReader.h \
+			ExternalHasher.h \
+			FileReader.h \
+			Hasher.h \
+			Serializer.h \
+			Sorter.h \
+			Tokenizer.h \
 			BucketAggregator.h \
+			ExthashAggregator.h \
+			HashAggregator.h \
+			HashsortAggregator.h \
 			MapperAggregator.h \
 			Defs.h \
 			Util.h \
@@ -24,16 +27,18 @@ libminni_la_SOURCES =  	PartialAgg.cpp \
 		      	Mapper.cpp \
 		       	Reducer.cpp \
 		       	hashutil.cpp \
-		       	MapperAggregator.cpp \
-		       	HashAggregator.cpp \
-			ExthashAggregator.cpp \
-			BucketAggregator.cpp \
-		       	FileReader.cpp \
-		       	DFSReader.cpp \
-		       	Tokenizer.cpp \
-			ExternalHasher.cpp \
-			Serializer.cpp \
 			Deserializer.cpp \
+		       	DFSReader.cpp \
+			ExternalHasher.cpp \
+		       	FileReader.cpp \
+			Serializer.cpp \
+			Sorter.cpp \
+		       	Tokenizer.cpp \
+			BucketAggregator.cpp \
+			ExthashAggregator.cpp \
+		       	HashAggregator.cpp \
+			HashsortAggregator.cpp \
+		       	MapperAggregator.cpp \
 			Util.cpp
 
 libminni_la_LIBADD = ../dfs/libdfs.la \
@@ -55,19 +60,23 @@ libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
 
 minni_includedir = $(includedir)/libminni/libminni
 
-minni_include_HEADERS = Minnie.h \
-			PartialAgg.h \
+minni_include_HEADERS = PartialAgg.h \
 			Mapper.h \
-			FileReader.h \
-			Tokenizer.h \
-			Hasher.h \
-			ExternalHasher.h \
-			HashAggregator.h \
-			ExthashAggregator.h \
-			BucketAggregator.h \
-			MapperAggregator.h \
-			Serializer.h \
+			Reducer.h \
+			Minnie.h \
 			Deserializer.h \
+		       	DFSReader.h \
+			ExternalHasher.h \
+			FileReader.h \
+			Hasher.h \
+			Serializer.h \
+			Sorter.h \
+			Tokenizer.h \
+			BucketAggregator.h \
+			ExthashAggregator.h \
+			HashAggregator.h \
+			HashsortAggregator.h \
+			MapperAggregator.h \
 			Defs.h \
 			Util.h \
 			fnv.h
