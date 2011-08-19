@@ -208,25 +208,25 @@ task* MapperWrapperTask::execute() {
 //		my_mapper->aggregs.push_back(new MapperAggregator());
 #ifdef HASH_AGG
 		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new HashAggregator(
-			1000000, i, &myinput, mapper->Map, mapper->destroyPAO,
+			INT_HASH_SIZE, i, &myinput, mapper->Map, mapper->destroyPAO,
 			1, "/localfs/hamur/mapfile")));
 #endif
 
 #ifdef BUCKET_AGG
 		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new BucketAggregator(
-			100000, i, &myinput, mapper->Map, mapper->destroyPAO,
-			1, "/localfs/hamur/")));
+			INT_HASH_SIZE, i, &myinput, mapper->Map, mapper->destroyPAO,
+			NUM_BUCKETS, "/localfs/hamur/")));
 #endif
 
 #ifdef EXTHASH_AGG
 		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new ExthashAggregator(
-			100000, i, &myinput, mapper->Map, mapper->destroyPAO,
+			INT_HASH_SIZE, i, &myinput, mapper->Map, mapper->destroyPAO,
 			1, "/localfs/hamur/")));
 #endif
 
 #ifdef HASHSORT_AGG
 		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new HashsortAggregator(
-			100000, i, &myinput, mapper->Map, mapper->destroyPAO,
+			INT_HASH_SIZE, i, &myinput, mapper->Map, mapper->destroyPAO,
 			1, "/localfs/hamur/")));
 #endif
 	}

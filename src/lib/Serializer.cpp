@@ -49,6 +49,8 @@ void* Serializer::operator()(void* pao_list)
 		for (int i=0; i<strlen(pao->key); i++)
 			sum += pao->key[i];
 		buc = sum % num_buckets;
+		if (buc < 0)
+			buc += num_buckets;
 		strcpy(buf, pao->key);
 		strcat(buf, " ");
 		strcat(buf, pao->value);

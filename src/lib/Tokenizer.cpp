@@ -35,7 +35,7 @@ void* Tokenizer::operator()(void* buffer)
 	PartialAgg*** this_pao_list = &pao_list[next_buffer];
 	next_buffer = (next_buffer + 1) % NUM_BUFFERS;	
 	
-	spl = strtok(tok_buf, " .\n\r\'\"?,;:!*()\uFEFF");
+	spl = strtok(tok_buf, " .\n\r\'\"?,;:!*()-\uFEFF");
 	if (spl == NULL) { 
 		perror("Not good!");
 		return NULL;
@@ -53,7 +53,7 @@ void* Tokenizer::operator()(void* buffer)
 		}
 		(*this_pao_list)[this_list_ctr++] = new_pao;
 
-		spl = strtok(NULL, " .\n\r\'\"?,;:!*()\uFEFF");
+		spl = strtok(NULL, " .\n\r\'\"?,;:!*()-\uFEFF");
 		if (spl == NULL) {
 			break;
 		}

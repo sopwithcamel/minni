@@ -34,6 +34,7 @@ public:
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~Hasher();
 	void (*destroyPAO)(PartialAgg* p);
+	void setFlushOnComplete();
 private:
 	MapperAggregator* aggregator;
 	typedef std::tr1::unordered_map<KeyType, PartialAgg*, HashAlgorithm, EqualTest> Hash;
@@ -42,6 +43,7 @@ private:
 	size_t ht_size;
 	Hash hashtable;
 	uint64_t tokens_processed;
+	bool flush_on_complete;
 	void* operator()(void* pao_list);
 };
 
@@ -54,6 +56,7 @@ Hasher<KeyType, HashAlgorithm, EqualTest>::Hasher(MapperAggregator* agg,
 		emptyPAO(emptyPAO),
 		destroyPAO(destroyPAOFunc),
 		ht_size(0),
+		flush_on_complete(false),
 		tokens_processed(0)
 {
 }
@@ -124,8 +127,9 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 
 	tokens_processed++;
 	// if the number of buffers > 1 then some might be queued up
-	if (aggregator->input_finished && tokens_processed == 
-			aggregator->tot_input_tokens) {
+	if (flush_on_complete || (aggregator->input_finished && 
+			tokens_processed == aggregator->tot_input_tokens)) {
+		fprintf(stderr, "Hasher: input finished %d!\n", hashtable.size());
 		for (typename Hash::iterator it = hashtable.begin(); 
 				it != hashtable.end(); it++) {
 			if (evict_list_ctr >= evict_list_size) {
@@ -153,4 +157,9 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 	return evicted_list;
 }
 
+template <typename KeyType, typename HashAlgorithm, typename EqualTest>
+void Hasher<KeyType, HashAlgorithm, EqualTest>::setFlushOnComplete()
+{
+	flush_on_complete = true;
+}
 #endif // LIB_INTERNALHASHER_H

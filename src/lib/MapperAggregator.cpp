@@ -26,6 +26,7 @@ void MapperAggregator::runPipeline()
 {
 	init.initialize(NUM_THREADS);
 	for (int i=0; i<num_pipelines; i++) {
+		fprintf(stderr, "Running pipeline %d\n", i);
 		pipeline_list[i].run(NUM_BUFFERS);
 		resetFlags();
 	}

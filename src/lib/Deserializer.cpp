@@ -48,10 +48,8 @@ void* Deserializer::operator()(void*)
 	pao_list = (PartialAgg**)malloc(sizeof(PartialAgg*));
 
 	size_t ret;
-	while (1) { //!feof(inp_file) && !ferror(inp_file)) {
+	while (!feof(inp_file) && !ferror(inp_file)) {
 		ret = fread(buf, BUF_SIZE, 1, inp_file);
-		if (ret == 0)
-			break;
 		spl = strtok(buf, " \n\r");
 		if (spl == NULL) { 
 			perror("Not good!");
@@ -87,8 +85,6 @@ void* Deserializer::operator()(void*)
 			}
 		}
 	}
-	aggregator->tot_input_tokens++;
-	aggregator->input_finished = true;
 
 	// Add emptyPAO to the list
 	if (pao_list_ctr >= pao_list_size) {
@@ -106,6 +102,7 @@ void* Deserializer::operator()(void*)
 	free(file_name);
 
 	fclose(inp_file);
+//	fprintf(stderr, "list size: %d\n", pao_list_ctr);
 	return pao_list;
 }
 

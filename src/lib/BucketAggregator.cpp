@@ -53,6 +53,7 @@ BucketAggregator::BucketAggregator(const uint64_t _capacity,
 
 	bucket_hasher = new Hasher<char*, CharHash, eqstr>(this, emptyPAO,
 			destroyPAOFunc);
+	bucket_hasher->setFlushOnComplete();
 	pipeline_list[1].add_filter(*bucket_hasher);
 
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
