@@ -49,7 +49,8 @@ void* Deserializer::operator()(void*)
 
 	size_t ret;
 	while (!feof(inp_file) && !ferror(inp_file)) {
-		ret = fread(buf, BUF_SIZE, 1, inp_file);
+		ret = fread(buf, 1, BUF_SIZE, inp_file);
+		buf[ret] = '\0'; // fread doesn't null-terminate!
 		spl = strtok(buf, " \n\r");
 		if (spl == NULL) { 
 			perror("Not good!");
@@ -80,7 +81,6 @@ void* Deserializer::operator()(void*)
 			// Read in next key
 			spl = strtok(NULL, " \n\r");
 			if (spl == NULL) {
-				perror("File ended after reading key!");
 				break;
 			}
 		}

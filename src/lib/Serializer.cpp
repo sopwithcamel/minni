@@ -10,6 +10,7 @@ Serializer::Serializer(MapperAggregator* agg,
 		aggregator(agg),
 		emptyPAO(emptyPAO),
 		num_buckets(nb),
+		tokens_processed(0),
 		fname_prefix(f_prefix),
 		destroyPAO(destroyPAOFunc)
 {
@@ -30,10 +31,6 @@ Serializer::Serializer(MapperAggregator* agg,
 
 Serializer::~Serializer()
 {
-	for (int i=0; i<num_buckets; i++) {
-		fclose(fl[i]);
-	}
-	free(fl);
 }
 
 void* Serializer::operator()(void* pao_list)
@@ -64,8 +61,18 @@ void* Serializer::operator()(void* pao_list)
 		destroyPAO(pao);
 		ind++;
 	}
-	// reset flags
-	aggregator->resetFlags();
+	// reset flags; TODO: why are flags being reset here?
+//	aggregator->resetFlags();
+
+	tokens_processed++;
+	if (aggregator->input_finished && 
+			tokens_processed == aggregator->tot_input_tokens) {
+		fprintf(stderr, "Closing bucket files\n");
+		for (int i=0; i<num_buckets; i++)
+			fclose(fl[i]);
+		free(fl);
+	}
+
 	free(buf);
 	free(pao_l);
 }

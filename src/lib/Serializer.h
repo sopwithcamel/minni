@@ -34,6 +34,7 @@ private:
 	int num_buckets;
 	FILE** fl;
 	const char* fname_prefix;
+	size_t tokens_processed;
 	void* operator()(void* pao_list);
 };
 

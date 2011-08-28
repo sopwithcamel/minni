@@ -42,8 +42,8 @@ libminni_la_SOURCES =  	PartialAgg.cpp \
 			Util.cpp
 
 libminni_la_LIBADD = ../dfs/libdfs.la \
-			/home/hamur/fawnkv/fawnds/libfawnds.la \
-			/home/hamur/fawnkv/utils/libfawnkvutils.la
+			/home/hamur/code/fawnkv/fawnds/libfawnds.la \
+			/home/hamur/code/fawnkv/utils/libfawnkvutils.la
 
 libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 		       $(THRIFT_CFLAGS) \
@@ -51,8 +51,8 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 		       -I$(srcdir)/../master \
 		       -I$(srcdir)/../common \
 		       -I$(srcdir)/../dfs \
-			-I/home/hamur/fawnkv/fawnds \
-			-I/home/hamur/fawnkv/utils \
+			-I/home/hamur/code/fawnkv/fawnds \
+			-I/home/hamur/code/fawnkv/utils \
 			-lpthread -ltbb
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \

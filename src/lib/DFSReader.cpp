@@ -25,7 +25,6 @@ void* DFSReader::operator()(void*)
 {
 	size_t ret;
 	if (id > input->chunk_id_end) {
-		cout << "\t\t\tFinishing?" << endl;
 		aggregator->input_finished = true;
 		return NULL;
 	}
