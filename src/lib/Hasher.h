@@ -129,7 +129,7 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 	// if the number of buffers > 1 then some might be queued up
 	if (flush_on_complete || (aggregator->input_finished && 
 			tokens_processed == aggregator->tot_input_tokens)) {
-		fprintf(stderr, "Hasher: input finished %d!\n", hashtable.size());
+		fprintf(stderr, "Hasher: input finished %zu!\n", hashtable.size());
 		for (typename Hash::iterator it = hashtable.begin(); 
 				it != hashtable.end(); it++) {
 			if (evict_list_ctr >= evict_list_size) {
