@@ -38,15 +38,28 @@ struct eqstr
 
 class BucketAggregator : public Aggregator {
 public:
-	BucketAggregator(const uint64_t _capacity, const uint64_t _partid, 
-			MapInput* _map_input, PartialAgg* (*MapFunc)(const char* t), 
+	BucketAggregator(const uint64_t type, 
+			const uint64_t _capacity,
+			const uint64_t _partid,
+			MapInput* _map_input,
+			const char* inpfile_prefix, 
+			PartialAgg* (*createPAOFunc)(const char* t), 
 			void (*destroyPAOFunc)(PartialAgg* p), 
-			const uint64_t num_buckets, const char* outfile_prefix);
+			const uint64_t num_buckets,
+			const char* outfile_prefix);
 	~BucketAggregator();
 private:
+	const uint64_t type;	// where to get the input from
+
+	/* for chunk input from DFS */
 	MapInput* map_input; 
 	DFSReader* reader;
 	Tokenizer* toker;
+
+	/* for serialized PAOs from local file */
+	const char* input_prefix;
+	Deserializer* inp_deserializer;
+
 	Hasher<char*, CharHash, eqstr>* hasher;
 	Serializer* bucket_serializer;
 	Deserializer* deserializer;

@@ -29,13 +29,13 @@ public:
 	static const size_t n_buffer = NUM_BUFFERS;
 	Deserializer(Aggregator* agg, const uint64_t num_buckets, 
 		const char* inp_prefix, PartialAgg* emptyPAO,
-		PartialAgg* (*MapFunc)(const char* k));
+		PartialAgg* (*createPAOFunc)(const char* k));
 	~Deserializer();
 private:
 	Aggregator* aggregator;
-	PartialAgg* (*Map)(const char* k);
+	PartialAgg* (*createPAO)(const char* k);
 	PartialAgg* emptyPAO;
-	const char* inputfile_prefix;
+	char* inputfile_prefix;
 	const uint64_t num_buckets;	// Number of files to process serially
 	uint64_t buckets_processed;
 	PartialAgg** pao_list;

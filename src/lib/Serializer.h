@@ -23,9 +23,9 @@
 class Serializer : public tbb::filter {
 public:
 	Serializer(Aggregator* agg, PartialAgg* emptyPAO, 
-		const uint64_t nb,
-		const char* f_prefix, 
-		void (*destroyPAOFunc)(PartialAgg* p));
+			const uint64_t nb,
+			const char* outfile_prefix, 
+			void (*destroyPAOFunc)(PartialAgg* p));
 	~Serializer();
 private:
 	Aggregator* aggregator;
@@ -33,7 +33,7 @@ private:
 	void (*destroyPAO)(PartialAgg* p);
 	int num_buckets;
 	FILE** fl;
-	const char* fname_prefix;
+	char* outfile_prefix;
 	size_t tokens_processed;
 	void* operator()(void* pao_list);
 };

@@ -2,16 +2,15 @@
 #include "Serializer.h"
 
 Serializer::Serializer(Aggregator* agg,
-	PartialAgg* emptyPAO,
-	const uint64_t nb, 
-	const char* f_prefix,
-	void (*destroyPAOFunc)(PartialAgg* p)) :
+			PartialAgg* emptyPAO,
+			const uint64_t nb, 
+			const char* outfile_prefix,
+			void (*destroyPAOFunc)(PartialAgg* p)) :
 		filter(serial_in_order),
 		aggregator(agg),
 		emptyPAO(emptyPAO),
 		num_buckets(nb),
 		tokens_processed(0),
-		fname_prefix(f_prefix),
 		destroyPAO(destroyPAOFunc)
 {
 	char num[10];
@@ -21,7 +20,7 @@ Serializer::Serializer(Aggregator* agg,
 
 	for (int i=0; i<num_buckets; i++) {
 		sprintf(num, "%d", i);
-		strcpy(fname, fname_prefix);
+		strcpy(fname, outfile_prefix);
 		strcat(fname, num);
 
 		fl[i] = fopen(fname, "w");

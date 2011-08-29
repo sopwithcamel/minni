@@ -7,19 +7,21 @@ Deserializer::Deserializer(Aggregator* agg,
 			const uint64_t num_buckets, 
 			const char* inp_prefix, 
 			PartialAgg* emptyPAO,
-			PartialAgg* (*MapFunc)(const char* k)) :
+			PartialAgg* (*createPAOFunc)(const char* k)) :
 		aggregator(agg),
 		filter(serial_in_order),
 		num_buckets(num_buckets),
 		buckets_processed(0),
-		inputfile_prefix(inp_prefix),
 		emptyPAO(emptyPAO),
-		Map(MapFunc)
+		createPAO(createPAOFunc)
 {
+	inputfile_prefix = (char*)malloc(FILENAME_LENGTH);
+	strcpy(inputfile_prefix, inp_prefix);
 }
 
 Deserializer::~Deserializer()
 {
+	free(inputfile_prefix);
 }
 
 void* Deserializer::operator()(void*)
@@ -56,7 +58,7 @@ void* Deserializer::operator()(void*)
 			return NULL;
 		}
 		while (1) {
-			PartialAgg* new_pao = Map(spl);
+			PartialAgg* new_pao = createPAO(spl);
 
 			spl = strtok(NULL, " \n\r");
 			if (spl == NULL) {
