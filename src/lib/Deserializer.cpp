@@ -39,7 +39,6 @@ void* Deserializer::operator()(void*)
 	
 	sprintf(bnum, "%llu", buckets_processed++);
 	strcpy(file_name, inputfile_prefix);
-	strcat(file_name, "bucket");
 	strcat(file_name, bnum);
 	inp_file = fopen(file_name, "rb");
 	fprintf(stderr, "opening file %s\n", file_name);

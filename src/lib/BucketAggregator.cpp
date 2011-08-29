@@ -47,7 +47,7 @@ BucketAggregator::BucketAggregator(const uint64_t _capacity,
 
 	 * In this pipeline, a bucket is read back into memory (converted to 
 	 * PAOs again), aggregated using a hashtable, and serialized. */
-	deserializer = new Deserializer(this, num_buckets, outfile_prefix,
+	deserializer = new Deserializer(this, num_buckets, bucket_prefix,
 			emptyPAO, MapFunc);
 	pipeline_list[1].add_filter(*deserializer);
 
