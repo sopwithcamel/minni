@@ -62,27 +62,27 @@ uint64_t MapInput::key_value(char** value, ChunkID id) {
 }
 
 //Mapper
-Mapper::Mapper(PartialAgg* (*MapFunc)(const char* t), void (*__destroyPAO)(PartialAgg* p)):
-		Map(MapFunc),
+Mapper::Mapper(PartialAgg* (*__createPAO)(const char* t), 
+			void (*__destroyPAO)(PartialAgg* p)):
+		createPAO(__createPAO),
 		destroyPAO(__destroyPAO)	
 {
 }
 
-Mapper::~Mapper() {
-//	for (int i = 0; i < my_file_streams.size(); i++)
-  //      {
-    //            delete my_file_streams[i];
-      //  }
+Mapper::~Mapper()
+{
 }
 
 
 //Mapper wrapper task
 
-MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p, TaskRegistry * t, LocalFileRegistry * f) {
-	jobid = jid;
-	prop = p;
-	taskreg = t;
-	filereg = f;
+MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p, 
+			TaskRegistry * t, LocalFileRegistry * f):
+		jobid(jid),
+		prop(p),
+		taskreg(t),
+		filereg(f)
+{
 }
 
 /* TODO: destroy all PAO's created */
@@ -90,7 +90,8 @@ MapperWrapperTask::~MapperWrapperTask()
 {
 }
 
-int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions) {//TODO checking and printing error reports!	
+int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
+{//TODO checking and printing error reports!	
 	stringstream ss;
 	string soname_string;
 	soname = (*prop)["SO_NAME"];
@@ -127,6 +128,7 @@ int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
 
 int MapperWrapperTask::UserMapLinking(const char* soname)  { //TODO link Partial aggregates also
 	const char* err;
+	void* handle;
 	fprintf(stdout, "Given path: %s\n", soname);
 //	LTDL_SET_PRELOADED_SYMBOLS();
 	handle = dlopen(soname, RTLD_LAZY);
@@ -208,42 +210,37 @@ task* MapperWrapperTask::execute() {
 //		my_mapper->aggregs.push_back(new Aggregator());
 #ifdef HASH_AGG
 		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashAggregator(
-				DFS_CHUNK_INPUT, INT_HASH_SIZE, i, &myinput, NULL, mapper->Map, 
-				mapper->destroyPAO, 1, "/localfs/hamur/mapfile")));
+				DFS_CHUNK_INPUT, INT_HASH_SIZE, i, &myinput, NULL,
+				mapper->createPAO, mapper->destroyPAO, 1, 
+				"/localfs/hamur/mapfile")));
 #endif
 
 #ifdef BUCKET_AGG
 		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new BucketAggregator(
-				INT_HASH_SIZE, i, &myinput, mapper->Map, mapper->destroyPAO,
+				INT_HASH_SIZE, i, &myinput, mapper->createPAO, mapper->destroyPAO,
 				NUM_BUCKETS, "/localfs/hamur/")));
 #endif
 
 #ifdef EXTHASH_AGG
 		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new ExthashAggregator(
-				INT_HASH_SIZE, i, &myinput, mapper->Map, mapper->destroyPAO,
+				INT_HASH_SIZE, i, &myinput, mapper->createPAO, mapper->destroyPAO,
 				1, "/localfs/hamur/")));
 #endif
 
 #ifdef HASHSORT_AGG
 		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashsortAggregator(
-				INT_HASH_SIZE, i, &myinput, mapper->Map, mapper->destroyPAO,
+				INT_HASH_SIZE, i, &myinput, mapper->createPAO, mapper->destroyPAO,
 				1, "/localfs/hamur/")));
 #endif
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
-	
-	cout<<"Mapper: entered the map phase\n";
-	cout<<"Mapper: I will be reading from KDFS soon\n";
 	mapper->aggregs[0]->runPipeline();
-
 	cout<<"Mapper: Supposedly done with mapping"<<endl;
 	vector<File> my_Filelist;
 	cout<<"Mapper: About to start writing into files and my npart is "<<npart<<"\n";
 	//now i need to start writing into file
 	for(unsigned int i = 0; i < npart ; i++)
 	{
-		cout<<"Mapper: Executing loop for i = "<<i<<endl;
-
 		cout<<"Mapper: Going to tell the workdaemon about the file \n";
 		File f1(jobid, i, "/localfs/hamur/bucket0");
 		cout<<"Pushed back the file to worker daemon list \n";

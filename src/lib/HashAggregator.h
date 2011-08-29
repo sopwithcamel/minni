@@ -16,6 +16,7 @@
 #include "Tokenizer.h"
 #include "Hasher.h"
 #include "Serializer.h"
+#include "Deserializer.h"
 #include "hashutil.h"
 
 typedef struct 
@@ -38,7 +39,8 @@ struct eqstr
 class HashAggregator : public Aggregator {
 public:
 	HashAggregator(const uint64_t type, const uint64_t _capacity, const uint64_t _partid, 
-			MapInput* _map_input, PartialAgg* (*MapFunc)(const char* t), 
+			MapInput* _map_input, const char* infile_prefix, 
+			PartialAgg* (*createPAOFunc)(const char* t), 
 			void (*destroyPAOFunc)(PartialAgg* p), 
 			const uint64_t num_buckets, const char* outfile_prefix);
 	~HashAggregator();
