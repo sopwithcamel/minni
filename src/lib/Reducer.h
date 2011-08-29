@@ -16,7 +16,9 @@
 #include "WorkDaemon_tasks.h"
 #include <dlfcn.h>
 #include "PartialAgg.h"
+#include "Aggregator.h"
 #include "KDFS.h"
+#include "Defs.h"
 #define GetCurrentDir getcwd
 #define ERROR_EXIT 1
 #define SUCCESS_EXIT 0
@@ -24,9 +26,6 @@
 #define EXPONENT 1.5
 #define MAX_SLEEPTIME 10
 #define MAX_STRING_LENGTH 100000
-
-typedef map<string, PartialAgg*> Aggregator;
-
 
 class ReduceTaskWrapper;
 class ReduceOutput { 
@@ -42,10 +41,10 @@ class ReduceOutput {
 
 class Reducer {
   public:
-	Reducer() {};
-	~Reducer(){};
-	void AddKeyVal(char* key, char* value);
-	void AddPartialAgg(char* key, PartialAgg* pagg);
+	Reducer(PartialAgg* (*__createPAO)(const char* t), void (*__destroyPAO)(PartialAgg* p));
+	~Reducer();
+	PartialAgg* (*createPAO)(const char* t);
+	void (*destroyPAO)(PartialAgg* p);
   	Aggregator* aggreg;
 };
 
@@ -55,21 +54,18 @@ class ReducerWrapperTask : public task {
 	ReducerWrapperTask (JobID jid, Properties * p, TaskRegistry * t, GrabberRegistry * g);
 	task* execute ();
 	ReduceOutput myoutput;
-	//create_partialagg_t* create_agg_fn;
-	//destroy_partialagg_t* destroy_agg_fn;
+	PartialAgg* (*__libminni_create_pao)(const char* v);
+	void (*__libminni_destroy_pao)(PartialAgg* pao);
 	
   private:
-	Reducer* my_reducer;
+	Reducer* reducer;
 	JobID jobid;
 	Properties * prop;
 	TaskRegistry * taskreg;
 	GrabberRegistry* grabreg;
 	PartID my_partition;
 	int ParseProperties(string& soname);
-	int UserMapLinking(string soname);  
-	string GetCurrentPath();
-	string GetLocalFilename(string path, JobID jobid);
-	void DoReduce(string filename);
+	int UserMapLinking(const char* soname);  
 	string Write(string result_key, string result_value);
 	
 };

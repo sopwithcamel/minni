@@ -1,44 +1,30 @@
 #include "config.h"
 #include "Reducer.h"
 
-//ReduceOutput class
+#ifdef HASH_AGG
+#include "HashAggregator.h"
+#endif
 
 //Reducer class
-void Reducer::AddKeyVal(char* key, char* value) {
-	Aggregator::iterator found = (aggreg)->find(key);
-	if(found == (aggreg)->end()) {
-		(*aggreg)[key] = new PartialAgg(key, value); /*deleted at the end*/
-	}
-	//Existing key value - then add to the partial result
-	else {
-		(*aggreg)[key]->add(value);
-	}
+Reducer::Reducer(PartialAgg* (*__createPAO)(const char* t), 
+			void (*__destroyPAO)(PartialAgg* p)):
+		createPAO(__createPAO),
+		destroyPAO(__destroyPAO)
+{
 }
 
-void Reducer::AddPartialAgg(char* key, PartialAgg* pagg) {
-//	cout<<"addin a pagg whose value is "<<pagg->get_value()<<endl;
-	Aggregator::iterator found = (aggreg)->find(key);
-	if(found == (aggreg)->end()) {
-//		cout<<"New key "<<key<<" found and adding a new pagg into aggregator\n";
-		(*aggreg)[key] = new PartialAgg(pagg->get_value()); /*deleted at the end*/
-//		cout<<"The new aggregator addition happened successfully\n";
-	}
-	//Existing key value - then add to the partial result
-	else {
-//		cout<<"Existing key "<<key<<"found and adding to partial reuslt"<<endl;
-		(*aggreg)[key]->merge(pagg);
-//		cout<<"Added the existing key to aggreg\n";
-	}
+Reducer::~Reducer()
+{
 }
-
-
 
 //Reducer Wrapper
-ReducerWrapperTask::ReducerWrapperTask (JobID jid, Properties * p, TaskRegistry * t, GrabberRegistry * g) {
-	jobid = jid;
-	prop = p;
-	taskreg = t;
-	grabreg = g;
+ReducerWrapperTask::ReducerWrapperTask (JobID jid, Properties * p, TaskRegistry * t,
+			GrabberRegistry * g):
+		jobid(jid),
+		prop(p),
+		taskreg(t),
+		grabreg(g)
+{
 }
 
 int ReducerWrapperTask::ParseProperties(string& soname) {//TODO checking and printing error reports!	
@@ -61,89 +47,27 @@ int ReducerWrapperTask::ParseProperties(string& soname) {//TODO checking and pri
 	return SUCCESS_EXIT;
 }
 
-int ReducerWrapperTask::UserMapLinking(string soname) {
+int ReducerWrapperTask::UserMapLinking(const char* soname) {
+	const char* err;
+	void* handle;
+	fprintf(stdout, "Given path: %s\n", soname);
+//	LTDL_SET_PRELOADED_SYMBOLS();
+	handle = dlopen(soname, RTLD_LAZY);
+	if (!handle) {
+		fputs (dlerror(), stderr);
+		return 1;
+	}
+
+	__libminni_create_pao = (PartialAgg* (*)(const char*)) dlsym(handle, "__libminni_pao_create");
+	__libminni_destroy_pao = (void (*)(PartialAgg*)) dlsym(handle, "__libminni_pao_destroy");
+	if ((err = dlerror()) != NULL)
+	{
+		fprintf(stderr, "Error locating symbol __libminni_create_pao in %s\n", err);
+		exit(-1);
+	}
+	reducer = new Reducer(__libminni_create_pao, __libminni_destroy_pao); /*deleted at the end*/
 	
 	return SUCCESS_EXIT;
-}
-
-string ReducerWrapperTask::GetCurrentPath() {
-	char cCurrentPath[FILENAME_MAX];
-        if (!GetCurrentDir(cCurrentPath, sizeof(cCurrentPath)))
-        {
-		cout<<"Invalid reducer! "<<endl;
-               //TODO 
-        }
-        cCurrentPath[sizeof(cCurrentPath) - 1] = '\0'; /* not really required */
-        string path;
-        path = cCurrentPath;
-	return path;
-}
-
-string ReducerWrapperTask::GetLocalFilename(string path, JobID jobid) {
-	stringstream ss;
-       	ss << path;
-	ss << "/job";
-       	ss << jobid;
-	ss << ".reduce";
-       	return ss.str();
-}
-
-int deSerialize(FILE* fileIn, char* type, uint64_t* keyLength, char** key, uint64_t* valueLength, char** value)
-{
-	size_t result;
-	if (feof(fileIn)) return -1;
-        result = fread(type, sizeof(char), 1, fileIn);
-	if(result != 1) {cout<<"Reading error: TYPE "<<result<<endl; return -1;}
-	if (feof(fileIn)) return -1;
-        result = fread(keyLength, sizeof(uint64_t), 1, fileIn);
-        if(result != 1) {cout<<"Reading error: KEY LEN " <<result<<endl; return -1;}
-	if (feof(fileIn)) return -1;
-        *key = (char*) malloc(*keyLength); /*freed line 136 after the particular loop run*/
-	if (feof(fileIn)) return -1;
-        result = fread(*key, sizeof(char), *keyLength, fileIn);
-        if(result != *keyLength) {cout<<"Reading error: KEY VALUE "<<result<<endl; return -1;}
-	if (feof(fileIn)) return -1;
-        result = fread(valueLength, sizeof(uint64_t), 1, fileIn);
-        if(result != 1) {cout<<"Reading error: VALUE LEN"<<result<<endl; return -1;}
-
-	if (feof(fileIn)) return -1;
-        *value = (char*) malloc(*valueLength); /*freed line 137 after the particular loop run*/
-	if (feof(fileIn)) return -1;
-        result = fread(*value, sizeof(char), *valueLength, fileIn);
-        if(result != *valueLength){cout<<"Reading error: VALUE VALUE "<<result<<endl; return -1;}
-//	cout<<"Reducer: The values are key= "<<*key<<" value= "<<*value<<endl;
-	return 0;
-}
-
-void ReducerWrapperTask::DoReduce(string filename) {
-//	cout<<"I am here to do reduce on "<<filename<<endl;
-	FILE* fptr = fopen(filename.c_str(),"rb");
-	char type;
-	string key1, value1;
-	//adding values
-	while(feof(fptr)==0)//not end of file //TODO check
-	{
-//		cout<<"Inside and now going to read the file "<<endl;
-		char *key2, *value2;
-		uint64_t keylength, valuelength;
-		if (deSerialize(fptr, &type, &keylength, &key2, &valuelength, &value2)) break;
-		if(type == 2)
-		{
-//			cout<<"Type is key value and I am adding "<<"("<<key2<<" "<<value2<<"key value pair\n";
-			my_reducer->AddKeyVal(key2,value2);
-		}
-		else if (type == 1)
-		{
-//			cout<<"Type is partial aggregate and i am adding "<<"("<<key2<<" "<<value2<<"partial aggregator\n";
-			PartialAgg* newpagg = new PartialAgg(value2); /*deleted after adding value*/
-			my_reducer->AddPartialAgg(key2, newpagg);
-			delete newpagg;
-//			cout<<"Added the partial aggregate\n";
-		}
-		free(key2);
-		free(value2);
-	}
-	fclose(fptr);
 }
 
 string ReducerWrapperTask::Write(string result_key, string result_value) {
@@ -153,6 +77,9 @@ string ReducerWrapperTask::Write(string result_key, string result_value) {
 
 task* ReducerWrapperTask::execute() {
 	string soname;
+	char *s_name;
+	char *input_file = (char*)malloc(FILENAME_LENGTH);
+	strcpy(input_file, "/localfs/hamur/mapfile");
 	cout<<"Going to call Parse properties \n";
 	if(ParseProperties(soname) == ERROR_EXIT)  {
 		taskreg->setStatus(jobid, jobstatus::DEAD);
@@ -160,17 +87,16 @@ task* ReducerWrapperTask::execute() {
 	}
 	cout<<"After parse properties\n";
 	//dynamically loading the classes
-	if(UserMapLinking(soname) == ERROR_EXIT) {
+	s_name = (char*)malloc(soname.length());
+	strcpy(s_name, soname.c_str());
+	if(UserMapLinking(s_name) == ERROR_EXIT) {
 		taskreg->setStatus(jobid, jobstatus::DEAD);
 		return NULL;
 	}
-	my_reducer = new Reducer(); /*deleted at the end*/
-	my_reducer->aggreg = new Aggregator(); /*deleted at the end*/
+	reducer->aggreg = dynamic_cast<Aggregator*>(new HashAggregator(LOCAL_PAO_INPUT,
+			INT_HASH_SIZE, 0, NULL, input_file, reducer->createPAO, 
+			reducer->destroyPAO, 1, "/localfs/hamur/result"));
 		
-	//filename for the results
-	string curr_path = GetCurrentPath();
-	string filename = GetLocalFilename(curr_path,jobid);
-
 	int sleeptime = BASE_SLEEPTIME;
 	grabreg->setupGrabber(my_partition); //setting up the grabber
 	PartStatus curr_stat = grabreg->getStatus(my_partition);
@@ -188,9 +114,10 @@ task* ReducerWrapperTask::execute() {
 		{
 			flag = 1;
 			cout<<"Reducer: Reached Ready state!! \n";
-			grabreg->getMore(my_partition, filename);
+			// TODO: what does this do?
+			grabreg->getMore(my_partition, input_file);
 //			cout<<"Reducer: Going to do reduce on the file "<<filename<<endl;
-			DoReduce(filename);
+			reducer->aggreg->runPipeline();
 			cout<<"Reducer: Done with reducing \n";
 			sleeptime = BASE_SLEEPTIME;
 		}
@@ -205,60 +132,8 @@ task* ReducerWrapperTask::execute() {
 	cout<<"Reducer: The master is "<<myoutput.master_name<<endl;
 	cout<<"Reducer: The output port is "<<myoutput.port<<endl;
 
-	KDFS myhdfs(myoutput.master_name,myoutput.port);
-	
-	cout<<"Reducer: Opening the KDFS\n";
-	bool conn = myhdfs.connect();
-	if(!conn)
-		cout<<"Reducer: Unable to connect :(\n";
-	else
-		cout<<"Reducer: Able to connect :) \n";
-	stringstream ss1;
-	ss1 << my_partition;
-	string file_location = myoutput.path + "final" + ss1.str();
-	cout<<"Reducer: The output file is "<<file_location<<endl;
-	myhdfs.createFile(file_location);
-	if(myhdfs.checkExistence(file_location))
-		cout<<"Reducer: file in location!!\n";
-	else
-		cout<<"Reducer: no file available\n";
-	Aggregator::iterator aggiter;
-	Aggregator* temp = (my_reducer->aggreg);
-//	cout<<"Reducer: goin to read from the aggregators\n";
-	for(aggiter = temp->begin(); aggiter != temp->end(); ++aggiter)
-	{	
-//		cout<<"Reducer: Inside reading from the aggregators\n";
-		string k = aggiter->first;
-		PartialAgg* curr_par = aggiter->second;
-		string val = curr_par->value;
-//		cout << "Key: " << k << " " << " val: " << val << endl;
-		string out = Write(k, val);
-//		cout<<"Reducer: The value that it writes is "<<out<<endl;
-		myhdfs.writeToFile(file_location,out.c_str(),out.size());
-	}
-//	cout<<"Reducer: Outside the loop\n";
-	myhdfs.closeFile(file_location);
-	bool disconn = 	myhdfs.disconnect();
-	if(!disconn)
-		cout<<"Reducer: Not able to disconnect"<<endl;
-	else
-		cout<<"Reducer: Able to disconnect"<<endl;
-	taskreg->setStatus(jobid, jobstatus::DONE);
-	
-	//deleting things
-	for(aggiter = temp->begin(); aggiter != temp->end(); ++aggiter)
-	{	
-		delete (aggiter->second);
-	}
-
-	delete my_reducer->aggreg;
-	delete my_reducer;
-	
+	delete reducer->aggreg;
+	delete reducer;
 
 	return NULL;
 }
- 
-
-	
-
-
