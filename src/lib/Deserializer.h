@@ -27,12 +27,12 @@
 class Deserializer : public tbb::filter {
 public:
 	static const size_t n_buffer = NUM_BUFFERS;
-	Deserializer(MapperAggregator* agg, const uint64_t num_buckets, 
+	Deserializer(Aggregator* agg, const uint64_t num_buckets, 
 		const char* inp_prefix, PartialAgg* emptyPAO,
 		PartialAgg* (*MapFunc)(const char* k));
 	~Deserializer();
 private:
-	MapperAggregator* aggregator;
+	Aggregator* aggregator;
 	PartialAgg* (*Map)(const char* k);
 	PartialAgg* emptyPAO;
 	const char* inputfile_prefix;

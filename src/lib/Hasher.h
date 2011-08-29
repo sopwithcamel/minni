@@ -12,7 +12,7 @@
 
 #include "PartialAgg.h"
 #include "Mapper.h"
-#include "MapperAggregator.h"
+#include "Aggregator.h"
 #include "Util.h"
 
 #define HT_CAPACITY		500000
@@ -30,13 +30,13 @@
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
 class Hasher : public tbb::filter {
 public:
-	Hasher(MapperAggregator* agg, PartialAgg* emptyPAO, 
+	Hasher(Aggregator* agg, PartialAgg* emptyPAO, 
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~Hasher();
 	void (*destroyPAO)(PartialAgg* p);
 	void setFlushOnComplete();
 private:
-	MapperAggregator* aggregator;
+	Aggregator* aggregator;
 	typedef std::tr1::unordered_map<KeyType, PartialAgg*, HashAlgorithm, EqualTest> Hash;
 	PartialAgg* emptyPAO;
 	PartialAgg** evicted_list;
@@ -48,7 +48,7 @@ private:
 };
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
-Hasher<KeyType, HashAlgorithm, EqualTest>::Hasher(MapperAggregator* agg, 
+Hasher<KeyType, HashAlgorithm, EqualTest>::Hasher(Aggregator* agg, 
 			PartialAgg* emptyPAO,
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		filter(/*serial=*/true),	/* maintains global state which is not yet concurrent access */

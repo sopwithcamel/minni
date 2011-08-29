@@ -36,7 +36,7 @@ struct eqstr
 	}
 };
 
-class HashsortAggregator : public MapperAggregator {
+class HashsortAggregator : public Aggregator {
 public:
 	HashsortAggregator(const uint64_t _capacity, const uint64_t _partid, 
 			MapInput* _map_input, PartialAgg* (*MapFunc)(const char* t), 

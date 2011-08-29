@@ -23,10 +23,10 @@
 class DFSReader : public tbb::filter {
 public:
 	static const size_t n_buffer = NUM_BUFFERS;
-	DFSReader(MapperAggregator* agg, MapInput* _input);
+	DFSReader(Aggregator* agg, MapInput* _input);
 	~DFSReader();
 private:
-	MapperAggregator* aggregator;
+	Aggregator* aggregator;
 	size_t chunk_ctr;
 	MapInput* input;
 	size_t next_buffer;

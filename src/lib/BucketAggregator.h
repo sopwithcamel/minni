@@ -36,7 +36,7 @@ struct eqstr
 	}
 };
 
-class BucketAggregator : public MapperAggregator {
+class BucketAggregator : public Aggregator {
 public:
 	BucketAggregator(const uint64_t _capacity, const uint64_t _partid, 
 			MapInput* _map_input, PartialAgg* (*MapFunc)(const char* t), 

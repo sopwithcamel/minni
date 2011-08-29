@@ -1,7 +1,7 @@
 #include "config.h"
-#include "MapperAggregator.h"
+#include "Aggregator.h"
 
-MapperAggregator::MapperAggregator(uint64_t num_pipelines, 
+Aggregator::Aggregator(uint64_t num_pipelines, 
 			uint64_t _capacity, 
 			uint64_t _partid,
 			PartialAgg* (*MapFunc)(const char* t),
@@ -17,12 +17,12 @@ MapperAggregator::MapperAggregator(uint64_t num_pipelines,
 	pipeline_list = new tbb::pipeline[num_pipelines]; 
 }
 
-MapperAggregator::~MapperAggregator()
+Aggregator::~Aggregator()
 {
 	delete[] pipeline_list;
 }
 
-void MapperAggregator::runPipeline()
+void Aggregator::runPipeline()
 {
 	init.initialize(NUM_THREADS);
 	for (int i=0; i<num_pipelines; i++) {
@@ -37,7 +37,7 @@ void MapperAggregator::runPipeline()
  * consists of multiple pipelines placed serially (the only case we handle
  * right now).
  */
-void MapperAggregator::resetFlags()
+void Aggregator::resetFlags()
 {
 	input_finished = false;
 	tot_input_tokens = 0;

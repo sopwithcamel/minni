@@ -1,8 +1,8 @@
 #include "config.h"
 #include "DFSReader.h"
-#include "MapperAggregator.h"
+#include "Aggregator.h"
 
-DFSReader::DFSReader(MapperAggregator* agg, MapInput* _input) :
+DFSReader::DFSReader(Aggregator* agg, MapInput* _input) :
 		aggregator(agg),
 		filter(serial_in_order),
 		next_buffer(0),

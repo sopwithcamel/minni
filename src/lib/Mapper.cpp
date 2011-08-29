@@ -205,27 +205,27 @@ task* MapperWrapperTask::execute() {
 	cout<<"Mapper: starting to push back the aggregators\n";
 	for(unsigned int i = 0; i < npart; i++)
 	{
-//		my_mapper->aggregs.push_back(new MapperAggregator());
+//		my_mapper->aggregs.push_back(new Aggregator());
 #ifdef HASH_AGG
-		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new HashAggregator(
+		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashAggregator(
 			INT_HASH_SIZE, i, &myinput, mapper->Map, mapper->destroyPAO,
 			1, "/localfs/hamur/mapfile")));
 #endif
 
 #ifdef BUCKET_AGG
-		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new BucketAggregator(
+		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new BucketAggregator(
 			INT_HASH_SIZE, i, &myinput, mapper->Map, mapper->destroyPAO,
 			NUM_BUCKETS, "/localfs/hamur/")));
 #endif
 
 #ifdef EXTHASH_AGG
-		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new ExthashAggregator(
+		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new ExthashAggregator(
 			INT_HASH_SIZE, i, &myinput, mapper->Map, mapper->destroyPAO,
 			1, "/localfs/hamur/")));
 #endif
 
 #ifdef HASHSORT_AGG
-		mapper->aggregs.push_back(dynamic_cast<MapperAggregator*>(new HashsortAggregator(
+		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashsortAggregator(
 			INT_HASH_SIZE, i, &myinput, mapper->Map, mapper->destroyPAO,
 			1, "/localfs/hamur/")));
 #endif

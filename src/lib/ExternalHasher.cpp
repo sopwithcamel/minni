@@ -2,7 +2,7 @@
 #include "ExternalHasher.h"
 #include "Util.h"
 
-ExternalHasher::ExternalHasher(MapperAggregator* agg, 
+ExternalHasher::ExternalHasher(Aggregator* agg, 
 			char* ht_name,
 			PartialAgg* emptyPAO,
 			void (*destroyPAOFunc)(PartialAgg* p)) :

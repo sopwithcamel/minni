@@ -22,13 +22,13 @@
 
 class Serializer : public tbb::filter {
 public:
-	Serializer(MapperAggregator* agg, PartialAgg* emptyPAO, 
+	Serializer(Aggregator* agg, PartialAgg* emptyPAO, 
 		const uint64_t nb,
 		const char* f_prefix, 
 		void (*destroyPAOFunc)(PartialAgg* p));
 	~Serializer();
 private:
-	MapperAggregator* aggregator;
+	Aggregator* aggregator;
 	PartialAgg* emptyPAO;
 	void (*destroyPAO)(PartialAgg* p);
 	int num_buckets;

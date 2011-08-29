@@ -1,7 +1,7 @@
 #include "config.h"
 #include "Serializer.h"
 
-Serializer::Serializer(MapperAggregator* agg,
+Serializer::Serializer(Aggregator* agg,
 	PartialAgg* emptyPAO,
 	const uint64_t nb, 
 	const char* f_prefix,

@@ -12,7 +12,7 @@
 
 #include "PartialAgg.h"
 #include "Mapper.h"
-#include "MapperAggregator.h"
+#include "Aggregator.h"
 #include "Util.h"
 
 #include "fawnds.h"
@@ -28,7 +28,7 @@ using namespace fawn;
 
 class ExternalHasher : public tbb::filter {
 public:
-	ExternalHasher(MapperAggregator* agg,
+	ExternalHasher(Aggregator* agg,
 			char* ht_name,
 			PartialAgg* emptyPAO, 
 			void (*destroyPAOFunc)(PartialAgg* p));
@@ -36,7 +36,7 @@ public:
 	void (*destroyPAO)(PartialAgg* p);
 private:
 	PartialAgg* emptyPAO;
-	MapperAggregator* aggregator;
+	Aggregator* aggregator;
 	FawnDS<FawnDS_Flash> *evictHash;
 	uint64_t tokens_processed;
 	void* operator()(void* pao_list);

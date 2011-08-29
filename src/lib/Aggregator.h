@@ -1,5 +1,5 @@
-#ifndef LIB_MAPPERAGGREGATOR_H
-#define LIB_MAPPERAGGREGATOR_H
+#ifndef LIB_AGGREGATOR_H
+#define LIB_AGGREGATOR_H
 
 #include <iostream>
 #include <fstream>
@@ -13,13 +13,16 @@
 #include "PartialAgg.h"
 #include "Defs.h"
 
-class MapperAggregator {
+#define DFS_CHUNK_INPUT			0
+#define LOCAL_PAO_INPUT			1
+
+class Aggregator {
 public:
-	MapperAggregator(uint64_t num_pipelines, 
+	Aggregator(uint64_t num_pipelines, 
 			uint64_t _capacity, uint64_t _partid, 
 			PartialAgg* (*MapFunc)(const char* t),
 			void (*destroyPAOFunc)(PartialAgg* p));
-	~MapperAggregator();
+	~Aggregator();
 	void runPipeline();
 
 	tbb::pipeline* pipeline_list;	
@@ -36,4 +39,4 @@ private:
 	void (*destroyPAO)(PartialAgg* p);
 };
 
-#endif // LIB_MAPPERAGGREGATOR_H
+#endif // LIB_AGGREGATOR_H

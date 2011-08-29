@@ -11,7 +11,7 @@ HashsortAggregator::HashsortAggregator(const uint64_t _capacity,
 				void (*destroyPAOFunc)(PartialAgg*),
 				const uint64_t num_buckets,
 				const char* outfile_prefix) :
-		MapperAggregator(2, _capacity, _partid, MapFunc, destroyPAOFunc),
+		Aggregator(2, _capacity, _partid, MapFunc, destroyPAOFunc),
 		map_input(_map_input),
 		num_buckets(num_buckets),
 		outfile_prefix(outfile_prefix)

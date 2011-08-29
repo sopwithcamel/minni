@@ -21,7 +21,7 @@
 #include "PartialAgg.h"
 #include "TimeLog.h"
 #include "KDFS.h"
-#include "MapperAggregator.h"
+#include "Aggregator.h"
 
 #define GetCurrentDir getcwd
 
@@ -51,7 +51,7 @@ public:
 	void (*destroyPAO)(PartialAgg* p);
 	//vector <ofstream*>  my_file_streams; //TODO actually needed?
 	int num_partition;
-	vector<MapperAggregator*> aggregs;
+	vector<Aggregator*> aggregs;
 	TimeLog tl;
 private:
 };
