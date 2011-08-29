@@ -37,17 +37,28 @@ struct eqstr
 
 class HashAggregator : public Aggregator {
 public:
-	HashAggregator(const uint64_t _capacity, const uint64_t _partid, 
+	HashAggregator(const uint64_t type, const uint64_t _capacity, const uint64_t _partid, 
 			MapInput* _map_input, PartialAgg* (*MapFunc)(const char* t), 
 			void (*destroyPAOFunc)(PartialAgg* p), 
 			const uint64_t num_buckets, const char* outfile_prefix);
 	~HashAggregator();
 private:
-	MapInput* map_input; 
+	const uint64_t type;	// where to get the input from
+
+	/* for chunk input from DFS */
+	MapInput* map_input;
 	DFSReader* reader;
 	Tokenizer* toker;
+
+	/* for serialized PAOs from local file */
+	const char* input_prefix;
+	Deserializer* deserializer;
+
 	Hasher<char*, CharHash, eqstr>* hasher;
+
+	/* to serialized PAOs to local file */
 	Serializer* serializer;
+
 	const uint64_t num_buckets;
 	const char* outfile_prefix;
 };

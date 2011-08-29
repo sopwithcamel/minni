@@ -4,9 +4,11 @@
 /*
  * Initialize pipeline
  */
-HashAggregator::HashAggregator(const uint64_t _capacity, 
+HashAggregator::HashAggregator(const uint64_t type, // where to read from
+				const uint64_t _capacity, 
 				const uint64_t _partid, 
-				MapInput* _map_input,
+				MapInput* _map_input, // if input is DFS_CHUNK
+				const char* input_prefix, // if input is LOCAL_PAO
 				PartialAgg* (*MapFunc)(const char*),
 				void (*destroyPAOFunc)(PartialAgg*),
 				const uint64_t num_buckets,
@@ -14,20 +16,30 @@ HashAggregator::HashAggregator(const uint64_t _capacity,
 		Aggregator(1, _capacity, _partid, MapFunc, destroyPAOFunc),
 		map_input(_map_input),
 		num_buckets(num_buckets),
+		input_prefix(input_prefix),
 		outfile_prefix(outfile_prefix)
 {
 	PartialAgg* emptyPAO = MapFunc(EMPTY_KEY);
 
-	reader = new DFSReader(this, map_input);
-	pipeline_list[0].add_filter(*reader);
+	if (DFS_CHUNK_INPUT == type) {
+		reader = new DFSReader(this, map_input);
+		pipeline_list[0].add_filter(*reader);
 
-	toker = new Tokenizer(this, emptyPAO, MapFunc);
-	pipeline_list[0].add_filter(*toker);
+		toker = new Tokenizer(this, emptyPAO, MapFunc);
+		pipeline_list[0].add_filter(*toker);
+	} else if (LOCAL_PAO_INPUT == type) {
+		deserializer = new Deserializer(this, num_buckets, input_prefix,
+			emptyPAO, MapFunc);
+		pipeline_list[0].add_filter(*deserializer);
+	}
 
 	hasher = new Hasher<char*, CharHash, eqstr>(this, emptyPAO, 
 		destroyPAOFunc);
+	if (LOCAL_PAO_INPUT == type)
+		hasher->setFlushOnComplete();
 	pipeline_list[0].add_filter(*hasher);
 
+	// TODO: Handle output to DFS here
 	serializer = new Serializer(this, emptyPAO, num_buckets, outfile_prefix, 
 		destroyPAOFunc);
 	pipeline_list[0].add_filter(*serializer);
