@@ -1,8 +1,12 @@
 #include "config.h"
 #include "Reducer.h"
 
-#ifdef HASH_AGG
+#ifdef HASH_AGG_R
 #include "HashAggregator.h"
+#endif
+
+#ifdef BUCKET_AGG_R
+#include "BucketAggregator.h"
 #endif
 
 //Reducer class
@@ -93,9 +97,17 @@ task* ReducerWrapperTask::execute() {
 		taskreg->setStatus(jobid, jobstatus::DEAD);
 		return NULL;
 	}
+#ifdef HASH_AGG_R
 	reducer->aggreg = dynamic_cast<Aggregator*>(new HashAggregator(LOCAL_PAO_INPUT,
 			INT_HASH_SIZE, 0, NULL, input_file, reducer->createPAO, 
 			reducer->destroyPAO, 1, "/localfs/hamur/result"));
+#endif
+
+#ifdef BUCKET_AGG_R
+	reducer->aggreg = dynamic_cast<Aggregator*>(new BucketAggregator(LOCAL_PAO_INPUT,
+			INT_HASH_SIZE, 0, NULL, input_file, reducer->createPAO, 
+			reducer->destroyPAO, NUM_BUCKETS, "/localfs/hamur/result"));
+#endif
 		
 	int sleeptime = BASE_SLEEPTIME;
 	grabreg->setupGrabber(my_partition); //setting up the grabber

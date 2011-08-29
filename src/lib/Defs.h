@@ -9,7 +9,8 @@
 #define FILENAME_LENGTH		100
 #define LIST_SIZE_INCR	2048
 
-#define BUCKET_AGG
+#define BUCKET_AGG_M
+#define BUCKET_AGG_R
 
 #define	INT_HASH_SIZE		100
 #define	NUM_BUCKETS		4

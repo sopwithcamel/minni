@@ -1,19 +1,19 @@
 #include "config.h"
 #include "Mapper.h"
 
-#ifdef BUCKET_AGG
+#ifdef BUCKET_AGG_M
 #include "BucketAggregator.h"
 #endif
 
-#ifdef EXTHASH_AGG
+#ifdef EXTHASH_AGG_M
 #include "ExthashAggregator.h"
 #endif
 
-#ifdef HASH_AGG
+#ifdef HASH_AGG_M
 #include "HashAggregator.h"
 #endif
 
-#ifdef HASHSORT_AGG
+#ifdef HASHSORT_AGG_M
 #include "HashsortAggregator.h"
 #endif 
 
@@ -207,27 +207,27 @@ task* MapperWrapperTask::execute() {
 	cout<<"Mapper: starting to push back the aggregators\n";
 	for(unsigned int i = 0; i < npart; i++)
 	{
-//		my_mapper->aggregs.push_back(new Aggregator());
-#ifdef HASH_AGG
+#ifdef HASH_AGG_M
 		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashAggregator(
 				DFS_CHUNK_INPUT, INT_HASH_SIZE, i, &myinput, NULL,
 				mapper->createPAO, mapper->destroyPAO, 1, 
 				"/localfs/hamur/mapfile")));
 #endif
 
-#ifdef BUCKET_AGG
+#ifdef BUCKET_AGG_M
 		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new BucketAggregator(
-				INT_HASH_SIZE, i, &myinput, mapper->createPAO, mapper->destroyPAO,
-				NUM_BUCKETS, "/localfs/hamur/")));
+				DFS_CHUNK_INPUT, INT_HASH_SIZE, i, &myinput, NULL,
+				mapper->createPAO, mapper->destroyPAO, 	NUM_BUCKETS, 
+				"/localfs/hamur/mapfile")));
 #endif
 
-#ifdef EXTHASH_AGG
+#ifdef EXTHASH_AGG_M
 		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new ExthashAggregator(
 				INT_HASH_SIZE, i, &myinput, mapper->createPAO, mapper->destroyPAO,
 				1, "/localfs/hamur/")));
 #endif
 
-#ifdef HASHSORT_AGG
+#ifdef HASHSORT_AGG_M
 		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashsortAggregator(
 				INT_HASH_SIZE, i, &myinput, mapper->createPAO, mapper->destroyPAO,
 				1, "/localfs/hamur/")));
@@ -242,7 +242,7 @@ task* MapperWrapperTask::execute() {
 	for(unsigned int i = 0; i < npart ; i++)
 	{
 		cout<<"Mapper: Going to tell the workdaemon about the file \n";
-		File f1(jobid, i, "/localfs/hamur/bucket0");
+		File f1(jobid, i, "/localfs/hamur/mapfile0");
 		cout<<"Pushed back the file to worker daemon list \n";
 		my_Filelist.push_back(f1);
 	}
