@@ -1,17 +1,16 @@
 #include "config.h"
 #include "Aggregator.h"
 
-Aggregator::Aggregator(uint64_t num_pipelines, 
-			uint64_t _capacity, 
+Aggregator::Aggregator(Config* cfg,
+			uint64_t num_pipelines, 
 			uint64_t _partid,
-			PartialAgg* (*MapFunc)(const char* t),
+			PartialAgg* (*createPAOFunc)(const char* t),
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		num_pipelines(num_pipelines),
-		capacity(_capacity),
 		partid(_partid),
 		input_finished(false),
 		tot_input_tokens(0),
-		Map(MapFunc),
+		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc)
 {
 	pipeline_list = new tbb::pipeline[num_pipelines]; 

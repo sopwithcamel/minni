@@ -4,23 +4,29 @@
 /*
  * Initialize pipeline
  */
-BucketAggregator::BucketAggregator(const uint64_t type,
-				const uint64_t _capacity, 
-				const uint64_t _partid, 
+BucketAggregator::BucketAggregator(Config* cfg,
+				const uint64_t type, 
+				const uint64_t _partid,
 				MapInput* _map_input,
-				const char* inpfile_prefix,
-				PartialAgg* (*createPAOFunc)(const char*),
-				void (*destroyPAOFunc)(PartialAgg*),
-				const uint64_t num_buckets,
-				const char* outfile_prefix) :
-		Aggregator(2, _capacity, _partid, createPAOFunc, destroyPAOFunc),
+				const char* infile, 
+				PartialAgg* (*createPAOFunc)(const char* t), 
+				void (*destroyPAOFunc)(PartialAgg* p), 
+				const char* outfile):
+		Aggregator(cfg, 2, _partid, createPAOFunc, destroyPAOFunc),
 		type(DFS_CHUNK_INPUT),
 		map_input(_map_input),
-		num_buckets(num_buckets),
-		input_prefix(inpfile_prefix),
-		outfile_prefix(outfile_prefix)
+		infile(infile),
+		outfile(outfile)
 {
-	PartialAgg* emptyPAO = createPAOFunc(EMPTY_KEY);
+	Setting& c_empty_key = cfg->lookup("minni.key.empty");
+	string empty_key = c_empty_key;
+	PartialAgg* emptyPAO = createPAOFunc(empty_key.c_str());
+
+	Setting& c_capacity = cfg->lookup("aggregator.bucket.capacity");
+	capacity = c_capacity;
+
+	Setting& c_fprefix = cfg->lookup("minni.file_prefix");
+	string fprefix = c_fprefix;
 
 	if (DFS_CHUNK_INPUT == type) {
 		/* Beginning of first pipeline: this pipeline takes the entire
@@ -33,9 +39,13 @@ BucketAggregator::BucketAggregator(const uint64_t type,
 		toker = new Tokenizer(this, emptyPAO, createPAOFunc);
 		pipeline_list[0].add_filter(*toker);
 	} else if (LOCAL_PAO_INPUT == type) {
-		inp_deserializer = new Deserializer(this, 1/*TODO: how many?*/, input_prefix,
+		char* input_file = (char*)malloc(FILENAME_LENGTH);
+		strcpy(input_file, fprefix.c_str());
+		strcat(input_file, infile);
+		inp_deserializer = new Deserializer(this, 1/*TODO: how many?*/, input_file,
 			emptyPAO, createPAOFunc);
 		pipeline_list[0].add_filter(*inp_deserializer);
+		free(input_file);
 	}
 
 	hasher = new Hasher<char*, CharHash, eqstr>(this, emptyPAO,
@@ -45,8 +55,8 @@ BucketAggregator::BucketAggregator(const uint64_t type,
 	pipeline_list[0].add_filter(*hasher);
 
 	char* bucket_prefix = (char*)malloc(FILENAME_LENGTH);
-	strcpy(bucket_prefix, outfile_prefix);
-	strcat(bucket_prefix, "-bucket");
+	strcpy(bucket_prefix, fprefix.c_str());
+	strcat(bucket_prefix, "bucket");
 
 	bucket_serializer = new Serializer(this, emptyPAO, num_buckets, 
 			bucket_prefix, destroyPAOFunc);
@@ -69,7 +79,8 @@ BucketAggregator::BucketAggregator(const uint64_t type,
 	pipeline_list[1].add_filter(*bucket_hasher);
 
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
-	strcpy(final_path, outfile_prefix);
+	strcpy(final_path, fprefix.c_str());
+	strcat(final_path, outfile);
 	final_serializer = new Serializer(this, emptyPAO, (uint64_t)1, final_path, 
 			destroyPAOFunc); 
 	pipeline_list[1].add_filter(*final_serializer);

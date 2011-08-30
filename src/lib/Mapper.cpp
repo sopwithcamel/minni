@@ -83,6 +83,13 @@ MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p,
 		taskreg(t),
 		filereg(f)
 {
+	try {
+		cfg.readFile(CONFIG_FILE);
+	}
+	catch (...)
+	{
+		fprintf(stderr, "Error eading config file\n");
+	}
 }
 
 /* TODO: destroy all PAO's created */
@@ -205,31 +212,34 @@ task* MapperWrapperTask::execute() {
 	//my_mapper->num_partition = 10;
 	//npart = 10;
 	cout<<"Mapper: starting to push back the aggregators\n";
+
+	Setting& s = cfg.lookup("aggregator.hashtable.internal.size");
+	uint64_t int_hash_size = s;
+
 	for(unsigned int i = 0; i < npart; i++)
 	{
 #ifdef HASH_AGG_M
 		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashAggregator(
-				DFS_CHUNK_INPUT, INT_HASH_SIZE, i, &myinput, NULL,
-				mapper->createPAO, mapper->destroyPAO, 1, 
-				"/localfs/hamur/mapfile")));
+				&cfg, DFS_CHUNK_INPUT, i, &myinput, NULL,
+				mapper->createPAO, mapper->destroyPAO, "mapfile")));
 #endif
 
 #ifdef BUCKET_AGG_M
 		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new BucketAggregator(
-				DFS_CHUNK_INPUT, INT_HASH_SIZE, i, &myinput, NULL,
-				mapper->createPAO, mapper->destroyPAO, 	NUM_BUCKETS, 
-				"/localfs/hamur/mapfile")));
+				&cfg, DFS_CHUNK_INPUT, i, &myinput, NULL,
+				mapper->createPAO, mapper->destroyPAO, 
+				"mapfile")));
 #endif
 
 #ifdef EXTHASH_AGG_M
 		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new ExthashAggregator(
-				INT_HASH_SIZE, i, &myinput, mapper->createPAO, mapper->destroyPAO,
+				int_hash_size, i, &myinput, mapper->createPAO, mapper->destroyPAO,
 				1, "/localfs/hamur/")));
 #endif
 
 #ifdef HASHSORT_AGG_M
 		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashsortAggregator(
-				INT_HASH_SIZE, i, &myinput, mapper->createPAO, mapper->destroyPAO,
+				int_hash_size, i, &myinput, mapper->createPAO, mapper->destroyPAO,
 				1, "/localfs/hamur/")));
 #endif
 	}

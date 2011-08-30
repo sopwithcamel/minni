@@ -29,6 +29,7 @@ ReducerWrapperTask::ReducerWrapperTask (JobID jid, Properties * p, TaskRegistry 
 		taskreg(t),
 		grabreg(g)
 {
+	cfg.readFile(CONFIG_FILE);
 }
 
 int ReducerWrapperTask::ParseProperties(string& soname) {//TODO checking and printing error reports!	
@@ -97,16 +98,17 @@ task* ReducerWrapperTask::execute() {
 		taskreg->setStatus(jobid, jobstatus::DEAD);
 		return NULL;
 	}
+
 #ifdef HASH_AGG_R
-	reducer->aggreg = dynamic_cast<Aggregator*>(new HashAggregator(LOCAL_PAO_INPUT,
-			INT_HASH_SIZE, 0, NULL, input_file, reducer->createPAO, 
-			reducer->destroyPAO, 1, "/localfs/hamur/result"));
+	reducer->aggreg = dynamic_cast<Aggregator*>(new HashAggregator(&cfg,
+			LOCAL_PAO_INPUT, 0, NULL, input_file, reducer->createPAO, 
+			reducer->destroyPAO, "result"));
 #endif
 
 #ifdef BUCKET_AGG_R
-	reducer->aggreg = dynamic_cast<Aggregator*>(new BucketAggregator(LOCAL_PAO_INPUT,
-			INT_HASH_SIZE, 0, NULL, input_file, reducer->createPAO, 
-			reducer->destroyPAO, NUM_BUCKETS, "/localfs/hamur/result"));
+	reducer->aggreg = dynamic_cast<Aggregator*>(new BucketAggregator(&cfg,
+			LOCAL_PAO_INPUT, 0, NULL, input_file, reducer->createPAO, 
+			reducer->destroyPAO, "result"));
 #endif
 		
 	int sleeptime = BASE_SLEEPTIME;

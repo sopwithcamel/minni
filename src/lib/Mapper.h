@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <fstream>
+#include <libconfig.h++>
 #include "daemon_types.h"
 #include "WorkDaemon_file.h"
 #include "WorkDaemon_tasks.h"
@@ -28,6 +29,7 @@
 using namespace std;
 using namespace tbb;
 using namespace workdaemon;
+using namespace libconfig;
 
 class MapperWrapperTask;
 class MapInput {
@@ -73,6 +75,7 @@ class MapperWrapperTask : public task {
 	task* execute();
 	~MapperWrapperTask();
   private:
+	Config cfg;
 	JobID jobid;
 	Properties* prop;
 	TaskRegistry* taskreg;

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <libconfig.h++>
 
 #include "tbb/pipeline.h"
 #include "tbb/tick_count.h"
@@ -16,11 +17,14 @@
 #define DFS_CHUNK_INPUT			0
 #define LOCAL_PAO_INPUT			1
 
+using namespace libconfig;
+
 class Aggregator {
 public:
-	Aggregator(uint64_t num_pipelines, 
-			uint64_t _capacity, uint64_t _partid, 
-			PartialAgg* (*MapFunc)(const char* t),
+	Aggregator(Config* cfg,
+			uint64_t num_pipelines, 
+			uint64_t _partid, 
+			PartialAgg* (*createPAOFunc)(const char* t),
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~Aggregator();
 	void runPipeline();
@@ -34,8 +38,7 @@ public:
 private:
 	const uint64_t num_pipelines; 	// number of pipelines in aggregator
 	const uint64_t partid;	// partition ID
-	const uint64_t capacity;	// aggregator capacity
-	PartialAgg* (*Map)(const char* token);
+	PartialAgg* (*createPAO)(const char* token);
 	void (*destroyPAO)(PartialAgg* p);
 };
 

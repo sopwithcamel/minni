@@ -9,12 +9,11 @@
 #define FILENAME_LENGTH		100
 #define LIST_SIZE_INCR	2048
 
-#define BUCKET_AGG_M
-#define BUCKET_AGG_R
+#define HASH_AGG_M
+#define HASH_AGG_R
 
-#define	INT_HASH_SIZE		100
-#define	NUM_BUCKETS		4
 #define	EXT_HASH_SIZE		100000000
 
+#define CONFIG_FILE		"/home/hamur/code/minni/sample.cfg"
 
 #endif // LIB_DEFS_H

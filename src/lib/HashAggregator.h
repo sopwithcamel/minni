@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <libconfig.h++>
 
 #include "tbb/pipeline.h"
 #include "tbb/tick_count.h"
@@ -38,14 +39,18 @@ struct eqstr
 
 class HashAggregator : public Aggregator {
 public:
-	HashAggregator(const uint64_t type, const uint64_t _capacity, const uint64_t _partid, 
-			MapInput* _map_input, const char* infile_prefix, 
-			PartialAgg* (*createPAOFunc)(const char* t), 
-			void (*destroyPAOFunc)(PartialAgg* p), 
-			const uint64_t num_buckets, const char* outfile_prefix);
+	HashAggregator(Config* cfg, 
+				const uint64_t type,
+				const uint64_t _partid, 
+				MapInput* _map_input,
+				const char* infile, 
+				PartialAgg* (*createPAOFunc)(const char* t), 
+				void (*destroyPAOFunc)(PartialAgg* p), 
+				const char* outfile);
 	~HashAggregator();
 private:
 	const uint64_t type;	// where to get the input from
+	uint64_t capacity; // aggregator capacity
 
 	/* for chunk input from DFS */
 	MapInput* map_input;
@@ -53,7 +58,7 @@ private:
 	Tokenizer* toker;
 
 	/* for serialized PAOs from local file */
-	const char* input_prefix;
+	const char* infile;
 	Deserializer* deserializer;
 
 	Hasher<char*, CharHash, eqstr>* hasher;
@@ -61,8 +66,8 @@ private:
 	/* to serialized PAOs to local file */
 	Serializer* serializer;
 
-	const uint64_t num_buckets;
-	const char* outfile_prefix;
+	uint64_t num_buckets;
+	const char* outfile;
 };
 
 #endif // LIB_HASHAGGREGATOR_H

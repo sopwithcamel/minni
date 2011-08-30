@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <fstream>
+#include <libconfig.h++>
 #include "daemon_types.h"
 #include "WorkDaemon_file.h"
 #include "WorkDaemon_tasks.h"
@@ -26,6 +27,8 @@
 #define EXPONENT 1.5
 #define MAX_SLEEPTIME 10
 #define MAX_STRING_LENGTH 100000
+
+using namespace libconfig;
 
 class ReduceTaskWrapper;
 class ReduceOutput { 
@@ -58,6 +61,7 @@ class ReducerWrapperTask : public task {
 	void (*__libminni_destroy_pao)(PartialAgg* pao);
 	
   private:
+	Config cfg;
 	Reducer* reducer;
 	JobID jobid;
 	Properties * prop;
