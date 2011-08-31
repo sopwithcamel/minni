@@ -39,19 +39,33 @@ struct eqstr
 
 class ExthashAggregator : public Aggregator {
 public:
-	ExthashAggregator(const uint64_t _capacity, const uint64_t _partid, 
-			MapInput* _map_input, PartialAgg* (*MapFunc)(const char* t), 
-			void (*destroyPAOFunc)(PartialAgg* p), 
-			const uint64_t num_buckets, const char* outfile_prefix);
+	ExthashAggregator(Config* cfg,
+				const uint64_t type,
+				const uint64_t _partid, 
+				MapInput* _map_input,
+				const char* infile, 
+				PartialAgg* (*createPAOFunc)(const char* t), 
+				void (*destroyPAOFunc)(PartialAgg* p), 
+				const char* outfile);
 	~ExthashAggregator();
 private:
+	const uint64_t type;	// where to get the input from
+	uint64_t internal_capacity; // aggregator capacity
+	uint64_t external_capacity; // external hashtable capacity
+
+	/* for chunk input from DFS */
 	MapInput* map_input; 
 	DFSReader* reader;
 	Tokenizer* toker;
+
+	/* for serialized PAOs from local file */
+	const char* infile;
+	Deserializer* inp_deserializer;
+
 	Hasher<char*, CharHash, eqstr>* hasher;
 	ExternalHasher* ext_hasher;
-	const uint64_t num_buckets;
-	const char* outfile_prefix;
+	uint64_t num_buckets;
+	const char* outfile;
 };
 
 #endif // LIB_EXTHASHAGGREGATOR_H

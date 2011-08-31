@@ -17,6 +17,7 @@
 #include "Serializer.h"
 #include "Sorter.h"
 #include "Tokenizer.h"
+#include "Deserializer.h"
 #include "hashutil.h"
 
 typedef struct 
@@ -38,20 +39,33 @@ struct eqstr
 
 class HashsortAggregator : public Aggregator {
 public:
-	HashsortAggregator(const uint64_t _capacity, const uint64_t _partid, 
-			MapInput* _map_input, PartialAgg* (*MapFunc)(const char* t), 
-			void (*destroyPAOFunc)(PartialAgg* p), 
-			const uint64_t num_buckets, const char* outfile_prefix);
+	HashsortAggregator(Config* cfg,
+				const uint64_t type, 
+				const uint64_t _partid,
+				MapInput* _map_input,
+				const char* infile, 
+				PartialAgg* (*createPAOFunc)(const char* t), 
+				void (*destroyPAOFunc)(PartialAgg* p), 
+				const char* outfile);
 	~HashsortAggregator();
 private:
+	const uint64_t type;	// where to get the input from
+	uint64_t capacity; // aggregator capacity
+
+	/* for chunk input from DFS */
 	MapInput* map_input; 
 	DFSReader* reader;
 	Tokenizer* toker;
+
+	/* for serialized PAOs from local file */
+	const char* infile;
+	Deserializer* inp_deserializer;
+
 	Hasher<char*, CharHash, eqstr>* hasher;
 	Serializer* bucket_serializer;
 	Sorter* sorter;
-	const uint64_t num_buckets;
-	const char* outfile_prefix;
+	uint64_t num_buckets;
+	const char* outfile;
 };
 
 #endif // LIB_HASHAGGREGATOR_H
