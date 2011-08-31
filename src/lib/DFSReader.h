@@ -14,6 +14,8 @@
 #include "PartialAgg.h"
 #include "Mapper.h"
 
+#define BUFSIZE			67108864
+
 /**
  * To be used as the input stage in the pipeline.
  * - Produces a buffer for consumption
@@ -22,7 +24,6 @@
 
 class DFSReader : public tbb::filter {
 public:
-	static const size_t n_buffer = NUM_BUFFERS;
 	DFSReader(Aggregator* agg, MapInput* _input);
 	~DFSReader();
 private:
@@ -30,7 +31,7 @@ private:
 	size_t chunk_ctr;
 	MapInput* input;
 	size_t next_buffer;
-	char* buf[NUM_BUFFERS];
+	char** buf;
 	char* buffer;
 	ChunkID id;
 	void* operator()(void* pao);

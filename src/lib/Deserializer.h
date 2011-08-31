@@ -26,7 +26,6 @@
 
 class Deserializer : public tbb::filter {
 public:
-	static const size_t n_buffer = NUM_BUFFERS;
 	Deserializer(Aggregator* agg, const uint64_t num_buckets, 
 		const char* inp_prefix, PartialAgg* emptyPAO,
 		PartialAgg* (*createPAOFunc)(const char* k));

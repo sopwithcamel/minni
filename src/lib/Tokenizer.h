@@ -31,7 +31,7 @@ private:
 	Aggregator* aggregator;
 	size_t next_buffer;
 	PartialAgg* emptyPAO;
-	PartialAgg** pao_list[NUM_BUFFERS];
+	PartialAgg*** pao_list;
 	PartialAgg* (*Map)(const char* token);
 	void* operator()(void* pao);
 };

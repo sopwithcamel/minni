@@ -9,7 +9,9 @@ DFSReader::DFSReader(Aggregator* agg, MapInput* _input) :
 		chunk_ctr(0),
 		input(_input)
 {
-	for (int i = 0; i < n_buffer; i++)
+	uint64_t num_buffers = aggregator->getNumBuffers();
+	buf = (char**)malloc(sizeof(char*) * num_buffers);
+	for (int i = 0; i < num_buffers; i++)
 		buf[i] = (char*)malloc(BUFSIZE);
 	id = input->chunk_id_start;
 }
@@ -17,8 +19,9 @@ DFSReader::DFSReader(Aggregator* agg, MapInput* _input) :
 DFSReader::~DFSReader()
 {
 	cout << "Destroying DFSReader" << endl;
-	for (int i = 0; i < n_buffer; i++)
+	for (int i = 0; i < aggregator->getNumBuffers(); i++)
 		free(buf[i]);
+	free(buf);
 }
 
 void* DFSReader::operator()(void*)
@@ -29,7 +32,7 @@ void* DFSReader::operator()(void*)
 		return NULL;
 	}
 	buffer = buf[next_buffer];
-	next_buffer = (next_buffer + 1) % NUM_BUFFERS;
+	next_buffer = (next_buffer + 1) % aggregator->getNumBuffers(); 
 	cout << "Reading in buffer " << id << endl;
 	ret = input->key_value(&buffer, id); 
 	id++;

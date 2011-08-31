@@ -14,6 +14,8 @@
 #include "PartialAgg.h"
 #include "Mapper.h"
 
+#define BUFSIZE			67108864
+
 /**
  * To be used as the input stage in the pipeline.
  * - Produces a buffer for consumption
@@ -22,14 +24,14 @@
 
 class FileReader : public tbb::filter {
 public:
-	static const size_t n_buffer = NUM_BUFFERS;
-	FileReader(FILE* _input_file);
+	FileReader(FILE* _input_file, Aggregator* agg);
 	~FileReader();
 private:
+	Aggregator* aggregator;
 	size_t chunk_ctr;
 	FILE* input_file;
 	size_t next_buffer;
-	char* buf[NUM_BUFFERS];
+	char** buf;
 	char* buffer;
 	void* operator()(void* pao);
 };

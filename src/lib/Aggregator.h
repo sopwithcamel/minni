@@ -35,7 +35,11 @@ public:
 	uint64_t tot_input_tokens;	// measures total input tokens
 
 	void resetFlags();
+	uint64_t getNumThreads();
+	uint64_t getNumBuffers();
 private:
+	uint64_t num_threads;
+	uint64_t num_buffers;
 	const uint64_t num_pipelines; 	// number of pipelines in aggregator
 	const uint64_t partid;	// partition ID
 	PartialAgg* (*createPAO)(const char* token);

@@ -1,9 +1,11 @@
 #include "config.h"
 #include "ExternalHasher.h"
 #include "Util.h"
+#include <libconfig.h++>
 
 ExternalHasher::ExternalHasher(Aggregator* agg, 
 			char* ht_name,
+			uint64_t ext_ht_size,
 			PartialAgg* emptyPAO,
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		filter(/*serial=*/true),	/* maintains global state which is not yet concurrent access */
@@ -12,7 +14,7 @@ ExternalHasher::ExternalHasher(Aggregator* agg,
 		destroyPAO(destroyPAOFunc),
 		tokens_processed(0)
 {
-	evictHash = FawnDS<FawnDS_Flash>::Create_FawnDS(ht_name, EXT_HASH_SIZE, 0.9, 0.8, TEXT_KEYS);
+	evictHash = FawnDS<FawnDS_Flash>::Create_FawnDS(ht_name, ext_ht_size, 0.9, 0.8, TEXT_KEYS);
 }
 
 ExternalHasher::~ExternalHasher()

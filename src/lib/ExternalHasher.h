@@ -30,6 +30,7 @@ class ExternalHasher : public tbb::filter {
 public:
 	ExternalHasher(Aggregator* agg,
 			char* ht_name,
+			uint64_t ext_ht_size,
 			PartialAgg* emptyPAO, 
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~ExternalHasher();

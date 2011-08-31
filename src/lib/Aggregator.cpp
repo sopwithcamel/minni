@@ -14,6 +14,12 @@ Aggregator::Aggregator(Config* cfg,
 		destroyPAO(destroyPAOFunc)
 {
 	pipeline_list = new tbb::pipeline[num_pipelines]; 
+
+	Setting& c_num_threads = cfg->lookup("tbb.threads");
+	Setting& c_num_buffers = cfg->lookup("tbb.buffers");
+	
+	num_threads = c_num_threads;
+	num_buffers = c_num_buffers;
 }
 
 Aggregator::~Aggregator()
@@ -23,10 +29,10 @@ Aggregator::~Aggregator()
 
 void Aggregator::runPipeline()
 {
-	init.initialize(NUM_THREADS);
+	init.initialize(num_threads);
 	for (int i=0; i<num_pipelines; i++) {
 		fprintf(stderr, "Running pipeline %d\n", i);
-		pipeline_list[i].run(NUM_BUFFERS);
+		pipeline_list[i].run(num_buffers);
 		resetFlags();
 	}
 }
@@ -40,4 +46,14 @@ void Aggregator::resetFlags()
 {
 	input_finished = false;
 	tot_input_tokens = 0;
+}
+
+uint64_t Aggregator::getNumThreads(void)
+{
+	return num_threads;
+}
+
+uint64_t Aggregator::getNumBuffers(void)
+{
+	return num_buffers;
 }

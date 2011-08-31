@@ -62,7 +62,8 @@ ExthashAggregator::ExthashAggregator(Config* cfg,
 	char* ht_name = (char*)malloc(FILENAME_LENGTH);
 	strcpy(ht_name, fprefix.c_str());
 	strcat(ht_name, "hashtable_dump");
-	ext_hasher = new ExternalHasher(this, ht_name, emptyPAO, destroyPAOFunc);
+	ext_hasher = new ExternalHasher(this, ht_name, external_capacity, emptyPAO,
+			destroyPAOFunc);
 	pipeline_list[0].add_filter(*ext_hasher);
 
 	free(ht_name);
