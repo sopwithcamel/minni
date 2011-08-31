@@ -1,22 +1,10 @@
 #include "config.h"
 #include "Mapper.h"
 
-#ifdef BUCKET_AGG_M
 #include "BucketAggregator.h"
-#endif
-
-#ifdef EXTHASH_AGG_M
 #include "ExthashAggregator.h"
-#endif
-
-#ifdef HASH_AGG_M
 #include "HashAggregator.h"
-#endif
-
-#ifdef HASHSORT_AGG_M
 #include "HashsortAggregator.h"
-#endif 
-
 #include <dlfcn.h>
 
 //#define lt__PROGRAM__LTX_preloaded_symbols lt_libltdl_LTX_preloaded_symbols
@@ -84,11 +72,12 @@ MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p,
 		filereg(f)
 {
 	try {
-		cfg.readFile(CONFIG_FILE);
+//		cfg.readFile(CONFIG_FILE);
+		cfg.readFile("/home/hamur/code/minni/sample.cfg");
 	}
-	catch (...)
+	catch (ParseException e)
 	{
-		fprintf(stderr, "Error eading config file\n");
+		fprintf(stderr, "Error reading config file: %s at %s:%d\n", e.getError(), e.what(), e.getLine());
 	}
 }
 
@@ -209,39 +198,36 @@ task* MapperWrapperTask::execute() {
 	cout<<"Mapper: Setting the number of partitions to "<<mapper->num_partition<<endl;
 	
 	cout<<"The number of partitions that it gets is "<<npart<<"\n";
-	//my_mapper->num_partition = 10;
-	//npart = 10;
 	cout<<"Mapper: starting to push back the aggregators\n";
 
-	Setting& s = cfg.lookup("aggregator.hashtable.internal.size");
-	uint64_t int_hash_size = s;
+	Setting& c_sel_aggregator = cfg.lookup("minni.aggregator.selected.map");
+	string selected_map_aggregator = (const char*)c_sel_aggregator;
 
 	for(unsigned int i = 0; i < npart; i++)
 	{
-#ifdef HASH_AGG_M
-		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashAggregator(
-				&cfg, DFS_CHUNK_INPUT, i, &myinput, NULL,
-				mapper->createPAO, mapper->destroyPAO, "mapfile")));
-#endif
-
-#ifdef BUCKET_AGG_M
-		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new BucketAggregator(
-				&cfg, DFS_CHUNK_INPUT, i, &myinput, NULL,
-				mapper->createPAO, mapper->destroyPAO, 
-				"mapfile")));
-#endif
-
-#ifdef EXTHASH_AGG_M
-		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new ExthashAggregator(
-				int_hash_size, i, &myinput, mapper->createPAO, mapper->destroyPAO,
-				1, "/localfs/hamur/")));
-#endif
-
-#ifdef HASHSORT_AGG_M
-		mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashsortAggregator(
-				int_hash_size, i, &myinput, mapper->createPAO, mapper->destroyPAO,
-				1, "/localfs/hamur/")));
-#endif
+		if (!selected_map_aggregator.compare("simple")) {
+			mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashAggregator(
+							&cfg, DFS_CHUNK_INPUT, i, &myinput, 
+							NULL, mapper->createPAO, 
+							mapper->destroyPAO, "mapfile")));
+		} else if (!selected_map_aggregator.compare("bucket")) {
+			mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new BucketAggregator(
+							&cfg, DFS_CHUNK_INPUT, i, &myinput, NULL,
+							mapper->createPAO, mapper->destroyPAO, 
+							"mapfile")));
+		} else if (!selected_map_aggregator.compare("exthash")) {
+			mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new ExthashAggregator(
+							&cfg, DFS_CHUNK_INPUT, i, &myinput, NULL,
+							mapper->createPAO, mapper->destroyPAO,
+							"mapfile")));
+		} else if (!selected_map_aggregator.compare("hashsort")) {
+			mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashsortAggregator(
+							&cfg, DFS_CHUNK_INPUT, i, &myinput, NULL,
+							mapper->createPAO, mapper->destroyPAO,
+							"mapfile")));
+		} else {
+			fprintf(stderr, "Illegel aggregator chosen!\n");
+		}
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
 	mapper->aggregs[0]->runPipeline();

@@ -18,15 +18,32 @@ HashsortAggregator::HashsortAggregator(Config* cfg,
 		infile(infile),
 		outfile(outfile)
 {
-	Setting& c_empty_key = cfg->lookup("minni.key.empty");
-	string empty_key = c_empty_key;
+	string fprefix;
+	string empty_key;
+	try {
+		Setting& c_empty_key = cfg->lookup("minni.common.key.empty");
+		empty_key = (const char*)c_empty_key;
+	}
+	catch (SettingNotFoundException e) {
+		fprintf(stderr, "Setting not found %s\n", e.getPath());
+	}		
 	PartialAgg* emptyPAO = createPAOFunc(empty_key.c_str());
 
-	Setting& c_capacity = cfg->lookup("aggregator.hashsort.capacity");
-	capacity = c_capacity;
+	try {
+		Setting& c_capacity = cfg->lookup("minni.aggregator.hashsort.capacity");
+		capacity = c_capacity;
+	}
+	catch (SettingNotFoundException e) {
+		fprintf(stderr, "Setting not found %s\n", e.getPath());
+	}		
 
-	Setting& c_fprefix = cfg->lookup("minni.file_prefix");
-	string fprefix = c_fprefix;
+	try {
+		Setting& c_fprefix = cfg->lookup("minni.common.file_prefix");
+		fprefix = (const char*)c_fprefix;
+	}
+	catch (SettingNotFoundException e) {
+		fprintf(stderr, "Setting not found %s\n", e.getPath());
+	}		
 
 	if (DFS_CHUNK_INPUT == type) {
 		/* Beginning of first pipeline: this pipeline takes the entire
@@ -48,8 +65,7 @@ HashsortAggregator::HashsortAggregator(Config* cfg,
 		free(input_file);
 	}
 
-	hasher = new Hasher<char*, CharHash, eqstr>(this, emptyPAO,
-			destroyPAOFunc);
+	hasher = new Hashtable(this, emptyPAO, destroyPAOFunc);
 	if (LOCAL_PAO_INPUT == type)
 		hasher->setFlushOnComplete();
 	pipeline_list[0].add_filter(*hasher);

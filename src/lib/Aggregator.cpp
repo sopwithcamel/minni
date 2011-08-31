@@ -15,11 +15,22 @@ Aggregator::Aggregator(Config* cfg,
 {
 	pipeline_list = new tbb::pipeline[num_pipelines]; 
 
-	Setting& c_num_threads = cfg->lookup("tbb.threads");
-	Setting& c_num_buffers = cfg->lookup("tbb.buffers");
+	try {
+		Setting& c_num_threads = cfg->lookup("minni.tbb.threads");
+		num_threads = c_num_threads;
+	}
+	catch (SettingNotFoundException e) {
+		fprintf(stderr, "Setting not found %s\n", e.getPath());
+	}		
+
+	try {
+		Setting& c_num_buffers = cfg->lookup("minni.tbb.buffers");
+		num_buffers = c_num_buffers;
+	}
+	catch (SettingNotFoundException e) {
+		fprintf(stderr, "Setting not found %s\n", e.getPath());
+	}		
 	
-	num_threads = c_num_threads;
-	num_buffers = c_num_buffers;
 }
 
 Aggregator::~Aggregator()

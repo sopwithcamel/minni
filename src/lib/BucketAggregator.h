@@ -10,6 +10,7 @@
 #include "tbb/task_scheduler_init.h"
 #include "tbb/tbb_allocator.h"
 
+#include "Hash.h"
 #include "Mapper.h"
 #include "PartialAgg.h"
 #include "DFSReader.h"
@@ -17,24 +18,6 @@
 #include "Hasher.h"
 #include "Serializer.h"
 #include "Deserializer.h"
-#include "hashutil.h"
-
-typedef struct 
-{
-	size_t operator()(const char* str) const
-	{ 
-		return MurmurHash(str, strlen(str), 42);
-	}
-} CharHash;
-
-struct eqstr
-{
-	bool operator()(const char* s1, const char* s2) const
-	{
-//		printf("Comparing %s and %s; ", s1, s2);
-		return strcmp(s1, s2) == 0;	
-	}
-};
 
 class BucketAggregator : public Aggregator {
 public:
@@ -60,10 +43,10 @@ private:
 	const char* infile;
 	Deserializer* inp_deserializer;
 
-	Hasher<char*, CharHash, eqstr>* hasher;
+	Hashtable* hasher;
 	Serializer* bucket_serializer;
 	Deserializer* deserializer;
-	Hasher<char*, CharHash, eqstr>* bucket_hasher;
+	Hashtable* bucket_hasher;
 	Serializer* final_serializer;
 	uint64_t num_buckets;
 	const char* outfile;

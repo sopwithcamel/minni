@@ -18,24 +18,7 @@
 #include "Hasher.h"
 #include "Serializer.h"
 #include "Deserializer.h"
-#include "hashutil.h"
-
-typedef struct 
-{
-	size_t operator()(const char* str) const
-	{ 
-		return MurmurHash(str, strlen(str), 42);
-	}
-} CharHash;
-
-struct eqstr
-{
-	bool operator()(const char* s1, const char* s2) const
-	{
-//		printf("Comparing %s and %s; ", s1, s2);
-		return strcmp(s1, s2) == 0;	
-	}
-};
+#include "Hash.h"
 
 class HashAggregator : public Aggregator {
 public:
@@ -61,7 +44,7 @@ private:
 	const char* infile;
 	Deserializer* deserializer;
 
-	Hasher<char*, CharHash, eqstr>* hasher;
+	Hashtable* hasher;
 
 	/* to serialized PAOs to local file */
 	Serializer* serializer;

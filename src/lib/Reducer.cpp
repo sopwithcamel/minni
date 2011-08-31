@@ -1,13 +1,7 @@
 #include "config.h"
 #include "Reducer.h"
-
-#ifdef HASH_AGG_R
 #include "HashAggregator.h"
-#endif
-
-#ifdef BUCKET_AGG_R
 #include "BucketAggregator.h"
-#endif
 
 //Reducer class
 Reducer::Reducer(PartialAgg* (*__createPAO)(const char* t), 
@@ -84,7 +78,7 @@ task* ReducerWrapperTask::execute() {
 	string soname;
 	char *s_name;
 	char *input_file = (char*)malloc(FILENAME_LENGTH);
-	strcpy(input_file, "/localfs/hamur/mapfile");
+	strcpy(input_file, "mapfile");
 	cout<<"Going to call Parse properties \n";
 	if(ParseProperties(soname) == ERROR_EXIT)  {
 		taskreg->setStatus(jobid, jobstatus::DEAD);
@@ -99,17 +93,18 @@ task* ReducerWrapperTask::execute() {
 		return NULL;
 	}
 
-#ifdef HASH_AGG_R
-	reducer->aggreg = dynamic_cast<Aggregator*>(new HashAggregator(&cfg,
-			LOCAL_PAO_INPUT, 0, NULL, input_file, reducer->createPAO, 
-			reducer->destroyPAO, "result"));
-#endif
+	Setting& c_sel_aggregator = cfg.lookup("minni.aggregator.selected.reduce");
+	string selected_reduce_aggregator = (const char*)c_sel_aggregator;
 
-#ifdef BUCKET_AGG_R
-	reducer->aggreg = dynamic_cast<Aggregator*>(new BucketAggregator(&cfg,
-			LOCAL_PAO_INPUT, 0, NULL, input_file, reducer->createPAO, 
-			reducer->destroyPAO, "result"));
-#endif
+	if (!selected_reduce_aggregator.compare("simple")) {
+		reducer->aggreg = dynamic_cast<Aggregator*>(new HashAggregator(&cfg,
+					LOCAL_PAO_INPUT, 0, NULL, input_file, reducer->createPAO, 
+					reducer->destroyPAO, "result"));
+	} else if (!selected_reduce_aggregator.compare("bucket")) {
+		reducer->aggreg = dynamic_cast<Aggregator*>(new BucketAggregator(&cfg,
+					LOCAL_PAO_INPUT, 0, NULL, input_file, reducer->createPAO, 
+					reducer->destroyPAO, "result"));
+	}
 		
 	int sleeptime = BASE_SLEEPTIME;
 	grabreg->setupGrabber(my_partition); //setting up the grabber
