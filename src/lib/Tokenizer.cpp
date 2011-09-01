@@ -2,12 +2,12 @@
 #include "Util.h"
 
 Tokenizer::Tokenizer(Aggregator* agg, PartialAgg* emptyPAO, 
-			PartialAgg* (*MapFunc)(const char* t)) :
+			PartialAgg* (*createPAOFunc)(const char* t)) :
 		aggregator(agg),
 		filter(serial_in_order),
 		next_buffer(0),
 		emptyPAO(emptyPAO),
-		Map(MapFunc)
+		createPAO(createPAOFunc)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	pao_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers); 
@@ -45,7 +45,7 @@ void* Tokenizer::operator()(void* buffer)
 		return NULL;
 	}
 	while (1) {
-		PartialAgg* new_pao = Map(spl); 
+	PartialAgg* new_pao = createPAO(spl); 
 //		fprintf(stderr, "tok: %d", tok_ctr++);
 		if (this_list_ctr >= this_list_size) {
 			this_list_size += LIST_SIZE_INCR;

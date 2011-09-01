@@ -25,14 +25,14 @@
 class Tokenizer : public tbb::filter {
 public:
 	Tokenizer(Aggregator* agg, PartialAgg* emptyPAO, 
-			PartialAgg* (*MapFunc)(const char* t));
+			PartialAgg* (*createPAOFunc)(const char* t));
 	~Tokenizer();
 private:
 	Aggregator* aggregator;
 	size_t next_buffer;
 	PartialAgg* emptyPAO;
 	PartialAgg*** pao_list;
-	PartialAgg* (*Map)(const char* token);
+	PartialAgg* (*createPAO)(const char* token);
 	void* operator()(void* pao);
 };
 
