@@ -1,4 +1,3 @@
-#include "config.h"
 #include "ExternalHasher.h"
 #include "Util.h"
 #include <libconfig.h++>

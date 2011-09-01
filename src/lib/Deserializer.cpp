@@ -1,4 +1,3 @@
-#include "config.h"
 #include "Deserializer.h"
 
 #define BUF_SIZE	65535

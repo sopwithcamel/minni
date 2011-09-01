@@ -1,4 +1,3 @@
-#include "config.h"
 #include "Serializer.h"
 
 Serializer::Serializer(Aggregator* agg,

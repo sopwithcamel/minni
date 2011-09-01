@@ -1,4 +1,3 @@
-#include "config.h"
 #include "Sorter.h"
 
 Sorter::Sorter(const uint64_t num_buckets,

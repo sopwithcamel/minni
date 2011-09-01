@@ -1,4 +1,3 @@
-#include "config.h"
 #include "Reducer.h"
 #include "HashAggregator.h"
 #include "BucketAggregator.h"

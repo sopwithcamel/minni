@@ -1,4 +1,3 @@
-#include "config.h"
 #include "Aggregator.h"
 
 Aggregator::Aggregator(Config* cfg,

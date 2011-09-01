@@ -1,4 +1,3 @@
-#include "config.h"
 #include "Writer.h"
 
 int main(int argc, char* args[])

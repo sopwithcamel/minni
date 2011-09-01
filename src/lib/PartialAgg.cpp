@@ -1,4 +1,3 @@
-#include "config.h"
 #include "PartialAgg.h"
 #include <iostream>
 

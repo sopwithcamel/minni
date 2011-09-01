@@ -1,4 +1,3 @@
-#include "config.h"
 #include "FileReader.h"
 
 FileReader::FileReader(FILE* _input_file, Aggregator* agg) :
