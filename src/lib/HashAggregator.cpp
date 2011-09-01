@@ -62,7 +62,7 @@ HashAggregator::HashAggregator(Config* cfg,
 		free(input_file);
 	}
 
-	hasher = new Hashtable(this, emptyPAO, destroyPAOFunc);
+	hasher = new Hashtable(this, emptyPAO, capacity, destroyPAOFunc);
 	if (LOCAL_PAO_INPUT == type)
 		hasher->setFlushOnComplete();
 	pipeline_list[0].add_filter(*hasher);

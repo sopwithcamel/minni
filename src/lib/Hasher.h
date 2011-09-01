@@ -15,8 +15,6 @@
 #include "Aggregator.h"
 #include "Util.h"
 
-#define HT_CAPACITY		500000
-
 /**
  * - Consumes: array of PAOs to be aggregated
  * - Produces: array of PAOs evicted from in-memory HT 
@@ -30,7 +28,7 @@
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
 class Hasher : public tbb::filter {
 public:
-	Hasher(Aggregator* agg, PartialAgg* emptyPAO, 
+	Hasher(Aggregator* agg, PartialAgg* emptyPAO, size_t capacity, 
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~Hasher();
 	void (*destroyPAO)(PartialAgg* p);
@@ -41,6 +39,7 @@ private:
 	PartialAgg* emptyPAO;
 	PartialAgg** evicted_list;
 	size_t ht_size;
+	size_t ht_capacity;
 	Hash hashtable;
 	uint64_t tokens_processed;
 	bool flush_on_complete;
@@ -50,12 +49,14 @@ private:
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
 Hasher<KeyType, HashAlgorithm, EqualTest>::Hasher(Aggregator* agg, 
 			PartialAgg* emptyPAO,
+			size_t capacity,
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		filter(/*serial=*/true),	/* maintains global state which is not yet concurrent access */
 		aggregator(agg),
 		emptyPAO(emptyPAO),
 		destroyPAO(destroyPAOFunc),
 		ht_size(0),
+		ht_capacity(capacity),
 		flush_on_complete(false),
 		tokens_processed(0)
 {
@@ -95,7 +96,7 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 			(result.first->second)->merge(pao);
 			destroyPAO(pao);
 		} else { // the PAO was inserted
-			if (ht_size == HT_CAPACITY) { // PAO has to be evicted
+			if (ht_size == ht_capacity) { // PAO has to be evicted
 				if (next_evict == hashtable.end())
 					next_evict = hashtable.begin();
 				typename Hash::iterator evict_el = next_evict;

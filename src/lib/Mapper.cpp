@@ -72,11 +72,12 @@ MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p,
 		filereg(f)
 {
 	try {
-//		cfg.readFile(CONFIG_FILE);
-		cfg.readFile("/home/hamur/code/minni/sample.cfg");
+		cfg.readFile(CONFIG_FILE);
 	}
-	catch (ParseException e)
-	{
+	catch (FileIOException e) {
+		fprintf(stderr, "Error reading config file \n");
+	}	
+	catch (ParseException e) {
 		fprintf(stderr, "Error reading config file: %s at %s:%d\n", e.getError(), e.what(), e.getLine());
 	}
 }
