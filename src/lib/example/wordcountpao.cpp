@@ -1,17 +1,17 @@
 #include "wordcountpao.h"
 
-WordCountPartialAgg::WordCountPartialAgg(const char* token)
+WordCountPartialAgg::WordCountPartialAgg(const char* const token)
 {
-	key = (char*)malloc(strlen(token)+1);
-	value = (char*)malloc(VALUE_SIZE);
+	size_t eok = strlen(token);
+	key = (char*)malloc(eok + VALUE_SIZE + 1);
 	strcpy(key, token);
+	value = key + eok + 1;
 	strcpy(value, "1");
 }
 
 WordCountPartialAgg::~WordCountPartialAgg()
 {
 	free(key);
-	free(value);
 }
 
 void WordCountPartialAgg::add (const char* v)
