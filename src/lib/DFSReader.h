@@ -15,6 +15,7 @@
 #include "Mapper.h"
 
 #define BUFSIZE			67108864
+#define CHUNKSIZE		8388608
 
 /**
  * To be used as the input stage in the pipeline.
@@ -30,9 +31,9 @@ private:
 	Aggregator* aggregator;
 	size_t chunk_ctr;
 	MapInput* input;
-	size_t next_buffer;
-	char** buf;
+	size_t rem_buffer_size;
 	char* buffer;
+	char* chunk; 
 	ChunkID id;
 	void* operator()(void* pao);
 };
