@@ -134,10 +134,15 @@ int MapperWrapperTask::UserMapLinking(const char* soname)  { //TODO link Partial
 	}
 
 	__libminni_create_pao = (PartialAgg* (*)(const char*)) dlsym(handle, "__libminni_pao_create");
-	__libminni_destroy_pao = (void (*)(PartialAgg*)) dlsym(handle, "__libminni_pao_destroy");
 	if ((err = dlerror()) != NULL)
 	{
 		fprintf(stderr, "Error locating symbol __libminni_create_pao in %s\n", err);
+		exit(-1);
+	}
+	__libminni_destroy_pao = (void (*)(PartialAgg*)) dlsym(handle, "__libminni_pao_destroy");
+	if ((err = dlerror()) != NULL)
+	{
+		fprintf(stderr, "Error locating symbol __libminni_destroy_pao in %s\n", err);
 		exit(-1);
 	}
 	mapper = new Mapper(__libminni_create_pao, __libminni_destroy_pao);
