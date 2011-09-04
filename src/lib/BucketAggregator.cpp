@@ -69,7 +69,7 @@ BucketAggregator::BucketAggregator(Config* cfg,
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
 		inp_deserializer = new Deserializer(this, 1/*TODO: how many?*/, input_file,
-			emptyPAO, createPAOFunc);
+			emptyPAO, createPAOFunc, destroyPAOFunc);
 		pipeline_list[0].add_filter(*inp_deserializer);
 		free(input_file);
 	}
@@ -95,7 +95,7 @@ BucketAggregator::BucketAggregator(Config* cfg,
 	 * In this pipeline, a bucket is read back into memory (converted to 
 	 * PAOs again), aggregated using a hashtable, and serialized. */
 	deserializer = new Deserializer(this, num_buckets, bucket_prefix,
-			emptyPAO, createPAOFunc);
+			emptyPAO, createPAOFunc, destroyPAOFunc);
 	pipeline_list[1].add_filter(*deserializer);
 
 	bucket_hasher = new Hashtable(this, emptyPAO, capacity, destroyPAOFunc);

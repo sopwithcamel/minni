@@ -6,13 +6,15 @@ Deserializer::Deserializer(Aggregator* agg,
 			const uint64_t num_buckets, 
 			const char* inp_prefix, 
 			PartialAgg* emptyPAO,
-			PartialAgg* (*createPAOFunc)(const char* k)) :
+			PartialAgg* (*createPAOFunc)(const char* k),
+			void (*destroyPAOFunc)(PartialAgg* p)) :
 		aggregator(agg),
 		filter(serial_in_order),
 		num_buckets(num_buckets),
 		buckets_processed(0),
 		emptyPAO(emptyPAO),
-		createPAO(createPAOFunc)
+		createPAO(createPAOFunc),
+		destroyPAO(destroyPAOFunc)
 {
 	inputfile_prefix = (char*)malloc(FILENAME_LENGTH);
 	strcpy(inputfile_prefix, inp_prefix);
@@ -34,6 +36,12 @@ void* Deserializer::operator()(void*)
 	char* bnum = (char*)malloc(10);
 	char* buf = (char*)malloc(BUF_SIZE + 1);
 	char* spl;
+
+	// To handle border cases in buffering
+	PartialAgg* limbo_pao = NULL;
+	char* limbo_key = NULL;
+	char* limbo_val = NULL;
+	bool val_set = false;
 
 	uint64_t pao_list_ctr = 0;
 	uint64_t pao_list_size = 1;
@@ -57,36 +65,57 @@ void* Deserializer::operator()(void*)
 			return NULL;
 		}
 		while (1) {
-			PartialAgg* new_pao = createPAO(spl);
-
-			spl = strtok(NULL, " \n\r");
-			if (spl == NULL) {
-				perror("File ended after reading key!");
-				fprintf(stderr, "%s\n", new_pao->key);
-				break;
-			}
-			new_pao->set_val(spl);
-
-			// Add new_pao to list
-			if (pao_list_ctr >= pao_list_size) {
-				pao_list_size += LIST_SIZE_INCR;
-				if (call_realloc(&pao_list, pao_list_size) == NULL) {
-					perror("realloc failed");
-					return NULL;
+			if (!limbo_pao) { // starting on a fresh new PAO
+				limbo_pao = createPAO(spl);
+			} else { // there is something left from the last iteration
+				if (limbo_val) { // val was partly read; key fully
+					strcat(limbo_val, spl);
+					limbo_pao->set_val(limbo_val);
+					free(limbo_val);
+					limbo_val = NULL;
+					val_set = true;
+				} else if (limbo_key) { // key was partly read
+					destroyPAO(limbo_pao);
+					strcat(limbo_key, spl);
+					limbo_pao = createPAO(limbo_key);
+					free(limbo_key);
+					limbo_key = NULL;
 				}
-				assert(pao_list_ctr < pao_list_size);
+				else { // entire key was read, but not the value
+					limbo_pao->set_val(spl);
+					val_set = true;
+				}
 			}
-			pao_list[pao_list_ctr++] = new_pao;
-
-			// Read in next key
 			spl = strtok(NULL, " \n\r");
 			if (spl == NULL) {
+				if (buf[ret - 1] != ' ' && buf[ret - 1] != '\n') {
+					if (val_set) {
+						limbo_val = (char*)malloc(VALUE_SIZE);
+						strcpy(limbo_val, limbo_pao->value);
+					} else {
+						limbo_key = (char*)malloc(100); //TODO: Max key size!
+						strcpy(limbo_key, limbo_pao->key);
+					}
+				}
 				break;
+			}
+			if (val_set) {
+				// Add new_pao to list
+				if (pao_list_ctr >= pao_list_size) {
+					pao_list_size += LIST_SIZE_INCR;
+					if (call_realloc(&pao_list, pao_list_size) == NULL) {
+						perror("realloc failed");
+						return NULL;
+					}
+					assert(pao_list_ctr < pao_list_size);
+				}
+				pao_list[pao_list_ctr++] = limbo_pao;
+				val_set = false;
+				limbo_pao = NULL;
 			}
 		}
 	}
 
-	// Add emptyPAO to the list
 	if (pao_list_ctr >= pao_list_size) {
 		pao_list_size += LIST_SIZE_INCR;
 		if (call_realloc(&pao_list, pao_list_size) == NULL) {
@@ -95,6 +124,12 @@ void* Deserializer::operator()(void*)
 		}
 		assert(pao_list_ctr < pao_list_size);
 	}
+	// if there was one remaining PAO in limbo, put it in.
+	if (limbo_pao) {
+		pao_list[pao_list_ctr++] = limbo_pao;
+		limbo_pao = NULL;
+	}
+	// Add emptyPAO to the list
 	pao_list[pao_list_ctr++] = emptyPAO;
 	
 	free(buf);

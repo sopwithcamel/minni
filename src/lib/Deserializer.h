@@ -26,13 +26,17 @@
 
 class Deserializer : public tbb::filter {
 public:
-	Deserializer(Aggregator* agg, const uint64_t num_buckets, 
-		const char* inp_prefix, PartialAgg* emptyPAO,
-		PartialAgg* (*createPAOFunc)(const char* k));
+	Deserializer(Aggregator* agg, 
+			const uint64_t num_buckets, 
+			const char* inp_prefix,
+			PartialAgg* emptyPAO,
+			PartialAgg* (*createPAOFunc)(const char* k),
+			void (*destroyPAOFunc)(PartialAgg* p));
 	~Deserializer();
 private:
 	Aggregator* aggregator;
 	PartialAgg* (*createPAO)(const char* k);
+	void (*destroyPAO)(PartialAgg* p);
 	PartialAgg* emptyPAO;
 	char* inputfile_prefix;
 	const uint64_t num_buckets;	// Number of files to process serially

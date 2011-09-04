@@ -70,7 +70,7 @@ ExthashAggregator::ExthashAggregator(Config* cfg,
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
 		inp_deserializer = new Deserializer(this, 1/*TODO: how many?*/, input_file,
-			emptyPAO, createPAOFunc);
+			emptyPAO, createPAOFunc, destroyPAOFunc);
 		pipeline_list[0].add_filter(*inp_deserializer);
 		free(input_file);
 	}
