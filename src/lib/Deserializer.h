@@ -42,7 +42,11 @@ private:
 	const uint64_t num_buckets;	// Number of files to process serially
 	uint64_t buckets_processed;
 	PartialAgg** pao_list;
+	size_t pao_list_ctr;		// number of elements in list
+	size_t pao_list_size;		// current size of the pao_list
 	void* operator()(void*);
+
+	uint64_t appendToList(PartialAgg* p);
 };
 
 #endif // LIB_DESERIALIZER_H
