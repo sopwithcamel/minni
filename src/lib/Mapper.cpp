@@ -186,7 +186,7 @@ task* MapperWrapperTask::execute() {
 		cout<<"Parse properties something wrong. I am leaving!"<<endl;
 		return NULL; 
 	}
-	s_name = (char*)malloc(soname.length());
+	s_name = (char*)malloc(soname.length() + 1);
 	strcpy(s_name, soname.c_str());
 	fprintf(stderr, "SO name: %s\n", s_name);
 	time_t ltime = time(NULL);

@@ -26,7 +26,7 @@ Tokenizer::~Tokenizer()
  */
 void* Tokenizer::operator()(void* buffer)
 {
-	char *spl, *new_val;
+	char *spl = NULL ;
 	char* tok_buf = (char*) buffer;	 
 	int tok_ctr = 0;
 	size_t this_list_ctr = 0;

@@ -85,7 +85,7 @@ task* ReducerWrapperTask::execute() {
 	}
 	cout<<"After parse properties\n";
 	//dynamically loading the classes
-	s_name = (char*)malloc(soname.length());
+	s_name = (char*)malloc(soname.length() + 1);
 	strcpy(s_name, soname.c_str());
 	if(UserMapLinking(s_name) == ERROR_EXIT) {
 		taskreg->setStatus(jobid, jobstatus::DEAD);
