@@ -22,7 +22,7 @@ DFSReader::~DFSReader()
 
 void* DFSReader::operator()(void*)
 {
-	if (id > input->chunk_id_end) {
+	if (aggregator->input_finished) {
 		return NULL;
 	}
 	if (0 >= rem_buffer_size) {
