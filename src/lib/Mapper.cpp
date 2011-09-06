@@ -208,6 +208,9 @@ task* MapperWrapperTask::execute() {
 	Setting& c_sel_aggregator = cfg.lookup("minni.aggregator.selected.map");
 	string selected_map_aggregator = (const char*)c_sel_aggregator;
 
+	Setting& c_prefix = cfg.lookup("minni.common.file_prefix");
+	string f_prefix = (const char*)c_prefix;
+
 	for(unsigned int i = 0; i < npart; i++)
 	{
 		if (!selected_map_aggregator.compare("simple")) {
@@ -242,8 +245,11 @@ task* MapperWrapperTask::execute() {
 	//now i need to start writing into file
 	for(unsigned int i = 0; i < npart ; i++)
 	{
+		stringstream ss;
+		ss << i;
 		cout<<"Mapper: Going to tell the workdaemon about the file \n";
-		File f1(jobid, i, "/localfs/hamur/mapfile0");
+		string f = f_prefix + "mapfile" +  ss.str();
+		File f1(jobid, i, f.c_str());
 		cout<<"Pushed back the file to worker daemon list \n";
 		my_Filelist.push_back(f1);
 	}
