@@ -97,11 +97,11 @@ task* ReducerWrapperTask::execute() {
 
 	if (!selected_reduce_aggregator.compare("simple")) {
 		reducer->aggreg = dynamic_cast<Aggregator*>(new HashAggregator(&cfg,
-					LOCAL_PAO_INPUT, 0, NULL, input_file, reducer->createPAO, 
+					Reduce, 0, NULL, input_file, reducer->createPAO, 
 					reducer->destroyPAO, "result"));
 	} else if (!selected_reduce_aggregator.compare("bucket")) {
 		reducer->aggreg = dynamic_cast<Aggregator*>(new BucketAggregator(&cfg,
-					LOCAL_PAO_INPUT, 0, NULL, input_file, reducer->createPAO, 
+					Reduce, 0, NULL, input_file, reducer->createPAO, 
 					reducer->destroyPAO, "result"));
 	}
 		

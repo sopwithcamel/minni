@@ -23,7 +23,7 @@
 class ExthashAggregator : public Aggregator {
 public:
 	ExthashAggregator(Config* cfg,
-				const uint64_t type,
+				AggType type,
 				const uint64_t _partid, 
 				MapInput* _map_input,
 				const char* infile, 
@@ -32,7 +32,6 @@ public:
 				const char* outfile);
 	~ExthashAggregator();
 private:
-	const uint64_t type;	// where to get the input from
 	uint64_t internal_capacity; // aggregator capacity
 	uint64_t external_capacity; // external hashtable capacity
 

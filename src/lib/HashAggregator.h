@@ -23,7 +23,7 @@
 class HashAggregator : public Aggregator {
 public:
 	HashAggregator(Config* cfg, 
-				const uint64_t type,
+				AggType type,
 				const uint64_t _partid, 
 				MapInput* _map_input,
 				const char* infile, 
@@ -32,7 +32,6 @@ public:
 				const char* outfile);
 	~HashAggregator();
 private:
-	const uint64_t type;	// where to get the input from
 	uint64_t capacity; // aggregator capacity
 
 	/* for chunk input from DFS */

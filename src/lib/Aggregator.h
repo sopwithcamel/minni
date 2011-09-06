@@ -14,14 +14,14 @@
 #include "PartialAgg.h"
 #include "Defs.h"
 
-#define DFS_CHUNK_INPUT			0
-#define LOCAL_PAO_INPUT			1
-
 using namespace libconfig;
+
+enum AggType {Map, Reduce};
 
 class Aggregator {
 public:
 	Aggregator(Config* cfg,
+			AggType where,
 			uint64_t num_pipelines, 
 			uint64_t _partid, 
 			PartialAgg* (*createPAOFunc)(const char* t),
@@ -38,6 +38,7 @@ public:
 	uint64_t getNumThreads();
 	uint64_t getNumBuffers();
 private:
+	AggType type;
 	uint64_t num_threads;
 	uint64_t num_buffers;
 	const uint64_t num_pipelines; 	// number of pipelines in aggregator

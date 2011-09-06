@@ -215,22 +215,22 @@ task* MapperWrapperTask::execute() {
 	{
 		if (!selected_map_aggregator.compare("simple")) {
 			mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashAggregator(
-							&cfg, DFS_CHUNK_INPUT, i, &myinput, 
+							&cfg, Map, i, &myinput, 
 							NULL, mapper->createPAO, 
 							mapper->destroyPAO, "mapfile")));
 		} else if (!selected_map_aggregator.compare("bucket")) {
 			mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new BucketAggregator(
-							&cfg, DFS_CHUNK_INPUT, i, &myinput, NULL,
+							&cfg, Map, i, &myinput, NULL,
 							mapper->createPAO, mapper->destroyPAO, 
 							"mapfile")));
 		} else if (!selected_map_aggregator.compare("exthash")) {
 			mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new ExthashAggregator(
-							&cfg, DFS_CHUNK_INPUT, i, &myinput, NULL,
+							&cfg, Map, i, &myinput, NULL,
 							mapper->createPAO, mapper->destroyPAO,
 							"mapfile")));
 		} else if (!selected_map_aggregator.compare("hashsort")) {
 			mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashsortAggregator(
-							&cfg, DFS_CHUNK_INPUT, i, &myinput, NULL,
+							&cfg, Map, i, &myinput, NULL,
 							mapper->createPAO, mapper->destroyPAO,
 							"mapfile")));
 		} else {

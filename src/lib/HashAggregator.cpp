@@ -4,15 +4,14 @@
  * Initialize pipeline
  */
 HashAggregator::HashAggregator(Config* cfg,
-				const uint64_t type, // where to read from
+				AggType type, // where to read from
 				const uint64_t _partid, 
 				MapInput* _map_input,
 				const char* infile, 
 				PartialAgg* (*createPAOFunc)(const char* t), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile):
-		Aggregator(cfg, 1, _partid, createPAOFunc, destroyPAOFunc),
-		type(DFS_CHUNK_INPUT),
+		Aggregator(cfg, type, 1, _partid, createPAOFunc, destroyPAOFunc),
 		map_input(_map_input),
 		infile(infile),
 		outfile(outfile)
@@ -45,13 +44,13 @@ HashAggregator::HashAggregator(Config* cfg,
 		fprintf(stderr, "Setting not found %s\n", e.getPath());
 	}		
 
-	if (DFS_CHUNK_INPUT == type) {
+	if (type == Map) {
 		reader = new DFSReader(this, map_input);
 		pipeline_list[0].add_filter(*reader);
 
 		toker = new Tokenizer(this, emptyPAO, createPAOFunc);
 		pipeline_list[0].add_filter(*toker);
-	} else if (LOCAL_PAO_INPUT == type) {
+	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
@@ -62,8 +61,6 @@ HashAggregator::HashAggregator(Config* cfg,
 	}
 
 	hasher = new Hashtable(this, emptyPAO, capacity, destroyPAOFunc);
-	if (LOCAL_PAO_INPUT == type)
-		hasher->setFlushOnComplete();
 	pipeline_list[0].add_filter(*hasher);
 
 	// TODO: Handle output to DFS here

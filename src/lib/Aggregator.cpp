@@ -1,10 +1,12 @@
 #include "Aggregator.h"
 
 Aggregator::Aggregator(Config* cfg,
+			AggType where,
 			uint64_t num_pipelines, 
 			uint64_t _partid,
 			PartialAgg* (*createPAOFunc)(const char* t),
 			void (*destroyPAOFunc)(PartialAgg* p)) :
+		type(where),
 		num_pipelines(num_pipelines),
 		partid(_partid),
 		input_finished(false),

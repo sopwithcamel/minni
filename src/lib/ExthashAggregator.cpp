@@ -4,15 +4,14 @@
  * Initialize pipeline
  */
 ExthashAggregator::ExthashAggregator(Config* cfg,
-				const uint64_t type,
+				AggType type,
 				const uint64_t _partid, 
 				MapInput* _map_input,
 				const char* infile, 
 				PartialAgg* (*createPAOFunc)(const char* t), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile):
-		Aggregator(cfg, 2, _partid, createPAOFunc, destroyPAOFunc),
-		type(DFS_CHUNK_INPUT),
+		Aggregator(cfg, type, 2, _partid, createPAOFunc, destroyPAOFunc),
 		map_input(_map_input),
 		infile(infile),
 		outfile(outfile)
@@ -55,7 +54,7 @@ ExthashAggregator::ExthashAggregator(Config* cfg,
 		fprintf(stderr, "Setting not found %s\n", e.getPath());
 	}		
 
-	if (DFS_CHUNK_INPUT == type) {
+	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
 		 * entire input, chunk by chunk, tokenizes, Maps each Minni-token,
 		 * aggregates/writes to buckets. For this pipeline, a "token" or a
@@ -65,7 +64,7 @@ ExthashAggregator::ExthashAggregator(Config* cfg,
 
 		toker = new Tokenizer(this, emptyPAO, createPAOFunc);
 		pipeline_list[0].add_filter(*toker);
-	} else if (LOCAL_PAO_INPUT == type) {
+	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
@@ -76,8 +75,6 @@ ExthashAggregator::ExthashAggregator(Config* cfg,
 	}
 
 	hasher = new Hashtable(this, emptyPAO, internal_capacity, destroyPAOFunc);
-	if (LOCAL_PAO_INPUT == type)
-		hasher->setFlushOnComplete();
 	pipeline_list[0].add_filter(*hasher);
 
 	char* ht_name = (char*)malloc(FILENAME_LENGTH);

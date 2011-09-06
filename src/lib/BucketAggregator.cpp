@@ -4,15 +4,14 @@
  * Initialize pipeline
  */
 BucketAggregator::BucketAggregator(Config* cfg,
-				const uint64_t type, 
+				AggType type, 
 				const uint64_t _partid,
 				MapInput* _map_input,
 				const char* infile, 
 				PartialAgg* (*createPAOFunc)(const char* t), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile):
-		Aggregator(cfg, 2, _partid, createPAOFunc, destroyPAOFunc),
-		type(DFS_CHUNK_INPUT),
+		Aggregator(cfg, type, 2, _partid, createPAOFunc, destroyPAOFunc),
 		map_input(_map_input),
 		infile(infile),
 		outfile(outfile)
@@ -54,7 +53,7 @@ BucketAggregator::BucketAggregator(Config* cfg,
 	}		
 
 
-	if (DFS_CHUNK_INPUT == type) {
+	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
 		 * entire input, chunk by chunk, tokenizes, Maps each Minni-token,
 		 * aggregates/writes to buckets. For this pipeline, a "token" or a
@@ -64,7 +63,7 @@ BucketAggregator::BucketAggregator(Config* cfg,
 
 		toker = new Tokenizer(this, emptyPAO, createPAOFunc);
 		pipeline_list[0].add_filter(*toker);
-	} else if (LOCAL_PAO_INPUT == type) {
+	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
@@ -75,12 +74,14 @@ BucketAggregator::BucketAggregator(Config* cfg,
 	}
 
 	hasher = new Hashtable(this, emptyPAO, capacity, destroyPAOFunc);
-	if (LOCAL_PAO_INPUT == type)
-		hasher->setFlushOnComplete();
 	pipeline_list[0].add_filter(*hasher);
 
 	char* bucket_prefix = (char*)malloc(FILENAME_LENGTH);
 	strcpy(bucket_prefix, fprefix.c_str());
+	if (type == Map)
+		strcat(bucket_prefix, "map-");
+	else if (type == Reduce)
+		strcat(bucket_prefix, "reduce-");
 	strcat(bucket_prefix, "bucket");
 
 	bucket_serializer = new Serializer(this, emptyPAO, num_buckets, 
@@ -99,7 +100,6 @@ BucketAggregator::BucketAggregator(Config* cfg,
 	pipeline_list[1].add_filter(*deserializer);
 
 	bucket_hasher = new Hashtable(this, emptyPAO, capacity, destroyPAOFunc);
-	bucket_hasher->setFlushOnComplete();
 	pipeline_list[1].add_filter(*bucket_hasher);
 
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
