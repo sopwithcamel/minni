@@ -50,7 +50,7 @@ uint64_t Deserializer::appendToList(PartialAgg* p)
 
 void* Deserializer::operator()(void*)
 {
-	if (buckets_processed == num_buckets)
+	if (aggregator->input_finished)
 		return NULL;
 	char* buf = (char*)malloc(BUF_SIZE + 1);
 	char* spl;
@@ -101,7 +101,7 @@ void* Deserializer::operator()(void*)
 		spl = strtok(buf, " \n\r");
 		if (spl == NULL) { 
 			perror("Not good!");
-			return NULL;
+			exit(1);
 		}
 		while (1) {
 			if (!limbo_pao) { // starting on a fresh new PAO
@@ -169,11 +169,11 @@ ship_tokens:
 	appendToList(emptyPAO);
 
 	free(buf);
+	aggregator->tot_input_tokens++;
 	
 	if (eof_reached) {
 		fclose(cur_bucket);
 		cur_bucket = NULL;
-		aggregator->tot_input_tokens++;
 		if (buckets_processed == num_buckets) {
 			aggregator->input_finished = true;
 		}
