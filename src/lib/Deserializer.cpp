@@ -1,6 +1,7 @@
 #include "Deserializer.h"
 
 #define BUF_SIZE	65535
+#define PAOS_IN_TOKEN	20000
 
 Deserializer::Deserializer(Aggregator* agg,
 			const uint64_t num_buckets, 
@@ -14,6 +15,11 @@ Deserializer::Deserializer(Aggregator* agg,
 		buckets_processed(0),
 		pao_list_ctr(0),
 		pao_list_size(0),
+		limbo_pao(NULL),
+		limbo_key(NULL),
+		limbo_val(NULL),
+		val_set(false),
+		cur_bucket(NULL),
 		emptyPAO(emptyPAO),
 		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc)
@@ -44,21 +50,11 @@ uint64_t Deserializer::appendToList(PartialAgg* p)
 
 void* Deserializer::operator()(void*)
 {
-	FILE* inp_file;
-
 	if (buckets_processed == num_buckets)
 		return NULL;
-
-	char* file_name = (char*)malloc(FILENAME_LENGTH);
-	char* bnum = (char*)malloc(10);
 	char* buf = (char*)malloc(BUF_SIZE + 1);
 	char* spl;
-
-	// To handle border cases in buffering
-	PartialAgg* limbo_pao = NULL;
-	char* limbo_key = NULL;
-	char* limbo_val = NULL;
-	bool val_set = false;
+	bool eof_reached = false;
 
 	pao_list_ctr = 0;
 	pao_list_size = 0;
@@ -66,17 +62,29 @@ void* Deserializer::operator()(void*)
 	// Add one element to the list so realloc doesn't complain.
 	pao_list = (PartialAgg**)malloc(sizeof(PartialAgg*));
 	pao_list_size++;
-	
-	sprintf(bnum, "%llu", buckets_processed++);
-	strcpy(file_name, inputfile_prefix);
-	strcat(file_name, bnum);
-	inp_file = fopen(file_name, "rb");
-	fprintf(stderr, "opening file %s\n", file_name);
+
+	if (!cur_bucket) { // new bucket has to be opened
+		string file_name = inputfile_prefix;
+		stringstream ss;
+		ss << buckets_processed++;
+		file_name = file_name + ss.str();
+		cur_bucket = fopen(file_name.c_str(), "rb");
+		fprintf(stderr, "opening file %s\n", file_name.c_str());
+
+		// To handle border cases in buffering
+		limbo_pao = NULL;
+		limbo_key = NULL;
+		limbo_val = NULL;
+		val_set = false;
+	}
 
 	size_t ret;
-	while (!feof(inp_file) && !ferror(inp_file)) {
-		ret = fread(buf, 1, /*BUF_SIZE*/64, inp_file);
-//		fprintf(stderr, "buf[0]: %c", buf[0]); 
+	while (!feof(cur_bucket) && !ferror(cur_bucket)) {
+		if (pao_list_ctr > PAOS_IN_TOKEN) {
+			goto ship_tokens;
+		}
+
+		ret = fread(buf, 1, BUF_SIZE, cur_bucket);
 
 		if (buf[0] == '\n' && limbo_val) {
 			free(limbo_val);
@@ -146,19 +154,30 @@ void* Deserializer::operator()(void*)
 			}
 		}
 	}
+
+	// this point reached because EOF is reached for bucket
+	eof_reached = true;
+
 	// if there was one remaining PAO in limbo, put it in.
 	if (limbo_pao) {
 		appendToList(limbo_pao);
 		limbo_pao = NULL;
 	}
+
+ship_tokens:
 	// Add emptyPAO to the list
 	appendToList(emptyPAO);
-	
-	free(buf);
-	free(bnum);
-	free(file_name);
 
-	fclose(inp_file);
+	free(buf);
+	
+	if (eof_reached) {
+		fclose(cur_bucket);
+		cur_bucket = NULL;
+		aggregator->tot_input_tokens++;
+		if (buckets_processed == num_buckets) {
+			aggregator->input_finished = true;
+		}
+	}
 //	fprintf(stderr, "list size: %d\n", pao_list_ctr);
 	return pao_list;
 }

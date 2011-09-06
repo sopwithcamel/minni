@@ -44,8 +44,15 @@ private:
 	PartialAgg** pao_list;
 	size_t pao_list_ctr;		// number of elements in list
 	size_t pao_list_size;		// current size of the pao_list
-	void* operator()(void*);
 
+	// To handle border cases in buffering
+	PartialAgg* limbo_pao;
+	char* limbo_key;
+	char* limbo_val;
+	bool val_set;
+
+	FILE *cur_bucket;		// file pointer for current bucket
+	void* operator()(void*);
 	uint64_t appendToList(PartialAgg* p);
 };
 
