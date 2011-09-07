@@ -22,6 +22,7 @@ DFSReader::~DFSReader()
 
 void* DFSReader::operator()(void*)
 {
+	size_t bytes_to_copy = CHUNKSIZE;
 	if (aggregator->input_finished) {
 		return NULL;
 	}
@@ -31,13 +32,15 @@ void* DFSReader::operator()(void*)
 		id++;
 		chunk_ctr = 0;
 	}
-	memcpy(chunk, buffer + chunk_ctr * CHUNKSIZE, CHUNKSIZE);
-	chunk[CHUNKSIZE] = '\0';  // if buffer smaller, there's a terminator anyway
-	rem_buffer_size -= CHUNKSIZE;
+	if (rem_buffer_size < CHUNKSIZE)
+		bytes_to_copy = rem_buffer_size;
+	memcpy(chunk, buffer + chunk_ctr * CHUNKSIZE, bytes_to_copy);
+	chunk[bytes_to_copy] = '\0';  
+	rem_buffer_size -= bytes_to_copy;
 	chunk_ctr++;
 
 	aggregator->tot_input_tokens++;
-	if (id > input->chunk_id_end) {
+	if (id > input->chunk_id_end && rem_buffer_size <= 0) {
 		aggregator->input_finished = true;
 	}
 	return chunk;
