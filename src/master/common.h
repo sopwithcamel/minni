@@ -22,6 +22,7 @@ struct MapJob
 		ostringstream stringConverter;
 		stringConverter << cid_start;
 		prop["CID_START"] = stringConverter.str();
+		stringConverter.str("");
 		stringConverter << cid_end;
 		prop["CID_END"] = stringConverter.str();
 		prop["FILE_IN"] = fileIn;

@@ -42,15 +42,16 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 		if (!dfs.checkExistence(*iter)) continue;
 		cout << "Master: Getting num chunks for" << (*iter) << endl;
 		uint64_t num_chunks = dfs.getNumChunks((*iter));
-		cout << "Master: Got num chunks" << endl;
-		uint64_t cids_per_map = (uint64_t) floor(((double)num_chunks / (double)spec->getMaxMaps()) + 0.5);
+		cout << "Master: Got num chunks" << num_chunks << endl;
+//		uint64_t cids_per_map = (uint64_t) floor(((double)num_chunks / (double)spec->getMaxMaps()) + 0.5);
+		uint64_t cids_per_map = (uint64_t) floor(((double)num_chunks / getNumberOfNodes()) + 0.5);
 		cout << "Master: CIDs per Map -- " << cids_per_map << endl;
 		cout << "Inspecting input file: " << ((*iter)) << endl;
 		for (uint64_t i = 0; i < num_chunks; i+=cids_per_map)
 		{
 			vector<string> locations;
 			Node* min = (*(nodes.begin())).second;
-			JobID minNumJobs = UINT64_MAX;
+			JobID minNumJobs = INT64_MAX;
 			vector<string>::iterator location_iter;
 			dfs.getChunkLocations(*iter, i, locations);
 			for (location_iter = locations.begin(); location_iter < locations.end(); location_iter++)
@@ -58,6 +59,7 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 				cout << "Node[" << *location_iter << "] has chunk " << i << " to " << i+cids_per_map-1 << endl;
 				if (nodes.find(*location_iter) != nodes.end())
 				{
+					cout << "Node has " << nodes[*location_iter]->numRemainingJobs() << " jobs and minNumJobs is " << minNumJobs << endl;
 					if (nodes[*location_iter]->numRemainingJobs() < minNumJobs)
 					{
 						cout << "New min found: " << nodes[*location_iter]->numRemainingJobs() << endl;
@@ -68,10 +70,12 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 			}
 			if (i+cids_per_map-1 < num_chunks)
 			{
+				cout << "Assigning map of chunks " << i << " to " << i+cids_per_map - 1 << " to " << min << endl;
 				assignMapJob(min, i, i+cids_per_map-1, (*iter));
 			}
 			else
 			{
+				cout << "Assigning map of chunks " << i << " to " << num_chunks - 1 << " to " << min << endl;
 				assignMapJob(min, i, num_chunks-1, (*iter));
 			}
 		}
