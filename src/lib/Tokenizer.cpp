@@ -41,8 +41,8 @@ void* Tokenizer::operator()(void* buffer)
 	
 	spl = strtok(tok_buf, " .\n\r\'\"?,;:!*()-\uFEFF");
 	if (spl == NULL) { 
-		perror("Not good!");
-		return NULL;
+		perror("Buffer sent to Tokenizer is empty!");
+		exit(1);
 	}
 	while (1) {
 	PartialAgg* new_pao = createPAO(spl); 
