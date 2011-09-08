@@ -11,9 +11,6 @@ Tokenizer::Tokenizer(Aggregator* agg, PartialAgg* emptyPAO,
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	pao_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers); 
-	for (int i=0; i<num_buffers; i++) {
-		pao_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*));
-	}
 }
 
 Tokenizer::~Tokenizer()

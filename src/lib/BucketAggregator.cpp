@@ -115,6 +115,17 @@ BucketAggregator::BucketAggregator(Config* cfg,
 
 BucketAggregator::~BucketAggregator()
 {
+	if (reader)
+		delete(reader);
+	if (toker)
+		delete(toker);
+	if (inp_deserializer)
+		delete(inp_deserializer);
+	delete(hasher);
+	delete(bucket_serializer);
+	delete(deserializer);
+	delete(bucket_hasher);
+	delete(final_serializer);
 	pipeline_list[0].clear();
 	pipeline_list[1].clear();
 }

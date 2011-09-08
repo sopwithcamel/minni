@@ -142,6 +142,8 @@ task* ReducerWrapperTask::execute() {
 
 	delete reducer->aggreg;
 	delete reducer;
+	free(input_file);
+	free(s_name);
 
 	return NULL;
 }

@@ -197,6 +197,7 @@ task* MapperWrapperTask::execute() {
 		cout<<"User map linking not happening very successfully!"<<endl;
 		return NULL; 
 	}
+	free(s_name);
 	cout<<"Mapper: User map too is successful "<<endl;
 
 	mapper->num_partition = npart;
