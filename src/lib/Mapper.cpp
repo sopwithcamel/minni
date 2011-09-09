@@ -212,44 +212,48 @@ task* MapperWrapperTask::execute() {
 	Setting& c_prefix = cfg.lookup("minni.common.file_prefix");
 	string f_prefix = (const char*)c_prefix;
 
-	for(unsigned int i = 0; i < npart; i++)
-	{
-		if (!selected_map_aggregator.compare("simple")) {
-			mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashAggregator(
-							&cfg, Map, i, &myinput, 
-							NULL, mapper->createPAO, 
-							mapper->destroyPAO, "mapfile")));
-		} else if (!selected_map_aggregator.compare("bucket")) {
-			mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new BucketAggregator(
-							&cfg, Map, i, &myinput, NULL,
-							mapper->createPAO, mapper->destroyPAO, 
-							"mapfile")));
-		} else if (!selected_map_aggregator.compare("exthash")) {
-			mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new ExthashAggregator(
-							&cfg, Map, i, &myinput, NULL,
-							mapper->createPAO, mapper->destroyPAO,
-							"mapfile")));
-		} else if (!selected_map_aggregator.compare("hashsort")) {
-			mapper->aggregs.push_back(dynamic_cast<Aggregator*>(new HashsortAggregator(
-							&cfg, Map, i, &myinput, NULL,
-							mapper->createPAO, mapper->destroyPAO,
-							"mapfile")));
-		} else {
-			fprintf(stderr, "Illegel aggregator chosen!\n");
-		}
+	string map_out_file = "mapfile";
+	stringstream ss;
+	ss << jobid;
+	map_out_file += ss.str() + "-part";
+
+	if (!selected_map_aggregator.compare("simple")) {
+		mapper->aggregs = dynamic_cast<Aggregator*>(new HashAggregator(
+						&cfg, Map, npart, &myinput, 
+						NULL, mapper->createPAO, 
+						mapper->destroyPAO, map_out_file.c_str()));
+	} else if (!selected_map_aggregator.compare("bucket")) {
+		mapper->aggregs = dynamic_cast<Aggregator*>(new BucketAggregator(
+						&cfg, Map, npart, &myinput, NULL,
+						mapper->createPAO, mapper->destroyPAO, 
+						map_out_file.c_str()));
+	} else if (!selected_map_aggregator.compare("exthash")) {
+		mapper->aggregs = dynamic_cast<Aggregator*>(new ExthashAggregator(
+						&cfg, Map, npart, &myinput, NULL,
+						mapper->createPAO, mapper->destroyPAO,
+						map_out_file.c_str()));
+	} else if (!selected_map_aggregator.compare("hashsort")) {
+		mapper->aggregs = dynamic_cast<Aggregator*>(new HashsortAggregator(
+						&cfg, Map, npart, &myinput, NULL,
+						mapper->createPAO, mapper->destroyPAO,
+						map_out_file.c_str()));
+	} else {
+		fprintf(stderr, "Illegel aggregator chosen!\n");
+		exit(1);
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
-	mapper->aggregs[0]->runPipeline();
+	mapper->aggregs->runPipeline();
 	cout<<"Mapper: Supposedly done with mapping"<<endl;
 	vector<File> my_Filelist;
 	cout<<"Mapper: About to start writing into files and my npart is "<<npart<<"\n";
 	//now i need to start writing into file
 	for(unsigned int i = 0; i < npart ; i++)
 	{
+		cout<<"Mapper: Going to tell the workdaemon about the file \n";
+		string f = f_prefix + map_out_file;
 		stringstream ss;
 		ss << i;
-		cout<<"Mapper: Going to tell the workdaemon about the file \n";
-		string f = f_prefix + "mapfile" +  ss.str();
+		f += ss.str();
 		File f1(jobid, i, f.c_str());
 		cout<<"Pushed back the file to worker daemon list \n";
 		my_Filelist.push_back(f1);
@@ -258,11 +262,7 @@ task* MapperWrapperTask::execute() {
 	cout << "Hri: End of map phase" << asctime(localtime(&ltime));
 	mapper->tl.dumpLog();
 	
-	for(unsigned int i = 0; i < npart ; i++)
-        {
-		delete mapper->aggregs[i];
-	}
-
+	delete mapper->aggregs;
 	delete mapper;	
 
 	
@@ -270,15 +270,4 @@ task* MapperWrapperTask::execute() {
 	taskreg->setStatus(jobid, jobstatus::DONE);
 
 	return NULL;
-
-	
-	
 }
-
-
-
-
-
-
-
-

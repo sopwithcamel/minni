@@ -23,7 +23,7 @@ class BucketAggregator : public Aggregator {
 public:
 	BucketAggregator(Config* cfg, 
 				AggType type, 
-				const uint64_t _partid,
+				const uint64_t num_part,
 				MapInput* _map_input,
 				const char* infile, 
 				PartialAgg* (*createPAOFunc)(const char* t), 

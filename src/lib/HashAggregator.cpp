@@ -5,13 +5,13 @@
  */
 HashAggregator::HashAggregator(Config* cfg,
 				AggType type, // where to read from
-				const uint64_t _partid, 
+				const uint64_t num_part, 
 				MapInput* _map_input,
 				const char* infile, 
 				PartialAgg* (*createPAOFunc)(const char* t), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile):
-		Aggregator(cfg, type, 1, _partid, createPAOFunc, destroyPAOFunc),
+		Aggregator(cfg, type, 1, num_part, createPAOFunc, destroyPAOFunc),
 		map_input(_map_input),
 		infile(infile),
 		outfile(outfile)
@@ -67,7 +67,7 @@ HashAggregator::HashAggregator(Config* cfg,
 	char* output_file = (char*)malloc(FILENAME_LENGTH);
 	strcpy(output_file, fprefix.c_str());
 	strcat(output_file, outfile);
-	serializer = new Serializer(this, emptyPAO, 1, output_file, 
+	serializer = new Serializer(this, emptyPAO, getNumPartitions(), output_file, 
 		destroyPAOFunc);
 	pipeline_list[0].add_filter(*serializer);
 	free(output_file);

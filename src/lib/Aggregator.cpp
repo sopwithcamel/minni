@@ -3,12 +3,12 @@
 Aggregator::Aggregator(Config* cfg,
 			AggType where,
 			uint64_t num_pipelines, 
-			uint64_t _partid,
+			uint64_t num_part,
 			PartialAgg* (*createPAOFunc)(const char* t),
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		type(where),
 		num_pipelines(num_pipelines),
-		partid(_partid),
+		num_partitions(num_part),
 		input_finished(false),
 		tot_input_tokens(0),
 		createPAO(createPAOFunc),
@@ -68,4 +68,9 @@ uint64_t Aggregator::getNumThreads(void)
 uint64_t Aggregator::getNumBuffers(void)
 {
 	return num_buffers;
+}
+
+uint64_t Aggregator::getNumPartitions(void)
+{
+	return num_partitions;
 }

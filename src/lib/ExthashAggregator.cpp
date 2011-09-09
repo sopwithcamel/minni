@@ -5,13 +5,13 @@
  */
 ExthashAggregator::ExthashAggregator(Config* cfg,
 				AggType type,
-				const uint64_t _partid, 
+				const uint64_t num_part, 
 				MapInput* _map_input,
 				const char* infile, 
 				PartialAgg* (*createPAOFunc)(const char* t), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile):
-		Aggregator(cfg, type, 2, _partid, createPAOFunc, destroyPAOFunc),
+		Aggregator(cfg, type, 2, num_part, createPAOFunc, destroyPAOFunc),
 		map_input(_map_input),
 		infile(infile),
 		outfile(outfile)
@@ -84,6 +84,8 @@ ExthashAggregator::ExthashAggregator(Config* cfg,
 			destroyPAOFunc);
 	pipeline_list[0].add_filter(*ext_hasher);
 
+
+	// TODO: Read back from External HT and into num_partitions parts
 	free(ht_name);
 }
 

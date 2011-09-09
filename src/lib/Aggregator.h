@@ -23,7 +23,7 @@ public:
 	Aggregator(Config* cfg,
 			AggType where,
 			uint64_t num_pipelines, 
-			uint64_t _partid, 
+			uint64_t num_part, 
 			PartialAgg* (*createPAOFunc)(const char* t),
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~Aggregator();
@@ -37,12 +37,13 @@ public:
 	void resetFlags();
 	uint64_t getNumThreads();
 	uint64_t getNumBuffers();
+	uint64_t getNumPartitions();
 private:
 	AggType type;
 	uint64_t num_threads;
 	uint64_t num_buffers;
 	const uint64_t num_pipelines; 	// number of pipelines in aggregator
-	const uint64_t partid;	// partition ID
+	const uint64_t num_partitions;	// number of partitions for map output
 	PartialAgg* (*createPAO)(const char* token);
 	void (*destroyPAO)(PartialAgg* p);
 };

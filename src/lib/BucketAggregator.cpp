@@ -5,13 +5,13 @@
  */
 BucketAggregator::BucketAggregator(Config* cfg,
 				AggType type, 
-				const uint64_t _partid,
+				const uint64_t num_part,
 				MapInput* _map_input,
 				const char* infile, 
 				PartialAgg* (*createPAOFunc)(const char* t), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile):
-		Aggregator(cfg, type, 2, _partid, createPAOFunc, destroyPAOFunc),
+		Aggregator(cfg, type, 2, num_part, createPAOFunc, destroyPAOFunc),
 		map_input(_map_input),
 		infile(infile),
 		outfile(outfile)
@@ -105,8 +105,8 @@ BucketAggregator::BucketAggregator(Config* cfg,
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
 	strcpy(final_path, fprefix.c_str());
 	strcat(final_path, outfile);
-	final_serializer = new Serializer(this, emptyPAO, (uint64_t)1, final_path, 
-			destroyPAOFunc); 
+	final_serializer = new Serializer(this, emptyPAO, getNumPartitions(), 
+			final_path, destroyPAOFunc); 
 	pipeline_list[1].add_filter(*final_serializer);
 
 	free(bucket_prefix);

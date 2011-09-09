@@ -76,8 +76,7 @@ string ReducerWrapperTask::Write(string result_key, string result_value) {
 task* ReducerWrapperTask::execute() {
 	string soname;
 	char *s_name;
-	char *input_file = (char*)malloc(FILENAME_LENGTH);
-	strcpy(input_file, "mapfile");
+
 	cout<<"Going to call Parse properties \n";
 	if(ParseProperties(soname) == ERROR_EXIT)  {
 		taskreg->setStatus(jobid, jobstatus::DEAD);
@@ -92,16 +91,24 @@ task* ReducerWrapperTask::execute() {
 		return NULL;
 	}
 
+	Setting& c_prefix = cfg.lookup("minni.common.file_prefix");
+	string f_prefix = (const char*)c_prefix;
+	string input_file = "reduce";
+	stringstream ss;
+	ss << jobid;
+	input_file += ss.str() + "-input";
+
+
 	Setting& c_sel_aggregator = cfg.lookup("minni.aggregator.selected.reduce");
 	string selected_reduce_aggregator = (const char*)c_sel_aggregator;
 
 	if (!selected_reduce_aggregator.compare("simple")) {
 		reducer->aggreg = dynamic_cast<Aggregator*>(new HashAggregator(&cfg,
-					Reduce, 0, NULL, input_file, reducer->createPAO, 
+					Reduce, 1, NULL, input_file.c_str(), reducer->createPAO, 
 					reducer->destroyPAO, "result"));
 	} else if (!selected_reduce_aggregator.compare("bucket")) {
 		reducer->aggreg = dynamic_cast<Aggregator*>(new BucketAggregator(&cfg,
-					Reduce, 0, NULL, input_file, reducer->createPAO, 
+					Reduce, 1, NULL, input_file.c_str(), reducer->createPAO, 
 					reducer->destroyPAO, "result"));
 	}
 		
@@ -123,7 +130,7 @@ task* ReducerWrapperTask::execute() {
 			flag = 1;
 			cout<<"Reducer: Reached Ready state!! \n";
 			// TODO: what does this do?
-			grabreg->getMore(my_partition, input_file);
+			grabreg->getMore(my_partition, f_prefix + input_file + "0");
 //			cout<<"Reducer: Going to do reduce on the file "<<filename<<endl;
 			reducer->aggreg->runPipeline();
 			cout<<"Reducer: Done with reducing \n";
@@ -142,7 +149,6 @@ task* ReducerWrapperTask::execute() {
 
 	delete reducer->aggreg;
 	delete reducer;
-	free(input_file);
 	free(s_name);
 
 	return NULL;

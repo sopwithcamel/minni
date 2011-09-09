@@ -5,13 +5,13 @@
  */
 HashsortAggregator::HashsortAggregator(Config* cfg,
 				AggType type, 
-				const uint64_t _partid,
+				const uint64_t num_part,
 				MapInput* _map_input,
 				const char* infile, 
 				PartialAgg* (*createPAOFunc)(const char* t), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile):
-		Aggregator(cfg, type, 2, _partid, createPAOFunc, destroyPAOFunc),
+		Aggregator(cfg, type, 2, num_part, createPAOFunc, destroyPAOFunc),
 		map_input(_map_input),
 		infile(infile),
 		outfile(outfile)
@@ -82,6 +82,8 @@ HashsortAggregator::HashsortAggregator(Config* cfg,
 	 * In this pipeline, each bucket is sorted using nsort */
 	sorter = new Sorter(num_buckets, bucket_prefix);
 	pipeline_list[1].add_filter(*sorter);
+
+	// TODO: Split the sorted file for the reduce phase in num_partitions parts
 
 	free(bucket_prefix);
 }

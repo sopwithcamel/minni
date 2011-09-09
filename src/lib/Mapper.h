@@ -53,7 +53,7 @@ public:
 	void (*destroyPAO)(PartialAgg* p);
 	//vector <ofstream*>  my_file_streams; //TODO actually needed?
 	int num_partition;
-	vector<Aggregator*> aggregs;
+	Aggregator* aggregs;
 	TimeLog tl;
 private:
 };
