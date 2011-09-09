@@ -1,7 +1,6 @@
 #include "Deserializer.h"
 
 #define BUF_SIZE	65535
-#define PAOS_IN_TOKEN	20000
 
 Deserializer::Deserializer(Aggregator* agg,
 			const uint64_t num_buckets, 
@@ -31,16 +30,8 @@ Deserializer::~Deserializer()
 
 uint64_t Deserializer::appendToList(PartialAgg* p)
 {
-	if (pao_list_ctr >= pao_list_size) {
-		pao_list_size += LIST_SIZE_INCR;
-		if (call_realloc(&pao_list, pao_list_size) == NULL) {
-			perror("realloc failed");
-			return -1;
-		}
-		assert(pao_list_ctr < pao_list_size);
-	}
 	pao_list[pao_list_ctr++] = p;
-	return 1;
+	return pao_list_ctr;
 }
 
 
@@ -51,14 +42,13 @@ void* Deserializer::operator()(void*)
 	char* buf = (char*)malloc(BUF_SIZE + 1);
 	char* spl;
 	bool eof_reached = false;
+	uint64_t list_size = aggregator->getPAOsPerToken();
 
 	pao_list_ctr = 0;
 	pao_list_size = 0;
 	PartialAgg* new_pao;
 
-	// Add one element to the list so realloc doesn't complain.
-	pao_list = (PartialAgg**)malloc(sizeof(PartialAgg*));
-	pao_list_size++;
+	pao_list = (PartialAgg**)malloc(sizeof(PartialAgg*) * list_size);
 
 	if (!cur_bucket) { // new bucket has to be opened
 		string file_name = inputfile_prefix;
@@ -70,10 +60,6 @@ void* Deserializer::operator()(void*)
 	}
 
 	while (!feof(cur_bucket) && !ferror(cur_bucket)) {
-		if (pao_list_ctr > PAOS_IN_TOKEN) {
-			goto ship_tokens;
-		}
-
 		buf = fgets(buf, BUF_SIZE, cur_bucket);
 		if (buf == NULL)
 			break;
@@ -81,16 +67,15 @@ void* Deserializer::operator()(void*)
 		new_pao = createPAO(spl);
 		spl = strtok(NULL, " \n\r");
 		new_pao->set_val(spl);
-		appendToList(new_pao);
+		if (appendToList(new_pao) == list_size - 1)
+			goto ship_tokens;
 	}
 	eof_reached = true;
 ship_tokens:
-	// Add emptyPAO to the list
-	appendToList(emptyPAO);
-
 	free(buf);
 	aggregator->tot_input_tokens++;
-	
+	appendToList(emptyPAO);
+
 	if (eof_reached) {
 		fclose(cur_bucket);
 		cur_bucket = NULL;

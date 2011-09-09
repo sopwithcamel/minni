@@ -11,6 +11,7 @@ Aggregator::Aggregator(Config* cfg,
 		num_partitions(num_part),
 		input_finished(false),
 		tot_input_tokens(0),
+		paos_in_token(20000),
 		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc)
 {
@@ -31,7 +32,6 @@ Aggregator::Aggregator(Config* cfg,
 	catch (SettingNotFoundException e) {
 		fprintf(stderr, "Setting not found %s\n", e.getPath());
 	}		
-	
 }
 
 Aggregator::~Aggregator()
@@ -60,17 +60,22 @@ void Aggregator::resetFlags()
 	tot_input_tokens = 0;
 }
 
-uint64_t Aggregator::getNumThreads(void)
+uint64_t Aggregator::getNumThreads(void) const
 {
 	return num_threads;
 }
 
-uint64_t Aggregator::getNumBuffers(void)
+uint64_t Aggregator::getNumBuffers(void) const
 {
 	return num_buffers;
 }
 
-uint64_t Aggregator::getNumPartitions(void)
+uint64_t Aggregator::getNumPartitions(void) const
 {
 	return num_partitions;
+}
+
+uint64_t Aggregator::getPAOsPerToken(void) const
+{
+	return paos_in_token;
 }

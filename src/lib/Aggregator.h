@@ -35,15 +35,17 @@ public:
 	uint64_t tot_input_tokens;	// measures total input tokens
 
 	void resetFlags();
-	uint64_t getNumThreads();
-	uint64_t getNumBuffers();
-	uint64_t getNumPartitions();
+	uint64_t getNumThreads() const;
+	uint64_t getNumBuffers() const;
+	uint64_t getNumPartitions() const;
+	uint64_t getPAOsPerToken() const;
 private:
 	AggType type;
 	uint64_t num_threads;
 	uint64_t num_buffers;
 	const uint64_t num_pipelines; 	// number of pipelines in aggregator
 	const uint64_t num_partitions;	// number of partitions for map output
+	const uint64_t paos_in_token;
 	PartialAgg* (*createPAO)(const char* token);
 	void (*destroyPAO)(PartialAgg* p);
 };
