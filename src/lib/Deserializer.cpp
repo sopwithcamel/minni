@@ -70,7 +70,18 @@ void* Deserializer::operator()(void*)
 		file_name = file_name + ss.str();
 		cur_bucket = fopen(file_name.c_str(), "rb");
 		fprintf(stderr, "opening file %s\n", file_name.c_str());
-
+/*
+		long bof = ftell(cur_bucket);
+		fseek(cur_bucket, 0, SEEK_END);
+		long eof = ftell(cur_bucket);
+		if (bof == eof) {
+			fprintf(stderr, "\t\t is empty\n");
+			fclose(cur_bucket);
+			cur_bucket = NULL;
+			continue;
+		}
+		fseek(cur_bucket, 0, SEEK_SET);
+*/
 		// To handle border cases in buffering
 		limbo_pao = NULL;
 		limbo_key = NULL;
@@ -99,9 +110,9 @@ void* Deserializer::operator()(void*)
 
 		buf[ret] = '\0'; // fread doesn't null-terminate!
 		spl = strtok(buf, " \n\r");
-		if (spl == NULL) { 
-			perror("Not good!");
-			exit(1);
+		if (spl == NULL) {
+			eof_reached = true;
+			goto ship_tokens;
 		}
 		while (1) {
 			if (!limbo_pao) { // starting on a fresh new PAO

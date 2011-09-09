@@ -402,6 +402,7 @@ bool Master::checkStatus()
 						activeMappers--;
 						completedMaps++;
 						finishedNodes.push_back(*(((*nodesIter).second)->getURL()));
+						cout << "Saying " << ((*nodesIter).second)->getURL() << " is done: " << activeMappers << ", " << completedMaps << endl;
 					}
 				}
 				else
@@ -456,13 +457,10 @@ void Master::sendFinishedNodes()
 	vector<string>::iterator finishedIter;
 	for (finishedIter = finishedNodes.begin(); finishedIter < finishedNodes.end(); finishedIter++)
 	{
+		cout << "more work on " << *finishedIter << endl;
 		if (alreadySentFinishedNodes.find(*finishedIter) == alreadySentFinishedNodes.end())
 		{
 			alreadySentFinishedNodes.insert(*finishedIter);
-		}
-		else
-		{
-			finishedNodes.erase(finishedIter);
 		}
 	}
 
@@ -472,6 +470,8 @@ void Master::sendFinishedNodes()
 	{
 		((*nodesIter).second)->reportCompletedJobs(finishedNodes);
 	}
+	cout << "\t\terasing finishnodes" << endl;
+	finishedNodes.clear();
 
 	if (activeMappers + remainingMappers == 0)
 	{
