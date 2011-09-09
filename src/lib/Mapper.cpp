@@ -75,9 +75,11 @@ MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p,
 	}
 	catch (FileIOException e) {
 		fprintf(stderr, "Error reading config file \n");
+		exit(1);
 	}	
 	catch (ParseException e) {
 		fprintf(stderr, "Error reading config file: %s at %s:%d\n", e.getError(), e.what(), e.getLine());
+		exit(1);
 	}
 }
 
