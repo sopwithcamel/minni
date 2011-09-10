@@ -159,7 +159,7 @@ TransferStatus Transfer::getFile(string outfile){
   for(;progress < total;progress++){
     string buffer;
     client.sendData(buffer, pid, progress);
-    cout << "...Caught..."  << endl;
+//    cout << "...Caught..."  << endl;
     fs << buffer;
   }
   transport->close();
@@ -354,9 +354,12 @@ PartStatus GrabberRegistry::getStatus(PartID pid){
   if(status == partstatus::BLOCKED && finished){
     return partstatus::DONE;
   }
-  else{
-    return status;
+  else if (status == partstatus::READY) {
+    if (finished)
+      return partstatus::READY;
+    return partstatus::BLOCKED;
   }
+  return status;
 }
 
 // For the master to call when all Mappers are done.
