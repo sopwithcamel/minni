@@ -60,12 +60,15 @@ void* Deserializer::operator()(void*)
 	}
 
 	while (!feof(cur_bucket) && !ferror(cur_bucket)) {
-		buf = fgets(buf, BUF_SIZE, cur_bucket);
-		if (buf == NULL)
+		if (fgets(buf, BUF_SIZE, cur_bucket) == NULL)
 			break;
 		spl = strtok(buf, " \n\r");
+		if (spl == NULL)
+			continue;
 		new_pao = createPAO(spl);
 		spl = strtok(NULL, " \n\r");
+		if (spl == NULL)
+			continue;
 		new_pao->set_val(spl);
 		if (appendToList(new_pao) == list_size - 1)
 			goto ship_tokens;
