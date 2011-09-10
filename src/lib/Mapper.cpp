@@ -208,11 +208,23 @@ task* MapperWrapperTask::execute() {
 	cout<<"The number of partitions that it gets is "<<npart<<"\n";
 	cout<<"Mapper: starting to push back the aggregators\n";
 
-	Setting& c_sel_aggregator = cfg.lookup("minni.aggregator.selected.map");
-	string selected_map_aggregator = (const char*)c_sel_aggregator;
+	string selected_map_aggregator;
+	try {
+		Setting& c_sel_aggregator = cfg.lookup("minni.aggregator.selected.map");
+		selected_map_aggregator = (const char*)c_sel_aggregator;
+	}
+	catch (SettingNotFoundException e) {
+		fprintf(stderr, "Setting not found %s\n", e.getPath());
+	}
 
-	Setting& c_prefix = cfg.lookup("minni.common.file_prefix");
-	string f_prefix = (const char*)c_prefix;
+	string f_prefix;
+	try {
+		Setting& c_prefix = cfg.lookup("minni.common.file_prefix");
+		f_prefix = (const char*)c_prefix;
+	}
+	catch (SettingNotFoundException e) {
+		fprintf(stderr, "Setting not found %s\n", e.getPath());
+	}
 
 	string map_out_file = "mapfile";
 	stringstream ss;
@@ -266,7 +278,6 @@ task* MapperWrapperTask::execute() {
 	
 	delete mapper->aggregs;
 	delete mapper;	
-
 	
 	filereg->recordComplete(my_Filelist);
 	taskreg->setStatus(jobid, jobstatus::DONE);
