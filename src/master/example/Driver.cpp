@@ -2,6 +2,8 @@
 #include "Master.h"
 #include <unistd.h>
 #include <string.h>
+#include "util.h"
+#include "Defs.h"
 
 #define LAG 3
 #define KDFS_TEST 0
@@ -12,14 +14,27 @@ int main(int argc, char* args[])
 {
 	if (PRODUCTION_TEST)
 	{
-//		string input = "/medgutfile.txt";
-		string input = "/500x26e4x12.txt";
-//		string input = "/shake.txt";
-		//string input = "/input/10GB_random.dat"; 
-		string output = "/";
-		string dfs_master = "127.0.0.1";
-		string so_name = "/usr/local/lib/minni/wordcount.so";
-		uint16_t dfs_port = 20000;
+		Config cfg;
+		assert(openConfigFile(cfg));
+
+		Setting& c_input = readConfigFile(cfg, "minni.input_files");
+		string input = (const char*)c_input;
+
+		Setting& c_output = readConfigFile(cfg, "minni.output_files");
+		string output = (const char*)c_output;
+
+		Setting& c_dfsmaster = readConfigFile(cfg, "minni.dfs.master");
+		string dfs_master = (const char*)c_dfsmaster;
+
+		Setting& c_dfsport = readConfigFile(cfg, "minni.dfs.port");
+		uint16_t dfs_port = (int)c_dfsport;
+
+		Setting& c_soname = readConfigFile(cfg, "minni.so_name");
+		string so_name = (const char*)c_soname;
+
+		Setting& c_nodesfile = readConfigFile(cfg, "minni.common.nodes_file");
+		string nodes_file = (const char*)c_nodesfile;
+
 		JobID maxJobs = 2;
 		JobID maxMaps = 1;
 		JobID maxReduces = 1;
@@ -32,8 +47,8 @@ int main(int argc, char* args[])
 		spec.setMaxJobsPerNode(maxJobs);
 		spec.setMaxMaps(maxMaps);
 		spec.setMaxReduces(maxReduces);
-		KDFS hdfs("127.0.0.1", 20000);
-		Master m(&spec, hdfs, "example/nodes.conf");
+		KDFS hdfs(dfs_master.c_str(), dfs_port);
+		Master m(&spec, hdfs, nodes_file.c_str());
 		while (m.checkMapStatus()) /* assignment of all maps */
 		{
 			cout << "Assigning and running maps." << endl;
