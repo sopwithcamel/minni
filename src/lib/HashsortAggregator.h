@@ -19,10 +19,11 @@
 #include "Tokenizer.h"
 #include "Deserializer.h"
 #include "Hash.h"
+#include "util.h"
 
 class HashsortAggregator : public Aggregator {
 public:
-	HashsortAggregator(Config* cfg,
+	HashsortAggregator(const Config &cfg,
 				AggType type, 
 				const uint64_t _partid,
 				MapInput* _map_input,

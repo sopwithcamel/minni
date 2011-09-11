@@ -1,6 +1,6 @@
 #include "Aggregator.h"
 
-Aggregator::Aggregator(Config* cfg,
+Aggregator::Aggregator(const Config &cfg,
 			AggType where,
 			uint64_t num_pipelines, 
 			uint64_t num_part,
@@ -17,21 +17,11 @@ Aggregator::Aggregator(Config* cfg,
 {
 	pipeline_list = new tbb::pipeline[num_pipelines]; 
 
-	try {
-		Setting& c_num_threads = cfg->lookup("minni.tbb.threads");
-		num_threads = c_num_threads;
-	}
-	catch (SettingNotFoundException e) {
-		fprintf(stderr, "Setting not found %s\n", e.getPath());
-	}		
+	Setting& c_num_threads = readConfigFile(cfg, "minni.tbb.threads");
+	num_threads = c_num_threads;
 
-	try {
-		Setting& c_num_buffers = cfg->lookup("minni.tbb.buffers");
-		num_buffers = c_num_buffers;
-	}
-	catch (SettingNotFoundException e) {
-		fprintf(stderr, "Setting not found %s\n", e.getPath());
-	}		
+	Setting& c_num_buffers = readConfigFile(cfg, "minni.tbb.buffers");
+	num_buffers = c_num_buffers;
 }
 
 Aggregator::~Aggregator()

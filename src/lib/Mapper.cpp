@@ -70,17 +70,7 @@ MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p,
 		taskreg(t),
 		filereg(f)
 {
-	try {
-		cfg.readFile(CONFIG_FILE);
-	}
-	catch (FileIOException e) {
-		fprintf(stderr, "Error reading config file \n");
-		exit(1);
-	}	
-	catch (ParseException e) {
-		fprintf(stderr, "Error reading config file: %s at %s:%d\n", e.getError(), e.what(), e.getLine());
-		exit(1);
-	}
+	openConfigFile(cfg);
 }
 
 /* TODO: destroy all PAO's created */
@@ -208,23 +198,11 @@ task* MapperWrapperTask::execute() {
 	cout<<"The number of partitions that it gets is "<<npart<<"\n";
 	cout<<"Mapper: starting to push back the aggregators\n";
 
-	string selected_map_aggregator;
-	try {
-		Setting& c_sel_aggregator = cfg.lookup("minni.aggregator.selected.map");
-		selected_map_aggregator = (const char*)c_sel_aggregator;
-	}
-	catch (SettingNotFoundException e) {
-		fprintf(stderr, "Setting not found %s\n", e.getPath());
-	}
+	Setting& c_sel_aggregator = readConfigFile(cfg, "minni.aggregator.selected.map");
+	string selected_map_aggregator = (const char*)c_sel_aggregator;
 
-	string f_prefix;
-	try {
-		Setting& c_prefix = cfg.lookup("minni.common.file_prefix");
-		f_prefix = (const char*)c_prefix;
-	}
-	catch (SettingNotFoundException e) {
-		fprintf(stderr, "Setting not found %s\n", e.getPath());
-	}
+	Setting& c_prefix = readConfigFile(cfg, "minni.common.file_prefix");
+	string f_prefix = (const char*)c_prefix;
 
 	string map_out_file = "mapfile";
 	stringstream ss;
@@ -233,22 +211,22 @@ task* MapperWrapperTask::execute() {
 
 	if (!selected_map_aggregator.compare("simple")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new HashAggregator(
-						&cfg, Map, npart, &myinput, 
+						cfg, Map, npart, &myinput, 
 						NULL, mapper->createPAO, 
 						mapper->destroyPAO, map_out_file.c_str()));
 	} else if (!selected_map_aggregator.compare("bucket")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new BucketAggregator(
-						&cfg, Map, npart, &myinput, NULL,
+						cfg, Map, npart, &myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO, 
 						map_out_file.c_str()));
 	} else if (!selected_map_aggregator.compare("exthash")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new ExthashAggregator(
-						&cfg, Map, npart, &myinput, NULL,
+						cfg, Map, npart, &myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO,
 						map_out_file.c_str()));
 	} else if (!selected_map_aggregator.compare("hashsort")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new HashsortAggregator(
-						&cfg, Map, npart, &myinput, NULL,
+						cfg, Map, npart, &myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO,
 						map_out_file.c_str()));
 	} else {

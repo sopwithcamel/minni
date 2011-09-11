@@ -20,6 +20,9 @@
 #include "Aggregator.h"
 #include "KDFS.h"
 #include "Defs.h"
+#include "Util.h"
+#include "util.h"
+
 #define GetCurrentDir getcwd
 #define ERROR_EXIT 1
 #define SUCCESS_EXIT 0

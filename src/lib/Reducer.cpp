@@ -1,6 +1,7 @@
 #include "Reducer.h"
 #include "HashAggregator.h"
 #include "BucketAggregator.h"
+#include "util.h"
 
 //Reducer class
 Reducer::Reducer(PartialAgg* (*__createPAO)(const char* t), 
@@ -91,23 +92,24 @@ task* ReducerWrapperTask::execute() {
 		return NULL;
 	}
 
-	Setting& c_prefix = cfg.lookup("minni.common.file_prefix");
+	Setting& c_prefix = readConfigFile(cfg, "minni.common.file_prefix");
 	string f_prefix = (const char*)c_prefix;
+
 	string input_file = "reduce";
 	stringstream ss;
 	ss << jobid;
 	input_file += ss.str() + "-input";
 
 
-	Setting& c_sel_aggregator = cfg.lookup("minni.aggregator.selected.reduce");
+	Setting& c_sel_aggregator = readConfigFile(cfg, "minni.aggregator.selected.reduce");
 	string selected_reduce_aggregator = (const char*)c_sel_aggregator;
 
 	if (!selected_reduce_aggregator.compare("simple")) {
-		reducer->aggreg = dynamic_cast<Aggregator*>(new HashAggregator(&cfg,
+		reducer->aggreg = dynamic_cast<Aggregator*>(new HashAggregator(cfg,
 					Reduce, 1, NULL, input_file.c_str(), reducer->createPAO, 
 					reducer->destroyPAO, "result"));
 	} else if (!selected_reduce_aggregator.compare("bucket")) {
-		reducer->aggreg = dynamic_cast<Aggregator*>(new BucketAggregator(&cfg,
+		reducer->aggreg = dynamic_cast<Aggregator*>(new BucketAggregator(cfg,
 					Reduce, 1, NULL, input_file.c_str(), reducer->createPAO, 
 					reducer->destroyPAO, "result"));
 	}

@@ -23,6 +23,8 @@
 #include "TimeLog.h"
 #include "KDFS.h"
 #include "Aggregator.h"
+#include "Util.h"
+#include "util.h"
 
 #define GetCurrentDir getcwd
 

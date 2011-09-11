@@ -18,10 +18,11 @@
 #include "Hasher.h"
 #include "Serializer.h"
 #include "Deserializer.h"
+#include "util.h"
 
 class BucketAggregator : public Aggregator {
 public:
-	BucketAggregator(Config* cfg, 
+	BucketAggregator(const Config &cfg, 
 				AggType type, 
 				const uint64_t num_part,
 				MapInput* _map_input,

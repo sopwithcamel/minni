@@ -13,6 +13,7 @@
 
 #include "PartialAgg.h"
 #include "Defs.h"
+#include "util.h"
 
 using namespace libconfig;
 
@@ -20,7 +21,7 @@ enum AggType {Map, Reduce};
 
 class Aggregator {
 public:
-	Aggregator(Config* cfg,
+	Aggregator(const Config &cfg,
 			AggType where,
 			uint64_t num_pipelines, 
 			uint64_t num_part, 

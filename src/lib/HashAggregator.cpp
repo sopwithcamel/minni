@@ -3,7 +3,7 @@
 /*
  * Initialize pipeline
  */
-HashAggregator::HashAggregator(Config* cfg,
+HashAggregator::HashAggregator(const Config &cfg,
 				AggType type, // where to read from
 				const uint64_t num_part, 
 				MapInput* _map_input,
@@ -16,33 +16,15 @@ HashAggregator::HashAggregator(Config* cfg,
 		infile(infile),
 		outfile(outfile)
 {
-	string empty_key;
-	string fprefix;
-
-	try {
-		Setting& c_empty_key = cfg->lookup("minni.common.key.empty");
-		empty_key = (const char*)c_empty_key;
-	}
-	catch (SettingNotFoundException e) {
-		fprintf(stderr, "Setting not found %s\n", e.getPath());
-	}		
+	Setting& c_empty_key = readConfigFile(cfg, "minni.common.key.empty");
+	string empty_key = (const char*)c_empty_key;
 	PartialAgg* emptyPAO = createPAOFunc(empty_key.c_str());
 
-	try {
-		Setting& c_capacity = cfg->lookup("minni.aggregator.hashtable_internal.capacity");
-		capacity = c_capacity;
-	}
-	catch (SettingNotFoundException e) {
-		fprintf(stderr, "Setting not found %s\n", e.getPath());
-	}		
+	Setting& c_capacity = readConfigFile(cfg, "minni.aggregator.hashtable_internal.capacity");
+	capacity = c_capacity;
 
-	try {
-		Setting& c_fprefix = cfg->lookup("minni.common.file_prefix");
-		fprefix = (const char*)c_fprefix;
-	}
-	catch (SettingNotFoundException e) {
-		fprintf(stderr, "Setting not found %s\n", e.getPath());
-	}		
+	Setting& c_fprefix = readConfigFile(cfg, "minni.common.file_prefix");
+	string fprefix = (const char*)c_fprefix;
 
 	if (type == Map) {
 		reader = new DFSReader(this, map_input);

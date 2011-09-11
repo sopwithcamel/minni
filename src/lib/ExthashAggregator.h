@@ -19,10 +19,12 @@
 #include "Serializer.h"
 #include "Deserializer.h"
 #include "Hash.h"
+#include "Util.h"
+#include "util.h"
 
 class ExthashAggregator : public Aggregator {
 public:
-	ExthashAggregator(Config* cfg,
+	ExthashAggregator(const Config &cfg,
 				AggType type,
 				const uint64_t _partid, 
 				MapInput* _map_input,

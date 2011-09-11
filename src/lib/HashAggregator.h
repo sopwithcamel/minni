@@ -19,10 +19,11 @@
 #include "Serializer.h"
 #include "Deserializer.h"
 #include "Hash.h"
+#include "util.h"
 
 class HashAggregator : public Aggregator {
 public:
-	HashAggregator(Config* cfg, 
+	HashAggregator(const Config &cfg, 
 				AggType type,
 				const uint64_t _partid, 
 				MapInput* _map_input,

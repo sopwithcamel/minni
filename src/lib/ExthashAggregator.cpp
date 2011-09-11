@@ -3,7 +3,7 @@
 /*
  * Initialize pipeline
  */
-ExthashAggregator::ExthashAggregator(Config* cfg,
+ExthashAggregator::ExthashAggregator(const Config& cfg,
 				AggType type,
 				const uint64_t num_part, 
 				MapInput* _map_input,
@@ -16,43 +16,20 @@ ExthashAggregator::ExthashAggregator(Config* cfg,
 		infile(infile),
 		outfile(outfile)
 {
-	string fprefix;
-	string empty_key;
-	try {
-		Setting& c_empty_key = cfg->lookup("minni.common.key.empty");
-		empty_key = (const char*)c_empty_key;
-	}
-	catch (SettingNotFoundException e) {
-		fprintf(stderr, "Setting not found %s\n", e.getPath());
-	}		
-
+	Setting& c_empty_key = readConfigFile(cfg, "minni.common.key.empty");
+	string empty_key = (const char*)c_empty_key;
 	PartialAgg* emptyPAO = createPAOFunc(empty_key.c_str());
 
-	try {
-		Setting& c_int_capacity = cfg->lookup(
-				"minni.aggregator.hashtable_external.capacity.internal");
-		internal_capacity = c_int_capacity;
-	}
-	catch (SettingNotFoundException e) {
-		fprintf(stderr, "Setting not found %s\n", e.getPath());
-	}		
+	Setting& c_int_capacity = readConfigFile(cfg, 
+			"minni.aggregator.hashtable_external.capacity.internal");
+	internal_capacity = c_int_capacity;
 
-	try {
-		Setting& c_ext_capacity = cfg->lookup(
-				"minni.aggregator.hashtable_external.capacity.external");
-		external_capacity = c_ext_capacity;
-	}
-	catch (SettingNotFoundException e) {
-		fprintf(stderr, "Setting not found %s\n", e.getPath());
-	}		
+	Setting& c_ext_capacity = readConfigFile(cfg, 
+			"minni.aggregator.hashtable_external.capacity.external");
+	external_capacity = c_ext_capacity;
 
-	try {
-		Setting& c_fprefix = cfg->lookup("minni.common.file_prefix");
-		fprefix = (const char*)c_fprefix;
-	}
-	catch (SettingNotFoundException e) {
-		fprintf(stderr, "Setting not found %s\n", e.getPath());
-	}		
+	Setting& c_fprefix = readConfigFile(cfg, "minni.common.file_prefix");
+	string fprefix = (const char*)c_fprefix;
 
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
