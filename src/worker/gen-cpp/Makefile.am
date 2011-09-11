@@ -8,7 +8,8 @@ workdaemon_SOURCES = WorkDaemon.cpp \
 		     daemon_types.cpp \
 		     WorkDaemon_server.cpp \
 		     WorkDaemon_tasks.cpp \
-		     WorkDaemon_file.cpp
+		     WorkDaemon_file.cpp \
+			../../common/util.cpp
 
 libdaemon_la_SOURCES = daemon_types.cpp \
 		       daemon_constants.cpp \
