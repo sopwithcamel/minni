@@ -5,7 +5,8 @@ EXTRA_DIST = common.h Communicator.h Master.h Node.h Node.h TODO NOTES
 test_SOURCES = example/Driver.cpp \
 	       Master.cpp \
 	       Node.cpp \
-	       Communicator.cpp
+	       Communicator.cpp \
+		../common/util.cpp
 
 test_CPPFLAGS = $(TBB_CFLAGS) \
 		$(THRIFT_CFLAGS) \
@@ -23,4 +24,5 @@ test_LDFLAGS = $(TBB_LIBS) \
 	       -lkfsIO \
 	       -lkfsCommon \
 	       -lqcdio \
-	       -lboost_regex
+	       -lboost_regex \
+		-lconfig++
