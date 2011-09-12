@@ -23,7 +23,7 @@ ReducerWrapperTask::ReducerWrapperTask (JobID jid, Properties * p, TaskRegistry 
 		taskreg(t),
 		grabreg(g)
 {
-	cfg.readFile(CONFIG_FILE);
+	openConfigFile(cfg);
 }
 
 int ReducerWrapperTask::ParseProperties(string& soname) {//TODO checking and printing error reports!	
