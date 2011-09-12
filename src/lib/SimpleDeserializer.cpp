@@ -12,26 +12,24 @@ Deserializer::Deserializer(Aggregator* agg,
 		filter(serial_in_order),
 		num_buckets(num_buckets),
 		buckets_processed(0),
-		pao_list_ctr(0),
-		pao_list_size(0),
 		cur_bucket(NULL),
+		next_buffer(0),
 		emptyPAO(emptyPAO),
 		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc)
 {
+	size_t num_buffers = aggregator->getNumBuffers();
+
 	inputfile_prefix = (char*)malloc(FILENAME_LENGTH);
 	strcpy(inputfile_prefix, inp_prefix);
+
+	pao_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
 }
 
 Deserializer::~Deserializer()
 {
 	free(inputfile_prefix);
-}
-
-uint64_t Deserializer::appendToList(PartialAgg* p)
-{
-	pao_list[pao_list_ctr++] = p;
-	return pao_list_ctr;
+	free(pao_list);
 }
 
 
@@ -44,11 +42,13 @@ void* Deserializer::operator()(void*)
 	bool eof_reached = false;
 	uint64_t list_size = aggregator->getPAOsPerToken();
 
-	pao_list_ctr = 0;
-	pao_list_size = 0;
+	size_t pao_list_ctr = 0;
 	PartialAgg* new_pao;
+	size_t num_buffers = aggregator->getNumBuffers();
 
-	pao_list = (PartialAgg**)malloc(sizeof(PartialAgg*) * list_size);
+	pao_list[next_buffer] = (PartialAgg**)malloc(sizeof(PartialAgg*) * list_size);
+	PartialAgg** this_list = pao_list[next_buffer];
+	next_buffer = (next_buffer + 1) % num_buffers;
 
 	if (!cur_bucket) { // new bucket has to be opened
 		string file_name = inputfile_prefix;
@@ -70,14 +70,15 @@ void* Deserializer::operator()(void*)
 		if (spl == NULL)
 			continue;
 		new_pao->set_val(spl);
-		if (appendToList(new_pao) == list_size - 1)
+		this_list[pao_list_ctr++] = new_pao;
+		if (pao_list_ctr == list_size - 1)
 			goto ship_tokens;
 	}
 	eof_reached = true;
 ship_tokens:
 	free(buf);
 	aggregator->tot_input_tokens++;
-	appendToList(emptyPAO);
+	this_list[pao_list_ctr++] = emptyPAO;
 
 	if (eof_reached) {
 		fclose(cur_bucket);
@@ -87,6 +88,6 @@ ship_tokens:
 		}
 	}
 //	fprintf(stderr, "list size: %d\n", pao_list_ctr);
-	return pao_list;
+	return this_list;
 }
 

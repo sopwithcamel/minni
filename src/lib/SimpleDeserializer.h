@@ -41,9 +41,8 @@ private:
 	char* inputfile_prefix;
 	const uint64_t num_buckets;	// Number of files to process serially
 	uint64_t buckets_processed;
-	PartialAgg** pao_list;
-	size_t pao_list_ctr;		// number of elements in list
-	size_t pao_list_size;		// current size of the pao_list
+	PartialAgg*** pao_list;
+	size_t next_buffer;
 
 	FILE *cur_bucket;		// file pointer for current bucket
 	void* operator()(void*);
