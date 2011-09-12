@@ -96,6 +96,7 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 	char *key, *value;
 	std::pair<typename Hash::iterator, bool> result;
 	uint64_t ind = 0;
+	uint64_t evict_ind = 0;
 	PartialAgg* pao;
 	size_t evict_list_ctr = 0;
 
@@ -118,17 +119,15 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 			(result.first->second)->merge(pao);
 			destroyPAO(pao);
 		} else { // the PAO was inserted
-			if (ht_size == ht_capacity) { // PAO has to be evicted
-				if (next_evict == hashtable.end())
-					next_evict = hashtable.begin();
-				typename Hash::iterator evict_el = next_evict;
-				next_evict++;
-
-				this_list[evict_list_ctr++] = evict_el->second;
+			ht_size++;
+		}
+		if (ht_size > ht_capacity) { // PAO has to be evicted
+			next_evict = hashtable.find(pao_l[evict_ind++]->key);
+			if (next_evict != hashtable.end()) {
+				this_list[evict_list_ctr++] = next_evict->second;
 				assert(evict_list_ctr < MAX_KEYS_PER_TOKEN); 
-				hashtable.erase(evict_el);				
-			} else {
-				ht_size++;
+				hashtable.erase(next_evict);
+				ht_size--;
 			}
 		}
 		ind++;
