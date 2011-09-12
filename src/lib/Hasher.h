@@ -37,9 +37,10 @@ private:
 	Aggregator* aggregator;
 	typedef std::tr1::unordered_map<KeyType, PartialAgg*, HashAlgorithm, EqualTest> Hash;
 	PartialAgg* emptyPAO;
-	PartialAgg** evicted_list;
+	PartialAgg*** evicted_list;
 	size_t ht_size;
 	size_t ht_capacity;
+	size_t next_buffer;
 	Hash hashtable;
 	uint64_t tokens_processed;
 	bool flush_on_complete;
@@ -57,9 +58,12 @@ Hasher<KeyType, HashAlgorithm, EqualTest>::Hasher(Aggregator* agg,
 		destroyPAO(destroyPAOFunc),
 		ht_size(0),
 		ht_capacity(capacity),
+		next_buffer(0),
 		flush_on_complete(false),
 		tokens_processed(0)
 {
+	uint64_t num_buffers = aggregator->getNumBuffers();
+	evicted_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
 }
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
@@ -70,6 +74,7 @@ Hasher<KeyType, HashAlgorithm, EqualTest>::~Hasher()
 		free(it->first);
 	}
 	hashtable.clear();
+	free(evicted_list);
 }
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
@@ -82,7 +87,9 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 	PartialAgg* pao;
 
 	size_t evict_list_ctr = 0;
-	evicted_list = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
+	evicted_list[next_buffer] = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
+	PartialAgg** this_list = evicted_list[next_buffer];
+	next_buffer = (next_buffer + 1) % aggregator->getNumBuffers();
 
 	// PAO to be evicted next. We maintain pointer because begin() on an unordered
 	// map is an expensive operation!
@@ -101,7 +108,7 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 				typename Hash::iterator evict_el = next_evict;
 				next_evict++;
 
-				evicted_list[evict_list_ctr++] = evict_el->second;
+				this_list[evict_list_ctr++] = evict_el->second;
 				assert(evict_list_ctr < MAX_KEYS_PER_TOKEN); 
 				hashtable.erase(evict_el);				
 			} else {
@@ -125,13 +132,13 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 		fprintf(stderr, "Hasher: input finished %zu!\n", hashtable.size());
 		for (typename Hash::iterator it = hashtable.begin(); 
 				it != hashtable.end(); it++) {
-			evicted_list[evict_list_ctr++] = it->second;
+			this_list[evict_list_ctr++] = it->second;
 			assert(evict_list_ctr < MAX_KEYS_PER_TOKEN);
 		}	
 		hashtable.clear();
 	}
-	evicted_list[evict_list_ctr] = emptyPAO;
-	return evicted_list;
+	this_list[evict_list_ctr] = emptyPAO;
+	return this_list;
 }
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
