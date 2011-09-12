@@ -1,7 +1,10 @@
 #include <iostream>
 #include <stdlib.h>
+#include <unistd.h>
 #include "util.h"
 #include "Defs.h"
+
+#define CONFIG_FILE	"/home/hamur/code/minni/sample.cfg"
 
 Setting& readConfigFile(const Config &cfg, const char* set_name)
 {
@@ -28,4 +31,5 @@ bool openConfigFile(Config &cfg)
 		fprintf(stderr, "Error reading config file: %s at %s:%d\n", e.getError(), e.what(), e.getLine());
 		exit(1);
 	}
+	return true;
 }
