@@ -1,5 +1,7 @@
 #include "Serializer.h"
 
+#define BUF_SIZE	65535
+
 Serializer::Serializer(Aggregator* agg,
 			PartialAgg* emptyPAO,
 			const uint64_t nb, 
@@ -25,10 +27,13 @@ Serializer::Serializer(Aggregator* agg,
 		fl[i] = fopen(fname, "w");
 	}
 	free(fname);
+	buf = (char*)malloc(BUF_SIZE + 1);
 }
 
 Serializer::~Serializer()
 {
+	free(buf);
+	free(fl);
 }
 
 void* Serializer::operator()(void* pao_list)
@@ -41,7 +46,7 @@ void* Serializer::operator()(void* pao_list)
 	uint64_t recv_length = (uint64_t)recv->length;
 	uint64_t ind = 0;
 
-	char* buf = (char*)malloc(VALUE_SIZE * 10);
+//	strcpy(buf, "");
 	while(ind < recv_length) {
 		pao = pao_l[ind];
 		// TODO; use another partitioning function later!
@@ -73,8 +78,5 @@ void* Serializer::operator()(void* pao_list)
 		fprintf(stderr, "Closing bucket files\n");
 		for (int i=0; i<num_buckets; i++)
 			fclose(fl[i]);
-		free(fl);
 	}
-
-	free(buf);
 }
