@@ -82,8 +82,7 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 	PartialAgg* pao;
 
 	size_t evict_list_ctr = 0;
-	size_t evict_list_size = 1;
-	evicted_list = (PartialAgg**)malloc(sizeof(PartialAgg*));
+	evicted_list = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
 
 	// PAO to be evicted next. We maintain pointer because begin() on an unordered
 	// map is an expensive operation!
@@ -102,15 +101,8 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 				typename Hash::iterator evict_el = next_evict;
 				next_evict++;
 
-				if (evict_list_ctr >= evict_list_size) {
-					evict_list_size += LIST_SIZE_INCR;
-					if (call_realloc(&evicted_list, evict_list_size) == NULL) {
-						perror("realloc failed");
-						return NULL;
-					}
-				}
-				assert(evict_list_ctr < evict_list_size);
 				evicted_list[evict_list_ctr++] = evict_el->second;
+				assert(evict_list_ctr < MAX_KEYS_PER_TOKEN); 
 				hashtable.erase(evict_el);				
 			} else {
 				ht_size++;
@@ -133,27 +125,11 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 		fprintf(stderr, "Hasher: input finished %zu!\n", hashtable.size());
 		for (typename Hash::iterator it = hashtable.begin(); 
 				it != hashtable.end(); it++) {
-			if (evict_list_ctr >= evict_list_size) {
-				evict_list_size += LIST_SIZE_INCR;
-				if (call_realloc(&evicted_list, evict_list_size) == NULL) {
-					perror("realloc failed");
-					return NULL;
-				}
-			}
-			assert(evict_list_ctr < evict_list_size);
 			evicted_list[evict_list_ctr++] = it->second;
+			assert(evict_list_ctr < MAX_KEYS_PER_TOKEN);
 		}	
 		hashtable.clear();
 	}
-
-	if (evict_list_ctr >= evict_list_size) {
-		evict_list_size++;
-		if (call_realloc(&evicted_list, evict_list_size) == NULL) {
-			perror("realloc failed");
-			return NULL;
-		}
-	}
-	assert(evict_list_ctr < evict_list_size);
 	evicted_list[evict_list_ctr] = emptyPAO;
 	return evicted_list;
 }
