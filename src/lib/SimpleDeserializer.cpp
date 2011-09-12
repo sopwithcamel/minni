@@ -31,6 +31,7 @@ Deserializer::Deserializer(Aggregator* agg,
 		pao_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * list_size);
 		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
 	}
+	read_buf = (char*)malloc(BUF_SIZE + 1);
 }
 
 Deserializer::~Deserializer()
@@ -43,6 +44,7 @@ Deserializer::~Deserializer()
 	}
 	free(pao_list);
 	free(send);
+	free(read_buf);
 }
 
 
@@ -50,7 +52,6 @@ void* Deserializer::operator()(void*)
 {
 	if (aggregator->input_finished)
 		return NULL;
-	char* buf = (char*)malloc(BUF_SIZE + 1);
 	char* spl;
 	bool eof_reached = false;
 	uint64_t list_size = aggregator->getPAOsPerToken();
@@ -71,24 +72,29 @@ void* Deserializer::operator()(void*)
 		fprintf(stderr, "opening file %s\n", file_name.c_str());
 	}
 
-	while (!feof(cur_bucket) && !ferror(cur_bucket)) {
-		if (fgets(buf, BUF_SIZE, cur_bucket) == NULL)
-			break;
-		spl = strtok(buf, " \n\r");
-		if (spl == NULL)
-			continue;
-		new_pao = createPAO(spl);
-		spl = strtok(NULL, " \n\r");
-		if (spl == NULL)
-			continue;
-		new_pao->set_val(spl);
-		this_list[pao_list_ctr++] = new_pao;
-		if (pao_list_ctr == list_size - 1)
-			goto ship_tokens;
+	try {
+		while (!feof(cur_bucket)) {
+			if (fgets(read_buf, BUF_SIZE, cur_bucket) == NULL)
+				break;
+			spl = strtok(read_buf, " \n\r");
+			if (spl == NULL)
+				continue;
+			new_pao = createPAO(spl);
+			spl = strtok(NULL, " \n\r");
+			if (spl == NULL)
+				continue;
+			new_pao->set_val(spl);
+			this_list[pao_list_ctr++] = new_pao;
+			if (pao_list_ctr == list_size - 1)
+				goto ship_tokens;
+		}
+	} catch(...) {
+		fprintf(stderr, "error reading file\n");
+		exit(1);
 	}
+		
 	eof_reached = true;
 ship_tokens:
-	free(buf);
 	aggregator->tot_input_tokens++;
 
 	if (eof_reached) {
