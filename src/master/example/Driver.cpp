@@ -36,8 +36,12 @@ int main(int argc, char* args[])
 		string nodes_file = (const char*)c_nodesfile;
 
 		JobID maxJobs = 2;
-		JobID maxMaps = 1;
-		JobID maxReduces = 1;
+		Setting& c_maxmaps = readConfigFile(cfg, "minni.max_maps");
+		JobID maxMaps = (int)c_maxmaps;
+
+		Setting& c_maxreduces = readConfigFile(cfg, "minni.max_reduces");
+		JobID maxReduces = (int)c_maxreduces;
+
 		MapReduceSpecification spec = MapReduceSpecification();
 		spec.addInput(input);
 		spec.setOutputPath(output);
