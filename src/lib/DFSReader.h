@@ -33,7 +33,8 @@ private:
 	MapInput* input;
 	size_t rem_buffer_size;
 	char* buffer;
-	char* chunk; 
+	char** chunk; 
+	size_t next_chunk;
 	ChunkID id;
 	void* operator()(void* pao);
 };
