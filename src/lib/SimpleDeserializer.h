@@ -43,6 +43,7 @@ private:
 	uint64_t buckets_processed;
 	PartialAgg*** pao_list;
 	size_t next_buffer;
+	FilterInfo** send;
 
 	FILE *cur_bucket;		// file pointer for current bucket
 	void* operator()(void*);

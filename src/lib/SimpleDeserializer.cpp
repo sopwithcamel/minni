@@ -19,17 +19,30 @@ Deserializer::Deserializer(Aggregator* agg,
 		destroyPAO(destroyPAOFunc)
 {
 	size_t num_buffers = aggregator->getNumBuffers();
+	uint64_t list_size = aggregator->getPAOsPerToken();
 
 	inputfile_prefix = (char*)malloc(FILENAME_LENGTH);
 	strcpy(inputfile_prefix, inp_prefix);
 
 	pao_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
+	send = (FilterInfo**)malloc(sizeof(FilterInfo*) * num_buffers);
+	// Allocate buffers and structures to send results to next filter    
+	for (int i=0; i<num_buffers; i++) {
+		pao_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * list_size);
+		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
+	}
 }
 
 Deserializer::~Deserializer()
 {
+	size_t num_buffers = aggregator->getNumBuffers();
 	free(inputfile_prefix);
+	for (int i=0; i<num_buffers; i++) {
+		free(pao_list[i]);
+		free(send[i]);
+	}
 	free(pao_list);
+	free(send);
 }
 
 
@@ -41,13 +54,12 @@ void* Deserializer::operator()(void*)
 	char* spl;
 	bool eof_reached = false;
 	uint64_t list_size = aggregator->getPAOsPerToken();
-
 	size_t pao_list_ctr = 0;
-	PartialAgg* new_pao;
 	size_t num_buffers = aggregator->getNumBuffers();
+	PartialAgg* new_pao;
 
-	pao_list[next_buffer] = (PartialAgg**)malloc(sizeof(PartialAgg*) * list_size);
 	PartialAgg** this_list = pao_list[next_buffer];
+	FilterInfo* this_send = send[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers;
 
 	if (!cur_bucket) { // new bucket has to be opened
@@ -78,7 +90,6 @@ void* Deserializer::operator()(void*)
 ship_tokens:
 	free(buf);
 	aggregator->tot_input_tokens++;
-	this_list[pao_list_ctr++] = emptyPAO;
 
 	if (eof_reached) {
 		fclose(cur_bucket);
@@ -88,6 +99,8 @@ ship_tokens:
 		}
 	}
 //	fprintf(stderr, "list size: %d\n", pao_list_ctr);
-	return this_list;
+	this_send->result = this_list;
+	this_send->length = pao_list_ctr;
+	return this_send;
 }
 

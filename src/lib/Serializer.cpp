@@ -77,6 +77,4 @@ void* Serializer::operator()(void* pao_list)
 	}
 
 	free(buf);
-	free(pao_l);
-	free(recv);
 }

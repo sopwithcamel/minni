@@ -41,6 +41,7 @@ private:
 	size_t ht_size;
 	size_t ht_capacity;
 	size_t next_buffer;
+	FilterInfo** send;
 	Hash hashtable;
 	uint64_t tokens_processed;
 	bool flush_on_complete;
@@ -64,17 +65,29 @@ Hasher<KeyType, HashAlgorithm, EqualTest>::Hasher(Aggregator* agg,
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	evicted_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
+	send = (FilterInfo**)malloc(sizeof(FilterInfo*) * num_buffers);
+	// Allocate buffers and structure to send results to next filter
+	for (int i=0; i<num_buffers; i++) {
+		evicted_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
+		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
+	}
 }
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
 Hasher<KeyType, HashAlgorithm, EqualTest>::~Hasher()
 {
+	uint64_t num_buffers = aggregator->getNumBuffers();
 	typename Hash::iterator it;
 	for (it = hashtable.begin(); it != hashtable.end(); it++) {
 		free(it->first);
 	}
+	for (int i=0; i<num_buffers; i++) {
+		free(evicted_list[i]);
+		free(send[i]);
+	}
 	hashtable.clear();
 	free(evicted_list);
+	free(send);
 }
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>
@@ -84,17 +97,14 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 	std::pair<typename Hash::iterator, bool> result;
 	uint64_t ind = 0;
 	PartialAgg* pao;
+	size_t evict_list_ctr = 0;
 
 	FilterInfo* recv = (FilterInfo*)pao_list;
 	PartialAgg** pao_l = (PartialAgg**)recv->result;
 	uint64_t recv_length = (uint64_t)recv->length;	
 
-	// set up struct to send information to next filter
-	FilterInfo* send = (FilterInfo*)malloc(sizeof(FilterInfo));
-
-	size_t evict_list_ctr = 0;
-	evicted_list[next_buffer] = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
 	PartialAgg** this_list = evicted_list[next_buffer];
+	FilterInfo* this_send = send[next_buffer];
 	next_buffer = (next_buffer + 1) % aggregator->getNumBuffers();
 
 	// PAO to be evicted next. We maintain pointer because begin() on an unordered
@@ -123,8 +133,6 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 		}
 		ind++;
 	}
-	free(pao_l);
-	free(recv);
 
 	/* next bit of code tests whether the input stage has completed. If
 	   it has, and the number of tokens processed by the input stage is
@@ -144,9 +152,9 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 		}	
 		hashtable.clear();
 	}
-	send->result = this_list;
-	send->length = evict_list_ctr;
-	return send;
+	this_send->result = this_list;
+	this_send->length = evict_list_ctr;
+	return this_send;
 }
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>

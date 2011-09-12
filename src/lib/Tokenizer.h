@@ -33,6 +33,7 @@ private:
 	size_t next_buffer;
 	PartialAgg* emptyPAO;
 	PartialAgg*** pao_list;
+	FilterInfo** send;
 	PartialAgg* (*createPAO)(const char* token);
 	void* operator()(void* pao);
 };
