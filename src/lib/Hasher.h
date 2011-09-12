@@ -81,10 +81,16 @@ template <typename KeyType, typename HashAlgorithm, typename EqualTest>
 void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 {
 	char *key, *value;
-	PartialAgg** pao_l = (PartialAgg**)pao_list;
 	std::pair<typename Hash::iterator, bool> result;
-	size_t ind = 0;
+	uint64_t ind = 0;
 	PartialAgg* pao;
+
+	FilterInfo* recv = (FilterInfo*)pao_list;
+	PartialAgg** pao_l = (PartialAgg**)recv->result;
+	uint64_t recv_length = (uint64_t)recv->length;	
+
+	// set up struct to send information to next filter
+	FilterInfo* send = (FilterInfo*)malloc(sizeof(FilterInfo));
 
 	size_t evict_list_ctr = 0;
 	evicted_list[next_buffer] = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
@@ -95,7 +101,7 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 	// map is an expensive operation!
 	typename Hash::iterator next_evict = hashtable.end();
 
-	while (strcmp((pao_l[ind])->key, emptyPAO->key)) { 
+	while (ind < recv_length) {
 		pao = pao_l[ind];
 		result = hashtable.insert(std::make_pair(pao->key, pao));
 		if (!result.second) { // the insertion didn't occur
@@ -118,6 +124,7 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 		ind++;
 	}
 	free(pao_l);
+	free(recv);
 
 	/* next bit of code tests whether the input stage has completed. If
 	   it has, and the number of tokens processed by the input stage is
@@ -137,8 +144,9 @@ void* Hasher<KeyType, HashAlgorithm, EqualTest>::operator()(void* pao_list)
 		}	
 		hashtable.clear();
 	}
-	this_list[evict_list_ctr] = emptyPAO;
-	return this_list;
+	send->result = this_list;
+	send->length = evict_list_ctr;
+	return send;
 }
 
 template <typename KeyType, typename HashAlgorithm, typename EqualTest>

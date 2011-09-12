@@ -14,6 +14,7 @@
 #include "PartialAgg.h"
 #include "Mapper.h"
 #include "Aggregator.h"
+#include "Util.h"
 
 /**
  * To be used after Reader in the pipeline.

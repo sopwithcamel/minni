@@ -34,10 +34,15 @@ Serializer::~Serializer()
 void* Serializer::operator()(void* pao_list)
 {
 	PartialAgg* pao;
-	int ind = 0, buc;
-	PartialAgg** pao_l = (PartialAgg**)pao_list;
+	int buc;
+
+	FilterInfo* recv = (FilterInfo*)pao_list;
+	PartialAgg** pao_l = (PartialAgg**)recv->result;
+	uint64_t recv_length = (uint64_t)recv->length;
+	uint64_t ind = 0;
+
 	char* buf = (char*)malloc(VALUE_SIZE * 10);
-	while(strcmp(pao_l[ind]->key, emptyPAO->key)) {
+	while(ind < recv_length) {
 		pao = pao_l[ind];
 		// TODO; use another partitioning function later!
 		int sum = 0;
@@ -73,4 +78,5 @@ void* Serializer::operator()(void* pao_list)
 
 	free(buf);
 	free(pao_l);
+	free(recv);
 }

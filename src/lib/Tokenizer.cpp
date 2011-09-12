@@ -10,10 +10,15 @@ Tokenizer::Tokenizer(Aggregator* agg, PartialAgg* emptyPAO,
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	pao_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers); 
+	for (int i=0; i<num_buffers; i++)
+		pao_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
 }
 
 Tokenizer::~Tokenizer()
 {
+	uint64_t num_buffers = aggregator->getNumBuffers();
+	for (int i=0; i<num_buffers; i++)
+		free(pao_list[i]);
 	free(pao_list);
 }
 
@@ -26,10 +31,10 @@ void* Tokenizer::operator()(void* buffer)
 	char* tok_buf = (char*) buffer;	 
 	int tok_ctr = 0;
 	size_t this_list_ctr = 0;
+	FilterInfo* send = (FilterInfo*)malloc(sizeof(FilterInfo));
 
 	uint64_t num_buffers = aggregator->getNumBuffers();
 
-	pao_list[next_buffer] = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
 	PartialAgg** this_pao_list = pao_list[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
 	
@@ -50,7 +55,8 @@ void* Tokenizer::operator()(void* buffer)
 			break;
 		}
 	}
-	this_pao_list[this_list_ctr++] = emptyPAO;
-	return this_pao_list;
+	send->result = this_pao_list;
+	send->length = this_list_ctr;
+	return send;
 }
 
