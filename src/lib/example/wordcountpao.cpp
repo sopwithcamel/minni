@@ -6,7 +6,8 @@ WordCountPartialAgg::WordCountPartialAgg(const char* const token)
 	key = (char*)malloc(eok + VALUE_SIZE + 1);
 	strcpy(key, token);
 	value = key + eok + 1;
-	strcpy(value, "1");
+	value[0] = '1';
+	value[1] = '\0';
 }
 
 WordCountPartialAgg::~WordCountPartialAgg()
