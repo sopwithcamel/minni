@@ -26,12 +26,12 @@ EXTRA_DIST = 		PartialAgg.h \
 libminni_la_SOURCES =  	PartialAgg.cpp \
 		      	Mapper.cpp \
 		       	Reducer.cpp \
-		       	hashutil.cpp \
 			Deserializer.cpp \
 		       	DFSReader.cpp \
 			ExternalHasher.cpp \
 		       	FileReader.cpp \
 			Serializer.cpp \
+			Hasher.cpp \
 			Sorter.cpp \
 		       	Tokenizer.cpp \
 			BucketAggregator.cpp \
