@@ -51,7 +51,7 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		free(input_file);
 	}
 
-	hasher = new Hashtable(this, emptyPAO, internal_capacity, destroyPAOFunc);
+	hasher = new Hasher(this, emptyPAO, internal_capacity, destroyPAOFunc);
 	pipeline_list[0].add_filter(*hasher);
 
 	char* ht_name = (char*)malloc(FILENAME_LENGTH);

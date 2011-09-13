@@ -18,7 +18,6 @@
 #include "ExternalHasher.h"
 #include "Serializer.h"
 #include "Deserializer.h"
-#include "Hash.h"
 #include "Util.h"
 #include "util.h"
 
@@ -46,7 +45,7 @@ private:
 	const char* infile;
 	Deserializer* inp_deserializer;
 
-	Hashtable* hasher;
+	Hasher* hasher;
 	ExternalHasher* ext_hasher;
 	uint64_t num_buckets;
 	const char* outfile;

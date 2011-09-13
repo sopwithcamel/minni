@@ -18,7 +18,6 @@
 #include "Sorter.h"
 #include "Tokenizer.h"
 #include "Deserializer.h"
-#include "Hash.h"
 #include "util.h"
 
 class HashsortAggregator : public Aggregator {
@@ -44,7 +43,7 @@ private:
 	const char* infile;
 	Deserializer* inp_deserializer;
 
-	Hashtable* hasher;
+	Hasher* hasher;
 	Serializer* bucket_serializer;
 	Sorter* sorter;
 	uint64_t num_buckets;

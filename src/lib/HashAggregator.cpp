@@ -42,7 +42,7 @@ HashAggregator::HashAggregator(const Config &cfg,
 		free(input_file);
 	}
 
-	hasher = new Hashtable(this, emptyPAO, capacity, destroyPAOFunc);
+	hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc);
 	pipeline_list[0].add_filter(*hasher);
 
 	// TODO: Handle output to DFS here

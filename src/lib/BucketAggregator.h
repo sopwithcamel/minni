@@ -10,7 +10,6 @@
 #include "tbb/task_scheduler_init.h"
 #include "tbb/tbb_allocator.h"
 
-#include "Hash.h"
 #include "Mapper.h"
 #include "PartialAgg.h"
 #include "DFSReader.h"
@@ -43,10 +42,10 @@ private:
 	const char* infile;
 	Deserializer* inp_deserializer;
 
-	Hashtable* hasher;
+	Hasher* hasher;
 	Serializer* bucket_serializer;
 	Deserializer* deserializer;
-	Hashtable* bucket_hasher;
+	Hasher* bucket_hasher;
 	Serializer* final_serializer;
 	uint64_t num_buckets;
 	const char* outfile;

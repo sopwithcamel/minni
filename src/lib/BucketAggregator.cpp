@@ -50,7 +50,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 		free(input_file);
 	}
 
-	hasher = new Hashtable(this, emptyPAO, capacity, destroyPAOFunc);
+	hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc);
 	pipeline_list[0].add_filter(*hasher);
 
 	char* bucket_prefix = (char*)malloc(FILENAME_LENGTH);
@@ -76,7 +76,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 			emptyPAO, createPAOFunc, destroyPAOFunc);
 	pipeline_list[1].add_filter(*deserializer);
 
-	bucket_hasher = new Hashtable(this, emptyPAO, capacity, destroyPAOFunc);
+	bucket_hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc);
 	pipeline_list[1].add_filter(*bucket_hasher);
 
 	char* final_path = (char*)malloc(FILENAME_LENGTH);

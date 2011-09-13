@@ -18,7 +18,6 @@
 #include "Hasher.h"
 #include "Serializer.h"
 #include "Deserializer.h"
-#include "Hash.h"
 #include "util.h"
 
 class HashAggregator : public Aggregator {
@@ -44,7 +43,7 @@ private:
 	const char* infile;
 	Deserializer* deserializer;
 
-	Hashtable* hasher;
+	Hasher* hasher;
 
 	/* to serialized PAOs to local file */
 	Serializer* serializer;
