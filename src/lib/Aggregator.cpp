@@ -15,23 +15,24 @@ Aggregator::Aggregator(const Config &cfg,
 		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc)
 {
-	pipeline_list = new tbb::pipeline[num_pipelines]; 
-
 	Setting& c_num_threads = readConfigFile(cfg, "minni.tbb.threads");
 	num_threads = c_num_threads;
 
 	Setting& c_num_buffers = readConfigFile(cfg, "minni.tbb.buffers");
 	num_buffers = c_num_buffers;
+
+	init = new tbb::task_scheduler_init(num_threads);
+	pipeline_list = new tbb::pipeline[num_pipelines]; 
 }
 
 Aggregator::~Aggregator()
 {
 	delete[] pipeline_list;
+	delete init;
 }
 
 void Aggregator::runPipeline()
 {
-	init.initialize(num_threads);
 	for (int i=0; i<num_pipelines; i++) {
 		fprintf(stderr, "Running pipeline %d\n", i);
 		pipeline_list[i].run(num_buffers);

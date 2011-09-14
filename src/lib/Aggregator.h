@@ -31,7 +31,7 @@ public:
 	void runPipeline();
 
 	tbb::pipeline* pipeline_list;	
-	tbb::task_scheduler_init init;
+	tbb::task_scheduler_init* init;
 	bool input_finished;		// indicates if input stage is done
 	uint64_t tot_input_tokens;	// measures total input tokens
 
