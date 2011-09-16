@@ -31,6 +31,10 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	Setting& c_fprefix = readConfigFile(cfg, "minni.common.file_prefix");
 	string fprefix = (const char*)c_fprefix;
 
+	Setting& c_ehtname = readConfigFile(cfg, 
+			"minni.aggregator.hashtable_external.file");
+	string htname = (const char*)c_ehtname;
+
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
 		 * entire input, chunk by chunk, tokenizes, Maps each Minni-token,
@@ -54,20 +58,35 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	hasher = new Hasher(this, emptyPAO, internal_capacity, destroyPAOFunc);
 	pipeline_list[0].add_filter(*hasher);
 
-	char* ht_name = (char*)malloc(FILENAME_LENGTH);
-	strcpy(ht_name, fprefix.c_str());
-	strcat(ht_name, "hashtable_dump");
-	ext_hasher = new ExternalHasher(this, ht_name, external_capacity, emptyPAO,
-			destroyPAOFunc);
+	ext_hasher = new ExternalHasher(this, htname.c_str(), external_capacity, 
+			emptyPAO, destroyPAOFunc);
 	pipeline_list[0].add_filter(*ext_hasher);
 
 
-	// TODO: Read back from External HT and into num_partitions parts
-	free(ht_name);
+	/* Second pipeline: In this pipeline, a token is a fixed number of 
+	 * PAOs read from the external hash table. The PAOs are partitioned
+	 * for the reducer. */
+
+	char* final_path = (char*)malloc(FILENAME_LENGTH);
+	strcpy(final_path, fprefix.c_str());
+	strcat(final_path, outfile);
+	eh_reader = new ExthashReader(this, htname.c_str(), external_capacity, 
+			emptyPAO, final_path);
+	pipeline_list[1].add_filter(*eh_reader);
+	free(final_path);
 }
 
 ExthashAggregator::~ExthashAggregator()
 {
+	if (reader)
+		delete reader;
+	if (toker)
+		delete toker;
+	if (inp_deserializer)
+		delete inp_deserializer;
+	delete hasher;
+	delete ext_hasher;
+	delete eh_reader;
 	pipeline_list[0].clear();
 	pipeline_list[1].clear();
 }

@@ -1,5 +1,7 @@
 #include "Hasher.h"
 
+#define DEL_THRESHOLD		1000
+
 Hasher::Hasher(Aggregator* agg, 
 			PartialAgg* emptyPAO,
 			size_t capacity,
@@ -70,9 +72,15 @@ void* Hasher::operator()(void* pao_list)
 			destroyPAO(pao);
 		} else { // the PAO was inserted
 			HASH_ADD_KEYPTR(hh, hashtable, pao->key, strlen(pao->key), pao);
+			ht_size++;
 		}
-		if (ht_size > ht_capacity) { // PAO has to be evicted
-			HASH_DEL(hashtable, pao_l[evict_ind++]);
+		if (ht_size > ht_capacity + DEL_THRESHOLD) { // PAO has to be evicted
+			PartialAgg *entry, *tmp;
+			HASH_ITER(hh, hashtable, entry, tmp) {
+				this_list[evict_list_ctr++] = entry;
+				assert(evict_list_ctr < MAX_KEYS_PER_TOKEN);
+				HASH_DEL(hashtable, entry);
+			}
 		}
 		ind++;
 	}

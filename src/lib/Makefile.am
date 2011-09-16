@@ -52,10 +52,10 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 		       -I$(srcdir)/../dfs \
 			-I/home/hamur/fawnkv/fawnds \
 			-I/home/hamur/fawnkv/utils \
-			-lpthread -ltbb -lconfig++
+			-I/home/hamur/code/leveldb/include
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
-			-lltdl
+			-lltdl -lpthread -ltbb -lconfig++ -lleveldb
 
 minni_includedir = $(includedir)/libminni/libminni
 

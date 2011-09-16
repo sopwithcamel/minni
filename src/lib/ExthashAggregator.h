@@ -45,9 +45,13 @@ private:
 	const char* infile;
 	Deserializer* inp_deserializer;
 
+	/* internal and external hashing */
 	Hasher* hasher;
 	ExternalHasher* ext_hasher;
-	uint64_t num_buckets;
+
+	/* scan from external ht into files for reducer */
+	ExthashReader* eh_reader;
+	Serializer* final_serializer; 
 	const char* outfile;
 };
 
