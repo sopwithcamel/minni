@@ -15,12 +15,14 @@
 
 class Sorter : public tbb::filter {
 public:
-	Sorter(const uint64_t num_buckets, const char* inp_prefix);
+	Sorter(const uint64_t num_part, 
+			const char* inp_prefix,
+			const char* out_prefix);
 	~Sorter();
 private:
-	uint64_t buckets_processed;
-	const uint64_t num_buckets;
-	const char* inputfile_prefix;
+	const uint64_t num_part;
+	char* inputfile_prefix;
+	char* outputfile_prefix;
 	void* operator()(void*);
 };
 

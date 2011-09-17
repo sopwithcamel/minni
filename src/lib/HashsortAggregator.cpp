@@ -51,23 +51,24 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 
 	char* bucket_prefix = (char*)malloc(FILENAME_LENGTH);
 	strcpy(bucket_prefix, fprefix.c_str());
+	if (type == Map)
+		strcat(bucket_prefix, "map-");
+	else if (type == Reduce)
+		strcat(bucket_prefix, "reduce-");
 	strcat(bucket_prefix, "bucket");
 
-	bucket_serializer = new Serializer(this, emptyPAO, num_buckets, 
+	bucket_serializer = new Serializer(this, emptyPAO, getNumPartitions(), 
 			bucket_prefix, destroyPAOFunc);
 	pipeline_list[0].add_filter(*bucket_serializer);
-	
-	/* Second pipeline: In this pipeline, a token is an entire bucket. In
-	 * other words, each pipeline stage is called once for each bucket to
-	 * be processed. This may not be fine-grained enough, but should have
-	 * enough parallelism to keep our wimpy-node busy. 
 
-	 * In this pipeline, each bucket is sorted using nsort */
-	sorter = new Sorter(num_buckets, bucket_prefix);
+	/* In this pipeline, each bucket is sorted using nsort */
+	char* final_path = (char*)malloc(FILENAME_LENGTH);
+	strcpy(final_path, fprefix.c_str());
+	strcat(final_path, outfile);
+	sorter = new Sorter(getNumPartitions(), bucket_prefix, final_path);
 	pipeline_list[1].add_filter(*sorter);
 
-	// TODO: Split the sorted file for the reduce phase in num_partitions parts
-
+	free(final_path);
 	free(bucket_prefix);
 }
 
