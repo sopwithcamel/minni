@@ -4,8 +4,6 @@
 #include "util.h"
 #include "Defs.h"
 
-#define CONFIG_FILE	"/home/hamur/code/minni/sample.cfg"
-
 Setting& readConfigFile(const Config &cfg, const char* set_name)
 {
 	try {

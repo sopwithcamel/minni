@@ -54,7 +54,7 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 		       -I$(srcdir)/../dfs \
 			-I/home/hamur/fawnkv/fawnds \
 			-I/home/hamur/fawnkv/utils \
-			-I/home/hamur/code/leveldb/include
+			-I/home/hamur/leveldb/include
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
 			-lltdl -lpthread -ltbb -lconfig++ -lleveldb
