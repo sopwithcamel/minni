@@ -1,5 +1,5 @@
-#ifndef LIB_BUCKETAGGREGATOR_H
-#define LIB_BUCKETAGGREGATOR_H
+#ifndef LIB_PLAINMAPPER_H
+#define LIB_PLAINMAPPER_H
 
 #include <iostream>
 #include <fstream>
@@ -19,9 +19,9 @@
 #include "Deserializer.h"
 #include "util.h"
 
-class BucketAggregator : public Aggregator {
+class PlainMapper : public Aggregator {
 public:
-	BucketAggregator(const Config &cfg, 
+	PlainMapper(const Config &cfg, 
 				AggType type, 
 				const uint64_t num_part,
 				MapInput* _map_input,
@@ -29,26 +29,14 @@ public:
 				PartialAgg* (*createPAOFunc)(const char* t), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile);
-	~BucketAggregator();
+	~PlainMapper();
 private:
-	uint64_t capacity; // aggregator capacity
-
 	/* for chunk input from DFS */
 	MapInput* map_input; 
 	DFSReader* reader;
 	Tokenizer* toker;
-
-	/* for serialized PAOs from local file */
-	const char* infile;
-	Deserializer* inp_deserializer;
-
-	Hasher* hasher;
-	Serializer* bucket_serializer;
-	Deserializer* deserializer;
-	Hasher* bucket_hasher;
 	Serializer* final_serializer;
-	uint64_t num_buckets;
 	const char* outfile;
 };
 
-#endif // LIB_BUCKETAGGREGATOR_H
+#endif // LIB_PLAINMAPPER_H
