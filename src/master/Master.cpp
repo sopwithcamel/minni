@@ -44,7 +44,7 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 		uint64_t num_chunks = dfs.getNumChunks((*iter));
 		cout << "Master: Got num chunks" << num_chunks << endl;
 //		uint64_t cids_per_map = (uint64_t) floor(((double)num_chunks / (double)spec->getMaxMaps()) + 0.5);
-		uint64_t cids_per_map = (uint64_t) floor(((double)num_chunks / getNumberOfNodes()) + 0.5);
+		uint64_t cids_per_map = (uint64_t) ceil(((double)num_chunks / getNumberOfNodes()));
 		cout << "Master: CIDs per Map -- " << cids_per_map << endl;
 		cout << "Inspecting input file: " << ((*iter)) << endl;
 		for (uint64_t i = 0; i < num_chunks; i+=cids_per_map)
@@ -85,7 +85,7 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 	cout << "Disconnected from DFS." << endl;
 	
 	/* assign all reduce jobs */
-	PartID numSingleNode = (PartID) ceil((double)spec->getMaxReduces() / (double)nodes.size());
+	PartID numSingleNode = 1; //(PartID) ceil((double)spec->getMaxReduces() / (double)nodes.size());
 	PartID currentPID = 0;
 	map<string, Node*>::iterator nodeIter;
 	cout << "Assigning reduce jobs." << endl;
