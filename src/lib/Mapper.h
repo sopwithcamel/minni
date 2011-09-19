@@ -20,7 +20,6 @@
 #include <map>
 #include <set>
 #include "PartialAgg.h"
-#include "TimeLog.h"
 #include "KDFS.h"
 #include "Aggregator.h"
 #include "Util.h"
@@ -56,7 +55,6 @@ public:
 	//vector <ofstream*>  my_file_streams; //TODO actually needed?
 	int num_partition;
 	Aggregator* aggregs;
-	TimeLog tl;
 private:
 };
 

@@ -4,6 +4,8 @@
 #include "util.h"
 #include "Defs.h"
 
+std::vector<TimeStamp> TimeLog::timelog;
+
 Setting& readConfigFile(const Config &cfg, const char* set_name)
 {
 	try {

@@ -134,7 +134,9 @@ task* ReducerWrapperTask::execute() {
 			// TODO: what does this do?
 			grabreg->getMore(my_partition, f_prefix + input_file + "0");
 //			cout<<"Reducer: Going to do reduce on the file "<<filename<<endl;
+			TimeLog::addTimeStamp(ss.str() + ": Starting Reducing");
 			reducer->aggreg->runPipeline();
+			TimeLog::addTimeStamp(ss.str() + ": Done Reducing");
 			cout<<"Reducer: Done with reducing \n";
 			sleeptime = BASE_SLEEPTIME;
 		}

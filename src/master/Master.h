@@ -16,6 +16,7 @@ using namespace std;
 #include "Node.h"
 #include "KDFS.h"
 #include "Minnie.h"
+#include "util.h"
 
 class Master {
 	public:

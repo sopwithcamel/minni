@@ -183,7 +183,6 @@ task* MapperWrapperTask::execute() {
 	strcpy(s_name, soname.c_str());
 	fprintf(stderr, "SO name: %s\n", s_name);
 	time_t ltime = time(NULL);
-	cout << "Hri: Start of map phase" << asctime(localtime(&ltime));
 	cout<<"Mapper: Parse happened properly! "<<endl;
 	//dynamically loading the classes
 	if(UserMapLinking(s_name) == 1) { //TODO
@@ -209,6 +208,8 @@ task* MapperWrapperTask::execute() {
 	stringstream ss;
 	ss << jobid;
 	map_out_file += ss.str() + "-part";
+
+	TimeLog::addTimeStamp(ss.str() + ": Start of map phase");
 
 	if (!selected_map_aggregator.compare("simple")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new HashAggregator(
@@ -256,9 +257,7 @@ task* MapperWrapperTask::execute() {
 		cout<<"Pushed back the file to worker daemon list \n";
 		my_Filelist.push_back(f1);
 	}
-	ltime = time(NULL);
-	cout << "Hri: End of map phase" << asctime(localtime(&ltime));
-	mapper->tl.dumpLog();
+	TimeLog::addTimeStamp(ss.str() + ": End of map phase");
 	
 	delete mapper->aggregs;
 	delete mapper;	
