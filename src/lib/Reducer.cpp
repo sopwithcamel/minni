@@ -137,6 +137,7 @@ task* ReducerWrapperTask::execute() {
 			TimeLog::addTimeStamp(ss.str() + ": Starting Reducing");
 			reducer->aggreg->runPipeline();
 			TimeLog::addTimeStamp(ss.str() + ": Done Reducing");
+			TimeLog::dumpLog();
 			cout<<"Reducer: Done with reducing \n";
 			sleeptime = BASE_SLEEPTIME;
 		}

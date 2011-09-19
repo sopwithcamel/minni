@@ -258,6 +258,7 @@ task* MapperWrapperTask::execute() {
 		my_Filelist.push_back(f1);
 	}
 	TimeLog::addTimeStamp(ss.str() + ": End of map phase");
+	TimeLog::dumpLog();
 	
 	delete mapper->aggregs;
 	delete mapper;	

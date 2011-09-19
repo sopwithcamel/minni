@@ -48,7 +48,7 @@ public:
 		
 	static void dumpLog() {
 		std::ofstream of;
-		of.open("/localfs/hamur/timelog");
+		of.open("/localfs/hamur/timelog", ofstream::app);
 		for (vector<TimeStamp>::iterator it = timelog.begin(); 
 				it != timelog.end(); it++)
 			of << it->tag << ": " << it->tim << std::endl;
