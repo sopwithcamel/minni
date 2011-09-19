@@ -27,7 +27,8 @@ Makefile
 config.status
 .deps
 .libs
-src/common
+src/common/config*
+src/common/stamp*
 src/lib/libminni.pc
 src/dfs/tools/cpFromDFS
 src/dfs/tools/cpToDFS
