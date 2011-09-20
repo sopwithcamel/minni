@@ -36,19 +36,27 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 	cout << "Master: Connected." << endl;
 	cout << "Number of input files " << spec->getInputFiles().size() <<  endl;
 	vector<string> inputFiles = spec->getInputFiles();
+	map<string, Node*>::iterator nodeIter;
+
 	/* assign all map jobs */
 	for (iter = inputFiles.begin(); iter < inputFiles.end(); iter++)
 	{
 		if (!dfs.checkExistence(*iter)) continue;
 		cout << "Master: Getting num chunks for" << (*iter) << endl;
 		uint64_t num_chunks = dfs.getNumChunks((*iter));
-		cout << "Master: Got num chunks" << num_chunks << endl;
-//		uint64_t cids_per_map = (uint64_t) floor(((double)num_chunks / (double)spec->getMaxMaps()) + 0.5);
-		uint64_t cids_per_map = (uint64_t) ceil(((double)num_chunks / getNumberOfNodes()));
-		cout << "Master: CIDs per Map -- " << cids_per_map << endl;
+
+		uint64_t rem_chunks = num_chunks;
+		int rem_nodes = getNumberOfNodes();
+		uint64_t cids_for_map = 0;
+
 		cout << "Inspecting input file: " << ((*iter)) << endl;
-		for (uint64_t i = 0; i < num_chunks; i+=cids_per_map)
+		for (uint64_t i = 0; i < num_chunks; i+=cids_for_map)
 		{
+			assert(rem_nodes);
+			cids_for_map = (uint64_t) floor(((double)rem_chunks / rem_nodes));
+			rem_chunks -= cids_for_map;
+			rem_nodes--;
+
 			vector<string> locations;
 			Node* min = (*(nodes.begin())).second;
 			JobID minNumJobs = INT64_MAX;
@@ -56,7 +64,7 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 			dfs.getChunkLocations(*iter, i, locations);
 			for (location_iter = locations.begin(); location_iter < locations.end(); location_iter++)
 			{
-				cout << "Node[" << *location_iter << "] has chunk " << i << " to " << i+cids_per_map-1 << endl;
+				cout << "Node[" << *location_iter << "] has chunk " << i << " to " << i+cids_for_map-1 << endl;
 				if (nodes.find(*location_iter) != nodes.end())
 				{
 					cout << "Node has " << nodes[*location_iter]->numRemainingJobs() << " jobs and minNumJobs is " << minNumJobs << endl;
@@ -68,10 +76,19 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 					}
 				}
 			}
-			if (i+cids_per_map-1 < num_chunks)
+			/* for now assign only 1 map per node */
+			if (min->numRemainingJobs() > 0) { // find a node that has none
+				for (nodeIter = nodes.begin(); nodeIter != nodes.end(); nodeIter++) {
+					if (nodeIter->second->numRemainingMapJobs() == 0) {
+						min = nodeIter->second;
+						break;
+					}
+				}
+			}
+			if (i+cids_for_map-1 < num_chunks)
 			{
-				cout << "Assigning map of chunks " << i << " to " << i+cids_per_map - 1 << " to " << min << endl;
-				assignMapJob(min, i, i+cids_per_map-1, (*iter));
+				cout << "Assigning map of chunks " << i << " to " << i+cids_for_map - 1 << " to " << min << endl;
+				assignMapJob(min, i, i+cids_for_map-1, (*iter));
 			}
 			else
 			{
@@ -87,7 +104,6 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 	/* assign all reduce jobs */
 	PartID numSingleNode = 1; //(PartID) ceil((double)spec->getMaxReduces() / (double)nodes.size());
 	PartID currentPID = 0;
-	map<string, Node*>::iterator nodeIter;
 	cout << "Assigning reduce jobs." << endl;
 	for (nodeIter = nodes.begin(); nodeIter != nodes.end(); nodeIter++)
 	{
@@ -183,7 +199,6 @@ void Master::broadcastKill()
 	{
 		(((*nodesIter).second))->sendKill();
 	}
-	checkState();
 }
 
 void Master::assignMaps()
