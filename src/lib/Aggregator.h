@@ -40,6 +40,7 @@ public:
 	uint64_t getNumBuffers() const;
 	uint64_t getNumPartitions() const;
 	uint64_t getPAOsPerToken() const;
+	AggType getType() const;
 private:
 	AggType type;
 	uint64_t num_threads;

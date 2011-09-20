@@ -29,6 +29,7 @@ public:
 	~Serializer();
 private:
 	Aggregator* aggregator;
+	AggType type;
 	PartialAgg* emptyPAO;
 	void (*destroyPAO)(PartialAgg* p);
 	int num_buckets;

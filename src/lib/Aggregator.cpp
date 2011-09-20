@@ -70,3 +70,8 @@ uint64_t Aggregator::getPAOsPerToken(void) const
 {
 	return paos_in_token;
 }
+
+AggType Aggregator::getType() const
+{
+	return type;
+}

@@ -28,6 +28,7 @@ Serializer::Serializer(Aggregator* agg,
 	}
 	free(fname);
 	buf = (char*)malloc(BUF_SIZE + 1);
+	type = aggregator->getType();
 }
 
 Serializer::~Serializer()
@@ -51,7 +52,7 @@ void* Serializer::operator()(void* pao_list)
 		pao = pao_l[ind];
 		// TODO; use another partitioning function later!
 		int sum = 0;
-		for (int i=0; i<strlen(pao->key); i++)
+		for (int i=type; i<strlen(pao->key); i+=2)
 			sum += pao->key[i];
 		buc = sum % num_buckets;
 		if (buc < 0)
