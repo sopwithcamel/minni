@@ -92,10 +92,13 @@ class Transfer{
 
   PartID pid;  
   Location location;
+  /* This protects the progress, total and t_status members. This should 
+   * be picked up whenever these are read or written. */
+  Mutex mutex;
 
  public:
   Transfer(PartID p, Location l);
-  TransferStatus getFile(string outfile); // Gets as much of the partition as possible
+  TransferStatus getFile(const string& outfile); // Gets as much of the partition as possible
   TransferStatus checkStatus(); // Updates our knowledge of the partition
   string toString();
 };
@@ -118,7 +121,7 @@ class PartitionGrabber{
   void addLocation(Location l); // Adds a new location with data
   void addLocations(const vector<URL> u);
   void addLocations(const set<URL> u);
-  void getMore(string outfile); // Gets as much of a partition as possible
+  void getMore(const string& outfile); // Gets as much of a partition as possible
   string toString();
   void reportDone();
 };
@@ -139,7 +142,7 @@ class GrabberRegistry{
   GrabberRegistry();
   void addLocations(const vector<URL> u);
   void setupGrabber(PartID p);
-  void getMore(PartID pid, string outfile);
+  void getMore(PartID pid, const string& outfile);
   PartStatus getStatus(PartID pid);
   void reportDone();
   string toString();

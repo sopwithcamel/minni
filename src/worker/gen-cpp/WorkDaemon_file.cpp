@@ -38,6 +38,8 @@ void LocalFileRegistry::bufferData(string &_return, const PartID pid, const Bloc
   // Get the right partition
   FileMap::accessor acc_file;
   bool found = file_map.find(acc_file, pid);
+  if (!found)
+    cout << "Asking for pid: " << pid << "and bid: " << bid << endl;
   assert(found);
 
   Count sum = 0;
@@ -143,7 +145,12 @@ Transfer::Transfer(PartID p, Location l):
 
 
 // Get as much of a file as we know about
-TransferStatus Transfer::getFile(string outfile){
+TransferStatus Transfer::getFile(const string& outfile){
+  /* pick up mutex on Transfer object. This protects the progress, total and
+   * t_status members. This should be picked up whenever these are read or
+   * written. */
+  Mutex::scoped_lock lock(mutex);
+
   boost::shared_ptr<TSocket> socket(new TSocket(location.ip, location.port));
   boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
   boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
@@ -151,7 +158,7 @@ TransferStatus Transfer::getFile(string outfile){
   workdaemon::WorkDaemonClient client(protocol);
 
   // Get the next block and append.
-  cout << "Fetching..."  << endl;
+  cout << "Fetching up to "  << total << "; current: " << progress << " from " << location.ip << endl;
   string buffer;
   fstream fs (outfile.c_str(), fstream::app | fstream::out | fstream::binary);
     assert(!fs.fail());
@@ -162,6 +169,7 @@ TransferStatus Transfer::getFile(string outfile){
 //    cout << "...Caught..."  << endl;
     fs << buffer;
   }
+  cout << "Fetched: " << progress << " from " << location.ip << endl;
   transport->close();
   fs.close();
 }
@@ -173,6 +181,8 @@ TransferStatus Transfer::getFile(string outfile){
    READY -> progress < total
  */
 TransferStatus Transfer::checkStatus(){
+  // pick up mutex on Transfer object
+  Mutex::scoped_lock lock(mutex);
 
   boost::shared_ptr<TSocket> socket(new TSocket(location.ip, location.port));
   boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
@@ -199,10 +209,13 @@ TransferStatus Transfer::checkStatus(){
   }
 
   // There were some new ones!
+  cout << "Transfer " << pid << " at " << location.ip << " is ready" << "(" << progress << ", " << total << ")" << endl;
   t_status = transferstatus::READY;
   return t_status;
 }
 
+/* Ok to not pick up mutex, because we're fine with the progress
+ * being a little outdated */
 string Transfer::toString(){
   stringstream ss;
 
@@ -223,21 +236,29 @@ PartitionGrabber::PartitionGrabber(PartID p):
 {}
 
 // Set the output file and the PartID
-void PartitionGrabber::setPID(PartID p){
+void PartitionGrabber::setPID(PartID p)
+{
   pid = p;
 }
 
-// Add a new node to what we think is done
-void PartitionGrabber::addLocation(Location l){
+/* Add a new node to what we think is done. Only called from 
+ * addLocations() where we pick up the mutex */
+void PartitionGrabber::addLocation(Location l)
+{
   if(locations.count(l) != 0){
     assert(locations.count(l) == 0);
     return;
   }
   locations.insert(l);
+  cout << "Inserting pid: " << pid << " for ip " << l.ip << endl;
   transfers.push_back(Transfer(pid, l));
 }
 
-void PartitionGrabber::addLocations(const vector<URL> l){
+void PartitionGrabber::addLocations(const vector<URL> l)
+{
+  // pick up PartitionGrabber object mutex
+  Mutex::scoped_lock lock(mutex);
+
   for(vector<URL>::const_iterator it = l.begin();
       it != l.end(); it++){
     Location loc = {*it, WORKER_PORT};
@@ -245,7 +266,11 @@ void PartitionGrabber::addLocations(const vector<URL> l){
   }
 }
 
-void PartitionGrabber::addLocations(const set<URL> l){
+void PartitionGrabber::addLocations(const set<URL> l)
+{
+  // pick up PartitionGrabber object mutex
+  Mutex::scoped_lock lock(mutex);
+
   for(set<URL>::const_iterator it = l.begin();
       it != l.end(); it++){
     Location loc = {*it, WORKER_PORT};
@@ -254,11 +279,11 @@ void PartitionGrabber::addLocations(const set<URL> l){
 }
 
 // Grab as much as we can from whatever we think is done.
-void PartitionGrabber::getMore(string outfile){
-  // Wipe out the file
+void PartitionGrabber::getMore(const string& outfile)
+{
+  // pick up PartitionGrabber object mutex
   Mutex::scoped_lock lock(mutex);
-  ofstream clearing(outfile.c_str(), ios::trunc|ios::out);
-  clearing.close();
+
   for(vector<Transfer>::iterator it = transfers.begin();
 	it != transfers.end(); it++){
     TransferStatus status = it->checkStatus();
@@ -273,17 +298,25 @@ void PartitionGrabber::getMore(string outfile){
   If there is at least one transfer that is READY then the partition is READY
   If there are no transfers that are READY then the parition is BLOCKED
 */
-PartStatus PartitionGrabber::getStatus(){
+PartStatus PartitionGrabber::getStatus()
+{
+  // pick up PartitionGrabber object mutex
+  Mutex::scoped_lock lock(mutex);
+
   for(vector<Transfer>::iterator it = transfers.begin();
       it != transfers.end(); it++){
     if(it->checkStatus() == transferstatus::READY){
       return partstatus::READY;
     }
   }
-  return partstatus::BLOCKED;
+  if (!finished)
+    return partstatus::BLOCKED;
+  else
+    return partstatus::DONE;
 }
 
-string PartitionGrabber::toString(){
+string PartitionGrabber::toString()
+{
   stringstream ss;
   ss << "Location = {";
   bool first = true;
@@ -307,8 +340,9 @@ string PartitionGrabber::toString(){
 
 void PartitionGrabber::reportDone()
 {
-	Mutex::scoped_lock lock(mutex);
-	finished = true;
+  // pick up PartitionGrabber object mutex
+  Mutex::scoped_lock lock(mutex);
+  finished = true;
 }
 
 /********************
@@ -316,12 +350,16 @@ void PartitionGrabber::reportDone()
 *********************/
 
 // Initially, the Grabber isn't done.
-GrabberRegistry::GrabberRegistry(){
+GrabberRegistry::GrabberRegistry()
+{
   finished = false;
 }
 
-void GrabberRegistry::addLocations(const vector<URL> u){
+void GrabberRegistry::addLocations(const vector<URL> u)
+{
+  // pick up GrabberRegistry object mutex
   Mutex::scoped_lock lock(mutex);
+
   urls.insert(u.begin(), u.end()); // Add it to the master list
   GrabberMap::range_type range = grab_map.range();
   for(GrabberMap::iterator it = range.begin();
@@ -329,7 +367,9 @@ void GrabberRegistry::addLocations(const vector<URL> u){
     it->second.addLocations(u); // Update any of the running grabbers
   }
 }
-void GrabberRegistry::getMore(PartID pid, string outfile){
+
+void GrabberRegistry::getMore(PartID pid, const string& outfile)
+{
   GrabberMap::accessor acc_grab;
   bool found = grab_map.find(acc_grab, pid);
   assert(found); // Can't get more if we don't have any! That's deep, Erik.
@@ -337,7 +377,8 @@ void GrabberRegistry::getMore(PartID pid, string outfile){
 }
 
 // Sets up a particular grabber, assigns an output file
-void GrabberRegistry::setupGrabber(PartID p){
+void GrabberRegistry::setupGrabber(PartID p)
+{
   GrabberMap::accessor acc_grab;
   grab_map.insert(acc_grab,p);
   acc_grab->second.setPID(p);
@@ -353,27 +394,19 @@ DONE -> The master told us that all of the mappers finished, and the
  PartitionGrabber thinks that it is blocked
 */
 
-PartStatus GrabberRegistry::getStatus(PartID pid){
+PartStatus GrabberRegistry::getStatus(PartID pid)
+{
   GrabberMap::accessor acc_grab;
   bool found = grab_map.find(acc_grab, pid);
   if(!found){
     return partstatus::DNE;
   }
-  PartStatus status = acc_grab->second.getStatus();
-  Mutex::scoped_lock lock(mutex);
-  if(status == partstatus::BLOCKED && finished){
-    return partstatus::DONE;
-  }
-  else if (status == partstatus::READY) {
-    if (finished)
-      return partstatus::READY;
-    return partstatus::BLOCKED;
-  }
-  return status;
+  return acc_grab->second.getStatus();
 }
 
 // For the master to call when all Mappers are done.
-void GrabberRegistry::reportDone(){
+void GrabberRegistry::reportDone()
+{
   Mutex::scoped_lock lock(mutex);
   finished = true;
   GrabberMap::range_type range = grab_map.range();
@@ -382,7 +415,9 @@ void GrabberRegistry::reportDone(){
     it->second.reportDone();
   }
 }
-string GrabberRegistry::toString(){
+
+string GrabberRegistry::toString()
+{
   stringstream ss;
   bool first = true;
   ss << "Finished = " << finished << endl;
@@ -402,13 +437,15 @@ string GrabberRegistry::toString(){
   return ss.str();
 }
 
-string local_file(PartID pid){
+string local_file(PartID pid)
+{
   stringstream ss;
   ss << "localfile_" << pid;
   return ss.str();
 }
 
-void GrabberRegistry::clear(){
+void GrabberRegistry::clear()
+{
   Mutex::scoped_lock lock(mutex);
   grab_map.clear();
   urls.clear();

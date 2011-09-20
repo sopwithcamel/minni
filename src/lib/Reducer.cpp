@@ -118,37 +118,37 @@ task* ReducerWrapperTask::execute() {
 	grabreg->setupGrabber(my_partition); //setting up the grabber
 	PartStatus curr_stat = grabreg->getStatus(my_partition);
 	int flag = 0;
-	while(curr_stat != partstatus::DONE && curr_stat != partstatus::DNE)	{
-		cout<<"Reducer: Current status for partition"<<my_partition<<"is "<<curr_stat<<endl;
-		if(curr_stat == partstatus::BLOCKED)
-		{
+
+	// Wipe out the file
+	string full_input_file = f_prefix + input_file + "0";
+	ofstream clearing(full_input_file.c_str(), ios::trunc|ios::out);
+	clearing.close();
+
+	while(curr_stat != partstatus::DNE) {
+		if (partstatus::BLOCKED == curr_stat) {
 			if(sleeptime <= MAX_SLEEPTIME)
 				sleeptime*=EXPONENT;
-			
-			tbb::this_tbb_thread::sleep(tbb::tick_count::interval_t((double)sleeptime));		
-		}
-		else if(curr_stat == partstatus::READY)
-		{
+			tbb::this_tbb_thread::sleep(
+					tbb::tick_count::interval_t((double)sleeptime));
+		} else if (partstatus::READY == curr_stat) {
 			flag = 1;
 			cout<<"Reducer: Reached Ready state!! \n";
-			// TODO: what does this do?
-			grabreg->getMore(my_partition, f_prefix + input_file + "0");
-//			cout<<"Reducer: Going to do reduce on the file "<<filename<<endl;
+			grabreg->getMore(my_partition, full_input_file);
+			sleeptime = BASE_SLEEPTIME;
+		} else if (partstatus::DONE == curr_stat) {
+			assert(flag == 1); // should have pulled at least one
+			flag = 2;
 			TimeLog::addTimeStamp(ss.str() + ": Starting Reducing");
 			reducer->aggreg->runPipeline();
 			TimeLog::addTimeStamp(ss.str() + ": Done Reducing");
 			TimeLog::dumpLog();
 			cout<<"Reducer: Done with reducing \n";
-			sleeptime = BASE_SLEEPTIME;
+			break;
 		}
-		
 		curr_stat = grabreg->getStatus(my_partition);
-		
 	}
-	if(flag == 0)
-		cout<<"Reducer: Never entered ready state before coming here! How does that happen?\n";
-	else
-		cout<<"Reducer: This is normal! I saw a ready before coming here\n";
+	assert(flag == 2);
+	cout<<"Reducer: This is normal! I saw a ready before coming here\n";
 	cout<<"Reducer: The master is "<<myoutput.master_name<<endl;
 	cout<<"Reducer: The output port is "<<myoutput.port<<endl;
 
