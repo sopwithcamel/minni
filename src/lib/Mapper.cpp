@@ -13,39 +13,23 @@
 
 uint64_t MapInput::key_value(char** value, ChunkID id) {
 
-	cout<<"Mapper: KDFS: Connecting to KDFS"<<endl;
 	KDFS myhdfs(master_name,port);
-	cout<<"Mapper: KDFS: The master name is "<<master_name<<endl;
-	cout<<"Mapper: KDFS: The port is "<<port<<endl;
 	bool conn = myhdfs.connect();
-	if(!conn)
-		cout<<"Mapper: KDFS: Unable to establish connection :( \n";
-	else
-		cout<<"Mapper: KDFS: Able to establish connection :) \n";
+	assert(conn); // Unable to establish connection :(
 
-	cout<<"Mapper:  KDFS: I am looking for file "<<file_location<<endl;
-	if(myhdfs.checkExistence(file_location))
-		cout<<"Mapper: KDFS: file in location!!\n";
+	// looking for file
+	assert(myhdfs.checkExistence(file_location));
 	uint64_t length = myhdfs.getChunkSize(file_location);
-	cout<<"Mapper: KDFS: It told me that the chunk size of this file is "<<length<<endl;
-/*	
-	*value = (char*) malloc(length+1); 
-*/
 
-	cout<<"Mapper: KDFS: Going to read chunks from KDFS"<<endl;
+	// Going to read chunks from KDFS
 	uint64_t offset = id*length;
 	int64_t k = myhdfs.readChunkOffset(file_location, offset, *value, length);
-	if(k == -1)
-		cout<<"Mapper: KDFS: Reading failed! :( "<<endl;
-	else
-		cout<<"Mapper: KDFS: Read number of blocks: "<<k<<endl;
+	assert(k != -1);
+	cout<<"Mapper: Read " << k << " blocks" << endl;
+
 	myhdfs.closeFile(file_location);
 	bool disconn = myhdfs.disconnect();
-	if(!disconn)
-		cout<<"Mapper: KDFS: Unable to disconnect \n";
-	else
-		cout<<"Mapper: KDFS: Able to disconnect \n";
-
+	assert(disconn);
 	return k;
 }
 
