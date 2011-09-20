@@ -23,6 +23,7 @@ using namespace workdaemon;
 using namespace tbb;
 using namespace std;
 
+typedef spin_mutex Mutex;
 typedef unsigned long Length;
 struct File{
   Length length;
@@ -107,6 +108,8 @@ class PartitionGrabber{
   vector<Transfer> transfers;
   string outfile;
   PartID pid;
+  bool finished;
+  Mutex mutex;
 
  public:
   PartitionGrabber(PartID p = -1);
@@ -117,11 +120,11 @@ class PartitionGrabber{
   void addLocations(const set<URL> u);
   void getMore(string outfile); // Gets as much of a partition as possible
   string toString();
+  void reportDone();
 };
 
 typedef concurrent_hash_map<PartID, PartitionGrabber, 
   HashCompare<PartID> > GrabberMap;
-typedef spin_mutex Mutex;
 
 //Concurrent Grabber managers
 class GrabberRegistry{

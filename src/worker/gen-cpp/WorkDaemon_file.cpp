@@ -253,6 +253,7 @@ void PartitionGrabber::addLocations(const set<URL> l){
 // Grab as much as we can from whatever we think is done.
 void PartitionGrabber::getMore(string outfile){
   // Wipe out the file
+  Mutex::scoped_lock lock(mutex);
   ofstream clearing(outfile.c_str(), ios::trunc|ios::out);
   clearing.close();
   for(vector<Transfer>::iterator it = transfers.begin();
@@ -299,6 +300,12 @@ string PartitionGrabber::toString(){
   }
   ss << "]" << endl;
   return ss.str();
+}
+
+void PartitionGrabber::reportDone()
+{
+	Mutex::scoped_lock lock(mutex);
+	finished = true;
 }
 
 /********************
@@ -366,6 +373,11 @@ PartStatus GrabberRegistry::getStatus(PartID pid){
 void GrabberRegistry::reportDone(){
   Mutex::scoped_lock lock(mutex);
   finished = true;
+  GrabberMap::range_type range = grab_map.range();
+  for(GrabberMap::iterator it = range.begin();
+        it != range.end(); it++){
+    it->second.reportDone();
+  }
 }
 string GrabberRegistry::toString(){
   stringstream ss;
