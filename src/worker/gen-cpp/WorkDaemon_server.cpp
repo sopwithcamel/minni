@@ -71,25 +71,25 @@ public:
 
   // Useful for querying the state of a remote object
   void stateString(string &_return){
-    cout << id++ << ": Returning state string..." << endl;
+//    cout << id++ << ": Returning state string..." << endl;
     stringstream ss;
     ss << "Task Reg: " << task_reg.toString() << endl;
     ss << "File Reg: " <<  file_reg.toString() << endl;
     ss << "Grabber: " << grab_reg.toString() << endl;
     _return = ss.str();
-    cout << "Done" << endl;
+//    cout << "Done" << endl;
     return;
   }
 
   // Scans the status map and sees if there is anything new to report to the master
   // Will either be jobstatus::DONE or jobstatus::DEAD
   void listStatus(map<JobID, Status> & _return) {
-    cout << id++ << ": Listing Status..." << endl;
+//    cout << id++ << ": Listing Status..." << endl;
     task_reg.getReport(_return);
     cout << printReport(_return) << endl;
-    cout << "Sent " << _return.size() << " elements." << endl;
+//    cout << "Sent " << _return.size() << " elements." << endl;
     //task_reg.cullReported();
-    cout << "Done" << endl;
+//    cout << "Done" << endl;
     return;
   }
 	
@@ -162,28 +162,28 @@ public:
   // FileRegistry deals with the sender side, PartitionGrabber deals with
   // the reciever side
   void sendData(string & _return, const PartID pid, const BlockID bid) {
-    cout << id++ << ": Sending data (p" << pid << ",b" << bid << ")" << endl;
+//    cout << id++ << ": Sending data (p" << pid << ",b" << bid << ")" << endl;
     file_reg.bufferData(_return, pid, bid);
-    cout << "Done" << endl;
+//    cout << "Done" << endl;
   }
 
   // Are we still waiting on some mappers?
   Status mapperStatus() {
-    cout << id++ << ": Mapper status..." << endl;
+//    cout << id++ << ": Mapper status..." << endl;
     if(task_reg.mapper_still_running()){
-      cout << "\tJob inprogress." << endl;
+//      cout << "\tJob inprogress." << endl;
       return jobstatus::INPROGRESS;
     }
-    cout << "\tJob done." << endl;
+//    cout << "\tJob done." << endl;
     return jobstatus::DONE;
   }
 
   // How many blocks do we know about?
   Count blockCount(const PartID pid){
-    cout << id++ << ": Counting blocks p" << pid << endl;
+//    cout << id++ << ": Counting blocks p" << pid << endl;
     Count blocks = file_reg.blocks(pid);
     
-    cout << "Done (" << blocks  << ")" << endl;
+//    cout << "Done (" << blocks  << ")" << endl;
     return blocks;
   }
 
@@ -191,7 +191,7 @@ public:
   void reportCompletedJobs(const vector<URL> & done){
     cout << id++ << ": Master reporting work..." << endl;
     grab_reg.addLocations(done);
-    cout << "Done" << endl;
+//    cout << "Done" << endl;
   }
 
   // Sounds the all clear when all mappers are done

@@ -53,7 +53,7 @@ void LocalFileRegistry::bufferData(string &_return, const PartID pid, const Bloc
     // This is the right file, scan the next block    
     Count start = (bid - sum) * File::block_size;
     Count len = min(File::block_size, it->length - start);
-    cout << "start = " << start << ", len = " << len << endl;
+//    cout << "start = " << start << ", len = " << len << endl;
     ifstream file(it->name.c_str(), ios::in | ios::binary);
     assert(file.is_open());
     // Read the block
@@ -217,7 +217,10 @@ string Transfer::toString(){
 **********************/
 
 
-PartitionGrabber::PartitionGrabber(PartID p): pid(p){}
+PartitionGrabber::PartitionGrabber(PartID p): 
+		pid(p),
+		finished(false)
+{}
 
 // Set the output file and the PartID
 void PartitionGrabber::setPID(PartID p){
