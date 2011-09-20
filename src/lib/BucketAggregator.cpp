@@ -29,6 +29,8 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 	Setting& c_fprefix = readConfigFile(cfg, "minni.common.file_prefix");
 	string fprefix = (const char*)c_fprefix;
 
+	Setting& c_agginmem = readConfigFile(cfg, "minni.aggregator.bucket.aggregate");
+	int agg_in_mem = c_agginmem;
 
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
@@ -50,8 +52,10 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 		free(input_file);
 	}
 
-	hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc);
-	pipeline_list[0].add_filter(*hasher);
+	if (agg_in_mem) {
+		hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc);
+		pipeline_list[0].add_filter(*hasher);
+	}
 
 	char* bucket_prefix = (char*)malloc(FILENAME_LENGTH);
 	strcpy(bucket_prefix, fprefix.c_str());
@@ -98,7 +102,8 @@ BucketAggregator::~BucketAggregator()
 		delete(toker);
 	if (inp_deserializer)
 		delete(inp_deserializer);
-	delete(hasher);
+	if (hasher)
+		delete(hasher);
 	delete(bucket_serializer);
 	delete(deserializer);
 	delete(bucket_hasher);
