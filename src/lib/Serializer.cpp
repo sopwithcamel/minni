@@ -10,6 +10,7 @@ Serializer::Serializer(Aggregator* agg,
 		filter(serial_in_order),
 		aggregator(agg),
 		emptyPAO(emptyPAO),
+		already_partitioned(false),
 		num_buckets(nb),
 		tokens_processed(0),
 		destroyPAO(destroyPAOFunc)
@@ -37,6 +38,22 @@ Serializer::~Serializer()
 	free(fl);
 }
 
+void Serializer::setInputAlreadyPartitioned()
+{
+	already_partitioned = true;
+}
+
+int Serializer::partition(const char* key)
+{
+	int buc, sum = 0;
+	for (int i=type; i<strlen(key); i+=2)
+		sum += key[i];
+	buc = sum % num_buckets;
+	if (buc < 0)
+		buc += num_buckets;
+	return buc;
+}
+
 void* Serializer::operator()(void* pao_list)
 {
 	PartialAgg* pao;
@@ -47,16 +64,18 @@ void* Serializer::operator()(void* pao_list)
 	uint64_t recv_length = (uint64_t)recv->length;
 	uint64_t ind = 0;
 
-//	strcpy(buf, "");
+	if (already_partitioned) {
+		/* apply partition function to one key to see which
+		 * file to write to. We know that all the other PAOs
+		 *  in the list will go to the same file. */
+		if (recv_length >= 1)
+			buc = partition(pao_l[0]->key);
+	}
+
 	while(ind < recv_length) {
 		pao = pao_l[ind];
-		// TODO; use another partitioning function later!
-		int sum = 0;
-		for (int i=type; i<strlen(pao->key); i+=2)
-			sum += pao->key[i];
-		buc = sum % num_buckets;
-		if (buc < 0)
-			buc += num_buckets;
+		if (!already_partitioned)
+			buc = partition(pao->key);	
 		strcpy(buf, pao->key);
 		strcat(buf, " ");
 		strcat(buf, pao->value);
@@ -64,7 +83,7 @@ void* Serializer::operator()(void* pao_list)
 		if (NULL == fl[buc]) {
 			for (int i=0; i<strlen(pao->key); i++)
 				fprintf(stderr, "%c", pao->key[i]);
-			fprintf(stderr, "How possible? %d, %d, %s\n", buc, sum, pao->key);
+			fprintf(stderr, "How possible? %d, %s\n", buc, pao->key);
 		}
 		fwrite(buf, sizeof(char), strlen(buf), fl[buc]);
 		destroyPAO(pao);
