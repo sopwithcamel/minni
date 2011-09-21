@@ -80,6 +80,7 @@ void* Hasher::operator()(void* pao_list)
 				this_list[evict_list_ctr++] = entry;
 				assert(evict_list_ctr < MAX_KEYS_PER_TOKEN);
 				HASH_DEL(hashtable, entry);
+				ht_size--;
 			}
 		}
 		ind++;
@@ -101,6 +102,7 @@ void* Hasher::operator()(void* pao_list)
 			assert(evict_list_ctr < MAX_KEYS_PER_TOKEN);
 		}	
 		HASH_CLEAR(hh, hashtable);
+		ht_size = 0;
 	}
 	this_send->result = this_list;
 	this_send->length = evict_list_ctr;
