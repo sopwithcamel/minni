@@ -61,6 +61,7 @@ void* Deserializer::operator()(void*)
 
 	PartialAgg** this_list = pao_list[next_buffer];
 	FilterInfo* this_send = send[next_buffer];
+	this_send->flush_hash = false;
 	next_buffer = (next_buffer + 1) % num_buffers;
 
 	if (!cur_bucket) { // new bucket has to be opened
@@ -100,6 +101,8 @@ ship_tokens:
 	if (eof_reached) {
 		fclose(cur_bucket);
 		cur_bucket = NULL;
+		// ask hashtable to flush itself afterwards
+		this_send->flush_hash = true;
 		if (buckets_processed == num_buckets) {
 			aggregator->input_finished = true;
 		}

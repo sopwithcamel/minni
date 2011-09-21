@@ -32,7 +32,6 @@ public:
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~Hasher();
 	void (*destroyPAO)(PartialAgg* p);
-	void setFlushOnComplete();
 private:
 	Aggregator* aggregator;
 	PartialAgg* emptyPAO;
@@ -43,7 +42,6 @@ private:
 	FilterInfo** send;
 	PartialAgg* hashtable;
 	uint64_t tokens_processed;
-	bool flush_on_complete;
 	void* operator()(void* pao_list);
 };
 

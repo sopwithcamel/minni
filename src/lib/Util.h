@@ -3,9 +3,12 @@
 
 extern void* call_realloc(PartialAgg*** list, size_t siz);
 
-typedef struct {
+class FilterInfo {
+public:
+	FilterInfo(): flush_hash(false) {}
 	void* result;
 	uint64_t length;
-} FilterInfo;
+	bool flush_hash;
+};
 
 #endif

@@ -14,7 +14,6 @@ Hasher::Hasher(Aggregator* agg,
 		ht_capacity(capacity),
 		hashtable(NULL),
 		next_buffer(0),
-		flush_on_complete(false),
 		tokens_processed(0)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
@@ -54,6 +53,7 @@ void* Hasher::operator()(void* pao_list)
 	FilterInfo* recv = (FilterInfo*)pao_list;
 	PartialAgg** pao_l = (PartialAgg**)recv->result;
 	uint64_t recv_length = (uint64_t)recv->length;	
+	bool flush_on_complete = recv->flush_hash;
 
 	PartialAgg** this_list = evicted_list[next_buffer];
 	FilterInfo* this_send = send[next_buffer];
@@ -105,9 +105,4 @@ void* Hasher::operator()(void* pao_list)
 	this_send->result = this_list;
 	this_send->length = evict_list_ctr;
 	return this_send;
-}
-
-void Hasher::setFlushOnComplete()
-{
-	flush_on_complete = true;
 }
