@@ -55,6 +55,8 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 	if (agg_in_mem) {
 		hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc);
 		pipeline_list[0].add_filter(*hasher);
+		merger = new Merger(this, emptyPAO, destroyPAOFunc);
+		pipeline_list[0].add_filter(*merger);
 	}
 
 	char* bucket_prefix = (char*)malloc(FILENAME_LENGTH);
@@ -82,6 +84,8 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 
 	bucket_hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc);
 	pipeline_list[1].add_filter(*bucket_hasher);
+	bucket_merger = new Merger(this, emptyPAO, destroyPAOFunc);
+	pipeline_list[1].add_filter(*bucket_merger);
 
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
 	strcpy(final_path, fprefix.c_str());

@@ -15,6 +15,7 @@
 #include "DFSReader.h"
 #include "Tokenizer.h"
 #include "Hasher.h"
+#include "Merger.h"
 #include "Serializer.h"
 #include "Deserializer.h"
 #include "util.h"
@@ -43,9 +44,11 @@ private:
 	Deserializer* inp_deserializer;
 
 	Hasher* hasher;
+	Merger* merger;
 	Serializer* bucket_serializer;
 	Deserializer* deserializer;
 	Hasher* bucket_hasher;
+	Merger* bucket_merger;
 	Serializer* final_serializer;
 	uint64_t num_buckets;
 	const char* outfile;
