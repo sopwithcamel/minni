@@ -36,6 +36,8 @@ private:
 	Aggregator* aggregator;
 	PartialAgg* emptyPAO;
 	PartialAgg*** evicted_list;
+	PartialAgg*** merge_list;
+	PartialAgg*** mergand_list;
 	size_t ht_size;
 	size_t ht_capacity;
 	size_t next_buffer;

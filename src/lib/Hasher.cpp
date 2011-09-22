@@ -18,10 +18,14 @@ Hasher::Hasher(Aggregator* agg,
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	evicted_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
+	merge_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
+	mergand_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
 	send = (FilterInfo**)malloc(sizeof(FilterInfo*) * num_buffers);
 	// Allocate buffers and structure to send results to next filter
 	for (int i=0; i<num_buffers; i++) {
 		evicted_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
+		merge_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
+		mergand_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
 		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
 	}
 }
@@ -36,9 +40,12 @@ Hasher::~Hasher()
 	}
 	for (int i=0; i<num_buffers; i++) {
 		free(evicted_list[i]);
+		free(merge_list[i]);
 		free(send[i]);
 	}
 	free(evicted_list);
+	free(merge_list);
+	free(mergand_list);
 	free(send);
 }
 
@@ -49,6 +56,7 @@ void* Hasher::operator()(void* pao_list)
 	uint64_t evict_ind = 0;
 	PartialAgg* pao;
 	size_t evict_list_ctr = 0;
+	size_t merge_list_ctr = 0;
 
 	FilterInfo* recv = (FilterInfo*)pao_list;
 	PartialAgg** pao_l = (PartialAgg**)recv->result;
@@ -56,6 +64,8 @@ void* Hasher::operator()(void* pao_list)
 	bool flush_on_complete = recv->flush_hash;
 
 	PartialAgg** this_list = evicted_list[next_buffer];
+	PartialAgg** this_merge_list = merge_list[next_buffer];
+	PartialAgg** this_mergand_list = mergand_list[next_buffer];
 	FilterInfo* this_send = send[next_buffer];
 	next_buffer = (next_buffer + 1) % aggregator->getNumBuffers();
 
@@ -68,8 +78,8 @@ void* Hasher::operator()(void* pao_list)
 		PartialAgg* found = NULL;
 		HASH_FIND_STR(hashtable, pao->key, found);
 		if (found) { // the insertion didn't occur
-			found->merge(pao);
-			destroyPAO(pao);
+			this_merge_list[merge_list_ctr] = found;
+			this_mergand_list[merge_list_ctr++] = pao;
 		} else { // the PAO was inserted
 			HASH_ADD_KEYPTR(hh, hashtable, pao->key, strlen(pao->key), pao);
 			ht_size++;
@@ -106,5 +116,8 @@ void* Hasher::operator()(void* pao_list)
 	}
 	this_send->result = this_list;
 	this_send->length = evict_list_ctr;
+	this_send->result1 = this_merge_list;
+	this_send->result2 = this_mergand_list;
+	this_send->result3 = merge_list_ctr;
 	return this_send;
 }
