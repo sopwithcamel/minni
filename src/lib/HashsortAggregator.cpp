@@ -11,7 +11,7 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 				PartialAgg* (*createPAOFunc)(const char* t), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile):
-		Aggregator(cfg, type, 2, num_part, createPAOFunc, destroyPAOFunc),
+		Aggregator(cfg, type, 3, num_part, createPAOFunc, destroyPAOFunc),
 		map_input(_map_input),
 		infile(infile),
 		outfile(outfile)
@@ -56,40 +56,37 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 		pipeline_list[0].add_filter(*merger);
 	}
 
-	char* bucket_prefix = (char*)malloc(FILENAME_LENGTH);
-	strcpy(bucket_prefix, fprefix.c_str());
+	char* sort_prefix = (char*)malloc(FILENAME_LENGTH);
+	strcpy(sort_prefix, fprefix.c_str());
 	if (type == Map)
-		strcat(bucket_prefix, "map-");
+		strcat(sort_prefix, "map-");
 	else if (type == Reduce)
-		strcat(bucket_prefix, "reduce-");
-	strcat(bucket_prefix, "bucket");
+		strcat(sort_prefix, "reduce-");
 
-	bucket_serializer = new Serializer(this, emptyPAO, getNumPartitions(), 
-			bucket_prefix, destroyPAOFunc);
-	pipeline_list[0].add_filter(*bucket_serializer);
+	char* unsorted_file = (char*)malloc(FILENAME_LENGTH);
+	strcpy(unsorted_file, sort_prefix);
+	strcat(unsorted_file, "unsorted");
+
+	serializer = new Serializer(this, emptyPAO, 1/*create one unsorted file*/, 
+			unsorted_file, destroyPAOFunc);
+	pipeline_list[0].add_filter(*serializer);
 
 	/* In the second pipeline, each bucket is sorted using nsort */
-	char* sorted_prefix = (char*)malloc(FILENAME_LENGTH);
-	strcpy(sorted_prefix, fprefix.c_str());
-	strcat(sorted_prefix, outfile);
-	sorter = new Sorter(getNumPartitions(), bucket_prefix, sorted_prefix);
+	char* sorted_file = (char*)malloc(FILENAME_LENGTH);
+	strcpy(sorted_file, sort_prefix);
+	strcat(sorted_file, "sorted");
+
+	sorter = new Sorter(1, unsorted_file, sorted_file);
 	pipeline_list[1].add_filter(*sorter);
 	
-	/* In the third pipeline, a token is an entire bucket. In
-	 * other words, each pipeline stage is called once for each bucket to
-	 * be processed. This may not be fine-grained enough, but should have
-	 * enough parallelism to keep our wimpy-node busy. 
-
-	 * In this pipeline, a bucket is read back into memory (converted to 
-	 * PAOs again), aggregated using a hashtable, and serialized. */
-	deserializer = new Deserializer(this, num_buckets, sorted_prefix,
+	/* In this pipeline, the sorted file is deserialized into
+	 * PAOs again, aggregated and serialized. */
+	deserializer = new Deserializer(this, num_buckets, sorted_file,
 			emptyPAO, createPAOFunc, destroyPAOFunc);
 	pipeline_list[2].add_filter(*deserializer);
 
-	hasher = new Hasher(this, emptyPAO, 10 /*capacity */, destroyPAOFunc);
-	pipeline_list[2].add_filter(*hasher);
-	merger = new Merger(this, emptyPAO, destroyPAOFunc);
-	pipeline_list[2].add_filter(*bucket_merger);
+	adder = new Adder(this, emptyPAO, destroyPAOFunc);
+	pipeline_list[2].add_filter(*adder);
 
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
 	strcpy(final_path, fprefix.c_str());
@@ -101,7 +98,9 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	pipeline_list[1].add_filter(*final_serializer);
 
 	free(final_path);
-	free(bucket_prefix);
+	free(sort_prefix);
+	free(unsorted_file);
+	free(sorted_file);
 }
 
 HashsortAggregator::~HashsortAggregator()
@@ -116,10 +115,12 @@ HashsortAggregator::~HashsortAggregator()
 		delete(hasher);
 		delete(merger);
 	}
-	delete(bucket_serializer);
+	delete(serializer);
+	delete(sorter);
 	delete(deserializer);
-	delete(bucket_hasher);
+	delete(adder);
 	delete(final_serializer);
 	pipeline_list[0].clear();
 	pipeline_list[1].clear();
+	pipeline_list[2].clear();
 }

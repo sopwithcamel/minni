@@ -12,8 +12,10 @@
 
 #include "Mapper.h"
 #include "PartialAgg.h"
+#include "Adder.h"
 #include "DFSReader.h"
 #include "Hasher.h"
+#include "Merger.h"
 #include "Serializer.h"
 #include "Sorter.h"
 #include "Tokenizer.h"
@@ -44,8 +46,14 @@ private:
 	Deserializer* inp_deserializer;
 
 	Hasher* hasher;
-	Serializer* bucket_serializer;
+	Merger* merger;
+	Serializer* serializer;
 	Sorter* sorter;
+
+	Deserializer* deserializer;
+	Adder* adder;
+	Serializer* final_serializer;
+
 	uint64_t num_buckets;
 	const char* outfile;
 };
