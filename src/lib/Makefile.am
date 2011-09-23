@@ -10,6 +10,7 @@ EXTRA_DIST = 		PartialAgg.h \
 		       	DFSReader.h \
 			ExternalHasher.h \
 			FileReader.h \
+			Adder.h \
 			Hasher.h \
 			Merger.h \
 			Serializer.h \
@@ -33,6 +34,7 @@ libminni_la_SOURCES =  	PartialAgg.cpp \
 			ExternalHasher.cpp \
 		       	FileReader.cpp \
 			Serializer.cpp \
+			Adder.cpp \
 			Hasher.cpp \
 			Merger.cpp \
 			Sorter.cpp \
@@ -54,9 +56,9 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 		       -I$(srcdir)/../worker/gen-cpp \
 		       -I$(srcdir)/../master \
 		       -I$(srcdir)/../dfs \
-			-I/home/hamur/code/fawnkv/fawnds \
-			-I/home/hamur/code/fawnkv/utils \
-			-I/home/hamur/code/leveldb/include
+			-I/home/hamur/fawnkv/fawnds \
+			-I/home/hamur/fawnkv/utils \
+			-I/home/hamur/leveldb/include
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
 			-lltdl -lpthread -ltbb -lconfig++ -lleveldb
@@ -71,6 +73,7 @@ minni_include_HEADERS = PartialAgg.h \
 		       	DFSReader.h \
 			ExternalHasher.h \
 			FileReader.h \
+			Adder.h \
 			Hasher.h \
 			Merger.h \
 			Serializer.h \
