@@ -34,7 +34,7 @@ void* Sorter::operator()(void*)
 		strcpy(out_file, outputfile_prefix);
 		strcat(out_file, bnum);
 
-		strcpy(nsort_command, "nsort ");
+		strcpy(nsort_command, "nsort -memory=400M ");
 		strcat(nsort_command, input_file);
 		strcat(nsort_command, " -o ");
 		strcat(nsort_command, out_file);

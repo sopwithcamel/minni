@@ -54,7 +54,6 @@ private:
 	Adder* adder;
 	Serializer* final_serializer;
 
-	uint64_t num_buckets;
 	const char* outfile;
 };
 

@@ -81,7 +81,7 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	
 	/* In this pipeline, the sorted file is deserialized into
 	 * PAOs again, aggregated and serialized. */
-	deserializer = new Deserializer(this, num_buckets, sorted_file,
+	deserializer = new Deserializer(this, 1, sorted_file,
 			emptyPAO, createPAOFunc, destroyPAOFunc);
 	pipeline_list[2].add_filter(*deserializer);
 
