@@ -108,11 +108,14 @@ BucketAggregator::~BucketAggregator()
 		delete(toker);
 	if (inp_deserializer)
 		delete(inp_deserializer);
-	if (hasher)
+	if (hasher) {
 		delete(hasher);
+		delete(merger);
+	}
 	delete(bucket_serializer);
 	delete(deserializer);
 	delete(bucket_hasher);
+	delete(bucket_merger);
 	delete(final_serializer);
 	pipeline_list[0].clear();
 	pipeline_list[1].clear();
