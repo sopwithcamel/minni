@@ -27,11 +27,6 @@ public:
 			const char* outfile_prefix, 
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~Serializer();
-	/* This function is used to tell the Serializer that the input to the
-	 * Serializer has already been partitioned using the same partitioning
-	 * function. Therefore, the bucket is simply decided by doing a mod by
-	 * the number of new partitions passed. */
-	void setInputAlreadyPartitioned();
 private:
 	Aggregator* aggregator;
 	AggType type;

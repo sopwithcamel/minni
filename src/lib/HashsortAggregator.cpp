@@ -93,9 +93,7 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	strcat(final_path, outfile);
 	final_serializer = new Serializer(this, emptyPAO, getNumPartitions(), 
 			final_path, destroyPAOFunc); 
-	// we've already partitioned these keys once. Use that!
-	final_serializer->setInputAlreadyPartitioned();
-	pipeline_list[1].add_filter(*final_serializer);
+	pipeline_list[2].add_filter(*final_serializer);
 
 	free(final_path);
 	free(sort_prefix);

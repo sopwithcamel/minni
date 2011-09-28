@@ -92,8 +92,6 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 	strcat(final_path, outfile);
 	final_serializer = new Serializer(this, emptyPAO, getNumPartitions(), 
 			final_path, destroyPAOFunc); 
-	// we've already partitioned these keys once. Use that!
-	final_serializer->setInputAlreadyPartitioned();
 	pipeline_list[1].add_filter(*final_serializer);
 
 	free(bucket_prefix);

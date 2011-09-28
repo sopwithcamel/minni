@@ -38,17 +38,12 @@ Serializer::~Serializer()
 	free(fl);
 }
 
-void Serializer::setInputAlreadyPartitioned()
-{
-	already_partitioned = true;
-}
-
 int Serializer::partition(const char* key)
 {
 	int buc, sum = 0;
-	for (int i=type; i<strlen(key); i+=2)
+	for (int i=0; i<strlen(key); i++)
 		sum += key[i];
-	buc = sum % num_buckets;
+	buc = (sum + type) % num_buckets;
 	if (buc < 0)
 		buc += num_buckets;
 	return buc;
@@ -64,18 +59,9 @@ void* Serializer::operator()(void* pao_list)
 	uint64_t recv_length = (uint64_t)recv->length;
 	uint64_t ind = 0;
 
-	if (already_partitioned) {
-		/* apply partition function to one key to see which
-		 * file to write to. We know that all the other PAOs
-		 *  in the list will go to the same file. */
-		if (recv_length >= 1)
-			buc = partition(pao_l[0]->key);
-	}
-
 	while(ind < recv_length) {
 		pao = pao_l[ind];
-		if (!already_partitioned)
-			buc = partition(pao->key);	
+		buc = partition(pao->key);	
 		strcpy(buf, pao->key);
 		strcat(buf, " ");
 		strcat(buf, pao->value);
