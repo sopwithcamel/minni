@@ -63,6 +63,7 @@ void* Tokenizer::operator()(void* buffer)
 	}
 	this_send->result = this_pao_list;
 	this_send->length = this_list_ctr;
+	this_send->flush_hash = false;
 	return this_send;
 }
 
