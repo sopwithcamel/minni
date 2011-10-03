@@ -20,6 +20,9 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 	string empty_key = (const char*)c_empty_key;
 	PartialAgg* emptyPAO = createPAOFunc(empty_key.c_str());
 
+	Setting& c_token_size = readConfigFile(cfg, "minni.tbb.token_size");
+	size_t token_size = c_token_size;
+
 	Setting& c_capacity = readConfigFile(cfg, "minni.aggregator.bucket.capacity");
 	capacity = c_capacity;
 
@@ -37,7 +40,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 		 * entire input, chunk by chunk, tokenizes, Maps each Minni-token,
 		 * aggregates/writes to buckets. For this pipeline, a "token" or a
 		 * a basic pipeline unit is a chunk read from the DFS */
-		reader = new DFSReader(this, map_input);
+		reader = new DFSReader(this, map_input, token_size);
 		pipeline_list[0].add_filter(*reader);
 
 		toker = new Tokenizer(this, emptyPAO, createPAOFunc);
