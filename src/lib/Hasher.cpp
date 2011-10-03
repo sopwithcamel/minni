@@ -91,6 +91,8 @@ void* Hasher::operator()(void* pao_list)
 				assert(evict_list_ctr < MAX_KEYS_PER_TOKEN);
 				HASH_DEL(hashtable, entry);
 				ht_size--;
+				if (ht_size < ht_capacity)
+					break;
 			}
 		}
 		ind++;
