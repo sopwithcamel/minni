@@ -15,7 +15,6 @@
 #include "Mapper.h"
 
 #define BUFSIZE			67108864
-#define CHUNKSIZE		8388608
 
 /**
  * To be used as the input stage in the pipeline.
@@ -25,7 +24,7 @@
 
 class DFSReader : public tbb::filter {
 public:
-	DFSReader(Aggregator* agg, MapInput* _input);
+	DFSReader(Aggregator* agg, MapInput* _input, const size_t cs = 2097152);
 	~DFSReader();
 private:
 	Aggregator* aggregator;
@@ -33,6 +32,7 @@ private:
 	MapInput* input;
 	size_t rem_buffer_size;
 	char* buffer;
+	const size_t chunksize;
 	char** chunk; 
 	size_t next_chunk;
 	ChunkID id;

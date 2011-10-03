@@ -1,10 +1,11 @@
 #include "DFSReader.h"
 #include "Aggregator.h"
 
-DFSReader::DFSReader(Aggregator* agg, MapInput* _input) :
+DFSReader::DFSReader(Aggregator* agg, MapInput* _input, const size_t cs) :
 		aggregator(agg),
 		filter(serial_in_order),
 		rem_buffer_size(0),
+		chunksize(cs),
 		next_chunk(0),
 		chunk_ctr(0),
 		input(_input)
@@ -13,7 +14,7 @@ DFSReader::DFSReader(Aggregator* agg, MapInput* _input) :
 	buffer = (char*)malloc(BUFSIZE);
 	chunk = (char**)malloc(num_buf * sizeof(char*));
 	for (int i=0; i < num_buf; i++) {
-		chunk[i] = (char*)malloc(CHUNKSIZE + 1);
+		chunk[i] = (char*)malloc(chunksize + 1);
 	}
 	id = input->chunk_id_start;
 }
@@ -30,7 +31,7 @@ DFSReader::~DFSReader()
 
 void* DFSReader::operator()(void*)
 {
-	size_t bytes_to_copy = CHUNKSIZE;
+	size_t bytes_to_copy = chunksize;
 
 	char *this_chunk = chunk[next_chunk];
 	next_chunk = (next_chunk + 1) % aggregator->getNumBuffers();
@@ -44,9 +45,9 @@ void* DFSReader::operator()(void*)
 		id++;
 		chunk_ctr = 0;
 	}
-	if (rem_buffer_size < CHUNKSIZE)
+	if (rem_buffer_size < chunksize)
 		bytes_to_copy = rem_buffer_size;
-	memcpy(this_chunk, buffer + chunk_ctr * CHUNKSIZE, bytes_to_copy);
+	memcpy(this_chunk, buffer + chunk_ctr * chunksize, bytes_to_copy);
 	this_chunk[bytes_to_copy] = '\0';  
 	rem_buffer_size -= bytes_to_copy;
 	chunk_ctr++;
