@@ -23,6 +23,9 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 	Setting& c_token_size = readConfigFile(cfg, "minni.tbb.token_size");
 	size_t token_size = c_token_size;
 
+	Setting& c_max_keys = readConfigFile(cfg, "minni.tbb.max_keys_per_token");
+	size_t max_keys_per_token = c_max_keys;
+
 	Setting& c_capacity = readConfigFile(cfg, "minni.aggregator.bucket.capacity");
 	capacity = c_capacity;
 
@@ -43,7 +46,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 		reader = new DFSReader(this, map_input, token_size);
 		pipeline_list[0].add_filter(*reader);
 
-		toker = new Tokenizer(this, emptyPAO, createPAOFunc);
+		toker = new Tokenizer(this, emptyPAO, createPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*toker);
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
@@ -56,7 +59,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 	}
 
 	if (agg_in_mem) {
-		hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc);
+		hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*hasher);
 		merger = new Merger(this, emptyPAO, destroyPAOFunc);
 		pipeline_list[0].add_filter(*merger);
@@ -85,7 +88,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 			emptyPAO, createPAOFunc, destroyPAOFunc);
 	pipeline_list[1].add_filter(*deserializer);
 
-	bucket_hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc);
+	bucket_hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc, max_keys_per_token);
 	pipeline_list[1].add_filter(*bucket_hasher);
 	bucket_merger = new Merger(this, emptyPAO, destroyPAOFunc);
 	pipeline_list[1].add_filter(*bucket_merger);
