@@ -1,9 +1,11 @@
 #include "Tokenizer.h"
 
 Tokenizer::Tokenizer(Aggregator* agg, PartialAgg* emptyPAO, 
-			PartialAgg* (*createPAOFunc)(const char* t)) :
+			PartialAgg* (*createPAOFunc)(const char* t),
+			const size_t max_keys) :
 		aggregator(agg),
 		filter(serial_in_order),
+		max_keys_per_token(max_keys),
 		next_buffer(0),
 		emptyPAO(emptyPAO),
 		createPAO(createPAOFunc)
@@ -13,7 +15,7 @@ Tokenizer::Tokenizer(Aggregator* agg, PartialAgg* emptyPAO,
 	send = (FilterInfo**)malloc(sizeof(FilterInfo*) * num_buffers);
 	// Allocate buffers and structure to send results to next filter
 	for (int i=0; i<num_buffers; i++) {
-		pao_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
+		pao_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * max_keys_per_token);
 		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
 	}	
 }
@@ -54,7 +56,7 @@ void* Tokenizer::operator()(void* buffer)
 //		fprintf(stderr, "tok: %d", tok_ctr++);
 
 		this_pao_list[this_list_ctr++] = new_pao;
-		assert(this_list_ctr < MAX_KEYS_PER_TOKEN);
+		assert(this_list_ctr < max_keys_per_token);
 
 		spl = strtok(NULL, " .\n\r\'\"?,;:!*()-\uFEFF");
 		if (spl == NULL) {

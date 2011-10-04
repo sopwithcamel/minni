@@ -5,11 +5,13 @@
 Hasher::Hasher(Aggregator* agg, 
 			PartialAgg* emptyPAO,
 			size_t capacity,
-			void (*destroyPAOFunc)(PartialAgg* p)) :
+			void (*destroyPAOFunc)(PartialAgg* p),
+			const size_t max_keys) :
 		filter(/*serial=*/true),	/* maintains global state which is not yet concurrent access */
 		aggregator(agg),
 		emptyPAO(emptyPAO),
 		destroyPAO(destroyPAOFunc),
+		max_keys_per_token(max_keys),
 		ht_size(0),
 		ht_capacity(capacity),
 		hashtable(NULL),
@@ -23,9 +25,9 @@ Hasher::Hasher(Aggregator* agg,
 	send = (FilterInfo**)malloc(sizeof(FilterInfo*) * num_buffers);
 	// Allocate buffers and structure to send results to next filter
 	for (int i=0; i<num_buffers; i++) {
-		evicted_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
-		merge_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
-		mergand_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * MAX_KEYS_PER_TOKEN);
+		evicted_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * max_keys_per_token);
+		merge_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * max_keys_per_token);
+		mergand_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * max_keys_per_token);
 		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
 	}
 }
@@ -88,7 +90,7 @@ void* Hasher::operator()(void* pao_list)
 			PartialAgg *entry, *tmp;
 			HASH_ITER(hh, hashtable, entry, tmp) {
 				this_list[evict_list_ctr++] = entry;
-				assert(evict_list_ctr < MAX_KEYS_PER_TOKEN);
+				assert(evict_list_ctr < max_keys_per_token);
 				HASH_DEL(hashtable, entry);
 				ht_size--;
 				if (ht_size < ht_capacity)
@@ -111,7 +113,7 @@ void* Hasher::operator()(void* pao_list)
 		PartialAgg *s, *tmp;
 		HASH_ITER(hh, hashtable, s, tmp) {
 			this_list[evict_list_ctr++] = s;
-			assert(evict_list_ctr < MAX_KEYS_PER_TOKEN);
+			assert(evict_list_ctr < max_keys_per_token);
 		}	
 		HASH_CLEAR(hh, hashtable);
 		ht_size = 0;

@@ -29,7 +29,8 @@
 class Hasher : public tbb::filter {
 public:
 	Hasher(Aggregator* agg, PartialAgg* emptyPAO, size_t capacity, 
-			void (*destroyPAOFunc)(PartialAgg* p));
+			void (*destroyPAOFunc)(PartialAgg* p),
+			const size_t max_keys = DEFAULT_MAX_KEYS_PER_TOKEN);
 	~Hasher();
 	void (*destroyPAO)(PartialAgg* p);
 private:
@@ -38,6 +39,7 @@ private:
 	PartialAgg*** evicted_list;
 	PartialAgg*** merge_list;
 	PartialAgg*** mergand_list;
+	const size_t max_keys_per_token;
 	size_t ht_size;
 	size_t ht_capacity;
 	size_t next_buffer;
