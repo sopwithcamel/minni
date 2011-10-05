@@ -2,9 +2,11 @@
 
 Sorter::Sorter(const uint64_t num_part,
 			const char* inp_prefix,
-			const char* out_prefix) :
+			const char* out_prefix,
+			const int nsort_mem) :
 		filter(serial_in_order),
-		num_part(num_part)
+		num_part(num_part),
+		nsort_memory(nsort_mem)
 {
 	inputfile_prefix = (char*)malloc(FILENAME_LENGTH);
 	strcpy(inputfile_prefix, inp_prefix);
@@ -34,7 +36,15 @@ void* Sorter::operator()(void*)
 		strcpy(out_file, outputfile_prefix);
 		strcat(out_file, bnum);
 
-		strcpy(nsort_command, "nsort -memory=400M ");
+		strcpy(nsort_command, "nsort ");
+		if (nsort_memory > 0) {
+			char* mem_str = (char*)malloc(10);
+			sprintf(mem_str, "%d", nsort_memory);
+			strcat(nsort_command, "-memory=");
+			strcat(nsort_command, mem_str);
+			strcat(nsort_command, "M ");
+			free(mem_str);
+		}
 		strcat(nsort_command, input_file);
 		strcat(nsort_command, " -o ");
 		strcat(nsort_command, out_file);

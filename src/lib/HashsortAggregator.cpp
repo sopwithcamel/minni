@@ -35,6 +35,9 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	Setting& c_agginmem = readConfigFile(cfg, "minni.aggregator.hashsort.aggregate");
 	int agg_in_mem = c_agginmem;
 
+	Setting& c_nsort_mem = readConfigFile(cfg, "minni.aggregator.hashsort.nsort_mem");
+	int nsort_mem = c_nsort_mem;
+
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
 		 * entire input, chunk by chunk, tokenizes, Maps each Minni-token,
@@ -82,7 +85,7 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	strcpy(sorted_file, sort_prefix);
 	strcat(sorted_file, "sorted");
 
-	sorter = new Sorter(1, unsorted_file, sorted_file);
+	sorter = new Sorter(1, unsorted_file, sorted_file, nsort_mem);
 	pipeline_list[1].add_filter(*sorter);
 	
 	/* In this pipeline, the sorted file is deserialized into

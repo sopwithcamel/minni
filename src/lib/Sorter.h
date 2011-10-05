@@ -17,10 +17,12 @@ class Sorter : public tbb::filter {
 public:
 	Sorter(const uint64_t num_part, 
 			const char* inp_prefix,
-			const char* out_prefix);
+			const char* out_prefix,
+			const int nsort_mem = 0);
 	~Sorter();
 private:
 	const uint64_t num_part;
+	const int nsort_memory;
 	char* inputfile_prefix;
 	char* outputfile_prefix;
 	void* operator()(void*);
