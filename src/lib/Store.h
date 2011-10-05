@@ -16,21 +16,24 @@
 #include "Util.h"
 #include "uthash.h"
 
+#define	BINS		100000000
+#define	SETSIZE		8		
+
 class Store {
 public:
+	const size_t max_keys_per_token;
+
 	Store(Aggregator* agg);
 	~Store();
 	void (*destroyPAO)(PartialAgg* p);
 private:
-	Aggregator* aggregator;
+	
 
+	Aggregator* aggregator;
 	/* Stages of the pipeline */
 	StoreHasher* hasher;
 	StoreAggregator* agger;
 	StoreWriter* writer;
-
-	PartialAgg* emptyPAO;
-	PartialAgg*** merge_list;
 };
 
 /**
@@ -43,7 +46,6 @@ public:
 	~StoreHasher();
 private:
 	uint64_t tokens_processed;
-	const size_t max_keys_per_token;
 
 	/* Pointer to lists holding values to be moved on */
 	size_t** offset_list;
@@ -64,7 +66,6 @@ public:
 	~StoreAggregator();
 private:
 	uint64_t tokens_processed;
-	const size_t max_keys_per_token;
 
 	/* Pointer to lists holding values to be moved on */
 	char*** value_list;
@@ -84,7 +85,6 @@ public:
 	~StoreWriter();
 private:
 	uint64_t tokens_processed;
-	const size_t max_keys_per_token;
 	size_t next_buffer;
 	FilterInfo** send;
 	void* operator()(void* pao_list);

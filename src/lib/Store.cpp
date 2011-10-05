@@ -1,10 +1,21 @@
 #include "Store.h"
 
-StoreHasher::StoreHasher(Aggregator* agg, 
+Store::Store(Aggregator* agg, 
+			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys) :
-		filter(/*serial=*/true),
 		aggregator(agg),
+		destroyPAO(destroyPAOFunc),
 		max_keys_per_token(max_keys),
+		next_buffer(0),
+		tokens_processed(0)
+{
+	hasher = new StoreHasher();
+	agger = new StoreAggregator();
+	writer = new StoreWriter();
+}
+
+StoreHasher::StoreHasher() :
+		filter(/*serial=*/true),
 		next_buffer(0),
 		tokens_processed(0)
 {
@@ -68,6 +79,33 @@ void* StoreHasher::operator()(void* pao_list)
 	return this_send;
 }
 
+StoreAggregator::StoreAggregator() :
+		filter(/*serial=*/true),
+		next_buffer(0),
+		tokens_processed(0)
+{
+	uint64_t num_buffers = aggregator->getNumBuffers();
+	value_list = (char***)malloc(sizeof(char**) * num_buffers);
+	send = (FilterInfo**)malloc(sizeof(FilterInfo*) * num_buffers);
+	// Allocate buffers and structure to send results to next filter
+	for (int i=0; i<num_buffers; i++) {
+		value_list[i] = (char**)malloc(sizeof(char*)
+			* max_keys_per_token);
+		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
+	}
+}
+
+StoreAggregator::~StoreAggregator()
+{
+	uint64_t num_buffers = aggregator->getNumBuffers();
+	for (int i=0; i<num_buffers; i++) {
+		free(value_list[i]);
+		free(send[i]);
+	}
+	free(value_list);
+	free(send);
+}
+
 void* StoreAggregator::operator()(void* pao_list)
 {
 	char *key, *value;
@@ -95,6 +133,17 @@ void* StoreAggregator::operator()(void* pao_list)
 	this_send->length = recv_length;
 	this_send->result1 = recv_off_list;
 	return this_send;
+}
+
+StoreWriter::StoreWriter() :
+		filter(/*serial=*/true),
+		next_buffer(0),
+		tokens_processed(0)
+{
+}
+
+StoreWriter::~StoreWriter()
+{
 }
 
 void* StoreWriter::operator()(void* pao_list)
