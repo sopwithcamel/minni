@@ -35,6 +35,9 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 			"minni.aggregator.hashtable_external.file");
 	string htname = (const char*)c_ehtname;
 
+	Setting& c_agginmem = readConfigFile(cfg, "minni.aggregator.bucket.aggregate");
+	int agg_in_mem = c_agginmem;
+
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
 		 * entire input, chunk by chunk, tokenizes, Maps each Minni-token,
@@ -55,8 +58,13 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		free(input_file);
 	}
 
-	hasher = new Hasher(this, emptyPAO, internal_capacity, destroyPAOFunc);
-	pipeline_list[0].add_filter(*hasher);
+	if (agg_in_mem) {
+		hasher = new Hasher(this, emptyPAO, internal_capacity, destroyPAOFunc);
+		pipeline_list[0].add_filter(*hasher);
+
+		merger = new Merger(this, emptyPAO, destroyPAOFunc);
+		pipeline_list[0].add_filter(*merger);
+	}
 
 	ext_hasher = new ExternalHasher(this, htname.c_str(), external_capacity, 
 			emptyPAO, destroyPAOFunc);
@@ -84,7 +92,10 @@ ExthashAggregator::~ExthashAggregator()
 		delete toker;
 	if (inp_deserializer)
 		delete inp_deserializer;
-	delete hasher;
+	if (hasher) {
+		delete hasher;
+		delete merger;
+	}
 	delete ext_hasher;
 	delete eh_reader;
 	pipeline_list[0].clear();

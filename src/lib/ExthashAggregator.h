@@ -15,6 +15,7 @@
 #include "DFSReader.h"
 #include "Tokenizer.h"
 #include "Hasher.h"
+#include "Merger.h"
 #include "ExternalHasher.h"
 #include "Serializer.h"
 #include "Deserializer.h"
@@ -47,6 +48,7 @@ private:
 
 	/* internal and external hashing */
 	Hasher* hasher;
+	Merger* merger;
 	ExternalHasher* ext_hasher;
 
 	/* scan from external ht into files for reducer */
