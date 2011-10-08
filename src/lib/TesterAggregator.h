@@ -16,6 +16,7 @@
 #include "Tokenizer.h"
 #include "Hasher.h"
 #include "Merger.h"
+#include "Sorter.h"
 #include "Serializer.h"
 #include "Deserializer.h"
 #include "util.h"
@@ -26,8 +27,7 @@ public:
 				AggType type, 
 				MapInput* _map_input,
 				PartialAgg* (*createPAOFunc)(const char* t), 
-				void (*destroyPAOFunc)(PartialAgg* p), 
-				const char* outfile);
+				void (*destroyPAOFunc)(PartialAgg* p));
 	~TesterAggregator();
 private:
 	string test_element;
@@ -38,7 +38,7 @@ private:
 	Tokenizer* toker;
 	
 	/* For testing sorter */
-	Sorter* sorter
+	Sorter* sorter;
 	char* sort_in_file;
 	char* sort_out_file;
 };
