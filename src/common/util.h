@@ -50,8 +50,10 @@ public:
 		std::ofstream of;
 		of.open("/localfs/hamur/timelog", ofstream::app);
 		for (vector<TimeStamp>::iterator it = timelog.begin(); 
-				it != timelog.end(); it++)
+				it != timelog.end(); it++) {
 			of << it->tag << ": " << it->tim << std::endl;
+		}
+		timelog.clear();		
 		of.close();
 	}
 };
