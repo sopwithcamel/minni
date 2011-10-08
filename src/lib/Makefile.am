@@ -21,6 +21,7 @@ EXTRA_DIST = 		PartialAgg.h \
 			HashAggregator.h \
 			HashsortAggregator.h \
 			PlainMapper.h \
+			TesterAggregator.h \
 			Aggregator.h \
 			Defs.h \
 			Util.h \
@@ -44,6 +45,7 @@ libminni_la_SOURCES =  	PartialAgg.cpp \
 		       	HashAggregator.cpp \
 			HashsortAggregator.cpp \
 			PlainMapper.cpp \
+			TesterAggregator.cpp \
 		       	Aggregator.cpp \
 			Util.cpp
 
@@ -84,6 +86,7 @@ minni_include_HEADERS = PartialAgg.h \
 			HashAggregator.h \
 			HashsortAggregator.h \
 			PlainMapper.h \
+			TesterAggregator.h \
 			Aggregator.h \
 			Defs.h \
 			Util.h \
