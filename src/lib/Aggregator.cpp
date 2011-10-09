@@ -11,7 +11,6 @@ Aggregator::Aggregator(const Config &cfg,
 		num_partitions(num_part),
 		input_finished(false),
 		tot_input_tokens(0),
-		paos_in_token(20000),
 		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc)
 {
@@ -20,6 +19,9 @@ Aggregator::Aggregator(const Config &cfg,
 
 	Setting& c_num_buffers = readConfigFile(cfg, "minni.tbb.buffers");
 	num_buffers = c_num_buffers;
+
+	Setting& c_paos_in_token = readConfigFile(cfg, "minni.tbb.max_keys_per_token");
+	paos_in_token = c_paos_in_token;
 
 	init = new tbb::task_scheduler_init(num_threads);
 	pipeline_list = new tbb::pipeline[num_pipelines]; 
