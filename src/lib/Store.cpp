@@ -61,15 +61,52 @@ void* StoreHasher::operator()(void* pao_list)
 	FilterInfo* this_send = send[next_buffer];
 	next_buffer = (next_buffer + 1) % aggregator->getNumBuffers();
 
-	while (ind < recv_length) {
+	uint64_t num_paos_in_bin = BINSIZE / PAOSIZE;
+	char* buf = (char*)malloc(BINSIZE);
+
+	for (ind = 0; ind < recv_length; ind++) {
 		pao = pao_l[ind];
+
 		// Find bin using hash function
-		// Find offset of value in external HT
-		// Add offset to list
+		size_t bin_offset = findBinOffset(pao->key);
+		assert(bin_offset <= store_size - BINSIZE);
+
 		// Read value
-		// Add value to list
+		ssize_t n_read = pread64(fd, buf, BINSIZE, bin_offset);
 		
-		ind++;
+		// Find offset of value in external HT
+		// TODO: Change this!
+		int sum = 0;
+		for (int i=0; i<3; i++) {
+			sum += pao->key[i] << i;
+		}
+		size_t bin_ind = sum % num_paos_in_bin;
+		if (!key_present(bin_offset, bin_ind)) { // key not present
+			goto key_not_present;
+		}
+
+		// Key is present; check if it's what we want
+		char* offset = buf + bin_ind * PAOSIZE;
+		while (memcmp(pao->key, offset, strlen(pao->key))) {
+			// Not the key we want; move to next slot
+			bin_ind = (bin_ind + 1) % num_paos_in_bin;
+			// If slot is empty, our key is not present
+			if (!key_present(bin_offset, bin_ind))
+				goto key_not_present;
+		}
+		// Key is present, and matches our key; copy
+		this_value_list[ind] = (char*)malloc(PAOSIZE);
+		memcpy(this_value_list[ind], offset, PAOSIZE);
+		this_offset_list[ind] = bin_offset + bin_ind * PAOSIZE;
+		
+		continue;
+key_not_present:
+		// Set value to NULL and set offset where StoreWriter must write to
+		// Also set slot as occupied.
+		this_value_list[ind] = NULL;
+		this_offset_list[ind] = bin_offset + bin_ind * PAOSIZE;
+		set_key_present(bin_offset, bin_ind);
+		
 	}
 
 	this_send->result = pao_l;

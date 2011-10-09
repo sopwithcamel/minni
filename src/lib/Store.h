@@ -17,7 +17,8 @@
 #include "uthash.h"
 
 #define	BINS		100000000
-#define	SETSIZE		8		
+#define	BINSIZE		4096
+#define PAOSIZE		32
 
 class Store {
 public:
@@ -27,13 +28,15 @@ public:
 	~Store();
 	void (*destroyPAO)(PartialAgg* p);
 private:
-	
-
+	int store_fd;
 	Aggregator* aggregator;
 	/* Stages of the pipeline */
 	StoreHasher* hasher;
 	StoreAggregator* agger;
 	StoreWriter* writer;
+
+	bool key_not_present(size_t bin_offset, size_t bin_index);
+	void set_key_present(size_t bin_offset, size_t bin_index);
 };
 
 /**
