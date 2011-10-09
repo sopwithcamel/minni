@@ -47,7 +47,7 @@ private:
 	uint64_t num_buffers;
 	const uint64_t num_pipelines; 	// number of pipelines in aggregator
 	const uint64_t num_partitions;	// number of partitions for map output
-	const uint64_t paos_in_token;
+	uint64_t paos_in_token;
 	PartialAgg* (*createPAO)(const char* token);
 	void (*destroyPAO)(PartialAgg* p);
 };
