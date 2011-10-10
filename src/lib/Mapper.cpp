@@ -4,6 +4,7 @@
 #include "ExthashAggregator.h"
 #include "HashAggregator.h"
 #include "HashsortAggregator.h"
+#include "TesterAggregator.h"
 #include "PlainMapper.h"
 #include <dlfcn.h>
 
@@ -215,13 +216,18 @@ task* MapperWrapperTask::execute() {
 						cfg, Map, npart, &myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO,
 						map_out_file.c_str()));
+	} else if (!selected_map_aggregator.compare("tester")) {
+		mapper->aggregs = dynamic_cast<Aggregator*>(new TesterAggregator(
+						cfg, Map, npart, &myinput, NULL,
+						mapper->createPAO, mapper->destroyPAO,
+						map_out_file.c_str()));
 	} else if (!selected_map_aggregator.compare("plain")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new PlainMapper(
 						cfg, Map, npart, &myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO, 
 						map_out_file.c_str()));
 	} else {
-		fprintf(stderr, "Illegel aggregator chosen!\n");
+		fprintf(stderr, "Illegal aggregator chosen!\n");
 		exit(1);
 	}
 	cout<<"Mapper: I am going to run map here"<<endl;
