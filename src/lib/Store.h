@@ -16,9 +16,11 @@
 #include "Util.h"
 #include "uthash.h"
 
-#define	BINS		100000000
 #define	BINSIZE		4096
+#define BINSIZE_BITS	12
 #define PAOSIZE		64
+#define PAOSIZE_BITS	6
+#define SLOTS_PER_BIN	64		// TODO: Get from config
 #define MAX_KEYSIZE	12
 
 #define	Hash		HASH_FCN
@@ -39,10 +41,15 @@ public:
 			const size_t max_keys);
 	~Store();
 	void (*destroyPAO)(PartialAgg* p);
+
+	/* Stages of the pipeline */
+	StoreHasher* hasher;
+	StoreAggregator* agger;
+	StoreWriter* writer;
 private:
 	// File descriptor for external store
 	int store_fd;
-	// In-memory array for bin occupancy
+	// In-memory array for bin occupancy; set only when pao is stored
 	uint64_t* occup;
 	// Total number of bins in external store
 	size_t store_size;
@@ -50,10 +57,6 @@ private:
 	int next_buffer;
 	uint64_t tokens_processed;
 	Aggregator* aggregator;
-	/* Stages of the pipeline */
-	StoreHasher* hasher;
-	StoreAggregator* agger;
-	StoreWriter* writer;
 
 	/* Checks whether a slot of index = bin_index is occupied in bin
 	   given by bin_offset */
@@ -81,7 +84,7 @@ private:
 	size_t next_buffer;
 
 	void* operator()(void* pao_list);
-	void findBinOffset(char* key, uint64_t& bkt);
+	void findBinOffsetIndex(char* key, uint64_t& bkt);
 };
 
 /**

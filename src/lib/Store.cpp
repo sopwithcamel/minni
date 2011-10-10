@@ -6,6 +6,7 @@ Store::Store(Aggregator* agg,
 		aggregator(agg),
 		destroyPAO(destroyPAOFunc),
 		max_keys_per_token(max_keys),
+		store_size(10000000),		// TODO set from config
 		next_buffer(0),
 		tokens_processed(0)
 {
@@ -14,7 +15,11 @@ Store::Store(Aggregator* agg,
 	writer = new StoreWriter(this);
 
 	//TODO: read name from config
-	store_fd = open("/localfs/hamur/store.ht", O_RDWR);
+	store_fd = open("/mnt/hamur/store.ht", O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
+	assert(store_fd > 0);
+
+	occup = (uint64_t*)malloc(sizeof(uint64_t) * store_size);
+	assert(occup != NULL);
 }
 
 Store::~Store()
@@ -23,6 +28,7 @@ Store::~Store()
 	delete agger;
 	delete writer;
 	close(store_fd);
+	free(occup);
 }
 
 bool Store::slot_occupied(size_t bin_offset, size_t bin_index)
@@ -57,7 +63,7 @@ StoreHasher::StoreHasher(Store* store) :
 		value_list[i] = (char**)malloc(sizeof(char*)
 			* store->max_keys_per_token);
 		for (int j=0; j<store->max_keys_per_token; j++) {
-			value_list[i][j] = (char*)malloc(VALUE_SIZE);
+			value_list[i][j] = (char*)malloc(PAOSIZE);
 		}
 		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
 	}
@@ -79,7 +85,7 @@ StoreHasher::~StoreHasher()
 	free(send);
 }
 
-void StoreHasher::findBinOffset(char* key, uint64_t& bkt)
+void StoreHasher::findBinOffsetIndex(char* key, uint64_t& bkt)
 {
 	uint64_t hashv;
 	Hash(key, strlen(key), store->store_size, hashv, bkt);
@@ -87,66 +93,95 @@ void StoreHasher::findBinOffset(char* key, uint64_t& bkt)
 
 void* StoreHasher::operator()(void* pao_list)
 {
-	char *key, *value, *offset;
+	cout << "Entering StoreHasher" << endl;
 	uint64_t ind = 0;
-	PartialAgg* pao;
+	PartialAgg *pao, *alloced_pao;
+	char* pao_in_store;
+	ssize_t n_read;
+	uint64_t slot_index, orig_slot_index, slot_offset;
+	uint64_t bin_index, bin_offset;
 
 	FilterInfo* recv = (FilterInfo*)pao_list;
 	PartialAgg** pao_l = (PartialAgg**)recv->result;
-	uint64_t recv_length = (uint64_t)recv->length;	
+	uint64_t recv_length = 1000; //(uint64_t)recv->length;	// TODO: Remove!
 
 	size_t* this_offset_list = offset_list[next_buffer];
 	char** this_value_list = value_list[next_buffer];
 	FilterInfo* this_send = send[next_buffer];
 	next_buffer = (next_buffer + 1) % store->aggregator->getNumBuffers();
 
-	uint64_t num_paos_in_bin = BINSIZE / PAOSIZE;
 	char* buf = (char*)malloc(BINSIZE);
 
 	for (ind = 0; ind < recv_length; ind++) {
 		pao = pao_l[ind];
 
 		// Find bin using hash function
-		uint64_t bin_offset;
-		findBinOffset(pao->key, bin_offset);
-		assert(bin_offset <= store->store_size - BINSIZE);
+		findBinOffsetIndex(pao->key, bin_index);
+		assert(bin_index < store->store_size);
 
-		// Read value
-		ssize_t n_read = pread64(store->store_fd, buf, BINSIZE, bin_offset);
-		
 		// Find offset of value in external HT
 		// TODO: Change this!
 		int sum = 0;
 		for (int i=0; i<3; i++) {
 			sum += pao->key[i] << i;
 		}
-		size_t bin_ind = sum % num_paos_in_bin;
-		if (!store->slot_occupied(bin_offset, bin_ind)) { // key not present
-			goto key_not_present;
-		}
+		slot_index = sum % SLOTS_PER_BIN;
+		assert(slot_index >= 0);
 
+		slot_offset = slot_index << PAOSIZE_BITS;
+		bin_offset = bin_index << BINSIZE_BITS; 
+
+		cout << "Bin index: " << bin_index << endl;;
+
+		/* If the (bin_index, slot_index) is unoccupied, then we simply add
+		   the key and the combination to the forwarding buffers. This could
+		   mean that more than one key is assigned to the same slot, which
+		   will have to be handled by the StoreWriter */
+		if (!store->slot_occupied(bin_index, slot_index)) 
+			goto key_not_present;
+
+		/* If the slot is occupied, then we know that a key exists at that 
+		   offset in the external store. We then read a bin from that offset
+		   and check if the key in the slot matches. If it does, we copy the
+		   value from the external store into the value buffer for the 
+		   Aggregator. If it doesn't we check if the following slots contain
+		   the key. If we hit an empty slot while searching then we conclude
+		   that the key doesn't exist. */
+
+		// Read value from bin_offset
+		cout << "Bin offset: " << bin_offset << endl;
+		n_read = pread64(store->store_fd, buf, BINSIZE, bin_offset);
+		assert(n_read == BINSIZE);
+		
 		// Key is present; check if it's what we want
-		offset = buf + bin_ind * PAOSIZE;
-		while (memcmp(pao->key, offset, strlen(pao->key))) {
+		pao_in_store = buf + slot_offset;
+
+		orig_slot_index = slot_index;
+		while (memcmp(pao->key, pao_in_store, strlen(pao->key))) {
 			// Not the key we want; move to next slot
-			bin_ind = (bin_ind + 1) % num_paos_in_bin;
+			slot_index = (slot_index + 1) % SLOTS_PER_BIN;
 			// If slot is empty, our key is not present
-			if (!store->slot_occupied(bin_offset, bin_ind))
+			if (slot_index == orig_slot_index) {
+				perror("Hashtable full");
+				exit(0);
+			}
+			if (!store->slot_occupied(bin_index, slot_index))
 				goto key_not_present;
 		}
 		// Key is present, and matches our key; copy
-		memcpy(this_value_list[ind], offset, VALUE_SIZE);
-		this_offset_list[ind] = bin_offset + bin_ind * PAOSIZE;
+		memcpy(this_value_list[ind], pao_in_store, PAOSIZE);
+		slot_offset = slot_index << PAOSIZE_BITS;
+		this_offset_list[ind] = bin_offset + slot_offset;
 		
 		continue;
 key_not_present:
 		// Set value to NULL and set offset where StoreWriter must write to
 		// Also set slot as occupied.
 		this_value_list[ind] = NULL;
-		this_offset_list[ind] = bin_offset + bin_ind * PAOSIZE;
-		store->set_slot_occupied(bin_offset, bin_ind);
-		
+		slot_offset = slot_index << PAOSIZE_BITS;
+		this_offset_list[ind] = bin_offset + slot_offset;
 	}
+	printf("\n");
 
 	this_send->result = pao_l;
 	this_send->length = recv_length;
@@ -185,13 +220,14 @@ StoreAggregator::~StoreAggregator()
 
 void* StoreAggregator::operator()(void* pao_list)
 {
+	cout << "Entering StoreAggregator" << endl;
 	char *key, *value;
 	uint64_t ind = 0;
 	PartialAgg* pao;
 
 	FilterInfo* recv = (FilterInfo*)pao_list;
 	PartialAgg** pao_l = (PartialAgg**)recv->result;
-	uint64_t recv_length = (uint64_t)recv->length;	
+	uint64_t recv_length = 1000; //(uint64_t)recv->length;	
 	char** recv_val_list = (char**)recv->result1;
 	size_t* recv_off_list = (size_t*)recv->result2;
 
@@ -202,7 +238,9 @@ void* StoreAggregator::operator()(void* pao_list)
 	for (ind=0; ind < recv_length; ind++) {
 		pao = pao_l[ind];
 		// Aggregate values
-		pao->add(recv_val_list[ind] + MAX_KEYSIZE);
+		if (recv_val_list[ind] != NULL) {
+			pao->add(recv_val_list[ind] + MAX_KEYSIZE);
+		}
 		ind++;
 	}
 
@@ -226,18 +264,24 @@ StoreWriter::~StoreWriter()
 
 void* StoreWriter::operator()(void* pao_list)
 {
+	cout << "Entering StoreWriter" << endl;
 	uint64_t ind = 0;
 	PartialAgg* pao;
 
 	FilterInfo* recv = (FilterInfo*)pao_list;
 	PartialAgg** pao_l = (PartialAgg**)recv->result;
-	uint64_t recv_length = (uint64_t)recv->length;	
+	uint64_t recv_length = 1000; //(uint64_t)recv->length;	
 	size_t* recv_off_list = (size_t*)recv->result1;
 
 	while (ind < recv_length) {
 		pao = pao_l[ind];
 		// Write value at offset
-		pwrite64(store->store_fd, pao->key, PAOSIZE, recv_off_list[ind]);
+		uint64_t slot_index = (recv_off_list[ind] & (BINSIZE-1)) >> PAOSIZE_BITS;
+		uint64_t bin_index = recv_off_list[ind] >> BINSIZE_BITS;
+		size_t nwrit = pwrite64(store->store_fd, pao->key, PAOSIZE, recv_off_list[ind]);
+		store->set_slot_occupied(bin_index, slot_index);
+		assert(nwrit == PAOSIZE);
+
 		ind++;
 	}
 }
