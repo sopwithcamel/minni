@@ -18,8 +18,10 @@
 
 #define	BINS		100000000
 #define	BINSIZE		4096
-#define PAOSIZE		32
+#define PAOSIZE		64
 #define MAX_KEYSIZE	12
+
+#define	Hash		HASH_FCN
 
 class StoreHasher;
 class StoreAggregator;
@@ -38,8 +40,13 @@ public:
 	~Store();
 	void (*destroyPAO)(PartialAgg* p);
 private:
+	// File descriptor for external store
 	int store_fd;
+	// In-memory array for bin occupancy
+	uint64_t* occup;
+	// Total number of bins in external store
 	size_t store_size;
+
 	int next_buffer;
 	uint64_t tokens_processed;
 	Aggregator* aggregator;
@@ -48,8 +55,11 @@ private:
 	StoreAggregator* agger;
 	StoreWriter* writer;
 
-	bool key_present(size_t bin_offset, size_t bin_index);
-	void set_key_present(size_t bin_offset, size_t bin_index);
+	/* Checks whether a slot of index = bin_index is occupied in bin
+	   given by bin_offset */
+	bool slot_occupied(size_t bin_offset, size_t bin_index);
+	/* Set the bin_index-th slot in the bin_offset-th bin as occupied */
+	void set_slot_occupied(size_t bin_offset, size_t bin_index);
 };
 
 /**
@@ -71,7 +81,7 @@ private:
 	size_t next_buffer;
 
 	void* operator()(void* pao_list);
-	uint64_t findBinOffset(char* key);
+	void findBinOffset(char* key, uint64_t& bkt);
 };
 
 /**

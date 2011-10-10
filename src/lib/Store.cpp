@@ -12,21 +12,31 @@ Store::Store(Aggregator* agg,
 	hasher = new StoreHasher(this);
 	agger = new StoreAggregator(this);
 	writer = new StoreWriter(this);
+
+	//TODO: read name from config
+	store_fd = open("/localfs/hamur/store.ht", O_RDWR);
 }
 
 Store::~Store()
 {
+	delete hasher;
+	delete agger;
+	delete writer;
+	close(store_fd);
 }
 
-bool Store::key_present(size_t bin_offset, size_t bin_index)
+bool Store::slot_occupied(size_t bin_offset, size_t bin_index)
 {
-	// TODO: Implement!
+	uint64_t mask = 1 << bin_index;
+	if (occup[bin_offset] & mask > 0)
+		return true;
 	return false;
 }
 
-void Store::set_key_present(size_t bin_offset, size_t bin_index)
+void Store::set_slot_occupied(size_t bin_offset, size_t bin_index)
 {
-	// TODO: Implement
+	uint64_t mask = 1 << bin_index;
+	occup[bin_offset] |= mask;
 }
 
 
@@ -69,10 +79,10 @@ StoreHasher::~StoreHasher()
 	free(send);
 }
 
-uint64_t StoreHasher::findBinOffset(char* key)
+void StoreHasher::findBinOffset(char* key, uint64_t& bkt)
 {
-	// TODO: Implement
-	return 0;
+	uint64_t hashv;
+	Hash(key, strlen(key), store->store_size, hashv, bkt);
 }
 
 void* StoreHasher::operator()(void* pao_list)
@@ -97,7 +107,8 @@ void* StoreHasher::operator()(void* pao_list)
 		pao = pao_l[ind];
 
 		// Find bin using hash function
-		uint64_t bin_offset = findBinOffset(pao->key);
+		uint64_t bin_offset;
+		findBinOffset(pao->key, bin_offset);
 		assert(bin_offset <= store->store_size - BINSIZE);
 
 		// Read value
@@ -110,7 +121,7 @@ void* StoreHasher::operator()(void* pao_list)
 			sum += pao->key[i] << i;
 		}
 		size_t bin_ind = sum % num_paos_in_bin;
-		if (!store->key_present(bin_offset, bin_ind)) { // key not present
+		if (!store->slot_occupied(bin_offset, bin_ind)) { // key not present
 			goto key_not_present;
 		}
 
@@ -120,7 +131,7 @@ void* StoreHasher::operator()(void* pao_list)
 			// Not the key we want; move to next slot
 			bin_ind = (bin_ind + 1) % num_paos_in_bin;
 			// If slot is empty, our key is not present
-			if (!store->key_present(bin_offset, bin_ind))
+			if (!store->slot_occupied(bin_offset, bin_ind))
 				goto key_not_present;
 		}
 		// Key is present, and matches our key; copy
@@ -133,7 +144,7 @@ key_not_present:
 		// Also set slot as occupied.
 		this_value_list[ind] = NULL;
 		this_offset_list[ind] = bin_offset + bin_ind * PAOSIZE;
-		store->set_key_present(bin_offset, bin_ind);
+		store->set_slot_occupied(bin_offset, bin_ind);
 		
 	}
 
