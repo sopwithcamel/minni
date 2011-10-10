@@ -5,9 +5,12 @@
  */
 TesterAggregator::TesterAggregator(const Config &cfg,
 				AggType type, 
+				const uint64_t num_part,
 				MapInput* _map_input,
+				const char* infile, 
 				PartialAgg* (*createPAOFunc)(const char* t), 
-				void (*destroyPAOFunc)(PartialAgg* p)):
+				void (*destroyPAOFunc)(PartialAgg* p),
+				const char* outfile):
 		Aggregator(cfg, type, 2, 1/*num_part*/, createPAOFunc, destroyPAOFunc),
 		map_input(_map_input)
 {
@@ -19,12 +22,16 @@ TesterAggregator::TesterAggregator(const Config &cfg,
 				"minni.aggregator.tester.element");
 	test_element = (const char*)c_test_element;
 
+	Setting& c_max_keys = readConfigFile(cfg, 
+				"minni.tbb.max_keys_per_token");
+	size_t max_keys = c_max_keys;
+
 	if (!test_element.compare("toker")) {
 		reader = new DFSReader(this, map_input);	
 		pipeline_list[0].add_filter(*reader);
 
-//		toker = new Tokenizer(this, emptyPAO, createPAOFunc);
-//		pipeline_list[0].add_filter(*toker);
+		toker = new Tokenizer(this, emptyPAO, createPAOFunc);
+		pipeline_list[0].add_filter(*toker);
 	} else if (!test_element.compare("sorter")) {
 		Setting& c_sort_input = readConfigFile(cfg, 
 				"minni.aggregator.tester.sorter.inputfile");
@@ -40,6 +47,17 @@ TesterAggregator::TesterAggregator(const Config &cfg,
 
 		sorter = new Sorter(1, sort_input.c_str(), sort_output.c_str());
 		pipeline_list[0].add_filter(*sorter);
+	} else if (!test_element.compare("store")) {
+		reader = new DFSReader(this, map_input);	
+		pipeline_list[0].add_filter(*reader);
+
+		toker = new Tokenizer(this, emptyPAO, createPAOFunc);
+		pipeline_list[0].add_filter(*toker);
+
+		store = new Store(this, destroyPAOFunc, max_keys);
+		pipeline_list[0].add_filter(*store->hasher);		
+		pipeline_list[0].add_filter(*store->agger);		
+		pipeline_list[0].add_filter(*store->writer);
 	}
 }
 

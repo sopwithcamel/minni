@@ -19,15 +19,19 @@
 #include "Sorter.h"
 #include "Serializer.h"
 #include "Deserializer.h"
+#include "Store.h"
 #include "util.h"
 
 class TesterAggregator : public Aggregator {
 public:
 	TesterAggregator(const Config &cfg, 
 				AggType type, 
+				const uint64_t num_part,
 				MapInput* _map_input,
+				const char* infile, 
 				PartialAgg* (*createPAOFunc)(const char* t), 
-				void (*destroyPAOFunc)(PartialAgg* p));
+				void (*destroyPAOFunc)(PartialAgg* p),
+				const char* outfile);
 	~TesterAggregator();
 private:
 	string test_element;
@@ -41,6 +45,9 @@ private:
 	Sorter* sorter;
 	char* sort_in_file;
 	char* sort_out_file;
+
+	/* For testing external store */
+	Store* store;
 };
 
 #endif // LIB_TESTERAGGREGATOR_H
