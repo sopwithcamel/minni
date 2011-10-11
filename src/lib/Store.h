@@ -21,7 +21,7 @@
 #define PAOSIZE		64
 #define PAOSIZE_BITS	6
 #define SLOTS_PER_BIN	64		// TODO: Get from config
-#define MAX_KEYSIZE	12
+#define MAX_KEYSIZE	8
 
 #define	Hash		HASH_FCN
 
@@ -80,6 +80,7 @@ private:
 	/* Pointer to lists holding values to be moved on */
 	size_t** offset_list;
 	char*** value_list;
+	int** flag_list;
 	FilterInfo** send;
 	size_t next_buffer;
 
@@ -96,6 +97,7 @@ public:
 	StoreAggregator(Store* store);
 	~StoreAggregator();
 private:
+	PartialAgg* rep_hash;
 	Store* store;
 	uint64_t tokens_processed;
 
