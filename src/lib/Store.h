@@ -58,6 +58,13 @@ private:
 	uint64_t tokens_processed;
 	Aggregator* aggregator;
 
+	PartialAgg*** pao_list;
+	uint64_t* list_length;
+
+	size_t** offset_list;
+	char*** value_list;
+	int** flag_list;
+
 	/* Checks whether a slot of index = bin_index is occupied in bin
 	   given by bin_offset */
 	bool slot_occupied(size_t bin_offset, size_t bin_index);
@@ -78,9 +85,6 @@ private:
 	uint64_t tokens_processed;
 
 	/* Pointer to lists holding values to be moved on */
-	size_t** offset_list;
-	char*** value_list;
-	int** flag_list;
 	FilterInfo** send;
 	size_t next_buffer;
 
