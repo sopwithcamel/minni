@@ -15,11 +15,14 @@ Store::Store(Aggregator* agg,
 	writer = new StoreWriter(this);
 
 	//TODO: read name from config
-	store_fd = open("/mnt/hamur/store.ht", O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
+	store_fd = open("/mnt/hamur/store.ht", O_CREAT|O_RDWR|O_NOATIME, 0666);
+//	posix_fallocate(store_fd, 0, store_size * BINSIZE);
 	assert(store_fd > 0);
 
 	occup = (uint64_t*)calloc(store_size, sizeof(uint64_t));
 	assert(occup != NULL);
+	for (int i=0; i<store_size; i++)
+		assert(occup[i] == 0);
 
 	uint64_t num_buffers = aggregator->getNumBuffers();
 
@@ -67,16 +70,21 @@ Store::~Store()
 
 bool Store::slot_occupied(size_t bin_index, size_t slot_index)
 {
-	uint64_t mask = 0x1 << slot_index;
-	if ((occup[bin_index] & mask) > 0)
+	uint64_t a = 1;
+	uint64_t mask = (a << slot_index);
+	if ((occup[bin_index] & mask) > 0) {
 		return true;
+	}
 	return false;
 }
 
-void Store::set_slot_occupied(size_t bin_offset, size_t bin_index)
+void Store::set_slot_occupied(size_t bin_index, size_t slot_index)
 {
-	uint64_t mask = 1 << bin_index;
-	occup[bin_offset] |= mask;
+	uint64_t a = 1;
+	uint64_t mask = (a << slot_index);
+//	printf("Set: %llu, %llu, %ld, %ld\n", occup[bin_index], mask, bin_index, slot_index);
+	occup[bin_index] |= mask;
+//	cout << "After: " << occup[bin_index] << endl;
 }
 
 
@@ -100,6 +108,7 @@ void StoreHasher::findBinOffsetIndex(char* key, uint64_t& bkt)
 
 void* StoreHasher::operator()(void* pao_list)
 {
+	cout << "Entering StoreHasher" << endl;
 	uint64_t ind = 0;
 	PartialAgg *pao, *alloced_pao;
 	char* pao_in_store;
@@ -114,6 +123,8 @@ void* StoreHasher::operator()(void* pao_list)
 
 	PartialAgg** this_pao_list = store->pao_list[next_buffer];
 	uint64_t this_length = store->list_length[next_buffer];
+	assert(this_length < store->max_keys_per_token);
+
 	uint64_t* this_offset_list = store->offset_list[next_buffer];
 	char** this_value_list = store->value_list[next_buffer];
 	int* this_flag_list = store->flag_list[next_buffer];
@@ -123,6 +134,7 @@ void* StoreHasher::operator()(void* pao_list)
 
 	for (ind = 0; ind < this_length; ind++) {
 		pao = this_pao_list[ind];
+//		strcpy(pao->key, "aaaaaaa");
 //		printf("%p, %ld\n", value_list[0][ind], store->max_keys_per_token);
 
 		// Find bin using hash function
@@ -159,7 +171,7 @@ void* StoreHasher::operator()(void* pao_list)
 		   that the key doesn't exist. */
 
 		// Read value from bin_offset
-//		cout << "Bin offset: " << bin_offset << endl;
+//		cout << bin_index << ", " << slot_index << ", " << bin_offset << endl;
 		n_read = pread64(store->store_fd, buf, BINSIZE, bin_offset);
 		assert(n_read == BINSIZE);
 		
@@ -207,11 +219,14 @@ StoreAggregator::~StoreAggregator()
 
 void* StoreAggregator::operator()(void* pao_list)
 {
+	cout << "Entering StoreAggregator" << endl;
 	uint64_t ind = 0;
 	PartialAgg *pao, *found;
 
 	PartialAgg** this_pao_list = store->pao_list[next_buffer];
 	uint64_t this_length = store->list_length[next_buffer];
+	char** this_value_list = store->value_list[next_buffer];
+	int* this_flag_list = store->flag_list[next_buffer];
 	next_buffer = (next_buffer + 1) % store->aggregator->getNumBuffers();
 
 	for (ind=0; ind < this_length; ind++) {
@@ -231,8 +246,8 @@ void* StoreAggregator::operator()(void* pao_list)
 			HASH_ADD_KEYPTR(hh, rep_hash, pao->key, strlen(pao->key), pao);
 		}
 		// Aggregate values
-//		if (0)
-//			pao->add(recv_val_list[ind] + MAX_KEYSIZE);
+		if (this_flag_list[ind] == 0)
+			pao->add(this_value_list[ind] + MAX_KEYSIZE);
 	}
 	HASH_CLEAR(hh, rep_hash);
 }
@@ -243,16 +258,20 @@ StoreWriter::StoreWriter(Store* store) :
 		next_buffer(0),
 		tokens_processed(0)
 {
+	empty_bin = (char*)calloc(BINSIZE, 1);
 }
 
 StoreWriter::~StoreWriter()
 {
+	free(empty_bin);
 }
 
 void* StoreWriter::operator()(void* pao_list)
 {
+	cout << "Entering StoreWriter" << endl;
 	uint64_t ind = 0;
 	PartialAgg* pao;
+	size_t n_writ;
 
 	PartialAgg** this_pao_list = store->pao_list[next_buffer];
 	uint64_t this_length = store->list_length[next_buffer];
@@ -265,28 +284,55 @@ void* StoreWriter::operator()(void* pao_list)
 		if (this_pao_list[ind] == NULL)
 			continue;
 		pao = this_pao_list[ind];
+		// the offset to write at
 		uint64_t wr_offset = this_offset_list[ind];
+		// number of bytes to write
+		size_t wr_size = PAOSIZE;
+		// buffer to write
+		char* wr_buf = pao->key;
+
 		/* Multiple keys may hash to the same slot, but this can
 		 * happen only if each of the colliding keys is being entered
 		 * into the store for the first time. This condition can be 
 		 * detected by looking at the values list. */
-		uint64_t slot_index = (this_offset_list[ind] & (BINSIZE-1)) 
-				>> PAOSIZE_BITS;
+		uint64_t slot_offset = (this_offset_list[ind] & (BINSIZE-1));
+		uint64_t slot_index = (slot_offset >> PAOSIZE_BITS);
 		uint64_t bin_index = this_offset_list[ind] >> BINSIZE_BITS;
+		uint64_t bin_offset = bin_index << BINSIZE_BITS;
+
+	//	cout << bin_index << ", " << slot_index << endl;
 		if (this_flag_list[ind] == 1 && 
 				store->slot_occupied(bin_index, slot_index)) {
+			/* this key isn't present in the bin, but another key
+			   occupies the slot that it hashes to, so we need to
+			   find another slot for it */
 			uint64_t orig_slot_index = slot_index;
-			while(store->slot_occupied(bin_index, slot_index)) {
+			do {
 				slot_index = (slot_index + 1) % SLOTS_PER_BIN;
+				if (slot_index == orig_slot_index)
+					cout << " FML (" << bin_index << ", " << slot_index << ")" << endl;
 				assert(slot_index != orig_slot_index);
-			}
-			wr_offset = (bin_index << BINSIZE_BITS) + 
-					(slot_index << PAOSIZE_BITS);
+			} while(store->slot_occupied(bin_index, slot_index));
+			// we have changed the location of the write, so update
+			wr_offset = bin_offset + (slot_index << PAOSIZE_BITS);
+//			cout << " (" << bin_index << ", " << slot_index << ")" << endl;
+		} else if (store->occup[bin_index] == 0) {
+			/* If the bin has never been written to then we fill
+			   the rest of the bin with zeroes */
+			memset(empty_bin, 0, BINSIZE);
+			memcpy(empty_bin + slot_offset, pao->key, PAOSIZE);
+			wr_offset = (bin_index << BINSIZE_BITS);
+			wr_buf = empty_bin;
+			wr_size = BINSIZE;
 		}
-		size_t nwrit = pwrite64(store->store_fd, pao->key, PAOSIZE,
-				wr_offset);
+		this_flag_list[ind] = 0;
+
+//		cout << "Writing " << pao->key  << ", " << pao->value;
+//		cout << ", " << wr_size << " bytes" << " at " << wr_offset;
+//		cout << " (" << bin_index << ", " << slot_index << "): " << pao->key << endl;
+		n_writ = pwrite64(store->store_fd, wr_buf, wr_size, wr_offset);
+		assert(n_writ == wr_size);
 		store->set_slot_occupied(bin_index, slot_index);
 		store->destroyPAO(pao);
-		assert(nwrit == PAOSIZE);
 	}
 }

@@ -24,6 +24,7 @@
 #define MAX_KEYSIZE	8
 
 #define	Hash		HASH_FCN
+#define HASH_FUNCTION	HASH_MUR
 
 class StoreHasher;
 class StoreAggregator;
@@ -61,15 +62,15 @@ private:
 	PartialAgg*** pao_list;
 	uint64_t* list_length;
 
-	size_t** offset_list;
+	uint64_t** offset_list;
 	char*** value_list;
 	int** flag_list;
 
 	/* Checks whether a slot of index = bin_index is occupied in bin
 	   given by bin_offset */
-	bool slot_occupied(size_t bin_offset, size_t bin_index);
+	bool slot_occupied(size_t bin_index, size_t slot_index);
 	/* Set the bin_index-th slot in the bin_offset-th bin as occupied */
-	void set_slot_occupied(size_t bin_offset, size_t bin_index);
+	void set_slot_occupied(size_t bin_index, size_t slot_index);
 };
 
 /**
@@ -85,7 +86,6 @@ private:
 	uint64_t tokens_processed;
 
 	/* Pointer to lists holding values to be moved on */
-	FilterInfo** send;
 	size_t next_buffer;
 
 	void* operator()(void* pao_list);
@@ -107,7 +107,6 @@ private:
 
 	/* Pointer to lists holding values to be moved on */
 	char*** value_list;
-	FilterInfo** send;
 	size_t next_buffer;
 
 	void* operator()(void* pao_list);
@@ -125,7 +124,7 @@ private:
 	Store* store;
 	uint64_t tokens_processed;
 	size_t next_buffer;
-	FilterInfo** send;
+	char* empty_bin;
 	void* operator()(void* pao_list);
 };
 
