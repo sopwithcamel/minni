@@ -5,8 +5,11 @@ Store::Store(Aggregator* agg,
 			const size_t max_keys) :
 		aggregator(agg),
 		destroyPAO(destroyPAOFunc),
+		occup(NULL),
+		of(NULL),
 		max_keys_per_token(max_keys),
 		store_size(10000000),		// TODO set from config
+		ht_size(8000000),
 		next_buffer(0),
 		tokens_processed(0)
 {
@@ -25,6 +28,7 @@ Store::Store(Aggregator* agg,
 		assert(occup[i] == 0);
 
 	uint64_t num_buffers = aggregator->getNumBuffers();
+	next_of_bin = ht_size;
 
 	pao_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
 	list_length = (uint64_t*)malloc(sizeof(uint64_t) * num_buffers);
@@ -68,7 +72,7 @@ Store::~Store()
 	free(value_list);
 }
 
-bool Store::slot_occupied(size_t bin_index, size_t slot_index)
+bool Store::slot_occupied(uint64_t bin_index, uint64_t slot_index)
 {
 	uint64_t a = 1;
 	uint64_t mask = (a << slot_index);
@@ -78,7 +82,7 @@ bool Store::slot_occupied(size_t bin_index, size_t slot_index)
 	return false;
 }
 
-void Store::set_slot_occupied(size_t bin_index, size_t slot_index)
+void Store::set_slot_occupied(uint64_t bin_index, uint64_t slot_index)
 {
 	uint64_t a = 1;
 	uint64_t mask = (a << slot_index);
@@ -87,10 +91,29 @@ void Store::set_slot_occupied(size_t bin_index, size_t slot_index)
 //	cout << "After: " << occup[bin_index] << endl;
 }
 
+uint64_t Store::get_overflow_bin(uint64_t bin_index)
+{
+	Overflow* o_bin;
+	HASH_FIND_INT(of, &bin_index, o_bin);
+	if (o_bin) {
+		return o_bin->of_bin;				
+	} else {
+		Overflow* new_of = (Overflow*)malloc(sizeof(Overflow));
+		new_of->bin = bin_index;
+		// TODO: Locking needed?
+		if (next_of_bin == store_size - 1)
+			return 0;
+		new_of->of_bin = next_of_bin++;
+		HASH_ADD_INT(of, bin, new_of);
+		return new_of->of_bin;
+	}
+}
+
 
 StoreHasher::StoreHasher(Store* store) :
 		filter(/*serial=*/true),
 		store(store),
+		rep_hash(NULL),
 		next_buffer(0),
 		tokens_processed(0)
 {
@@ -103,17 +126,17 @@ StoreHasher::~StoreHasher()
 void StoreHasher::findBinOffsetIndex(char* key, uint64_t& bkt)
 {
 	uint64_t hashv;
-	Hash(key, strlen(key), store->store_size, hashv, bkt);
+	Hash(key, strlen(key), store->ht_size, hashv, bkt);
 }
 
 void* StoreHasher::operator()(void* pao_list)
 {
 	cout << "Entering StoreHasher" << endl;
 	uint64_t ind = 0;
-	PartialAgg *pao, *alloced_pao;
-	char* pao_in_store;
+	PartialAgg *pao, *alloced_pao, *found;
+	char* slot_pao;
 	ssize_t n_read;
-	uint64_t slot_index, orig_slot_index, slot_offset;
+	uint64_t slot_index, orig_slot_index, orig_bin_index, slot_offset;
 	uint64_t bin_index, bin_offset;
 
 	FilterInfo* recv = (FilterInfo*)pao_list;
@@ -134,12 +157,18 @@ void* StoreHasher::operator()(void* pao_list)
 
 	for (ind = 0; ind < this_length; ind++) {
 		pao = this_pao_list[ind];
-//		strcpy(pao->key, "aaaaaaa");
 //		printf("%p, %ld\n", value_list[0][ind], store->max_keys_per_token);
+		found = NULL;
+		HASH_FIND_STR(rep_hash, pao->key, found);
+		if (found) {
+			continue;
+		} else {
+			HASH_ADD_KEYPTR(hh, rep_hash, pao->key, strlen(pao->key), pao);
+		}
 
 		// Find bin using hash function
 		findBinOffsetIndex(pao->key, bin_index);
-		assert(bin_index < store->store_size);
+		assert(bin_index < store->ht_size);
 
 		// Find offset of value in external HT
 		// TODO: Change this!
@@ -150,47 +179,61 @@ void* StoreHasher::operator()(void* pao_list)
 		slot_index = sum % SLOTS_PER_BIN;
 		assert(slot_index >= 0);
 
-		slot_offset = slot_index << PAOSIZE_BITS;
-		bin_offset = bin_index << BINSIZE_BITS; 
 
-//		cout << "Bin index: " << bin_index << endl;;
+		do {
+			slot_offset = (slot_index << PAOSIZE_BITS);
+			bin_offset = (bin_index << BINSIZE_BITS); 
 
-		/* If the (bin_index, slot_index) is unoccupied, then we simply add
-		   the key and the combination to the forwarding buffers. This could
-		   mean that more than one key is assigned to the same slot, which
-		   will have to be handled by the StoreWriter */
-		if (!store->slot_occupied(bin_index, slot_index)) 
-			goto key_not_present;
-
-		/* If the slot is occupied, then we know that a key exists at that 
-		   offset in the external store. We then read a bin from that offset
-		   and check if the key in the slot matches. If it does, we copy the
-		   value from the external store into the value buffer for the 
-		   Aggregator. If it doesn't we check if the following slots contain
-		   the key. If we hit an empty slot while searching then we conclude
-		   that the key doesn't exist. */
-
-		// Read value from bin_offset
-//		cout << bin_index << ", " << slot_index << ", " << bin_offset << endl;
-		n_read = pread64(store->store_fd, buf, BINSIZE, bin_offset);
-		assert(n_read == BINSIZE);
-		
-		// Key is present; check if it's what we want
-		assert(slot_offset < BINSIZE);
-		pao_in_store = buf + slot_offset;
-
-		orig_slot_index = slot_index;
-		while (memcmp(pao->key, pao_in_store, strlen(pao->key))) {
-			// Not the key we want; move to next slot
-			slot_index = (slot_index + 1) % SLOTS_PER_BIN;
-			// If slot is empty, our key is not present
-			assert(slot_index != orig_slot_index);
-			if (!store->slot_occupied(bin_index, slot_index))
+			/* If the (bin_index, slot_index) is unoccupied, then
+    		    	   we simply add the key and the combination to the 
+			   forwarding buffers. This could mean that more than
+			   one key is assigned to the same slot, which
+ 			   will have to be handled by the StoreWriter */
+			if (!store->slot_occupied(bin_index, slot_index)) 
 				goto key_not_present;
-		}
+
+			/* If the slot is occupied, then we know that a key
+			   exists at that offset in the external store. We 
+			   then read a bin from that offset and check if the 
+			   key in the slot matches. If it does, we copy the
+			   value from the external store into the value buffer
+			   for the Aggregator. If it doesn't we check if the
+			   following slots contain the key. If we hit an empty
+			   slot while searching then we conclude that the key 
+			   doesn't exist. */
+
+			// Read value from bin_offset
+			n_read = pread64(store->store_fd, buf, BINSIZE, 
+					bin_offset);
+			assert(n_read == BINSIZE);
+		
+			// Key is present; check if it's what we want
+			assert(slot_offset < BINSIZE);
+
+			orig_slot_index = slot_index;
+			orig_bin_index = bin_index;
+			while (memcmp(pao->key, buf + slot_offset, strlen(pao->key))) {
+				// Not the key we want; move to next slot
+				slot_index = (slot_index + 1) % SLOTS_PER_BIN;
+				slot_offset = (slot_index << PAOSIZE_BITS);
+
+				// If slot is empty, our key is not present
+				if (!store->slot_occupied(bin_index, slot_index))
+					goto key_not_present;
+
+				/* If we are unable to find an empty slot, get the
+				   overflow bucket */
+				if (slot_index == orig_slot_index) {
+					bin_index = store->get_overflow_bin(bin_index);
+					assert(bin_index >= store->ht_size);
+//					fprintf(stderr, "New bin index found: %ld\n", bin_index);
+					break;
+				}
+			}
+		} while(bin_index != orig_bin_index);
 		// Key is present, and matches our key; copy
-		memcpy(this_value_list[ind], pao_in_store, PAOSIZE);
 		slot_offset = slot_index << PAOSIZE_BITS;
+		memcpy(this_value_list[ind], buf + slot_offset, PAOSIZE);
 		this_offset_list[ind] = bin_offset + slot_offset;
 		this_flag_list[ind] = 0;
 		
@@ -198,10 +241,13 @@ void* StoreHasher::operator()(void* pao_list)
 key_not_present:
 		/* Set offset where StoreWriter must write to
 		   and set flag to 1 to indicate new key */
+		bin_offset = bin_index << BINSIZE_BITS; 
 		slot_offset = slot_index << PAOSIZE_BITS;
 		this_offset_list[ind] = bin_offset + slot_offset;
 		this_flag_list[ind] = 1;
 	}
+	free(buf);
+	HASH_CLEAR(hh, rep_hash);
 }
 
 StoreAggregator::StoreAggregator(Store* store) :
@@ -300,33 +346,35 @@ void* StoreWriter::operator()(void* pao_list)
 		uint64_t bin_index = this_offset_list[ind] >> BINSIZE_BITS;
 		uint64_t bin_offset = bin_index << BINSIZE_BITS;
 
-	//	cout << bin_index << ", " << slot_index << endl;
-		if (this_flag_list[ind] == 1 && 
-				store->slot_occupied(bin_index, slot_index)) {
-			/* this key isn't present in the bin, but another key
-			   occupies the slot that it hashes to, so we need to
-			   find another slot for it */
+		/* this key isn't present in the bin, but another key
+		   occupies the slot that it hashes to, so we need to
+		   find another slot for it */
+		if (this_flag_list[ind] == 1 && store->slot_occupied
+				(bin_index, slot_index)) {
 			uint64_t orig_slot_index = slot_index;
 			do {
 				slot_index = (slot_index + 1) % SLOTS_PER_BIN;
-				if (slot_index == orig_slot_index)
-					cout << " FML (" << bin_index << ", " << slot_index << ")" << endl;
-				assert(slot_index != orig_slot_index);
+				if (slot_index == orig_slot_index) {
+					bin_index = store->get_overflow_bin(bin_index);
+					assert(bin_index >= store->ht_size);
+				}
 			} while(store->slot_occupied(bin_index, slot_index));
 			// we have changed the location of the write, so update
-			wr_offset = bin_offset + (slot_index << PAOSIZE_BITS);
+			bin_offset = bin_index << BINSIZE_BITS;
+			slot_offset = slot_index << PAOSIZE_BITS;
+			wr_offset = bin_offset + slot_offset;
 //			cout << " (" << bin_index << ", " << slot_index << ")" << endl;
-		} else if (store->occup[bin_index] == 0) {
-			/* If the bin has never been written to then we fill
-			   the rest of the bin with zeroes */
+		} 
+
+		/* If the bin has never been written to then we fill
+		   the rest of the bin with zeroes */
+		if (store->occup[bin_index] == 0) {
 			memset(empty_bin, 0, BINSIZE);
 			memcpy(empty_bin + slot_offset, pao->key, PAOSIZE);
 			wr_offset = (bin_index << BINSIZE_BITS);
 			wr_buf = empty_bin;
 			wr_size = BINSIZE;
 		}
-		this_flag_list[ind] = 0;
-
 //		cout << "Writing " << pao->key  << ", " << pao->value;
 //		cout << ", " << wr_size << " bytes" << " at " << wr_offset;
 //		cout << " (" << bin_index << ", " << slot_index << "): " << pao->key << endl;
@@ -334,5 +382,6 @@ void* StoreWriter::operator()(void* pao_list)
 		assert(n_writ == wr_size);
 		store->set_slot_occupied(bin_index, slot_index);
 		store->destroyPAO(pao);
+		this_flag_list[ind] = 0;
 	}
 }

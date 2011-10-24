@@ -30,6 +30,13 @@ class StoreHasher;
 class StoreAggregator;
 class StoreWriter;
 
+typedef struct {
+	int bin;
+	int of_bin;
+	UT_hash_handle hh;
+} Overflow; 
+
+
 class Store {
 	friend class StoreHasher;
 	friend class StoreAggregator;
@@ -47,13 +54,20 @@ public:
 	StoreHasher* hasher;
 	StoreAggregator* agger;
 	StoreWriter* writer;
+
 private:
 	// File descriptor for external store
 	int store_fd;
 	// In-memory array for bin occupancy; set only when pao is stored
 	uint64_t* occup;
+	// In-memory hashtable for tracking overflow bins
+	Overflow* of;
+	// Keeps track of overflow bin usage
+	size_t next_of_bin;
 	// Total number of bins in external store
 	size_t store_size;
+	// Directly usable elements in external store
+	size_t ht_size;
 
 	int next_buffer;
 	uint64_t tokens_processed;
@@ -68,9 +82,11 @@ private:
 
 	/* Checks whether a slot of index = bin_index is occupied in bin
 	   given by bin_offset */
-	bool slot_occupied(size_t bin_index, size_t slot_index);
+	bool slot_occupied(uint64_t bin_index, uint64_t slot_index);
 	/* Set the bin_index-th slot in the bin_offset-th bin as occupied */
-	void set_slot_occupied(size_t bin_index, size_t slot_index);
+	void set_slot_occupied(uint64_t bin_index, uint64_t slot_index);
+	/* Get overflow bin */
+	uint64_t get_overflow_bin(uint64_t bin_index);
 };
 
 /**
@@ -82,6 +98,7 @@ public:
 	StoreHasher(Store* store);
 	~StoreHasher();
 private:
+	PartialAgg* rep_hash;
 	Store* store;
 	uint64_t tokens_processed;
 
