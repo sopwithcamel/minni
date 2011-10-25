@@ -31,4 +31,16 @@ void WordCountPartialAgg::merge (PartialAgg* add_agg)
 	sprintf(value, "%d", curr_val);
 }
 
+void WordCountPartialAgg::serialize(FILE* f)
+{
+	char buf[BUF_SIZE + 1];
+	strcpy(buf, key);
+	strcat(buf, " ");
+	strcat(buf, value);
+	strcat(buf, "\n");
+	assert(NULL != f);
+	size_t l = strlen(buf);
+	assert(fwrite(buf, sizeof(char), l, f) == l);
+}
+
 REGISTER_PAO(WordCountPartialAgg);
