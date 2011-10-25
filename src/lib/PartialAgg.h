@@ -19,6 +19,7 @@ class PartialAgg {
 	~PartialAgg() {}
 	virtual void add (const char* val);
 	virtual void merge (PartialAgg* add_agg);
+	virtual void serialize(FILE *f);
 	char* get_value();
 	void set_val(char* v);
 
