@@ -1,7 +1,5 @@
 #include "Serializer.h"
 
-#define BUF_SIZE	65535
-
 Serializer::Serializer(Aggregator* agg,
 			PartialAgg* emptyPAO,
 			const uint64_t nb, 
@@ -28,13 +26,11 @@ Serializer::Serializer(Aggregator* agg,
 		fl[i] = fopen(fname, "w");
 	}
 	free(fname);
-	buf = (char*)malloc(BUF_SIZE + 1);
 	type = aggregator->getType();
 }
 
 Serializer::~Serializer()
 {
-	free(buf);
 	free(fl);
 }
 
@@ -62,16 +58,7 @@ void* Serializer::operator()(void* pao_list)
 	while(ind < recv_length) {
 		pao = pao_l[ind];
 		buc = partition(pao->key);	
-		strcpy(buf, pao->key);
-		strcat(buf, " ");
-		strcat(buf, pao->value);
-		strcat(buf, "\n");
-		if (NULL == fl[buc]) {
-			for (int i=0; i<strlen(pao->key); i++)
-				fprintf(stderr, "%c", pao->key[i]);
-			fprintf(stderr, "How possible? %d, %s\n", buc, pao->key);
-		}
-		fwrite(buf, sizeof(char), strlen(buf), fl[buc]);
+		pao->serialize(fl[buc]);
 		destroyPAO(pao);
 		ind++;
 	}
