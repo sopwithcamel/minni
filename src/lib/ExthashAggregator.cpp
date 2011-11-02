@@ -78,9 +78,6 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
 	strcpy(final_path, fprefix.c_str());
 	strcat(final_path, outfile);
-	eh_reader = new ExthashReader(this, htname.c_str(), external_capacity, 
-			emptyPAO, final_path);
-	pipeline_list[1].add_filter(*eh_reader);
 	free(final_path);
 }
 
@@ -97,7 +94,6 @@ ExthashAggregator::~ExthashAggregator()
 		delete merger;
 	}
 	delete ext_hasher;
-	delete eh_reader;
 	pipeline_list[0].clear();
 	pipeline_list[1].clear();
 }

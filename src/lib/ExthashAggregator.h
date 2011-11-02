@@ -52,7 +52,6 @@ private:
 	ExternalHasher* ext_hasher;
 
 	/* scan from external ht into files for reducer */
-	ExthashReader* eh_reader;
 	Serializer* final_serializer; 
 	const char* outfile;
 };
