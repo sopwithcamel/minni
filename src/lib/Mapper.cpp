@@ -5,7 +5,6 @@
 #include "HashAggregator.h"
 #include "HashsortAggregator.h"
 #include "TesterAggregator.h"
-#include "PlainMapper.h"
 #include <dlfcn.h>
 
 //#define lt__PROGRAM__LTX_preloaded_symbols lt_libltdl_LTX_preloaded_symbols
@@ -220,11 +219,6 @@ task* MapperWrapperTask::execute() {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new TesterAggregator(
 						cfg, Map, npart, &myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO,
-						map_out_file.c_str()));
-	} else if (!selected_map_aggregator.compare("plain")) {
-		mapper->aggregs = dynamic_cast<Aggregator*>(new PlainMapper(
-						cfg, Map, npart, &myinput, NULL,
-						mapper->createPAO, mapper->destroyPAO, 
 						map_out_file.c_str()));
 	} else {
 		fprintf(stderr, "Illegal aggregator chosen!\n");

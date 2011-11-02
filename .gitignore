@@ -23,6 +23,7 @@ autom4te.cache
 libtool
 *.lo
 *.la
+*.dirstamp
 Makefile
 config.status
 .deps

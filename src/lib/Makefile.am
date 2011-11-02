@@ -1,65 +1,39 @@
+AUTOMAKE_OPTIONS = subdir-objects
 SUBDIRS = example
 
 lib_LTLIBRARIES = libminni.la 
 
-EXTRA_DIST = 		PartialAgg.h \
-			Mapper.h \
-			Reducer.h \
-			Minnie.h \
-			Deserializer.h \
-		       	DFSReader.h \
-			ExternalHasher.h \
-			FileReader.h \
-			Adder.h \
-			Hasher.h \
-			Merger.h \
-			Serializer.h \
-			Sorter.h \
-			Tokenizer.h \
-			BucketAggregator.h \
-			ExthashAggregator.h \
-			HashAggregator.h \
-			HashsortAggregator.h \
-			PlainMapper.h \
-			TesterAggregator.h \
-			Aggregator.h \
-			Defs.h \
-			Util.h \
-			fnv.h
-
 libminni_la_SOURCES =  	PartialAgg.cpp \
 		      	Mapper.cpp \
 		       	Reducer.cpp \
-			Deserializer.cpp \
-		       	DFSReader.cpp \
-			ExternalHasher.cpp \
-		       	FileReader.cpp \
-			Serializer.cpp \
-			Adder.cpp \
-			Hasher.cpp \
-			Merger.cpp \
-			Sorter.cpp \
-		       	Tokenizer.cpp \
-			BucketAggregator.cpp \
-			ExthashAggregator.cpp \
-		       	HashAggregator.cpp \
-			HashsortAggregator.cpp \
-			PlainMapper.cpp \
-			TesterAggregator.cpp \
-		       	Aggregator.cpp \
+			filters/Adder.cpp \
+			filters/Deserializer.cpp \
+		       	filters/DFSReader.cpp \
+			filters/ExternalHasher.cpp \
+		       	filters/FileReader.cpp \
+			filters/Hasher.cpp \
+			filters/Merger.cpp \
+			filters/Serializer.cpp \
+			filters/Sorter.cpp \
+			filters/Store.cpp \
+		       	filters/Tokenizer.cpp \
+		       	aggregators/Aggregator.cpp \
+			aggregators/BucketAggregator.cpp \
+			aggregators/ExthashAggregator.cpp \
+		       	aggregators/HashAggregator.cpp \
+			aggregators/HashsortAggregator.cpp \
+			aggregators/TesterAggregator.cpp \
 			Util.cpp
 
-libminni_la_LIBADD = ../dfs/libdfs.la \
-			/home/hamur/fawnkv/fawnds/libfawnds.la \
-			/home/hamur/fawnkv/utils/libfawnkvutils.la
+libminni_la_LIBADD = ../dfs/libdfs.la
 
 libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 		       $(THRIFT_CFLAGS) \
-		       -I$(srcdir)/../worker/gen-cpp \
-		       -I$(srcdir)/../master \
-		       -I$(srcdir)/../dfs \
-			-I/home/hamur/fawnkv/fawnds \
-			-I/home/hamur/fawnkv/utils \
+			-I$(srcdir)/../worker/gen-cpp \
+			-I$(srcdir)/../master \
+			-I$(srcdir)/../dfs \
+			-I$(srcdir)/filters/ \
+			-I$(srcdir)/aggregators/ \
 			-I/home/hamur/leveldb/include
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
@@ -71,23 +45,23 @@ minni_include_HEADERS = PartialAgg.h \
 			Mapper.h \
 			Reducer.h \
 			Minnie.h \
-			Deserializer.h \
-		       	DFSReader.h \
-			ExternalHasher.h \
-			FileReader.h \
-			Adder.h \
-			Hasher.h \
-			Merger.h \
-			Serializer.h \
-			Sorter.h \
-			Tokenizer.h \
-			BucketAggregator.h \
-			ExthashAggregator.h \
-			HashAggregator.h \
-			HashsortAggregator.h \
-			PlainMapper.h \
-			TesterAggregator.h \
-			Aggregator.h \
+			filters/Adder.h \
+			filters/Deserializer.h \
+		       	filters/DFSReader.h \
+			filters/ExternalHasher.h \
+			filters/FileReader.h \
+			filters/Hasher.h \
+			filters/Merger.h \
+			filters/Serializer.h \
+			filters/Sorter.h \
+			filters/Store.h \
+			filters/Tokenizer.h \
+			aggregators/BucketAggregator.h \
+			aggregators/ExthashAggregator.h \
+			aggregators/HashAggregator.h \
+			aggregators/HashsortAggregator.h \
+			aggregators/TesterAggregator.h \
+			aggregators/Aggregator.h \
 			Defs.h \
 			Util.h \
 			fnv.h
