@@ -3,19 +3,22 @@
 
 using namespace std;
 
-void PartialAgg::add(const char *v)
+void PartialAgg::add(void* v)
 {
 }
-
 
 void PartialAgg::merge (PartialAgg* add_agg)
 {
 }
 
-void PartialAgg::serialize(FILE* f)
+void PartialAgg::serialize(FILE* f, void* buf)
 {
 }
 
 bool PartialAgg::deserialize(FILE* f, void* buf)
+{
+}
+
+bool PartialAgg::deserialize(void* buf)
 {
 }

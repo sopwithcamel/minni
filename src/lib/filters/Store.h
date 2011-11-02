@@ -45,10 +45,12 @@ public:
 	const size_t max_keys_per_token;
 
 	Store(Aggregator* agg,
+			PartialAgg* (*createPAOFunc)(const char* k),
 			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys);
 	~Store();
 	void (*destroyPAO)(PartialAgg* p);
+	PartialAgg* (*createPAO)(const char* k);
 
 	/* Stages of the pipeline */
 	StoreHasher* hasher;
@@ -77,7 +79,7 @@ private:
 	uint64_t* list_length;
 
 	uint64_t** offset_list;
-	char*** value_list;
+	void*** value_list;
 	int** flag_list;
 
 	/* Checks whether a slot of index = bin_index is occupied in bin

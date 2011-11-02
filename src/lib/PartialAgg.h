@@ -17,10 +17,13 @@ class PartialAgg {
   public:
 	PartialAgg() {}
 	~PartialAgg() {}
-	virtual void add (const char* val);
-	virtual void merge (PartialAgg* add_agg);
-	virtual void serialize(FILE *f);
+	virtual void add(void* val);
+	virtual void merge(PartialAgg* add_agg);
+	virtual void serialize(FILE *f, void* buf);
+	/* Deserialize from file; use buf if buffer is required */
 	virtual bool deserialize(FILE* f, void* buf);
+	/* Deserialize from buffer */
+	virtual bool deserialize(void* buf);
 
 	char* key;
 	void* value;

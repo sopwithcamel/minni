@@ -1,9 +1,11 @@
 #include "Store.h"
 
 Store::Store(Aggregator* agg, 
+			PartialAgg* (*createPAOFunc)(const char* k),
 			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys) :
 		aggregator(agg),
+		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc),
 		occup(NULL),
 		of(NULL),
@@ -33,17 +35,17 @@ Store::Store(Aggregator* agg,
 	pao_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
 	list_length = (uint64_t*)malloc(sizeof(uint64_t) * num_buffers);
 	offset_list = (uint64_t**)malloc(sizeof(size_t*) * num_buffers);
-	value_list = (char***)malloc(sizeof(char**) * num_buffers);
+	value_list = (void***)malloc(sizeof(void**) * num_buffers);
 	flag_list = (int**)malloc(num_buffers);
 
 	for (int i=0; i<num_buffers; i++) {
 		offset_list[i] = (uint64_t*)malloc(sizeof(size_t) 
 			* max_keys_per_token);
-		value_list[i] = (char**)malloc(sizeof(char*)
+		value_list[i] = (void**)malloc(sizeof(void*)
 			* max_keys_per_token);
 		flag_list[i] = (int*)calloc(max_keys_per_token, sizeof(int));
 		for (int j=0; j<max_keys_per_token; j++) {
-			value_list[i][j] = (char*)malloc(PAOSIZE);
+			value_list[i][j] = malloc(PAOSIZE);
 		}
 	}
 }
@@ -149,7 +151,7 @@ void* StoreHasher::operator()(void* pao_list)
 	assert(this_length < store->max_keys_per_token);
 
 	uint64_t* this_offset_list = store->offset_list[next_buffer];
-	char** this_value_list = store->value_list[next_buffer];
+	void** this_value_list = store->value_list[next_buffer];
 	int* this_flag_list = store->flag_list[next_buffer];
 	next_buffer = (next_buffer + 1) % store->aggregator->getNumBuffers();
 
@@ -271,7 +273,7 @@ void* StoreAggregator::operator()(void* pao_list)
 
 	PartialAgg** this_pao_list = store->pao_list[next_buffer];
 	uint64_t this_length = store->list_length[next_buffer];
-	char** this_value_list = store->value_list[next_buffer];
+	void** this_value_list = store->value_list[next_buffer];
 	int* this_flag_list = store->flag_list[next_buffer];
 	next_buffer = (next_buffer + 1) % store->aggregator->getNumBuffers();
 
@@ -292,8 +294,12 @@ void* StoreAggregator::operator()(void* pao_list)
 			HASH_ADD_KEYPTR(hh, rep_hash, pao->key, strlen(pao->key), pao);
 		}
 		// Aggregate values
-		if (this_flag_list[ind] == 0)
-			pao->add(this_value_list[ind] + MAX_KEYSIZE);
+		if (this_flag_list[ind] == 0) {
+			PartialAgg* deszd_pao = store->createPAO("");
+			deszd_pao->deserialize(this_value_list[ind]);
+			pao->merge(deszd_pao);
+			store->destroyPAO(deszd_pao);
+		}
 	}
 	HASH_CLEAR(hh, rep_hash);
 }
@@ -322,7 +328,7 @@ void* StoreWriter::operator()(void* pao_list)
 	PartialAgg** this_pao_list = store->pao_list[next_buffer];
 	uint64_t this_length = store->list_length[next_buffer];
 	uint64_t* this_offset_list = store->offset_list[next_buffer];
-	char** this_value_list = store->value_list[next_buffer];
+	void** this_value_list = store->value_list[next_buffer];
 	int* this_flag_list = store->flag_list[next_buffer];
 	next_buffer = (next_buffer + 1) % store->aggregator->getNumBuffers();
 

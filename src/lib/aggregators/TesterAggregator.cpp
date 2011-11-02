@@ -54,7 +54,7 @@ TesterAggregator::TesterAggregator(const Config &cfg,
 		toker = new Tokenizer(this, emptyPAO, createPAOFunc);
 		pipeline_list[0].add_filter(*toker);
 
-		store = new Store(this, destroyPAOFunc, max_keys);
+		store = new Store(this, createPAOFunc, destroyPAOFunc, max_keys);
 		pipeline_list[0].add_filter(*store->hasher);		
 		pipeline_list[0].add_filter(*store->agger);		
 		pipeline_list[0].add_filter(*store->writer);

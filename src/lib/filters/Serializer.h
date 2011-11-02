@@ -35,7 +35,7 @@ private:
 	bool already_partitioned;
 	int num_buckets;
 	FILE** fl;
-	char* buf;
+	void* buf;
 	char* outfile_prefix;
 	size_t tokens_processed;
 	void* operator()(void* pao_list);

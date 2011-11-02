@@ -7,9 +7,10 @@ class WordCountPartialAgg : public PartialAgg {
   public:
 	WordCountPartialAgg(const char* value);
 	~WordCountPartialAgg();
-	void add(const char* value);
+	void add(void* value);
 	void merge(PartialAgg* add_agg);
-	void serialize(FILE* f);
+	void serialize(FILE* f, void* buf);
 	bool deserialize(FILE* f, void* buf);
+	bool deserialize(void* buf);
 };
 
