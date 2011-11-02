@@ -24,6 +24,7 @@ Serializer::Serializer(Aggregator* agg,
 		strcat(fname, num);
 
 		fl[i] = fopen(fname, "w");
+		assert(NULL != fl[i]);
 	}
 	free(fname);
 	type = aggregator->getType();

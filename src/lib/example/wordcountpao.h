@@ -10,5 +10,6 @@ class WordCountPartialAgg : public PartialAgg {
 	void add(const char* value);
 	void merge(PartialAgg* add_agg);
 	void serialize(FILE* f);
+	bool deserialize(FILE* f, void* buf);
 };
 

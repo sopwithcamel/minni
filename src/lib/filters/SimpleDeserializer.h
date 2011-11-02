@@ -44,7 +44,7 @@ private:
 	PartialAgg*** pao_list;
 	size_t next_buffer;
 	FilterInfo** send;
-	char* read_buf;
+	void* read_buf;
 
 	FILE *cur_bucket;		// file pointer for current bucket
 	void* operator()(void*);

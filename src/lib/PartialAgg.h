@@ -20,11 +20,10 @@ class PartialAgg {
 	virtual void add (const char* val);
 	virtual void merge (PartialAgg* add_agg);
 	virtual void serialize(FILE *f);
-	char* get_value();
-	void set_val(char* v);
+	virtual bool deserialize(FILE* f, void* buf);
 
 	char* key;
-	char* value;
+	void* value;
 	UT_hash_handle hh;
 };
 
