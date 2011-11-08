@@ -61,7 +61,7 @@ void* Serializer::operator()(void* pao_list)
 	while(ind < recv_length) {
 		pao = pao_l[ind];
 		buc = partition(pao->key);	
-		pao->serialize(fl[buc], buf);
+		pao->serialize(fl[buc], buf, BUF_SIZE);
 		destroyPAO(pao);
 		ind++;
 	}

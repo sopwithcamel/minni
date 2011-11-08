@@ -34,7 +34,7 @@ void WordCountPartialAgg::merge(PartialAgg* add_agg)
 	sprintf(c_value, "%d", curr_val);
 }
 
-void WordCountPartialAgg::serialize(FILE* f, void* buf)
+void WordCountPartialAgg::serialize(FILE* f, void* buf, size_t buf_size)
 {
 	char* c_value = (char*)value;
 	char* wr_buf = (char*)buf;
@@ -47,14 +47,14 @@ void WordCountPartialAgg::serialize(FILE* f, void* buf)
 	assert(fwrite(wr_buf, sizeof(char), l, f) == l);
 }
 
-bool WordCountPartialAgg::deserialize(FILE* f, void *buf)
+bool WordCountPartialAgg::deserialize(FILE* f, void *buf, size_t buf_size)
 {
 	char *spl;
 	char *read_buf = (char*)buf;
 	if (feof(f)) {
 		return false;
 	}
-	if (fgets(read_buf, BUF_SIZE, f) == NULL)
+	if (fgets(read_buf, buf_size, f) == NULL)
 		return false;
 	spl = strtok(read_buf, " \n\r");
 	if (spl == NULL)
@@ -82,6 +82,11 @@ bool WordCountPartialAgg::deserialize(void *buf)
 	value = key + strlen(key) + 1;
 	strcpy((char*)value, spl);
 	return true;
+}
+
+char* tokenize(void* buf)
+{
+	return NULL;
 }
 
 REGISTER_PAO(WordCountPartialAgg);

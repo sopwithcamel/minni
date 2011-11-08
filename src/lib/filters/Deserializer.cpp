@@ -73,7 +73,7 @@ void* Deserializer::operator()(void*)
 	try {
 		while (!feof(cur_bucket)) {
 			new_pao = createPAO(NULL);
-			if (new_pao->deserialize(cur_bucket, read_buf)) {
+			if (new_pao->deserialize(cur_bucket, read_buf, BUF_SIZE)) {
 				this_list[pao_list_ctr++] = new_pao;
 				if (pao_list_ctr == list_size - 1)
 					goto ship_tokens;
