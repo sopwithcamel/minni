@@ -16,10 +16,6 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 		infile(infile),
 		outfile(outfile)
 {
-	Setting& c_empty_key = readConfigFile(cfg, "minni.common.key.empty");
-	string empty_key = (const char*)c_empty_key;
-	PartialAgg* emptyPAO = createPAOFunc(empty_key.c_str());
-
 	Setting& c_token_size = readConfigFile(cfg, "minni.tbb.token_size");
 	size_t token_size = c_token_size;
 
@@ -46,22 +42,22 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 		reader = new DFSReader(this, map_input, token_size);
 		pipeline_list[0].add_filter(*reader);
 
-		toker = new Tokenizer(this, emptyPAO, createPAOFunc, max_keys_per_token);
+		toker = new Tokenizer(this, createPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*toker);
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
 		inp_deserializer = new Deserializer(this, 1/*TODO: how many?*/, input_file,
-			emptyPAO, createPAOFunc, destroyPAOFunc);
+			createPAOFunc, destroyPAOFunc);
 		pipeline_list[0].add_filter(*inp_deserializer);
 		free(input_file);
 	}
 
 	if (agg_in_mem) {
-		hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc, max_keys_per_token);
+		hasher = new Hasher(this, capacity, destroyPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*hasher);
-		merger = new Merger(this, emptyPAO, destroyPAOFunc);
+		merger = new Merger(this, destroyPAOFunc);
 		pipeline_list[0].add_filter(*merger);
 	}
 
@@ -73,7 +69,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 		strcat(bucket_prefix, "reduce-");
 	strcat(bucket_prefix, "bucket");
 
-	bucket_serializer = new Serializer(this, emptyPAO, num_buckets, 
+	bucket_serializer = new Serializer(this, num_buckets, 
 			bucket_prefix, destroyPAOFunc);
 	pipeline_list[0].add_filter(*bucket_serializer);
 	
@@ -85,18 +81,18 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 	 * In this pipeline, a bucket is read back into memory (converted to 
 	 * PAOs again), aggregated using a hashtable, and serialized. */
 	deserializer = new Deserializer(this, num_buckets, bucket_prefix,
-			emptyPAO, createPAOFunc, destroyPAOFunc);
+			createPAOFunc, destroyPAOFunc);
 	pipeline_list[1].add_filter(*deserializer);
 
-	bucket_hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc, max_keys_per_token);
+	bucket_hasher = new Hasher(this, capacity, destroyPAOFunc, max_keys_per_token);
 	pipeline_list[1].add_filter(*bucket_hasher);
-	bucket_merger = new Merger(this, emptyPAO, destroyPAOFunc);
+	bucket_merger = new Merger(this, destroyPAOFunc);
 	pipeline_list[1].add_filter(*bucket_merger);
 
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
 	strcpy(final_path, fprefix.c_str());
 	strcat(final_path, outfile);
-	final_serializer = new Serializer(this, emptyPAO, getNumPartitions(), 
+	final_serializer = new Serializer(this, getNumPartitions(), 
 			final_path, destroyPAOFunc); 
 	pipeline_list[1].add_filter(*final_serializer);
 

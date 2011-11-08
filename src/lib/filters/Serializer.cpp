@@ -3,13 +3,11 @@
 #define BUF_SIZE	65535
 
 Serializer::Serializer(Aggregator* agg,
-			PartialAgg* emptyPAO,
 			const uint64_t nb, 
 			const char* outfile_prefix,
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		filter(serial_in_order),
 		aggregator(agg),
-		emptyPAO(emptyPAO),
 		already_partitioned(false),
 		num_buckets(nb),
 		tokens_processed(0),

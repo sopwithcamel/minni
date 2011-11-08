@@ -28,14 +28,13 @@
 
 class Hasher : public tbb::filter {
 public:
-	Hasher(Aggregator* agg, PartialAgg* emptyPAO, size_t capacity, 
+	Hasher(Aggregator* agg, size_t capacity, 
 			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys = DEFAULT_MAX_KEYS_PER_TOKEN);
 	~Hasher();
 	void (*destroyPAO)(PartialAgg* p);
 private:
 	Aggregator* aggregator;
-	PartialAgg* emptyPAO;
 	PartialAgg*** evicted_list;
 	PartialAgg*** merge_list;
 	PartialAgg*** mergand_list;

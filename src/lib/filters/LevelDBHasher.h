@@ -29,12 +29,10 @@ public:
 	ExternalHasher(Aggregator* agg,
 			const char* ht_name,
 			uint64_t ext_ht_size,
-			PartialAgg* emptyPAO, 
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~ExternalHasher();
 	void (*destroyPAO)(PartialAgg* p);
 private:
-	PartialAgg* emptyPAO;
 	Aggregator* aggregator;
 	leveldb::DB* db;
 	void* operator()(void* pao_list);
@@ -45,7 +43,6 @@ public:
 	ExthashReader(Aggregator* agg, 
 			const char* ht_name,
 			uint64_t ext_capacity,
-			PartialAgg* emptyPAO,
 			const char* outfile);
 	~ExthashReader();
 private:
@@ -55,7 +52,6 @@ private:
 	leveldb::DB *db;
 	const char* ht_name;
 	const uint64_t external_capacity;
-	PartialAgg* emptyPAO;
 
 	/* Write out fields */
 	FILE** fl;

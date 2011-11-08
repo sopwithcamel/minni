@@ -1,11 +1,9 @@
 #include "Adder.h"
 
 Adder::Adder(Aggregator* agg, 
-			PartialAgg* emptyPAO,
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		filter(/*serial=*/true),
 		aggregator(agg),
-		emptyPAO(emptyPAO),
 		destroyPAO(destroyPAOFunc),
 		next_buffer(0),
 		tokens_processed(0)

@@ -3,13 +3,11 @@
 #define DEL_THRESHOLD		1000
 
 Hasher::Hasher(Aggregator* agg, 
-			PartialAgg* emptyPAO,
 			size_t capacity,
 			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys) :
 		filter(/*serial=*/true),	/* maintains global state which is not yet concurrent access */
 		aggregator(agg),
-		emptyPAO(emptyPAO),
 		destroyPAO(destroyPAOFunc),
 		max_keys_per_token(max_keys),
 		ht_size(0),

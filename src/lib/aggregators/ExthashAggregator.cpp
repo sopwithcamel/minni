@@ -16,10 +16,6 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		infile(infile),
 		outfile(outfile)
 {
-	Setting& c_empty_key = readConfigFile(cfg, "minni.common.key.empty");
-	string empty_key = (const char*)c_empty_key;
-	PartialAgg* emptyPAO = createPAOFunc(empty_key.c_str());
-
 	Setting& c_int_capacity = readConfigFile(cfg, 
 			"minni.aggregator.hashtable_external.capacity.internal");
 	internal_capacity = c_int_capacity;
@@ -46,28 +42,28 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		reader = new DFSReader(this, map_input);
 		pipeline_list[0].add_filter(*reader);
 
-		toker = new Tokenizer(this, emptyPAO, createPAOFunc);
+		toker = new Tokenizer(this, createPAOFunc);
 		pipeline_list[0].add_filter(*toker);
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
 		inp_deserializer = new Deserializer(this, 1/*TODO: how many?*/, input_file,
-			emptyPAO, createPAOFunc, destroyPAOFunc);
+			createPAOFunc, destroyPAOFunc);
 		pipeline_list[0].add_filter(*inp_deserializer);
 		free(input_file);
 	}
 
 	if (agg_in_mem) {
-		hasher = new Hasher(this, emptyPAO, internal_capacity, destroyPAOFunc);
+		hasher = new Hasher(this, internal_capacity, destroyPAOFunc);
 		pipeline_list[0].add_filter(*hasher);
 
-		merger = new Merger(this, emptyPAO, destroyPAOFunc);
+		merger = new Merger(this, destroyPAOFunc);
 		pipeline_list[0].add_filter(*merger);
 	}
 
 	ext_hasher = new ExternalHasher(this, htname.c_str(), external_capacity, 
-			emptyPAO, destroyPAOFunc);
+			destroyPAOFunc);
 	pipeline_list[0].add_filter(*ext_hasher);
 
 

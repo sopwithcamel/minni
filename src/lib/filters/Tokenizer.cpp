@@ -1,13 +1,12 @@
 #include "Tokenizer.h"
 
-Tokenizer::Tokenizer(Aggregator* agg, PartialAgg* emptyPAO, 
+Tokenizer::Tokenizer(Aggregator* agg,
 			PartialAgg* (*createPAOFunc)(const char* t),
 			const size_t max_keys) :
 		aggregator(agg),
 		filter(serial_in_order),
 		max_keys_per_token(max_keys),
 		next_buffer(0),
-		emptyPAO(emptyPAO),
 		createPAO(createPAOFunc)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();

@@ -22,7 +22,7 @@
 
 class Serializer : public tbb::filter {
 public:
-	Serializer(Aggregator* agg, PartialAgg* emptyPAO, 
+	Serializer(Aggregator* agg,
 			const uint64_t nb,
 			const char* outfile_prefix, 
 			void (*destroyPAOFunc)(PartialAgg* p));
@@ -30,7 +30,6 @@ public:
 private:
 	Aggregator* aggregator;
 	AggType type;
-	PartialAgg* emptyPAO;
 	void (*destroyPAO)(PartialAgg* p);
 	bool already_partitioned;
 	int num_buckets;

@@ -1,11 +1,9 @@
 #include "Merger.h"
 
 Merger::Merger(Aggregator* agg, 
-			PartialAgg* emptyPAO,
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		filter(/*serial=*/true),	/* maintains global state which is not yet concurrent access */
 		aggregator(agg),
-		emptyPAO(emptyPAO),
 		destroyPAO(destroyPAOFunc),
 		next_buffer(0),
 		tokens_processed(0)

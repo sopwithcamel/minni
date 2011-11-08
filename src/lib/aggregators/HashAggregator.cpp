@@ -16,10 +16,6 @@ HashAggregator::HashAggregator(const Config &cfg,
 		infile(infile),
 		outfile(outfile)
 {
-	Setting& c_empty_key = readConfigFile(cfg, "minni.common.key.empty");
-	string empty_key = (const char*)c_empty_key;
-	PartialAgg* emptyPAO = createPAOFunc(empty_key.c_str());
-
 	Setting& c_capacity = readConfigFile(cfg, "minni.aggregator.hashtable_internal.capacity");
 	capacity = c_capacity;
 
@@ -30,26 +26,26 @@ HashAggregator::HashAggregator(const Config &cfg,
 		reader = new DFSReader(this, map_input);
 		pipeline_list[0].add_filter(*reader);
 
-		toker = new Tokenizer(this, emptyPAO, createPAOFunc);
+		toker = new Tokenizer(this, createPAOFunc);
 		pipeline_list[0].add_filter(*toker);
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
 		deserializer = new Deserializer(this, 1, input_file,
-			emptyPAO, createPAOFunc, destroyPAOFunc);
+			createPAOFunc, destroyPAOFunc);
 		pipeline_list[0].add_filter(*deserializer);
 		free(input_file);
 	}
 
-	hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc);
+	hasher = new Hasher(this, capacity, destroyPAOFunc);
 	pipeline_list[0].add_filter(*hasher);
 
 	// TODO: Handle output to DFS here
 	char* output_file = (char*)malloc(FILENAME_LENGTH);
 	strcpy(output_file, fprefix.c_str());
 	strcat(output_file, outfile);
-	serializer = new Serializer(this, emptyPAO, getNumPartitions(), output_file, 
+	serializer = new Serializer(this, getNumPartitions(), output_file, 
 		destroyPAOFunc);
 	pipeline_list[0].add_filter(*serializer);
 	free(output_file);

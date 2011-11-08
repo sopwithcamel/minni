@@ -22,13 +22,11 @@
 
 class Merger : public tbb::filter {
 public:
-	Merger(Aggregator* agg, PartialAgg* emptyPAO, 
-			void (*destroyPAOFunc)(PartialAgg* p));
+	Merger(Aggregator* agg, void (*destroyPAOFunc)(PartialAgg* p));
 	~Merger();
 	void (*destroyPAO)(PartialAgg* p);
 private:
 	Aggregator* aggregator;
-	PartialAgg* emptyPAO;
 	size_t next_buffer;
 	FilterInfo** send;
 	uint64_t tokens_processed;

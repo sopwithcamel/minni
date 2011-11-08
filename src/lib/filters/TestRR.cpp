@@ -7,11 +7,9 @@
 ExternalHasher::ExternalHasher(Aggregator* agg, 
 			const char* ht_name,
 			uint64_t ext_ht_size,
-			PartialAgg* emptyPAO,
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		filter(/*serial=*/true),	/* maintains global state which is not yet concurrent access */
 		aggregator(agg),
-		emptyPAO(emptyPAO),
 		destroyPAO(destroyPAOFunc),
 		tokens_processed(0)
 {

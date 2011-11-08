@@ -29,12 +29,10 @@ public:
 	ExternalHasher(Aggregator* agg,
 			const char* ht_name,
 			uint64_t ext_ht_size,
-			PartialAgg* emptyPAO, 
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~ExternalHasher();
 	void (*destroyPAO)(PartialAgg* p);
 private:
-	PartialAgg* emptyPAO;
 	Aggregator* aggregator;
 	FawnDS<FawnDS_Flash> *evictHash;
 	uint64_t tokens_processed;
@@ -46,7 +44,6 @@ public:
 	ExthashReader(Aggregator* agg, 
 			const char* ht_name,
 			uint64_t ext_capacity,
-			PartialAgg* emptyPAO,
 			const char* outfile);
 	~ExthashReader();
 private:
@@ -56,7 +53,6 @@ private:
 	FawnDS<FawnDS_Flash> *ext_hash;
 	const char* ht_name;
 	const uint64_t external_capacity;
-	PartialAgg* emptyPAO;
 	char* read_buf;
 
 	/* Write out fields */

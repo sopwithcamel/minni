@@ -26,12 +26,10 @@ public:
 	ExternalHasher(Aggregator* agg,
 			const char* ht_name,
 			uint64_t ext_ht_size,
-			PartialAgg* emptyPAO, 
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~ExternalHasher();
 	void (*destroyPAO)(PartialAgg* p);
 private:
-	PartialAgg* emptyPAO;
 	Aggregator* aggregator;
 	int fd;
 	long arr[NUM_READS];

@@ -21,13 +21,11 @@
 
 class Adder : public tbb::filter {
 public:
-	Adder(Aggregator* agg, PartialAgg* emptyPAO, 
-			void (*destroyPAOFunc)(PartialAgg* p));
+	Adder(Aggregator* agg, 	void (*destroyPAOFunc)(PartialAgg* p));
 	~Adder();
 	void (*destroyPAO)(PartialAgg* p);
 private:
 	Aggregator* aggregator;
-	PartialAgg* emptyPAO;
 	size_t next_buffer;
 	PartialAgg*** agged_list;
 	FilterInfo** send;

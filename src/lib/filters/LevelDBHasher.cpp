@@ -8,12 +8,10 @@
 ExternalHasher::ExternalHasher(Aggregator* agg, 
 			const char* ht_name,
 			uint64_t ext_ht_size,
-			PartialAgg* emptyPAO,
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		filter(/*serial=*/true),	/* maintains global state which is not yet concurrent access */
 		aggregator(agg),
 		db(NULL),
-		emptyPAO(emptyPAO),
 		destroyPAO(destroyPAOFunc)
 {
 	leveldb::Options options;
@@ -61,11 +59,9 @@ void* ExternalHasher::operator()(void* pao_list)
 ExthashReader::ExthashReader(Aggregator* agg,
 			const char* ht_name,
 			uint64_t ext_capacity, 
-			PartialAgg* emptyPAO,
 			const char* outfile_prefix) :
 		filter(serial_in_order),
 		aggregator(agg),
-		emptyPAO(emptyPAO),
 		ht_name(ht_name),
 		external_capacity(ext_capacity)
 {

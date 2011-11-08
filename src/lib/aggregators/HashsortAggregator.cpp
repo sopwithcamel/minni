@@ -16,10 +16,6 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 		infile(infile),
 		outfile(outfile)
 {
-	Setting& c_empty_key = readConfigFile(cfg, "minni.common.key.empty");
-	string empty_key = (const char*)c_empty_key;
-	PartialAgg* emptyPAO = createPAOFunc(empty_key.c_str());
-
 	Setting& c_token_size = readConfigFile(cfg, "minni.tbb.token_size");
 	size_t token_size = c_token_size;
 
@@ -46,22 +42,22 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 		reader = new DFSReader(this, map_input, token_size);
 		pipeline_list[0].add_filter(*reader);
 
-		toker = new Tokenizer(this, emptyPAO, createPAOFunc, max_keys_per_token);
+		toker = new Tokenizer(this, createPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*toker);
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
 		inp_deserializer = new Deserializer(this, 1/*TODO: how many?*/, input_file,
-			emptyPAO, createPAOFunc, destroyPAOFunc);
+			createPAOFunc, destroyPAOFunc);
 		pipeline_list[0].add_filter(*inp_deserializer);
 		free(input_file);
 	}
 
 	if (agg_in_mem) {
-		hasher = new Hasher(this, emptyPAO, capacity, destroyPAOFunc, max_keys_per_token);
+		hasher = new Hasher(this, capacity, destroyPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*hasher);
-		merger = new Merger(this, emptyPAO, destroyPAOFunc);
+		merger = new Merger(this, destroyPAOFunc);
 		pipeline_list[0].add_filter(*merger);
 	}
 
@@ -76,7 +72,7 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	strcpy(unsorted_file, sort_prefix);
 	strcat(unsorted_file, "unsorted");
 
-	serializer = new Serializer(this, emptyPAO, 1/*create one unsorted file*/, 
+	serializer = new Serializer(this, 1/*create one unsorted file*/, 
 			unsorted_file, destroyPAOFunc);
 	pipeline_list[0].add_filter(*serializer);
 
@@ -91,16 +87,16 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	/* In this pipeline, the sorted file is deserialized into
 	 * PAOs again, aggregated and serialized. */
 	deserializer = new Deserializer(this, 1, sorted_file,
-			emptyPAO, createPAOFunc, destroyPAOFunc);
+			createPAOFunc, destroyPAOFunc);
 	pipeline_list[2].add_filter(*deserializer);
 
-	adder = new Adder(this, emptyPAO, destroyPAOFunc);
+	adder = new Adder(this, destroyPAOFunc);
 	pipeline_list[2].add_filter(*adder);
 
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
 	strcpy(final_path, fprefix.c_str());
 	strcat(final_path, outfile);
-	final_serializer = new Serializer(this, emptyPAO, getNumPartitions(), 
+	final_serializer = new Serializer(this, getNumPartitions(), 
 			final_path, destroyPAOFunc); 
 	pipeline_list[2].add_filter(*final_serializer);
 
