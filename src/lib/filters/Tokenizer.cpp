@@ -31,7 +31,8 @@ Tokenizer::~Tokenizer()
 }
 
 /**
- * Can't use const for argument because strtok modifies the string
+ * Can't use const for argument because strtok modifies the string. 
+ * Not re-entrant!
  */
 void* Tokenizer::operator()(void* buffer)
 {
@@ -47,22 +48,20 @@ void* Tokenizer::operator()(void* buffer)
 	FilterInfo* this_send = send[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
 	
-	spl = strtok(tok_buf, " .\n\r\'\"?,;:!*()-\uFEFF");
-	if (spl == NULL) { 
+	int tok_flag = 1; // for strtok to behave differently
+	PartialAgg* dummyPAO = createPAO(NULL);
+	if (tok_buf == NULL) { 
 		perror("Buffer sent to Tokenizer is empty!");
 		exit(1);
 	}
 	while (1) {
-		tokens[0] = spl;
-		PartialAgg* new_pao = createPAO(tokens); 
-
-		this_pao_list[this_list_ctr++] = new_pao;
-		assert(this_list_ctr < max_keys_per_token);
-
-		spl = strtok(NULL, " .\n\r\'\"?,;:!*()-\uFEFF");
-		if (spl == NULL) {
+		tokens = (const char**)dummyPAO->tokenize(tok_buf, &tok_flag);
+		if (tokens == NULL) {
 			break;
 		}
+		PartialAgg* new_pao = createPAO(tokens); 
+		this_pao_list[this_list_ctr++] = new_pao;
+		assert(this_list_ctr < max_keys_per_token);
 	}
 	this_send->result = this_pao_list;
 	this_send->length = this_list_ctr;

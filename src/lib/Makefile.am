@@ -3,8 +3,7 @@ SUBDIRS = example ml
 
 lib_LTLIBRARIES = libminni.la 
 
-libminni_la_SOURCES =  	PartialAgg.cpp \
-		      	Mapper.cpp \
+libminni_la_SOURCES =   Mapper.cpp \
 		       	Reducer.cpp \
 			filters/Adder.cpp \
 			filters/Deserializer.cpp \
