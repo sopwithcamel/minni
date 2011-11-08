@@ -48,9 +48,9 @@ class MapInput {
 
 class Mapper {
 public:
-	Mapper(PartialAgg* (*__createPAO)(const char* t), void (*__destroyPAO)(PartialAgg* p));
+	Mapper(PartialAgg* (*__createPAO)(const char** t), void (*__destroyPAO)(PartialAgg* p));
 	~Mapper();
-	PartialAgg* (*createPAO)(const char* token); 
+	PartialAgg* (*createPAO)(const char** token); 
 	void (*destroyPAO)(PartialAgg* p);
 	//vector <ofstream*>  my_file_streams; //TODO actually needed?
 	int num_partition;
@@ -67,7 +67,7 @@ private:
 class MapperWrapperTask : public task {
   public:
 	Mapper* mapper;	
-	PartialAgg* (*__libminni_create_pao)(const char* v);
+	PartialAgg* (*__libminni_create_pao)(const char** t);
 	void (*__libminni_destroy_pao)(PartialAgg* pao);
 	string so_path;
 	MapInput myinput;

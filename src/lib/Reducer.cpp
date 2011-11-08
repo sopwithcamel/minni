@@ -4,7 +4,7 @@
 #include "util.h"
 
 //Reducer class
-Reducer::Reducer(PartialAgg* (*__createPAO)(const char* t), 
+Reducer::Reducer(PartialAgg* (*__createPAO)(const char** t), 
 			void (*__destroyPAO)(PartialAgg* p)):
 		createPAO(__createPAO),
 		destroyPAO(__destroyPAO)
@@ -57,7 +57,7 @@ int ReducerWrapperTask::UserMapLinking(const char* soname) {
 		return 1;
 	}
 
-	__libminni_create_pao = (PartialAgg* (*)(const char*)) dlsym(handle, "__libminni_pao_create");
+	__libminni_create_pao = (PartialAgg* (*)(const char**)) dlsym(handle, "__libminni_pao_create");
 	__libminni_destroy_pao = (void (*)(PartialAgg*)) dlsym(handle, "__libminni_pao_destroy");
 	if ((err = dlerror()) != NULL)
 	{

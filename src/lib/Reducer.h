@@ -47,9 +47,9 @@ class ReduceOutput {
 
 class Reducer {
   public:
-	Reducer(PartialAgg* (*__createPAO)(const char* t), void (*__destroyPAO)(PartialAgg* p));
+	Reducer(PartialAgg* (*__createPAO)(const char** t), void (*__destroyPAO)(PartialAgg* p));
 	~Reducer();
-	PartialAgg* (*createPAO)(const char* t);
+	PartialAgg* (*createPAO)(const char** t);
 	void (*destroyPAO)(PartialAgg* p);
   	Aggregator* aggreg;
 };
@@ -60,7 +60,7 @@ class ReducerWrapperTask : public task {
 	ReducerWrapperTask (JobID jid, Properties * p, TaskRegistry * t, GrabberRegistry * g);
 	task* execute ();
 	ReduceOutput myoutput;
-	PartialAgg* (*__libminni_create_pao)(const char* v);
+	PartialAgg* (*__libminni_create_pao)(const char** t);
 	void (*__libminni_destroy_pao)(PartialAgg* pao);
 	
   private:

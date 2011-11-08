@@ -5,7 +5,7 @@
 
 class WordCountPartialAgg : public PartialAgg {
   public:
-	WordCountPartialAgg(const char* value);
+	WordCountPartialAgg(const char** tokens);
 	~WordCountPartialAgg();
 	void add(void* value);
 	void merge(PartialAgg* add_agg);

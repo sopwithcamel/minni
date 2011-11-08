@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = subdir-objects
-SUBDIRS = example
+SUBDIRS = example ml
 
 lib_LTLIBRARIES = libminni.la 
 
@@ -10,7 +10,6 @@ libminni_la_SOURCES =  	PartialAgg.cpp \
 			filters/Deserializer.cpp \
 		       	filters/DFSReader.cpp \
 			filters/ExternalHasher.cpp \
-		       	filters/FileReader.cpp \
 			filters/Hasher.cpp \
 			filters/Merger.cpp \
 			filters/Serializer.cpp \
@@ -49,7 +48,6 @@ minni_include_HEADERS = PartialAgg.h \
 			filters/Deserializer.h \
 		       	filters/DFSReader.h \
 			filters/ExternalHasher.h \
-			filters/FileReader.h \
 			filters/Hasher.h \
 			filters/Merger.h \
 			filters/Serializer.h \

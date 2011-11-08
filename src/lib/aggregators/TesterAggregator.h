@@ -29,7 +29,7 @@ public:
 				const uint64_t num_part,
 				MapInput* _map_input,
 				const char* infile, 
-				PartialAgg* (*createPAOFunc)(const char* t), 
+				PartialAgg* (*createPAOFunc)(const char** t), 
 				void (*destroyPAOFunc)(PartialAgg* p),
 				const char* outfile);
 	~TesterAggregator();

@@ -26,7 +26,7 @@
 class Tokenizer : public tbb::filter {
 public:
 	Tokenizer(Aggregator* agg, 
-			PartialAgg* (*createPAOFunc)(const char* t),
+			PartialAgg* (*createPAOFunc)(const char** t),
 			const size_t max_keys = DEFAULT_MAX_KEYS_PER_TOKEN);
 	~Tokenizer();
 private:
@@ -35,7 +35,7 @@ private:
 	const size_t max_keys_per_token;
 	PartialAgg*** pao_list;
 	FilterInfo** send;
-	PartialAgg* (*createPAO)(const char* token);
+	PartialAgg* (*createPAO)(const char** token);
 	void* operator()(void* pao);
 };
 

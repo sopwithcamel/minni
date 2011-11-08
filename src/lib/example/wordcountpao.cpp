@@ -1,10 +1,10 @@
 #include "wordcountpao.h"
 
-WordCountPartialAgg::WordCountPartialAgg(const char* const token)
+WordCountPartialAgg::WordCountPartialAgg(const char** const tokens)
 {
-	size_t eok = strlen(token);
+	size_t eok = strlen(tokens[0]);
 	key = (char*)malloc(eok + VALUE_SIZE + 1);
-	strcpy(key, token);
+	strcpy(key, tokens[0]);
 	char* c_value = key + eok + 1;
 	c_value[0] = '1';
 	c_value[1] = '\0';

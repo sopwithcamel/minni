@@ -24,15 +24,18 @@
 
 class FileReader : public tbb::filter {
 public:
-	FileReader(FILE* _input_file, Aggregator* agg);
+	FileReader(const char* dir_name, Aggregator* agg);
 	~FileReader();
 private:
 	Aggregator* aggregator;
 	size_t chunk_ctr;
-	FILE* input_file;
+	const char* dir_name;
+	DIR* dp;
+	const size_t max_keys_per_token;
 	size_t next_buffer;
-	char** buf;
-	char* buffer;
+	PartialAgg*** pao_list;
+	FilterInfo** send;
+	PartialAgg* (*createPAO)(const char* token);
 	void* operator()(void* pao);
 };
 
