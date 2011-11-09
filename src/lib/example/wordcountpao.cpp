@@ -2,13 +2,18 @@
 
 WordCountPartialAgg::WordCountPartialAgg(const char** const tokens)
 {
-	size_t eok = strlen(tokens[0]);
-	key = (char*)malloc(eok + VALUE_SIZE + 1);
-	strcpy(key, tokens[0]);
-	char* c_value = key + eok + 1;
-	c_value[0] = '1';
-	c_value[1] = '\0';
-	value = c_value;
+	if (tokens) {
+		size_t eok = strlen(tokens[0]);
+		key = (char*)malloc(eok + VALUE_SIZE + 1);
+		strcpy(key, tokens[0]);
+		char* c_value = key + eok + 1;
+		c_value[0] = '1';
+		c_value[1] = '\0';
+		value = c_value;
+		return;
+	}
+	key = NULL;
+	value = NULL;
 }
 
 WordCountPartialAgg::~WordCountPartialAgg()
@@ -59,6 +64,7 @@ bool WordCountPartialAgg::deserialize(FILE* f, void *buf, size_t buf_size)
 	spl = strtok(read_buf, " \n\r");
 	if (spl == NULL)
 		return false;
+	key = (char*)malloc(strlen(spl) + VALUE_SIZE + 1);
 	strcpy(key, spl);
 	spl = strtok(NULL, " \n\r");
 	if (spl == NULL)
@@ -75,7 +81,9 @@ bool WordCountPartialAgg::deserialize(void *buf)
 	spl = strtok(read_buf, " \n\r");
 	if (spl == NULL)
 		return false;
+	key = (char*)malloc(strlen(spl) + VALUE_SIZE + 1);
 	strcpy(key, spl);
+
 	spl = strtok(NULL, " \n\r");
 	if (spl == NULL)
 		return false;
@@ -84,7 +92,7 @@ bool WordCountPartialAgg::deserialize(void *buf)
 	return true;
 }
 
-char** tokenize(void* buf, void* prog)
+bool WordCountPartialAgg::tokenize(void* buf, void* prog, char** toks)
 {
 	char* spl;
 	int* first_time = (int*)prog;
@@ -95,8 +103,9 @@ char** tokenize(void* buf, void* prog)
 		spl = strtok(NULL, " .\n\r\'\"?,;:!*()-\uFEFF");
 	}
 	if (!spl)
-		return NULL;		
-	return &spl;
+		return false;
+	toks[0] = spl;
+	return true;
 }
 
 REGISTER_PAO(WordCountPartialAgg);

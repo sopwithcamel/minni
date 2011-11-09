@@ -42,7 +42,7 @@ void* Tokenizer::operator()(void* buffer)
 	size_t this_list_ctr = 0;
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	// passes just one token to createPAO
-	const char** tokens = (const char**)malloc(sizeof(char*));
+	char** tokens = (char**)malloc(sizeof(char*));
 
 	PartialAgg** this_pao_list = pao_list[next_buffer];
 	FilterInfo* this_send = send[next_buffer];
@@ -55,11 +55,9 @@ void* Tokenizer::operator()(void* buffer)
 		exit(1);
 	}
 	while (1) {
-		tokens = (const char**)dummyPAO->tokenize(tok_buf, &tok_flag);
-		if (tokens == NULL) {
+		if (!dummyPAO->tokenize(tok_buf, &tok_flag, tokens))
 			break;
-		}
-		PartialAgg* new_pao = createPAO(tokens); 
+		PartialAgg* new_pao = createPAO((const char**)tokens); 
 		this_pao_list[this_list_ctr++] = new_pao;
 		assert(this_list_ctr < max_keys_per_token);
 	}

@@ -2,8 +2,8 @@
 #define LIB_TOKENIZER_H
 
 #include <stdlib.h>
+#include <assert.h>
 #include <iostream>
-#include <tr1/unordered_map>
 
 #include "tbb/pipeline.h"
 #include "tbb/tick_count.h"
@@ -12,7 +12,6 @@
 
 #include "Defs.h"
 #include "PartialAgg.h"
-#include "Mapper.h"
 #include "Aggregator.h"
 #include "Util.h"
 
