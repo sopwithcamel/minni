@@ -26,7 +26,7 @@ TesterAggregator::TesterAggregator(const Config &cfg,
 		reader = new DFSReader(this, map_input);	
 		pipeline_list[0].add_filter(*reader);
 
-		toker = new Tokenizer(this, createPAOFunc);
+		toker = new Tokenizer(this, cfg, createPAOFunc);
 		pipeline_list[0].add_filter(*toker);
 	} else if (!test_element.compare("sorter")) {
 		Setting& c_sort_input = readConfigFile(cfg, 
@@ -47,7 +47,7 @@ TesterAggregator::TesterAggregator(const Config &cfg,
 		reader = new DFSReader(this, map_input);	
 		pipeline_list[0].add_filter(*reader);
 
-		toker = new Tokenizer(this, createPAOFunc);
+		toker = new Tokenizer(this, cfg, createPAOFunc);
 		pipeline_list[0].add_filter(*toker);
 
 		store = new Store(this, createPAOFunc, destroyPAOFunc, max_keys);

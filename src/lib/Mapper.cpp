@@ -2,7 +2,6 @@
 
 #include "BucketAggregator.h"
 #include "ExthashAggregator.h"
-#include "HashAggregator.h"
 #include "HashsortAggregator.h"
 #include "TesterAggregator.h"
 #include <dlfcn.h>
@@ -195,12 +194,7 @@ task* MapperWrapperTask::execute() {
 
 	TimeLog::addTimeStamp(ss.str() + ": Start of map phase");
 
-	if (!selected_map_aggregator.compare("simple")) {
-		mapper->aggregs = dynamic_cast<Aggregator*>(new HashAggregator(
-						cfg, Map, npart, &myinput, 
-						NULL, mapper->createPAO, 
-						mapper->destroyPAO, map_out_file.c_str()));
-	} else if (!selected_map_aggregator.compare("bucket")) {
+	if (!selected_map_aggregator.compare("bucket")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new BucketAggregator(
 						cfg, Map, npart, &myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO, 

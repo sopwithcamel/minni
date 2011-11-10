@@ -1,5 +1,4 @@
 #include "Reducer.h"
-#include "HashAggregator.h"
 #include "BucketAggregator.h"
 #include "util.h"
 
@@ -104,11 +103,7 @@ task* ReducerWrapperTask::execute() {
 	Setting& c_sel_aggregator = readConfigFile(cfg, "minni.aggregator.selected.reduce");
 	string selected_reduce_aggregator = (const char*)c_sel_aggregator;
 
-	if (!selected_reduce_aggregator.compare("simple")) {
-		reducer->aggreg = dynamic_cast<Aggregator*>(new HashAggregator(cfg,
-					Reduce, 1, NULL, input_file.c_str(), reducer->createPAO, 
-					reducer->destroyPAO, "result"));
-	} else if (!selected_reduce_aggregator.compare("bucket")) {
+	if (!selected_reduce_aggregator.compare("bucket")) {
 		reducer->aggreg = dynamic_cast<Aggregator*>(new BucketAggregator(cfg,
 					Reduce, 1, NULL, input_file.c_str(), reducer->createPAO, 
 					reducer->destroyPAO, "result"));

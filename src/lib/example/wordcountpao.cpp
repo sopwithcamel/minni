@@ -10,10 +10,10 @@ WordCountPartialAgg::WordCountPartialAgg(const char** const tokens)
 		c_value[0] = '1';
 		c_value[1] = '\0';
 		value = c_value;
-		return;
+	} else {
+		key = NULL;
+		value = NULL;
 	}
-	key = NULL;
-	value = NULL;
 }
 
 WordCountPartialAgg::~WordCountPartialAgg()

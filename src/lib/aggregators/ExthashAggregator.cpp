@@ -42,7 +42,7 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		reader = new DFSReader(this, map_input);
 		pipeline_list[0].add_filter(*reader);
 
-		toker = new Tokenizer(this, createPAOFunc);
+		toker = new Tokenizer(this, cfg, createPAOFunc);
 		pipeline_list[0].add_filter(*toker);
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);

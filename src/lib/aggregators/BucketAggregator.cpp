@@ -42,7 +42,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 		reader = new DFSReader(this, map_input, token_size);
 		pipeline_list[0].add_filter(*reader);
 
-		toker = new Tokenizer(this, createPAOFunc, max_keys_per_token);
+		toker = new Tokenizer(this, cfg, createPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*toker);
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);

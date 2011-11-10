@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = subdir-objects
-SUBDIRS = example ml
+SUBDIRS = example
 
 lib_LTLIBRARIES = libminni.la 
 
@@ -10,6 +10,7 @@ libminni_la_SOURCES =   Mapper.cpp \
 		       	filters/DFSReader.cpp \
 			filters/ExternalHasher.cpp \
 			filters/Hasher.cpp \
+			filters/MemCache.cpp \
 			filters/Merger.cpp \
 			filters/Serializer.cpp \
 			filters/Sorter.cpp \
@@ -18,7 +19,6 @@ libminni_la_SOURCES =   Mapper.cpp \
 		       	aggregators/Aggregator.cpp \
 			aggregators/BucketAggregator.cpp \
 			aggregators/ExthashAggregator.cpp \
-		       	aggregators/HashAggregator.cpp \
 			aggregators/HashsortAggregator.cpp \
 			aggregators/TesterAggregator.cpp \
 			Util.cpp
@@ -48,6 +48,7 @@ minni_include_HEADERS = PartialAgg.h \
 		       	filters/DFSReader.h \
 			filters/ExternalHasher.h \
 			filters/Hasher.h \
+			filters/MemCache.h \
 			filters/Merger.h \
 			filters/Serializer.h \
 			filters/Sorter.h \
@@ -55,7 +56,6 @@ minni_include_HEADERS = PartialAgg.h \
 			filters/Tokenizer.h \
 			aggregators/BucketAggregator.h \
 			aggregators/ExthashAggregator.h \
-			aggregators/HashAggregator.h \
 			aggregators/HashsortAggregator.h \
 			aggregators/TesterAggregator.h \
 			aggregators/Aggregator.h \

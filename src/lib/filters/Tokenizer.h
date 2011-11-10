@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <iostream>
+#include <libconfig.h++>
 
 #include "tbb/pipeline.h"
 #include "tbb/tick_count.h"
@@ -11,6 +12,7 @@
 #include "tbb/tbb_allocator.h"
 
 #include "Defs.h"
+#include "MemCache.h"
 #include "PartialAgg.h"
 #include "Aggregator.h"
 #include "Util.h"
@@ -24,12 +26,13 @@
 
 class Tokenizer : public tbb::filter {
 public:
-	Tokenizer(Aggregator* agg, 
+	Tokenizer(Aggregator* agg, const Config& cfg,
 			PartialAgg* (*createPAOFunc)(const char** t),
 			const size_t max_keys = DEFAULT_MAX_KEYS_PER_TOKEN);
 	~Tokenizer();
 private:
 	Aggregator* aggregator;
+	MemCache* memCache;
 	size_t next_buffer;
 	const size_t max_keys_per_token;
 	PartialAgg*** pao_list;
