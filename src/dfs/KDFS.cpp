@@ -149,3 +149,19 @@ int KDFS::openFileCacheLookup(string &path, int options)
 		}
 		return fd;
 }
+
+bool KDFS::isDirectory(string path)
+{
+	return fs->IsDirectory(path.c_str());
+}
+
+void KDFS::getDirSummary(string path, uint64_t& num_fil, uint64_t& num_byt)
+{
+	fs->GetDirSummary(path.c_str(), num_fil, num_byt);
+}
+
+int64_t KDFS::readDir(string path, vector<string>& files)
+{
+	return fs->Readdir(path.c_str(), files);
+}
+

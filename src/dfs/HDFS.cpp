@@ -128,7 +128,7 @@ int64_t HDFS::writeToFile(string path, const char* buf, uint64_t length)
 		file = fileCache[path];
 	}
 	else
-	{
+	
 		cout << "Opening file for writing." << endl;
 		file = hdfsOpenFile(fs, path.c_str(), O_WRONLY, 0, 0, 0);
 		fileCache[path] = file;
@@ -150,4 +150,12 @@ int64_t HDFS::closeFile(string path)
 	{
 		return -1;
 	}
+}
+
+bool HDFS::isDirectory(string path)
+{
+}
+
+void HDFS::getDirSummary(string path, uint64_t& num_fil, uint64_t& num_byt)
+{
 }

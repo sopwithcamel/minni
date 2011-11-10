@@ -28,6 +28,9 @@ class DFS
 		virtual int64_t writeToFileOffset(string path, uint64_t offset, char* buf, uint64_t length) = 0;
 		virtual int64_t writeToFile(string path, const char* buf, uint64_t length) = 0;
 		virtual int64_t closeFile(string path) = 0;
+		virtual bool isDirectory(string path) = 0;
+		virtual void getDirSummary(string path, uint64_t& num_fil, uint64_t& num_byt) = 0;
+		virtual int64_t readDir(string path, vector<string>& conts) = 0;
 	protected:
 		string host;
 		uint16_t port;

@@ -39,6 +39,8 @@ class HDFS : public DFS
 		//@END UNSUPPORTED
 		int64_t writeToFile(string path, const char* buf, uint64_t length);					/* only approved writing method, -1 on error */
 		int64_t closeFile(string path);											/* closes a file after writing */
+		bool isDirectory(string path);
+		void getDirSummary(string path, uint64_t& num_fil, uint64_t& num_byt);
 };
 
 #endif

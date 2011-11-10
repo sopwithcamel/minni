@@ -29,8 +29,8 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 	nodeWithMaxReduceJobs = NULL;
 
 	loadNodesFile(nodesFile.c_str());
-	cout << "Master: Loaded nodes file." << endl;
 	vector<string>::iterator iter;
+	cout << "Master: Loaded nodes file." << endl;
 	cout << "Master: Connecting to DFS." << endl;
 	dfs.connect();
 	cout << "Master: Connected." << endl;
@@ -38,63 +38,23 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 	vector<string> inputFiles = spec->getInputFiles();
 	map<string, Node*>::iterator nodeIter;
 
+	uint64_t num_work_units;
+
 	/* assign all map jobs */
 	for (iter = inputFiles.begin(); iter < inputFiles.end(); iter++)
 	{
 		assert(dfs.checkExistence(*iter));
-		cout << "Master: Getting num chunks for" << (*iter) << endl;
-		uint64_t num_chunks = dfs.getNumChunks((*iter));
 
-		uint64_t rem_chunks = num_chunks;
-		int rem_nodes = getNumberOfNodes();
-		uint64_t cids_for_map = 0;
-
-		cout << "Inspecting input file: " << ((*iter)) << endl;
-		for (uint64_t i = 0; i < num_chunks; i+=cids_for_map)
-		{
-			assert(rem_nodes);
-			cids_for_map = (uint64_t) floor(((double)rem_chunks / rem_nodes));
-			rem_chunks -= cids_for_map;
-			rem_nodes--;
-
-			vector<string> locations;
-			Node* min = (*(nodes.begin())).second;
-			JobID minNumJobs = INT64_MAX;
-			vector<string>::iterator location_iter;
-			dfs.getChunkLocations(*iter, i, locations);
-			for (location_iter = locations.begin(); location_iter < locations.end(); location_iter++)
-			{
-				cout << "Node[" << *location_iter << "] has chunk " << i << " to " << i+cids_for_map-1 << endl;
-				if (nodes.find(*location_iter) != nodes.end())
-				{
-					cout << "Node has " << nodes[*location_iter]->numRemainingJobs() << " jobs and minNumJobs is " << minNumJobs << endl;
-					if (nodes[*location_iter]->numRemainingJobs() < minNumJobs)
-					{
-						cout << "New min found: " << nodes[*location_iter]->numRemainingJobs() << endl;
-						minNumJobs  = nodes[*location_iter]->numRemainingJobs();
-						min = nodes[*location_iter];
-					}
-				}
-			}
-			/* for now assign only 1 map per node */
-			if (min->numRemainingJobs() > 0) { // find a node that has none
-				for (nodeIter = nodes.begin(); nodeIter != nodes.end(); nodeIter++) {
-					if (nodeIter->second->numRemainingMapJobs() == 0) {
-						min = nodeIter->second;
-						break;
-					}
-				}
-			}
-			if (i+cids_for_map-1 < num_chunks)
-			{
-				cout << "Assigning map of chunks " << i << " to " << i+cids_for_map - 1 << " to " << min << endl;
-				assignMapJob(min, i, i+cids_for_map-1, (*iter));
-			}
-			else
-			{
-				cout << "Assigning map of chunks " << i << " to " << num_chunks - 1 << " to " << min << endl;
-				assignMapJob(min, i, num_chunks-1, (*iter));
-			}
+		/* Check if path is a directory. If it is then we assume, for
+		 * now, that the directory structure is flat, ie. there are no
+		 * sub-directories. Also, work will be allocated amongst the
+		 * mappers in units of files in this case */
+		if (dfs.isDirectory((*iter).c_str())) {
+			uint64_t tot_bytes;
+			dfs.getDirSummary((*iter).c_str(), num_work_units, tot_bytes);
+			splitDir(dfs, *iter);
+		} else {
+			splitFile(dfs, *iter);
 		}
 	}
 	cout << "All maps assigned." << endl;
@@ -102,16 +62,14 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 	cout << "Disconnected from DFS." << endl;
 	
 	/* assign all reduce jobs */
-	PartID numSingleNode = 1; //(PartID) ceil((double)spec->getMaxReduces() / (double)nodes.size());
+	//vv (PartID) ceil((double)spec->getMaxReduces() / (double)nodes.size());
+	PartID numSingleNode = 1; 
 	PartID currentPID = 0;
 	cout << "Assigning reduce jobs." << endl;
-	for (nodeIter = nodes.begin(); nodeIter != nodes.end(); nodeIter++)
-	{
-		cout << "Assigning " << numSingleNode <<" reduces to " << *(((*nodeIter).second)->getURL()) << endl;
-		for (PartID i = 0; i < numSingleNode; i++)
-		{
-			cout << "Assigning PID " << currentPID + i << " to " << *(((*nodeIter).second)->getURL()) << endl;
-			assignReduceJob((*nodeIter).second, currentPID + i, spec->getOutputPath());
+	for (nodeIter = nodes.begin(); nodeIter != nodes.end(); nodeIter++) {
+		for (PartID i = 0; i < numSingleNode; i++) {
+			assignReduceJob((*nodeIter).second, currentPID + i, 
+					spec->getOutputPath());
 		}
 		currentPID += numSingleNode;
 	}
@@ -126,6 +84,82 @@ Master::~Master()
 	{
 		delete ((*nodesIter).second);
 	}
+}
+
+void Master::splitFile(DFS& dfs, const string& fil)
+{
+	map<string, Node*>::iterator nodeIter;
+	uint64_t num_chunks = dfs.getNumChunks((fil));
+	uint64_t rem_chunks = num_chunks;
+	int rem_nodes = getNumberOfNodes();
+	uint64_t cids_for_map = 0;
+
+	for (uint64_t i = 0; i < num_chunks; i+=cids_for_map)
+	{
+		assert(rem_nodes);
+		cids_for_map = (uint64_t) floor(((double)rem_chunks / 
+				rem_nodes));
+		rem_chunks -= cids_for_map;
+		rem_nodes--;
+
+		vector<string> locs;
+		Node* min = (*(nodes.begin())).second;
+		JobID minJobs = INT64_MAX;
+		vector<string>::iterator loc_it;
+		dfs.getChunkLocations(fil, i, locs);
+		for (loc_it = locs.begin(); loc_it < locs.end(); loc_it++) {
+			/* make sure node is found in nodes list */
+			if (nodes.find(*loc_it) != nodes.end()) {
+				if (nodes[*loc_it]->numRemainingJobs() < minJobs) {
+					minJobs  = nodes[*loc_it]->numRemainingJobs();
+					min = nodes[*loc_it];
+				}
+			}
+		}
+		/* for now assign only 1 map per node */
+		// find a node that has none
+		if (min->numRemainingJobs() > 0) {
+			for (nodeIter = nodes.begin(); nodeIter != 
+					nodes.end(); nodeIter++) {
+				if (nodeIter->second->numRemainingMapJobs() == 0) {
+					min = nodeIter->second;
+					break;
+				}
+			}
+		}
+		if (i+cids_for_map-1 < num_chunks) {
+			assignMapJob(min, i, i+cids_for_map-1, (fil));
+		} else {
+			assignMapJob(min, i, num_chunks-1, (fil));
+		}
+	}
+	
+}
+
+void Master::splitDir(DFS& dfs, const string& dir)
+{
+	map<string, Node*>::iterator nodeIter;
+	vector<string> fils;
+	// TODO: Assumes diretory structure is flat
+	assert(dfs.readDir(dir, fils) == 0);
+
+	uint64_t rem_fils = fils.size();
+	int rem_nodes = getNumberOfNodes();
+	uint64_t fils_for_map = 0;
+	uint64_t fil_begin_ind = 0;
+
+	// TODO: for now we don't optimize for locality of data
+	for (nodeIter = nodes.begin(); nodeIter != nodes.end(); nodeIter++) {
+		assert(rem_nodes);
+		fils_for_map = (uint64_t) floor(((double)rem_fils / 
+				rem_nodes));
+		rem_fils -= fils_for_map;
+		rem_nodes--;
+
+		assignMapJob(nodeIter->second, fil_begin_ind, fil_begin_ind + 
+				fils_for_map, dir);
+	}
+	
 }
 
 void Master::assignMapJob(Node* node, ChunkID cid_start, ChunkID cid_end, string fileIn)

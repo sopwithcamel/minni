@@ -35,32 +35,62 @@ class Master {
 		JobID getNumberOfMapsCompleted();						/* return number of maps finished */
 		JobID getNumberOfReducesCompleted();					/* return number of reduces finished */
 	private:
-		void assignMapJob(Node* node, ChunkID cid_start, ChunkID cid_end, string fileIn); /* assign a map job to a node */
-		void assignReduceJob(Node* node, PartID pid, string fileOut);	/* assign a reduce job to a node */
-		void resubmitMapJob(Node* node, struct MapJob job);			/* resubmit a map job to a node */
-		void resubmitReduceJob(Node* node, struct ReduceJob job);		/* resubmit a reduce job to a node */
-		void updateMaximumMapNode();							/* loops through all nodes and updates the maximum map */
-		void updateMaximumReduceNode();						/* loops through all nodes and updates the maximum reduces */
-		void loadNodesFile(string fileName);						/* load node names from file */
-		void sendAllMappersFinished();							/* send all maps finished to all nodes */
-		void printMaps(map<string, Node*> nodes); 				/* print and resubmit currently running maps */
-		void printReduces(map<string, Node*> nodes);				/* print and resubmit currently running reduces */
+		/* assign a map job to a node */
+		void assignMapJob(Node* node, ChunkID cid_start, ChunkID cid_end, 
+				string fileIn);
+		/* assign a reduce job to a node */
+		void assignReduceJob(Node* node, PartID pid, string fileOut);
+		/* resubmit a map job to a node */
+		void resubmitMapJob(Node* node, struct MapJob job);
+		/* resubmit a reduce job to a node */
+		void resubmitReduceJob(Node* node, struct ReduceJob job);
+		/* loops through all nodes and updates the maximum map */
+		void updateMaximumMapNode();
+		/* loops through all nodes and updates the maximum reduces */
+		void updateMaximumReduceNode();
+		/* load node names from file */
+		void loadNodesFile(string fileName);
+		/* send all maps finished to all nodes */
+		void sendAllMappersFinished();
+		/* print and resubmit currently running maps */
+		void printMaps(map<string, Node*> nodes);
+		/* print and resubmit currently running reduces */
+		void printReduces(map<string, Node*> nodes);
+		/* split chunks of large file among mappers */
+		void splitFile(DFS&, const string&);
+		/* split files in directory among mappers */
+		void splitDir(DFS&, const string&);
 		void broadcastKill();
-		map<string, Node*> nodes;								/* maintain string list of all node names */
-		Node* nodeWithMaxMapJobs;								/* node with maximum remaining map jobs */
-		JobID maximumMapJobsCount;							/* the number of jobs assigned to highest map loaded node */
-		Node* nodeWithMaxReduceJobs;							/* node with maximum remaining reduce jobs */
-		JobID maximumReduceJobsCount;							/* the number of jobs assigned to highest reduce loaded node */
-		vector<string> finishedNodes;							/* string list of finished node URL's */
-		set<string> alreadySentFinishedNodes;						/* set of finished nodes we've sent out */
-		JobID jidCounter;										/* monotonically increasing universal job counter */
-		MapReduceSpecification* spec;								/* job specification parameters and constants */
-		JobID activeMappers;									/* count of active mappers */
-		JobID activeReducers;									/* count of active reducers */
-		JobID remainingMappers;								/* remaining map jobs to run */
-		JobID remainingReducers;								/* remaining reduce jobs to run */
-		JobID completedMaps;									/* successfully completed maps */
-		JobID completedReducers;								/* successfully completed reduces */
+		/* maintain string list of all node names */
+		map<string, Node*> nodes;
+		/* node with maximum remaining map jobs */
+		Node* nodeWithMaxMapJobs;
+		/* the number of jobs assigned to highest map loaded node */
+		JobID maximumMapJobsCount;
+		/* node with maximum remaining reduce jobs */
+		Node* nodeWithMaxReduceJobs;
+		/* the number of jobs assigned to highest reduce loaded node */
+		JobID maximumReduceJobsCount;
+		/* string list of finished node URL's */
+		vector<string> finishedNodes;
+		/* set of finished nodes we've sent out */
+		set<string> alreadySentFinishedNodes;
+		/* monotonically increasing universal job counter */
+		JobID jidCounter;
+		/* job specification parameters and constants */
+		MapReduceSpecification* spec;
+		/* count of active mappers */
+		JobID activeMappers;
+		/* count of active reducers */
+		JobID activeReducers;
+		/* remaining map jobs to run */
+		JobID remainingMappers;
+		/* remaining reduce jobs to run */
+		JobID remainingReducers;
+		/* successfully completed maps */
+		JobID completedMaps;
+		/* successfully completed reduces */
+		JobID completedReducers;
 };
 
 #endif
