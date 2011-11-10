@@ -41,7 +41,7 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 	/* assign all map jobs */
 	for (iter = inputFiles.begin(); iter < inputFiles.end(); iter++)
 	{
-		if (!dfs.checkExistence(*iter)) continue;
+		assert(dfs.checkExistence(*iter));
 		cout << "Master: Getting num chunks for" << (*iter) << endl;
 		uint64_t num_chunks = dfs.getNumChunks((*iter));
 
