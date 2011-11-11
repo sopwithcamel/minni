@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include <iostream>
-#include <tr1/unordered_map>
 
 #include "tbb/pipeline.h"
 #include "tbb/tick_count.h"
@@ -29,7 +28,7 @@ public:
 private:
 	Aggregator* aggregator;
 	size_t chunk_ctr;
-	MapInput* input;
+	ChunkInput* input;
 	size_t rem_buffer_size;
 	char* buffer;
 	const size_t chunksize;

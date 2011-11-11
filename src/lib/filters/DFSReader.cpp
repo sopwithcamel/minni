@@ -7,8 +7,7 @@ DFSReader::DFSReader(Aggregator* agg, MapInput* _input, const size_t cs) :
 		rem_buffer_size(0),
 		chunksize(cs),
 		next_chunk(0),
-		chunk_ctr(0),
-		input(_input)
+		chunk_ctr(0)
 {
 	size_t num_buf = aggregator->getNumBuffers();
 	buffer = (char*)malloc(BUFSIZE);
@@ -16,6 +15,7 @@ DFSReader::DFSReader(Aggregator* agg, MapInput* _input, const size_t cs) :
 	for (int i=0; i < num_buf; i++) {
 		chunk[i] = (char*)malloc(chunksize + 1);
 	}
+	input = (ChunkInput*)_input;
 	id = input->chunk_id_start;
 }
 
