@@ -13,6 +13,7 @@
 #include "PartialAgg.h"
 #include "Aggregator.h"
 #include "MapInput.h"
+#include "Util.h"
 
 #define BUFSIZE			67108864
 
@@ -32,8 +33,10 @@ private:
 	ChunkInput* input;
 	size_t rem_buffer_size;
 	char* buffer;
+	uint64_t next_buffer;
 	const size_t chunksize;
 	char** chunk; 
+	FilterInfo** send;
 	size_t next_chunk;
 	ChunkID id;
 	void* operator()(void* pao);
