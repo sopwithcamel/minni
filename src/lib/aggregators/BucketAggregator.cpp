@@ -34,13 +34,21 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 	Setting& c_agginmem = readConfigFile(cfg, "minni.aggregator.bucket.aggregate");
 	int agg_in_mem = c_agginmem;
 
+	Setting& c_inp_typ = readConfigFile(cfg, "minni.input_type");
+	string inp_type = (const char*)c_inp_typ;
+
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
 		 * entire input, chunk by chunk, tokenizes, Maps each Minni-token,
 		 * aggregates/writes to buckets. For this pipeline, a "token" or a
 		 * a basic pipeline unit is a chunk read from the DFS */
-		reader = new DFSReader(this, map_input, token_size);
-		pipeline_list[0].add_filter(*reader);
+		if (!inp_type.compare("chunk")) { 
+			chunkreader = new DFSReader(this, map_input, token_size);
+			pipeline_list[0].add_filter(*chunkreader);
+		} else if (!inp_type.compare("file")) {
+			filereader = new FileReader(this, map_input);
+			pipeline_list[0].add_filter(*filereader);
+		}
 
 		toker = new Tokenizer(this, cfg, createPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*toker);
@@ -102,8 +110,10 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 
 BucketAggregator::~BucketAggregator()
 {
-	if (reader)
-		delete(reader);
+	if (chunkreader)
+		delete(chunkreader);
+	if (filereader)
+		delete(filereader);
 	if (toker)
 		delete(toker);
 	if (inp_deserializer)

@@ -79,7 +79,7 @@ void* Tokenizer::operator()(void* buffer)
 			break;
 		if (memCache) {
 			for (int i=0; i<mc_size; i++) {
-//				tokens[1] = (*memCache)[i];
+				tokens[1] = (*memCache)[i];
 				new_pao = createPAO((const char**)tokens); 
 				this_pao_list[this_list_ctr++] = new_pao;
 				assert(this_list_ctr < max_keys_per_token);

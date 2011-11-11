@@ -38,8 +38,6 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 	vector<string> inputFiles = spec->getInputFiles();
 	map<string, Node*>::iterator nodeIter;
 
-	uint64_t num_work_units;
-
 	/* assign all map jobs */
 	for (iter = inputFiles.begin(); iter < inputFiles.end(); iter++)
 	{
@@ -50,8 +48,6 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 		 * sub-directories. Also, work will be allocated amongst the
 		 * mappers in units of files in this case */
 		if (dfs.isDirectory((*iter).c_str())) {
-			uint64_t tot_bytes;
-			dfs.getDirSummary((*iter).c_str(), num_work_units, tot_bytes);
 			splitDir(dfs, *iter);
 		} else {
 			splitFile(dfs, *iter);

@@ -11,7 +11,8 @@
 
 #include "Defs.h"
 #include "PartialAgg.h"
-#include "Mapper.h"
+#include "Aggregator.h"
+#include "MapInput.h"
 
 #define BUFSIZE			67108864
 

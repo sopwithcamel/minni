@@ -10,6 +10,7 @@ libminni_la_SOURCES =   Mapper.cpp \
 			filters/Deserializer.cpp \
 		       	filters/DFSReader.cpp \
 			filters/ExternalHasher.cpp \
+			filters/FileReader.cpp \
 			filters/Hasher.cpp \
 			filters/MemCache.cpp \
 			filters/Merger.cpp \
@@ -48,6 +49,7 @@ minni_include_HEADERS = PartialAgg.h \
 			filters/Deserializer.h \
 		       	filters/DFSReader.h \
 			filters/ExternalHasher.h \
+			filters/FileReader.h \
 			filters/Hasher.h \
 			filters/MemCache.h \
 			filters/Merger.h \

@@ -12,30 +12,29 @@
 
 #include "Defs.h"
 #include "PartialAgg.h"
-#include "Mapper.h"
-
-#define BUFSIZE			67108864
+#include "Aggregator.h"
+#include "MapInput.h"
+#include "Util.h"
 
 /**
  * To be used as the input stage in the pipeline.
- * - Produces a buffer for consumption
- * 
+ * - Produces an array of names of files in directory
+ * single-buffered for now.
  */
 
 class FileReader : public tbb::filter {
 public:
-	FileReader(const char* dir_name, Aggregator* agg);
+	FileReader(Aggregator* agg, MapInput* _input);
 	~FileReader();
 private:
 	Aggregator* aggregator;
-	size_t chunk_ctr;
-	const char* dir_name;
-	DIR* dp;
-	const size_t max_keys_per_token;
-	size_t next_buffer;
-	PartialAgg*** pao_list;
+	FileInput* input;
+	vector<string> file_list;
+	size_t files_per_call;
+	size_t files_sent;
+	char*** file_send_list;
 	FilterInfo** send;
-	PartialAgg* (*createPAO)(const char* token);
+	uint64_t next_buffer;
 	void* operator()(void* pao);
 };
 
