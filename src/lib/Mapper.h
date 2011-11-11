@@ -1,7 +1,6 @@
-#ifndef Mapper_H
-#define Mapper_H
+#ifndef LIB_MAPPER_H
+#define LIB_MAPPER_H
 #include <iostream>
-#include <stdio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,48 +20,27 @@
 #include <set>
 #include "PartialAgg.h"
 #include "KDFS.h"
+#include "MapInput.h"
 #include "Aggregator.h"
 #include "Util.h"
 #include "util.h"
-
-#define GetCurrentDir getcwd
 
 using namespace std;
 using namespace tbb;
 using namespace workdaemon;
 using namespace libconfig;
 
-class MapperWrapperTask;
-class MapInput {
-  friend class MapperWrapperTask;
-  public:
-	MapInput() {};
-	~MapInput() {};
-	virtual uint64_t key_value(char** str, ChunkID id);
-	ChunkID chunk_id_start;
-	ChunkID chunk_id_end;
-	string file_location;	
-	uint16_t port;
-	string master_name;
-};
-
 class Mapper {
 public:
-	Mapper(PartialAgg* (*__createPAO)(const char** t), void (*__destroyPAO)(PartialAgg* p));
+	Mapper(PartialAgg* (*__createPAO)(const char** t), 
+			void (*__destroyPAO)(PartialAgg* p));
 	~Mapper();
 	PartialAgg* (*createPAO)(const char** token); 
 	void (*destroyPAO)(PartialAgg* p);
-	//vector <ofstream*>  my_file_streams; //TODO actually needed?
 	int num_partition;
 	Aggregator* aggregs;
 private:
 };
-
-//the type of class factories
-//typedef Mapper* create_mapper_t();
-//typedef void destroy_mapper_t (Mapper*);
-
-
 
 class MapperWrapperTask : public task {
   public:
@@ -70,7 +48,7 @@ class MapperWrapperTask : public task {
 	PartialAgg* (*__libminni_create_pao)(const char** t);
 	void (*__libminni_destroy_pao)(PartialAgg* pao);
 	string so_path;
-	MapInput myinput;
+	MapInput* myinput;
 	MapperWrapperTask (JobID jid, Properties * p, TaskRegistry * t, LocalFileRegistry * f);
 	task* execute();
 	~MapperWrapperTask();
@@ -82,9 +60,6 @@ class MapperWrapperTask : public task {
 	LocalFileRegistry* filereg;
 	int ParseProperties(string& soname, uint64_t& num_partitions);
 	int UserMapLinking(const char* soname);
-	string GetCurrentPath();
-	string GetLocalFilename(string path, JobID jobid, int i);	
 };
-
 
 #endif

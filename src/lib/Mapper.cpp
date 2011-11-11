@@ -6,32 +6,6 @@
 #include "TesterAggregator.h"
 #include <dlfcn.h>
 
-//#define lt__PROGRAM__LTX_preloaded_symbols lt_libltdl_LTX_preloaded_symbols
-
-//MapInput Class
-
-uint64_t MapInput::key_value(char** value, ChunkID id) {
-
-	KDFS myhdfs(master_name,port);
-	bool conn = myhdfs.connect();
-	assert(conn); // Unable to establish connection :(
-
-	// looking for file
-	assert(myhdfs.checkExistence(file_location));
-	uint64_t length = myhdfs.getChunkSize(file_location);
-
-	// Going to read chunks from KDFS
-	uint64_t offset = id*length;
-	int64_t k = myhdfs.readChunkOffset(file_location, offset, *value, length);
-	assert(k != -1);
-	cout<<"Mapper: Read " << k << " blocks" << endl;
-
-	myhdfs.closeFile(file_location);
-	bool disconn = myhdfs.disconnect();
-	assert(disconn);
-	return k;
-}
-
 //Mapper
 Mapper::Mapper(PartialAgg* (*__createPAO)(const char** t), 
 			void (*__destroyPAO)(PartialAgg* p)):
@@ -55,46 +29,33 @@ MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p,
 		filereg(f)
 {
 	openConfigFile(cfg);
+	Setting& c_input_type = readConfigFile(cfg, "minni.input_type");
+	string inp_type = (const char*)c_input_type;
+
+	if (!inp_type.compare("chunk"))
+		myinput = new ChunkInput();
+	else if (!inp_type.compare("file"))
+		myinput = new FileInput();
 }
 
-/* TODO: destroy all PAO's created */
 MapperWrapperTask::~MapperWrapperTask()
 {
+	delete myinput;
 }
 
 int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
-{//TODO checking and printing error reports!	
-	stringstream ss;
+{
+	myinput->ParseProperties(prop);
+
 	string soname_string;
 	soname = (*prop)["SO_NAME"];
 	cout<<"Mapper: soname is "<<soname<<endl;
-  	myinput.file_location = (*prop)["FILE_IN"];
-	cout<<"Mapper: file location is "<<myinput.file_location<<endl;
-	string chunk_temp_start = (*prop)["CID_START"];
-	ss <<chunk_temp_start;
-	ss >> myinput.chunk_id_start;
-	string chunk_temp_end = (*prop)["CID_END"];
-	stringstream ss4;
-	ss4 <<chunk_temp_end;
-	ss4 >> myinput.chunk_id_end;
-	cout<<"Mapper: chunk id  start is "<<myinput.chunk_id_start<<endl;
-	cout<<"Mapper: chunk id end is "<<myinput.chunk_id_end<<endl;
-  	myinput.master_name = (*prop)["DFS_MASTER"];
-	cout<<"Mapper: dfs master is "<<myinput.master_name<<endl;
-        string port_temp = (*prop)["DFS_PORT"];
-	stringstream ss2;
-	ss2 <<port_temp;
-	uint16_t port_int;
-	ss2 >> port_int;
-	myinput.port =  port_int;
-	cout<<"Mapper: port - the string version is "<<(*prop)["DFS_PORT"]<<endl;
-	cout<<"Mapper: port is -converted version "<<myinput.port<<endl;
+
 	string part = (*prop)["NUM_REDUCERS"];
 	stringstream ss3;
 	ss3 << part;
 	ss3 >> num_partitions; 
-	cout<<"Mapper: number of partitions - the string version is "<<(*prop)["NUM_REDUCERS"]<<endl;
-	cout<<"Mapper: number of partions is converted version"<<num_partitions<<endl;
+	cout<<"Mapper: num_partitions:"<<num_partitions<<endl;
 	return 0;	
 }
 
@@ -125,34 +86,6 @@ int MapperWrapperTask::UserMapLinking(const char* soname)  { //TODO link Partial
 
 	return 0;
 }
-
-string MapperWrapperTask::GetCurrentPath() {
-	char cCurrentPath[FILENAME_MAX];
-        if (!GetCurrentDir(cCurrentPath, sizeof(cCurrentPath)))
-        {
-                return 0;  //TODO change here!!!
-        }
-        cCurrentPath[sizeof(cCurrentPath) - 1] = '\0'; /* not really required */
-        string path;
-        path = cCurrentPath;
-	cout<<"Mapper: current path is "<<path<<endl;
-	return path;
-}
-
-string MapperWrapperTask::GetLocalFilename(string path, JobID jobid, int i) {
-	stringstream ss;
-       	ss << path;
-        ss << "/job";
-       	ss << jobid;
-//       	ss << "_partition";
-       	ss << "_part";
-       	ss << i;
-	ss << ".map";
-	cout<<"The local file name generated is "<<ss.str()<<endl;
-        return ss.str();
-}
-
-
 
 task* MapperWrapperTask::execute() {
 	string soname;
@@ -196,22 +129,22 @@ task* MapperWrapperTask::execute() {
 
 	if (!selected_map_aggregator.compare("bucket")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new BucketAggregator(
-						cfg, Map, npart, &myinput, NULL,
+						cfg, Map, npart, myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO, 
 						map_out_file.c_str()));
 	} else if (!selected_map_aggregator.compare("exthash")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new ExthashAggregator(
-						cfg, Map, npart, &myinput, NULL,
+						cfg, Map, npart, myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO,
 						map_out_file.c_str()));
 	} else if (!selected_map_aggregator.compare("hashsort")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new HashsortAggregator(
-						cfg, Map, npart, &myinput, NULL,
+						cfg, Map, npart, myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO,
 						map_out_file.c_str()));
 	} else if (!selected_map_aggregator.compare("tester")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new TesterAggregator(
-						cfg, Map, npart, &myinput, NULL,
+						cfg, Map, npart, myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO,
 						map_out_file.c_str()));
 	} else {

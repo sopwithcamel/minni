@@ -4,6 +4,7 @@ SUBDIRS = example
 lib_LTLIBRARIES = libminni.la 
 
 libminni_la_SOURCES =   Mapper.cpp \
+			MapInput.cpp \
 		       	Reducer.cpp \
 			filters/Adder.cpp \
 			filters/Deserializer.cpp \
@@ -20,8 +21,7 @@ libminni_la_SOURCES =   Mapper.cpp \
 			aggregators/BucketAggregator.cpp \
 			aggregators/ExthashAggregator.cpp \
 			aggregators/HashsortAggregator.cpp \
-			aggregators/TesterAggregator.cpp \
-			Util.cpp
+			aggregators/TesterAggregator.cpp
 
 libminni_la_LIBADD = ../dfs/libdfs.la
 
@@ -41,6 +41,7 @@ minni_includedir = $(includedir)/libminni/libminni
 
 minni_include_HEADERS = PartialAgg.h \
 			Mapper.h \
+			MapInput.h \
 			Reducer.h \
 			Minnie.h \
 			filters/Adder.h \
