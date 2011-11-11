@@ -87,6 +87,8 @@ void FileInput::ParseProperties(Properties* p)
 	stringstream ss;
   	data_location = (*p)["FILE_IN"];
 	cout<<"Mapper: file location is " << data_location << endl;
+	if (data_location[data_location.size()-1] != '/')
+		data_location += '/';
 	string file_temp_begin = (*p)["CID_START"];
 	ss << file_temp_begin;
 	ss >> file_ind_beg;
@@ -106,4 +108,17 @@ void FileInput::ParseProperties(Properties* p)
 	port =  port_int;
 	cout<<"Mapper: port - the string version is "<<(*p)["DFS_PORT"]<<endl;
 	cout<<"Mapper: port is -converted version "<<port<<endl;
+}
+
+int64_t FileInput::readFile(string fil, char* buf)
+{
+	KDFS dfs(master_name,port);
+	bool conn = dfs.connect();
+	assert(conn); // Unable to establish connection :(
+
+	dfs.readFile(data_location + fil, buf);
+
+	dfs.closeFile(data_location);
+	bool disconn = dfs.disconnect();
+	assert(disconn);
 }
