@@ -3,6 +3,7 @@
 FileReader::FileReader(Aggregator* agg, MapInput* _input) :
 		aggregator(agg),
 		filter(serial_in_order),
+		files_sent(0),
 		files_per_call(100)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
@@ -14,10 +15,6 @@ FileReader::FileReader(Aggregator* agg, MapInput* _input) :
 		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
 		file_send_list[i] = (char**)malloc(sizeof(char*) * 
 				files_per_call);
-		for (int j=0; j<files_per_call; j++) {
-			file_send_list[i][j] = (char*)malloc(
-					FILENAME_LENGTH);
-		}
 	}
 }
 
@@ -28,9 +25,6 @@ FileReader::~FileReader()
 	file_list.clear();
 
 	for (int i=0; i<num_buffers; i++) {
-		for (int j=0; j<files_per_call; j++) {
-			free(file_send_list[i][j]);
-		}
 		free(file_send_list[i]);	
 		free(send[i]);
 	}
@@ -56,7 +50,7 @@ void* FileReader::operator()(void*)
 		aggregator->input_finished = true;
 	}
 	for (int i=files_sent; i<fil_lim; i++) {
-		strcpy(this_file_list[i-files_sent], file_list[i].c_str());
+		input->readFile(file_list[i], this_file_list[i-files_sent]);
 	}
 	
 	aggregator->tot_input_tokens++;
