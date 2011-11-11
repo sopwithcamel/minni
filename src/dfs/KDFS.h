@@ -57,6 +57,8 @@ class KDFS : public DFS
 		bool isDirectory(string path);
 		void getDirSummary(string path, uint64_t& num_fil, uint64_t& num_byt);
 		int64_t readDir(string path, vector<string>& conts);
+		/* allocates a buffer and reads a file. Caller must free */
+		int64_t readFile(string path, char* buf);
 };
 
 #endif
