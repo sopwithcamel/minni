@@ -1,7 +1,12 @@
 #include <stdlib.h>
 #include "PartialAgg.h"
+#include <assert.h>
+#include <jpeglib.h>
+#include <jerror.h>
 
-#define KEYSIZE		10000
+#define cimg_plugin "plugins/jpeg_buffer.h"
+#include "CImg.h"
+using namespace cimg_library;
 
 class ImagePAO : public PartialAgg {
   public:
@@ -14,5 +19,8 @@ class ImagePAO : public PartialAgg {
 	void serialize(FILE* f, void* buf, size_t buf_size);
 	bool deserialize(FILE* f, void* buf, size_t buf_size);
 	bool deserialize(void* buf);
-	bool tokenize(void*, void*, char**);
+	bool tokenize(void*, void*, void*, char**);
+  private:
+	CImg<float>* ph_dct_matrix(const int N);
+	void pHash(CImg<unsigned char> img, unsigned long& hash);
 };

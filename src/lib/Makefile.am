@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = subdir-objects
-SUBDIRS = example
+SUBDIRS = example apps
 
 lib_LTLIBRARIES = libminni.la 
 

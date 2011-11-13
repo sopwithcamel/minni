@@ -1,6 +1,8 @@
 #include "KDFS.h"
 
 #include <iostream>
+#include <stdio.h>
+#include <string.h>
 using namespace std;
 
 KDFS::~KDFS()
@@ -165,16 +167,15 @@ int64_t KDFS::readDir(string path, vector<string>& files)
 	return fs->Readdir(path.c_str(), files);
 }
 
-int64_t KDFS::readFile(string path, char* buf)
+int64_t KDFS::readFile(string path, char** buf)
 {
 	struct stat result;
 	int64_t ret;
 	int64_t fd;
 	assert((fd = fs->Open(path.c_str(), O_RDONLY)) >= 0);
 	fs->Stat(path.c_str(), result, true);
-	buf = (char*)malloc(result.st_size + 1);
-	ret = (int64_t) fs->Read(fd, buf, (size_t)result.st_size);
-	buf[ret] = '\0';
+	*buf = (char*)malloc(result.st_size + 1);
+	ret = (int64_t) fs->Read(fd, *buf, (size_t)result.st_size);
 	assert(ret >= 0);
 }
 

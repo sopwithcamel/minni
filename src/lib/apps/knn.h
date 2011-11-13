@@ -45,7 +45,7 @@ class kNNPAO : public PartialAgg {
 	void serialize(FILE* f, void* buf, size_t buf_size);
 	bool deserialize(FILE* f, void* buf, size_t buf_size);
 	bool deserialize(void* buf);
-	bool tokenize(void*, void*, char**);
+	bool tokenize(void*, void*, void*, char**);
   private:
 	/* calculate distance of argument key from object key */
 	float calculate_distance(const char* key);

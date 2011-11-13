@@ -15,11 +15,12 @@ knn_la_CPPFLAGS = $(THRIFT_CFLAGS) \
 
 img_la_SOURCES = img.cpp
 
-img_la_LDFLAGS = -module
+img_la_LDFLAGS = -module -lX11 -lpthread -ljpeg
 
 img_la_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I$(srcdir)/../ \
 			-I$(srcdir)/../filters/ \
 			-I$(srcdir)/../aggregators/ \
 			-I$(srcdir)/../../worker/gen-cpp \
-			-I$(srcdir)/../../dfs/
+			-I$(srcdir)/../../dfs/ \
+			-I/usr/include/CImg/

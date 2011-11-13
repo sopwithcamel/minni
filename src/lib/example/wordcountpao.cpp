@@ -92,7 +92,8 @@ bool WordCountPartialAgg::deserialize(void *buf)
 	return true;
 }
 
-bool WordCountPartialAgg::tokenize(void* buf, void* prog, char** toks)
+bool WordCountPartialAgg::tokenize(void* buf, void* prog, void* tot, 
+		char** toks)
 {
 	char* spl;
 	int* num_tok = (int*)prog;

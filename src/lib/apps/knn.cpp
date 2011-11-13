@@ -92,7 +92,7 @@ bool kNNPAO::deserialize(void* buf)
 	return true;
 }
 
-bool tokenize(void* buf, void* prog, char** toks)
+bool tokenize(void* buf, void* prog, void* tot, char** toks)
 {
 }
 
