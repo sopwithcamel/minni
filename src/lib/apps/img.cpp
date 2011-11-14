@@ -1,6 +1,7 @@
 #include "img.h"
 
 #define KEYSIZE		64
+#define IMG_SIZE	500000
 
 ImagePAO::ImagePAO(const char** const tokens)
 {
@@ -11,7 +12,7 @@ ImagePAO::ImagePAO(const char** const tokens)
 	}	
 	CImg<unsigned char> img;
 	unsigned long hash;
-	img.load_jpeg_buffer((JOCTET*)tokens[0], strlen(tokens[0]));
+	img.load_jpeg_buffer((JOCTET*)tokens[0], IMG_SIZE);
 	pHash(img, hash);
 	key = (char*)malloc(KEYSIZE);
 	// make phash value the key of the PAO
