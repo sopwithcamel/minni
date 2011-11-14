@@ -21,6 +21,7 @@ class ImagePAO : public PartialAgg {
 	bool deserialize(void* buf);
 	bool tokenize(void*, void*, void*, char**);
   private:
+	uint64_t hash;
 	CImg<float>* ph_dct_matrix(const int N);
 	void pHash(CImg<unsigned char> img, unsigned long& hash);
 };

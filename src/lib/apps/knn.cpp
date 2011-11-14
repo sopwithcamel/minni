@@ -81,7 +81,7 @@ bool kNNPAO::deserialize(void* buf)
 		if (spl == NULL)
 			return false;
 		/* create new neighbor */
-		n = new Neighbor(spl);
+		n = new Neighbor(spl, KEYSIZE);
 		/* read in neighbor distance */
 		spl = strtok(NULL, " ");
 		if (spl == NULL)
@@ -107,7 +107,7 @@ void kNNPAO::check_insert(const char* key, float distance)
 	for (list<Neighbor>::iterator it = this_list->begin(); 
 			it != this_list->end(); ++it) {
 		if (distance < (*it).distance) {
-			Neighbor* n = new Neighbor(key, distance);
+			Neighbor* n = new Neighbor(key, KEYSIZE, distance);
 			this_list->insert(it, *n);
 		}
 	}

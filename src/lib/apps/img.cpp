@@ -1,4 +1,6 @@
 #include "img.h"
+#include "Neighbor.h"
+#include "Defs.h"
 
 #define KEYSIZE		64
 #define IMG_SIZE	500000
@@ -9,14 +11,14 @@ ImagePAO::ImagePAO(const char** const tokens)
 		key = NULL;
 		value = NULL;
 		return;
-	}	
+	}
+	key = (char*)malloc(FILENAME_LENGTH);
+	strcpy(key, tokens[0]);
+
 	CImg<unsigned char> img;
-	unsigned long hash;
-	img.load_jpeg_buffer((JOCTET*)tokens[0], IMG_SIZE);
+	img.load_jpeg_buffer((JOCTET*)tokens[1], IMG_SIZE);
 	pHash(img, hash);
-	key = (char*)malloc(KEYSIZE);
-	// make phash value the key of the PAO
-	sprintf(key, "%lu", hash);
+
 	value = (uint64_t*)malloc(sizeof(uint64_t));
 	*((uint64_t*)value) = 1;
 }
@@ -72,6 +74,7 @@ bool ImagePAO::deserialize(void* buf)
 	spl = strtok(NULL, " \n\r");
 	if (spl == NULL)
 		return false;
+	value = (uint64_t*)malloc(sizeof(uint64_t));
 	*((uint64_t*)value) = atol(spl);
 	return true;
 }
@@ -84,6 +87,7 @@ bool ImagePAO::tokenize(void* buf, void* prog, void* tot, char** toks)
 	if (*tok_index == *tottok)
 		return false;
 	toks[0] = file_list[*tok_index];
+	(*tok_index)++;
 	return true;
 }
 
