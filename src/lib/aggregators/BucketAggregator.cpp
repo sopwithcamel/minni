@@ -39,31 +39,38 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
-		 * entire input, chunk by chunk, tokenizes, Maps each Minni-token,
-		 * aggregates/writes to buckets. For this pipeline, a "token" or a
-		 * a basic pipeline unit is a chunk read from the DFS */
+		 * entire input, chunk by chunk, tokenizes, Maps each Minni-
+		 * token aggregates/writes to buckets. For this pipeline, a 
+		 * "token" or a basic pipeline unit is a chunk read from the 
+		 * DFS */
 		if (!inp_type.compare("chunk")) { 
-			chunkreader = new DFSReader(this, map_input, token_size);
+			chunkreader = new DFSReader(this, map_input, 
+					token_size);
 			pipeline_list[0].add_filter(*chunkreader);
+			toker = new Tokenizer(this, cfg, createPAOFunc,
+					max_keys_per_token);
+			pipeline_list[0].add_filter(*toker);
 		} else if (!inp_type.compare("file")) {
 			filereader = new FileReader(this, map_input);
 			pipeline_list[0].add_filter(*filereader);
+			filetoker = new FileTokenizer(this, cfg, createPAOFunc,
+					 max_keys_per_token);
+			pipeline_list[0].add_filter(*filetoker);
 		}
 
-		toker = new Tokenizer(this, cfg, createPAOFunc, max_keys_per_token);
-		pipeline_list[0].add_filter(*toker);
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
-		inp_deserializer = new Deserializer(this, 1/*TODO: how many?*/, input_file,
+		inp_deserializer = new Deserializer(this, 1, input_file,
 			createPAOFunc, destroyPAOFunc);
 		pipeline_list[0].add_filter(*inp_deserializer);
 		free(input_file);
 	}
 
 	if (agg_in_mem) {
-		hasher = new Hasher(this, capacity, destroyPAOFunc, max_keys_per_token);
+		hasher = new Hasher(this, capacity, destroyPAOFunc,
+				max_keys_per_token);
 		pipeline_list[0].add_filter(*hasher);
 		merger = new Merger(this, destroyPAOFunc);
 		pipeline_list[0].add_filter(*merger);
@@ -92,7 +99,8 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 			createPAOFunc, destroyPAOFunc);
 	pipeline_list[1].add_filter(*deserializer);
 
-	bucket_hasher = new Hasher(this, capacity, destroyPAOFunc, max_keys_per_token);
+	bucket_hasher = new Hasher(this, capacity, destroyPAOFunc,
+			max_keys_per_token);
 	pipeline_list[1].add_filter(*bucket_hasher);
 	bucket_merger = new Merger(this, destroyPAOFunc);
 	pipeline_list[1].add_filter(*bucket_merger);

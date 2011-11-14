@@ -14,6 +14,7 @@
 #include "PartialAgg.h"
 #include "DFSReader.h"
 #include "FileReader.h"
+#include "FileTokenizer.h"
 #include "Tokenizer.h"
 #include "Hasher.h"
 #include "Merger.h"
@@ -39,6 +40,7 @@ private:
 	MapInput* map_input; 
 	DFSReader* chunkreader;
 	FileReader* filereader;
+	FileTokenizer* filetoker;
 	Tokenizer* toker;
 
 	/* for serialized PAOs from local file */
