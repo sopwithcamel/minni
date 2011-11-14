@@ -10,13 +10,18 @@ FileReader::FileReader(Aggregator* agg, MapInput* _input) :
 	input = (FileInput*)_input;
 	input->getFileNames(file_list);
 	send = (FilterInfo**)malloc(sizeof(FilterInfo*) * num_buffers);
-	file_send_list = (char***)malloc(sizeof(char**) * num_buffers);
+	file_content_list = (char***)malloc(sizeof(char**) * num_buffers);
+	file_name_list = (char***)malloc(sizeof(char**) * num_buffers);
 	for (int i=0; i<num_buffers; i++) {
 		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
-		file_send_list[i] = (char**)malloc(sizeof(char*) * 
+		file_content_list[i] = (char**)malloc(sizeof(char*) * 
 				files_per_call);
-		for (int j=0; j<files_per_call; j++)
-			file_send_list[i][j] = NULL;
+		file_name_list[i] = (char**)malloc(sizeof(char*) * 
+				files_per_call);
+		for (int j=0; j<files_per_call; j++) {
+			file_content_list[i][j] = NULL;
+			file_name_list[i][j] = (char*)malloc(FILENAME_LENGTH);
+		}			
 	}
 }
 
@@ -27,10 +32,14 @@ FileReader::~FileReader()
 	file_list.clear();
 
 	for (int i=0; i<num_buffers; i++) {
-		free(file_send_list[i]);	
+		free(file_content_list[i]);	
+		free(file_name_list[i]);	
 		free(send[i]);
+		for (int j=0; j<files_per_call; j++)
+			free(file_name_list[i][j]);
 	}
-	free(file_send_list);
+	free(file_content_list);
+	free(file_name_list);
 	free(send);
 }
 
@@ -43,7 +52,8 @@ void* FileReader::operator()(void*)
 		return NULL;
 	}
 
-	char** this_file_list = file_send_list[next_buffer];
+	char** this_content_list = file_content_list[next_buffer];
+	char** this_name_list = file_name_list[next_buffer];
 	FilterInfo* this_send = send[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
 
@@ -53,18 +63,20 @@ void* FileReader::operator()(void*)
 	}
 	/* Free memory from previous invocations */
 	for (int j=0; j<files_per_call; j++) {
-		if (NULL != this_file_list[j]) {
-			free(this_file_list[j]);
-			this_file_list[j] = NULL;
+		if (NULL != this_content_list[j]) {
+			free(this_content_list[j]);
+			this_content_list[j] = NULL;
 		}
 	}
 	for (int i=files_sent; i<fil_lim; i++) {
-		input->readFile(file_list[i], &this_file_list[i-files_sent]);
+		input->readFile(file_list[i], &this_content_list[i-files_sent]);
+		strcpy(this_name_list[i-files_sent], file_list[i].c_str());
 	}
 	
 	aggregator->tot_input_tokens++;
 	
-	this_send->result = this_file_list;
+	this_send->result = this_content_list;
+	this_send->result1 = this_name_list;
 	this_send->length = (fil_lim - files_sent);	
 
 	files_sent += (fil_lim - files_sent);

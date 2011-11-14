@@ -32,7 +32,8 @@ private:
 	vector<string> file_list;
 	size_t files_per_call;
 	size_t files_sent;
-	char*** file_send_list;
+	char*** file_content_list;
+	char*** file_name_list;
 	FilterInfo** send;
 	uint64_t next_buffer;
 	void* operator()(void* pao);
