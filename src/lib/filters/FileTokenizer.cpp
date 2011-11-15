@@ -26,10 +26,7 @@ FileTokenizer::FileTokenizer(Aggregator* agg, const Config& cfg,
 		Setting& c_query_file = readConfigFile(cfg, 
 				"minni.query_file");
 		string query_file = (const char*)c_query_file;
-		Setting& c_query_type = readConfigFile(cfg, 
-				"minni.query_type");
-		string query_type = (const char*)c_query_type;
-		memCache = new MemCache(query_file.c_str(), query_type.c_str());
+		memCache = new MemCache(query_file.c_str(), FIL); 
 	} else {
 		memCache = NULL;
 	}
@@ -58,7 +55,7 @@ void* FileTokenizer::operator()(void* input_data)
 	size_t mc_size;
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	// passes just one token to createPAO
-	char** tokens = (char**)malloc(sizeof(char*) * 3);
+	char** tokens = (char**)malloc(sizeof(char*) * 4);
 	PartialAgg* new_pao;
 
 	FilterInfo* recv = (FilterInfo*)input_data;
@@ -79,8 +76,12 @@ void* FileTokenizer::operator()(void* input_data)
 		mc_size = memCache->size();
 	for (int j=0; j<recv_length; j++) {
 		if (memCache) {
+			tokens[2] = ((char**)file_name_buf)[j];
+			tokens[3] = ((char**)file_cont_buf)[j];
 			for (int i=0; i<mc_size; i++) {
-				tokens[2] = (*memCache)[i];
+				tokens[0] = memCache->getItem(i);
+				tokens[1] = memCache->getFileContents(i);
+
 				new_pao = createPAO((const char**)tokens);
 				this_pao_list[this_list_ctr++] = new_pao;
 				assert(this_list_ctr < max_keys_per_token);
