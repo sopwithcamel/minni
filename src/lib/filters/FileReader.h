@@ -34,6 +34,7 @@ private:
 	size_t files_sent;
 	char*** file_content_list;
 	char*** file_name_list;
+	size_t** file_size_list;
 	FilterInfo** send;
 	uint64_t next_buffer;
 	void* operator()(void* pao);

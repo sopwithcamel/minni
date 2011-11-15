@@ -7,7 +7,7 @@
 
 class kNNPAO : public PartialAgg {
   public:
-	kNNPAO(const char** tokens);
+	kNNPAO(char** tokens);
 	~kNNPAO();
 	/* add new neighbor if it is k-nearest */ 
 	void add(void* neighbor_key);

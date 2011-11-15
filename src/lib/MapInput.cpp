@@ -110,13 +110,13 @@ void FileInput::ParseProperties(Properties* p)
 	cout<<"Mapper: port is -converted version "<<port<<endl;
 }
 
-int64_t FileInput::readFile(string fil, char** buf)
+int64_t FileInput::readFile(string fil, char** buf, size_t& fil_size)
 {
 	KDFS dfs(master_name,port);
 	bool conn = dfs.connect();
 	assert(conn); // Unable to establish connection :(
 
-	dfs.readFile(data_location + fil, buf);
+	dfs.readFile(data_location + fil, buf, fil_size);
 
 	dfs.closeFile(data_location);
 	bool disconn = dfs.disconnect();

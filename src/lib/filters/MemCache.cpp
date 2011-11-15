@@ -42,6 +42,15 @@ char* MemCache::getFileContents(uint64_t ind)
 	return queryContents[ind];
 }
 
+size_t MemCache::getFileSize(uint64_t ind)
+{	
+	if (ind >= queryFileSizes.size())
+		return NULL;
+	if (queryType == WORD)
+		return NULL;
+	return queryFileSizes[ind];
+}
+
 void MemCache::loadWordCache()
 {
 	FILE* f = fopen(queryFile, "r");
@@ -76,10 +85,12 @@ void MemCache::readFileContents()
 		assert(f);
 		fseek(f, 0, SEEK_END);
 		sz = ftell(f);
-		buf = (char*)malloc(sz * sizeof(char));		
+		buf = (char*)malloc(sz + 1);		
 		fseek(f, 0, SEEK_SET);
-		assert (fread(buf, sizeof(char), sz, f) == sz);
+		assert(fread(buf, sizeof(char), sz, f) == sz);
+		buf[sz] = '\0';
 		queryContents.push_back(buf);
+		queryFileSizes.push_back(sz);
 		fclose(f);
 	}
 }

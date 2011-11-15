@@ -1,6 +1,6 @@
 #include "wordcountpao.h"
 
-WordCountPartialAgg::WordCountPartialAgg(const char** const tokens)
+WordCountPartialAgg::WordCountPartialAgg(char** tokens, size_t* token_sizes)
 {
 	if (tokens) {
 		size_t eok = strlen(tokens[0]);

@@ -10,7 +10,7 @@ using namespace cimg_library;
 
 class ImagePAO : public PartialAgg {
   public:
-	ImagePAO(const char** tokens);
+	ImagePAO(char** tokens, size_t* token_sizes);
 	~ImagePAO();
 	/* add new neighbor if it is k-nearest */ 
 	void add(void* neighbor_key);

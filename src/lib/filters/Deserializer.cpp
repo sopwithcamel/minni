@@ -5,7 +5,7 @@
 Deserializer::Deserializer(Aggregator* agg,
 			const uint64_t num_buckets, 
 			const char* inp_prefix, 
-			PartialAgg* (*createPAOFunc)(const char** k),
+			PartialAgg* (*createPAOFunc)(char** k, size_t* ts),
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		aggregator(agg),
 		filter(serial_in_order),
@@ -72,7 +72,7 @@ void* Deserializer::operator()(void*)
 
 	try {
 		while (!feof(cur_bucket)) {
-			new_pao = createPAO(NULL);
+			new_pao = createPAO(NULL, NULL);
 			if (new_pao->deserialize(cur_bucket, read_buf, BUF_SIZE)) {
 				this_list[pao_list_ctr++] = new_pao;
 				if (pao_list_ctr == list_size - 1)

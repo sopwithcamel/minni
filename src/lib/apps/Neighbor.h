@@ -6,6 +6,12 @@ class Neighbor {
 	{
 		key = NULL;
 	}
+	Neighbor(const Neighbor& n)
+	{
+		key = (char*)malloc(strlen(n.key) + 1);
+		strcpy(key, n.key);
+		distance = n.distance;
+	}
 	Neighbor(const char* k, size_t key_size)
 	{
 		key = (char*)malloc(key_size);

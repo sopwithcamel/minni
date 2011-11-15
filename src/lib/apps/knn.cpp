@@ -1,6 +1,6 @@
 #include "knn.h"
 
-kNNPAO::kNNPAO(const char** const tokens)
+kNNPAO::kNNPAO(char** tokens)
 {
 	key = (char*)malloc(KEYSIZE);
 	strcpy(key, tokens[0]);

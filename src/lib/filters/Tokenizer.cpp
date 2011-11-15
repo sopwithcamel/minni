@@ -1,7 +1,7 @@
 #include "Tokenizer.h"
 
 Tokenizer::Tokenizer(Aggregator* agg, const Config& cfg,
-			PartialAgg* (*createPAOFunc)(const char** t),
+			PartialAgg* (*createPAOFunc)(char** t, size_t* ts),
 			const size_t max_keys) :
 		aggregator(agg),
 		filter(serial_in_order),
@@ -67,7 +67,7 @@ void* Tokenizer::operator()(void* input_data)
 	next_buffer = (next_buffer + 1) % num_buffers; 
 	
 	uint64_t num_tokens_proc = 0;
-	PartialAgg* dummyPAO = createPAO(NULL);
+	PartialAgg* dummyPAO = createPAO(NULL, NULL);
 	if (tok_buf == NULL) {
 		perror("Buffer sent to Tokenizer is empty!");
 		exit(1);
@@ -80,12 +80,14 @@ void* Tokenizer::operator()(void* input_data)
 		if (memCache) {
 			for (int i=0; i<mc_size; i++) {
 				tokens[1] = memCache->getItem(i);
-				new_pao = createPAO((const char**)tokens);
+				// Insert token sizes; TODO
+				new_pao = createPAO(tokens, NULL);
 				this_pao_list[this_list_ctr++] = new_pao;
 				assert(this_list_ctr < max_keys_per_token);
 			}
 		} else {
-			new_pao = createPAO((const char**)tokens);
+			// Insert token sizes; TODO
+			new_pao = createPAO(tokens, NULL);
 			this_pao_list[this_list_ctr++] = new_pao;
 			assert(this_list_ctr < max_keys_per_token);
 		}

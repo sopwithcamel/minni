@@ -1,46 +1,48 @@
 #include "img.h"
 #include "Neighbor.h"
-#include "Defs.h"
 #include <math.h>
 #include <list>
 
 #define KEYSIZE		64
 #define IMG_SIZE	500000
 
-ImagePAO::ImagePAO(const char** const tokens)
+ImagePAO::ImagePAO(char** tokens, size_t* token_sizes)
 {
 	if (tokens == NULL) {
 		key = NULL;
 		value = NULL;
 		return;
 	}
+
 	// Set key equal to the query file name
-	key = (char*)malloc(FILENAME_LENGTH);
+	key = (char*)malloc(token_sizes[0]);
 	strcpy(key, tokens[0]);
 
 	// Calculate image hash
 	CImg<unsigned char> img;
-	img.load_jpeg_buffer((JOCTET*)tokens[1], IMG_SIZE);
+	img.load_jpeg_buffer((JOCTET*)tokens[1], token_sizes[1]);
 	pHash(img, hash);
 
 	uint64_t ne_hash;
-	Neighbor* n = new Neighbor(tokens[2], FILENAME_LENGTH);
+	Neighbor* n = new Neighbor(tokens[2], token_sizes[0]);
 	CImg<unsigned char> ne_img;
-	ne_img.load_jpeg_buffer((JOCTET*)tokens[3], IMG_SIZE);
+	ne_img.load_jpeg_buffer((JOCTET*)tokens[3], token_sizes[3]);
 	pHash(ne_img, ne_hash);
 	n->distance = abs((long)(hash - ne_hash));
-	list<Neighbor> n_list;
-	n_list.push_back(*n);
-	value = (std::list<Neighbor>*)(&n_list);
+
+	std::list<Neighbor>* n_list = new std::list<Neighbor>();
+	n_list->push_back(*n);
+	value = (std::list<Neighbor>*)(n_list);
 }
 
 ImagePAO::~ImagePAO()
 {
-	free(key);
-	std::list<Neighbor>* v = (std::list<Neighbor>*)value;
-	for (list<Neighbor>::iterator it = v->begin(); 
-			it != v->end(); ++it)
-		free(it->key);
+	if (key)
+		free(key);
+	if (value) {
+		std::list<Neighbor>* v = (std::list<Neighbor>*)value;
+		v->clear();
+	}
 }
 
 void ImagePAO::add(void* neighbor_key)
@@ -51,7 +53,13 @@ void ImagePAO::merge(PartialAgg* add_agg)
 {
 	std::list<Neighbor>* this_list = (std::list<Neighbor>*)value;
 	std::list<Neighbor>* mg_list = (std::list<Neighbor>*)(add_agg->value);
-	this_list->merge(*mg_list, Neighbor::comp);
+	Neighbor* new_neighbor;
+	for (std::list<Neighbor>::iterator it=mg_list->begin(); it !=
+			mg_list->end(); ++it) {
+		new_neighbor = new Neighbor(*it);
+		this_list->push_back(*new_neighbor);
+	}
+	this_list->sort(Neighbor::comp);
 }
 
 void ImagePAO::serialize(FILE* f, void* buf, size_t buf_size)
@@ -69,6 +77,9 @@ void ImagePAO::serialize(FILE* f, void* buf, size_t buf_size)
 		strcat(wr_buf, dist);
 	}	
 	strcat(wr_buf, "\n");
+	assert(NULL != f);
+	size_t l = strlen(wr_buf);
+	assert(fwrite(wr_buf, sizeof(char), l, f) == l);
 }
 
 bool ImagePAO::deserialize(FILE* f, void* buf, size_t buf_size)
@@ -87,10 +98,11 @@ bool ImagePAO::deserialize(void* buf)
 	char* spl;
 	char* read_buf = (char*)buf;
 	Neighbor* n;
-	list<Neighbor>* this_list = (list<Neighbor>*)value;
+	std::list<Neighbor>* this_list = new std::list<Neighbor>();
 	spl = strtok(read_buf, " ");
 	if (spl == NULL)
 		return false;
+	key = (char*)malloc(strlen(spl) + 1);
 	strcpy(key, spl);
 	while (true) {
 		/* read in neighbor key */
@@ -104,6 +116,7 @@ bool ImagePAO::deserialize(void* buf)
 		n->distance = atof(spl);	
 		this_list->push_back(*n);
 	}
+	value = (std::list<Neighbor>*)this_list;
 	return true;
 }
 

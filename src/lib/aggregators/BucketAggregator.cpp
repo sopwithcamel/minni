@@ -8,7 +8,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 				const uint64_t num_part,
 				MapInput* _map_input,
 				const char* infile, 
-				PartialAgg* (*createPAOFunc)(const char** t), 
+				PartialAgg* (*createPAOFunc)(char** t, size_t* ts), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile):
 		Aggregator(cfg, type, 2, num_part, createPAOFunc, destroyPAOFunc),

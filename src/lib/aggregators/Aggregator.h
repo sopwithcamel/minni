@@ -25,7 +25,7 @@ public:
 			AggType where,
 			uint64_t num_pipelines, 
 			uint64_t num_part, 
-			PartialAgg* (*createPAOFunc)(const char** t),
+			PartialAgg* (*createPAOFunc)(char** t, size_t* ts),
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~Aggregator();
 	void runPipeline();
@@ -48,7 +48,7 @@ private:
 	const uint64_t num_pipelines; 	// number of pipelines in aggregator
 	const uint64_t num_partitions;	// number of partitions for map output
 	uint64_t paos_in_token;
-	PartialAgg* (*createPAO)(const char** token);
+	PartialAgg* (*createPAO)(char** token, size_t* ts);
 	void (*destroyPAO)(PartialAgg* p);
 };
 

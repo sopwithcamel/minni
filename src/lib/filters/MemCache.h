@@ -24,9 +24,11 @@ public:
 	size_t size();
 	char* getItem(uint64_t i);
 	char* getFileContents(uint64_t i);
+	size_t getFileSize(uint64_t i);
 private:
 	std::vector<char*> queryList;
 	std::vector<char*> queryContents;
+	std::vector<size_t> queryFileSizes;
 	char* queryFile;
 	QueryType queryType;
 	void loadFileCache();
