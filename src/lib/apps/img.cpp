@@ -1,6 +1,8 @@
 #include "img.h"
 #include "Neighbor.h"
 #include "Defs.h"
+#include <math.h>
+#include <list>
 
 #define KEYSIZE		64
 #define IMG_SIZE	500000
@@ -12,21 +14,33 @@ ImagePAO::ImagePAO(const char** const tokens)
 		value = NULL;
 		return;
 	}
+	// Set key equal to the query file name
 	key = (char*)malloc(FILENAME_LENGTH);
 	strcpy(key, tokens[0]);
 
+	// Calculate image hash
 	CImg<unsigned char> img;
 	img.load_jpeg_buffer((JOCTET*)tokens[1], IMG_SIZE);
 	pHash(img, hash);
 
-	value = (uint64_t*)malloc(sizeof(uint64_t));
-	*((uint64_t*)value) = 1;
+	uint64_t ne_hash;
+	Neighbor* n = new Neighbor(tokens[2], FILENAME_LENGTH);
+	CImg<unsigned char> ne_img;
+	ne_img.load_jpeg_buffer((JOCTET*)tokens[3], IMG_SIZE);
+	pHash(ne_img, ne_hash);
+	n->distance = abs((long)(hash - ne_hash));
+	list<Neighbor> n_list;
+	n_list.push_back(*n);
+	value = (std::list<Neighbor>*)(&n_list);
 }
 
 ImagePAO::~ImagePAO()
 {
 	free(key);
-	free(value);
+	std::list<Neighbor>* v = (std::list<Neighbor>*)value;
+	for (list<Neighbor>::iterator it = v->begin(); 
+			it != v->end(); ++it)
+		free(it->key);
 }
 
 void ImagePAO::add(void* neighbor_key)
@@ -35,20 +49,26 @@ void ImagePAO::add(void* neighbor_key)
 
 void ImagePAO::merge(PartialAgg* add_agg)
 {
-	*((uint64_t*)value) += *(uint64_t*)(add_agg->value);
+	std::list<Neighbor>* this_list = (std::list<Neighbor>*)value;
+	std::list<Neighbor>* mg_list = (std::list<Neighbor>*)(add_agg->value);
+	this_list->merge(*mg_list, Neighbor::comp);
 }
 
 void ImagePAO::serialize(FILE* f, void* buf, size_t buf_size)
 {
-	uint64_t* _value = (uint64_t*)value;
 	char* wr_buf = (char*)buf;
+	char dist[20];
+	list<Neighbor>* this_list = (list<Neighbor>*)value;
 	strcpy(wr_buf, key);
-	strcat(wr_buf, " ");
-	sprintf(wr_buf + strlen(wr_buf), "%lu", *_value);
+	for (list<Neighbor>::iterator it = this_list->begin(); 
+			it != this_list->end(); ++it) {
+		strcat(wr_buf, " ");
+		strcat(wr_buf, (*it).key);
+		strcat(wr_buf, " ");
+		sprintf(dist, "%f", (*it).distance);
+		strcat(wr_buf, dist);
+	}	
 	strcat(wr_buf, "\n");
-	assert(NULL != f);
-	size_t l = strlen(wr_buf);
-	assert(fwrite(wr_buf, sizeof(char), l, f) == l);
 }
 
 bool ImagePAO::deserialize(FILE* f, void* buf, size_t buf_size)
@@ -64,18 +84,26 @@ bool ImagePAO::deserialize(FILE* f, void* buf, size_t buf_size)
 
 bool ImagePAO::deserialize(void* buf)
 {
-	char *spl;
-	char *read_buf = (char*)buf;
-	spl = strtok(read_buf, " \n\r");
+	char* spl;
+	char* read_buf = (char*)buf;
+	Neighbor* n;
+	list<Neighbor>* this_list = (list<Neighbor>*)value;
+	spl = strtok(read_buf, " ");
 	if (spl == NULL)
 		return false;
-	key = (char*)malloc(KEYSIZE);
 	strcpy(key, spl);
-	spl = strtok(NULL, " \n\r");
-	if (spl == NULL)
-		return false;
-	value = (uint64_t*)malloc(sizeof(uint64_t));
-	*((uint64_t*)value) = atol(spl);
+	while (true) {
+		/* read in neighbor key */
+		spl = strtok(NULL, " ");
+		if (spl == NULL)
+			break;
+		/* create new neighbor */
+		n = new Neighbor(spl, KEYSIZE);
+		/* read in neighbor distance */
+		spl = strtok(NULL, " ");
+		n->distance = atof(spl);	
+		this_list->push_back(*n);
+	}
 	return true;
 }
 
