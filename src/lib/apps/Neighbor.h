@@ -1,7 +1,7 @@
 class Neighbor {
   public:
 	char* key;
-	float distance;
+	uint64_t distance;
 	Neighbor()
 	{
 		key = NULL;

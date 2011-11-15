@@ -5,6 +5,7 @@
 
 #define KEYSIZE		64
 #define IMG_SIZE	500000
+#define NEAREST		5
 
 ImagePAO::ImagePAO(char** tokens, size_t* token_sizes)
 {
@@ -33,6 +34,7 @@ ImagePAO::ImagePAO(char** tokens, size_t* token_sizes)
 	std::list<Neighbor>* n_list = new std::list<Neighbor>();
 	n_list->push_back(*n);
 	value = (std::list<Neighbor>*)(n_list);
+	fprintf(stderr, "Found neighbor: %s, %ld\n", n->key, n->distance);
 }
 
 ImagePAO::~ImagePAO()
@@ -54,12 +56,17 @@ void ImagePAO::merge(PartialAgg* add_agg)
 	std::list<Neighbor>* this_list = (std::list<Neighbor>*)value;
 	std::list<Neighbor>* mg_list = (std::list<Neighbor>*)(add_agg->value);
 	Neighbor* new_neighbor;
-	for (std::list<Neighbor>::iterator it=mg_list->begin(); it !=
-			mg_list->end(); ++it) {
+	std::list<Neighbor>::iterator it; 
+	for (it=mg_list->begin(); it != mg_list->end(); ++it) {
 		new_neighbor = new Neighbor(*it);
 		this_list->push_back(*new_neighbor);
 	}
 	this_list->sort(Neighbor::comp);
+	if (this_list->size() > NEAREST) {
+		it = this_list->begin();
+		advance(it, NEAREST);	
+		this_list->erase(it, this_list->end());
+	}
 }
 
 void ImagePAO::serialize(FILE* f, void* buf, size_t buf_size)
@@ -73,7 +80,7 @@ void ImagePAO::serialize(FILE* f, void* buf, size_t buf_size)
 		strcat(wr_buf, " ");
 		strcat(wr_buf, (*it).key);
 		strcat(wr_buf, " ");
-		sprintf(dist, "%f", (*it).distance);
+		sprintf(dist, "%lu", (*it).distance);
 		strcat(wr_buf, dist);
 	}	
 	strcat(wr_buf, "\n");
