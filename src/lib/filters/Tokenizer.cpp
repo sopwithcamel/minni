@@ -75,7 +75,8 @@ void* Tokenizer::operator()(void* input_data)
 	if (memCache)
 		mc_size = memCache->size();
 	while (1) {
-		if (!dummyPAO->tokenize(tok_buf, &num_tokens_proc, &recv_length, tokens))
+		if (!dummyPAO->tokenize(tok_buf, &num_tokens_proc,
+				&recv_length, tokens))
 			break;
 		if (memCache) {
 			for (int i=0; i<mc_size; i++) {
