@@ -11,11 +11,15 @@ Tokenizer::Tokenizer(Aggregator* agg, const Config& cfg,
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	tok_list = new MultiBuffer<char**>(num_buffers, max_keys_per_token);
+	tok_size_list = new MultiBuffer<size_t*>(num_buffers,
+		 	max_keys_per_token);
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 
 	for (int i=0; i<num_buffers; i++) {
 		for (int j=0; j<max_keys_per_token; j++) {
 			(*tok_list)[i][j] = (char**)malloc(sizeof(char*) * 2);
+			(*tok_size_list)[i][j] = (size_t*)malloc(
+					sizeof(size_t) * 2);
 		}
 	}
 
@@ -37,7 +41,7 @@ Tokenizer::~Tokenizer()
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	for (int i=0; i<num_buffers; i++) {
 		for (int j=0; j<max_keys_per_token; j++) {
-			free(tok_list[i][j]);
+			free((*tok_list)[i][j]);
 		}
 	}
 
@@ -57,7 +61,8 @@ void* Tokenizer::operator()(void* input_data)
 	size_t mc_size;
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	// passes just one token to createPAO
-	char** tokens = (char**)malloc(sizeof(char*) * 2);
+	char** tokens;
+	size_t* token_sizes;
 	PartialAgg* new_pao;
 
 	FilterInfo* recv = (FilterInfo*)input_data;
@@ -65,6 +70,7 @@ void* Tokenizer::operator()(void* input_data)
 	uint64_t recv_length = (uint64_t)recv->length;	
 
 	char*** this_tok_list = (*tok_list)[next_buffer];
+	size_t** this_tok_size_list = (*tok_size_list)[next_buffer];
 	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
 	
@@ -77,21 +83,22 @@ void* Tokenizer::operator()(void* input_data)
 	if (memCache)
 		mc_size = memCache->size();
 	while (1) {
+		tokens = this_tok_list[this_list_ctr];
+		token_sizes = this_tok_size_list[this_list_ctr];
 		if (!dummyPAO->tokenize(tok_buf, &num_tokens_proc,
 				&recv_length, tokens))
 			break;
 		if (memCache) {
 			for (int i=0; i<mc_size; i++) {
 				tokens[1] = memCache->getItem(i);
-				this_tok_list[this_list_ctr++] = tokens;
-				assert(this_list_ctr < max_keys_per_token);
+				assert(++this_list_ctr < max_keys_per_token);
 			}
 		} else {
-			this_tok_list[this_list_ctr++] = tokens;
-			assert(this_list_ctr < max_keys_per_token);
+			assert(++this_list_ctr < max_keys_per_token);
 		}
 	}
 	this_send->result = this_tok_list;
+	this_send->result1 = this_tok_size_list;
 	this_send->length = this_list_ctr;
 	this_send->flush_hash = false;
 

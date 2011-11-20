@@ -36,6 +36,7 @@ private:
 	size_t next_buffer;
 	const size_t max_keys_per_token;
 	MultiBuffer<char**>* tok_list;
+	MultiBuffer<size_t*>* tok_size_list;
 	MultiBuffer<FilterInfo>* send;
 	PartialAgg* (*createPAO)(char** token, size_t* ts);
 	void* operator()(void* pao);

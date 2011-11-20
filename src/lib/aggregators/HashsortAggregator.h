@@ -16,6 +16,7 @@
 #include "DFSReader.h"
 #include "Hasher.h"
 #include "Merger.h"
+#include "PAOCreator.h"
 #include "Serializer.h"
 #include "Sorter.h"
 #include "Tokenizer.h"
@@ -45,6 +46,7 @@ private:
 	const char* infile;
 	Deserializer* inp_deserializer;
 
+	PAOCreator* creator;
 	Hasher* hasher;
 	Merger* merger;
 	Serializer* serializer;

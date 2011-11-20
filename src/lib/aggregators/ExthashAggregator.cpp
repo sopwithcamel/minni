@@ -54,6 +54,8 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		free(input_file);
 	}
 
+	creator = new PAOCreator(this, createPAOFunc);
+	pipeline_list[0].add_filter(*creator);
 	if (agg_in_mem) {
 		hasher = new Hasher(this, internal_capacity, destroyPAOFunc);
 		pipeline_list[0].add_filter(*hasher);

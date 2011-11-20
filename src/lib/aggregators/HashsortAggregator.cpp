@@ -54,6 +54,8 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 		free(input_file);
 	}
 
+	creator = new PAOCreator(this, createPAOFunc, max_keys_per_token);
+	pipeline_list[0].add_filter(*creator);
 	if (agg_in_mem) {
 		hasher = new Hasher(this, capacity, destroyPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*hasher);

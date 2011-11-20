@@ -18,6 +18,7 @@
 #include "Tokenizer.h"
 #include "Hasher.h"
 #include "Merger.h"
+#include "PAOCreator.h"
 #include "Serializer.h"
 #include "Deserializer.h"
 #include "util.h"
@@ -47,6 +48,7 @@ private:
 	const char* infile;
 	Deserializer* inp_deserializer;
 
+	PAOCreator* creator;
 	Hasher* hasher;
 	Merger* merger;
 	Serializer* bucket_serializer;

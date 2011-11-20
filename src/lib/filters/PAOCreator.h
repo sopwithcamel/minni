@@ -1,5 +1,5 @@
-#ifndef LIB_FILETOKENIZER_H
-#define LIB_FILETOKENIZER_H
+#ifndef LIB_PAOCREATOR_H
+#define LIB_PAOCREATOR_H
 
 #include <stdlib.h>
 #include <assert.h>
@@ -18,28 +18,25 @@
 #include "Util.h"
 
 /**
- * To be used after Reader in the pipeline.
- * - Consumes a buffer 
- * - Produces a vector of key, value pairs
- * 
+ * - Consumes a list of tokens 
+ * - Produces a list of PAOs
  */
 
-class FileTokenizer : public tbb::filter {
+class PAOCreator : public tbb::filter {
 public:
-	FileTokenizer(Aggregator* agg, const Config& cfg,
+	PAOCreator(Aggregator* agg, 
 			PartialAgg* (*createPAOFunc)(char** t, size_t* ts),
 			const size_t max_keys = DEFAULT_MAX_KEYS_PER_TOKEN);
-	~FileTokenizer();
+	~PAOCreator();
 private:
 	Aggregator* aggregator;
 	MemCache* memCache;
 	size_t next_buffer;
 	const size_t max_keys_per_token;
-	MultiBuffer<char**>* tok_list;
-	MultiBuffer<size_t*>* tok_size_list;
+	MultiBuffer<PartialAgg*>* pao_list;
 	MultiBuffer<FilterInfo>* send;
 	PartialAgg* (*createPAO)(char** token, size_t* ts);
-	void* operator()(void* input_data);
+	void* operator()(void* pao);
 };
 
-#endif // LIB_FILETOKENIZER_H
+#endif // LIB_PAOCREATOR_H
