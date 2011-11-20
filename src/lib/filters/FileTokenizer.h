@@ -35,8 +35,8 @@ private:
 	MemCache* memCache;
 	size_t next_buffer;
 	const size_t max_keys_per_token;
-	PartialAgg*** pao_list;
-	FilterInfo** send;
+	MultiBuffer<PartialAgg*>* pao_list;
+	MultiBuffer<FilterInfo>* send;
 	PartialAgg* (*createPAO)(char** token, size_t* ts);
 	void* operator()(void* pao);
 };

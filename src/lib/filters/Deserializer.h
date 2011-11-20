@@ -39,9 +39,9 @@ private:
 	char* inputfile_prefix;
 	const uint64_t num_buckets;	// Number of files to process serially
 	uint64_t buckets_processed;
-	PartialAgg*** pao_list;
+	MultiBuffer<PartialAgg*>* pao_list;
 	size_t next_buffer;
-	FilterInfo** send;
+	MultiBuffer<FilterInfo>* send;
 	void* read_buf;
 
 	FILE *cur_bucket;		// file pointer for current bucket

@@ -17,17 +17,13 @@ Hasher::Hasher(Aggregator* agg,
 		tokens_processed(0)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
-	evicted_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
-	merge_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
-	mergand_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
-	send = (FilterInfo**)malloc(sizeof(FilterInfo*) * num_buffers);
-	// Allocate buffers and structure to send results to next filter
-	for (int i=0; i<num_buffers; i++) {
-		evicted_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * max_keys_per_token);
-		merge_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * max_keys_per_token);
-		mergand_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * max_keys_per_token);
-		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
-	}
+	evicted_list = new MultiBuffer<PartialAgg*>(num_buffers,
+			max_keys_per_token);
+	merge_list = new MultiBuffer<PartialAgg*>(num_buffers,
+			max_keys_per_token);
+	mergand_list = new MultiBuffer<PartialAgg*>(num_buffers,
+			max_keys_per_token);
+	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 }
 
 Hasher::~Hasher()
@@ -38,18 +34,13 @@ Hasher::~Hasher()
 		HASH_DEL(hashtable, s);
 		free(s);
 	}
-	for (int i=0; i<num_buffers; i++) {
-		free(evicted_list[i]);
-		free(merge_list[i]);
-		free(send[i]);
-	}
-	free(evicted_list);
-	free(merge_list);
-	free(mergand_list);
-	free(send);
+	delete evicted_list;
+	delete merge_list;
+	delete mergand_list;
+	delete send;
 }
 
-void* Hasher::operator()(void* pao_list)
+void* Hasher::operator()(void* recv)
 {
 	char *key, *value;
 	uint64_t ind = 0;
@@ -58,15 +49,15 @@ void* Hasher::operator()(void* pao_list)
 	size_t evict_list_ctr = 0;
 	size_t merge_list_ctr = 0;
 
-	FilterInfo* recv = (FilterInfo*)pao_list;
-	PartialAgg** pao_l = (PartialAgg**)recv->result;
-	uint64_t recv_length = (uint64_t)recv->length;	
-	bool flush_on_complete = recv->flush_hash;
+	FilterInfo* recv_list = (FilterInfo*)recv;
+	PartialAgg** pao_l = (PartialAgg**)(recv_list->result);
+	uint64_t recv_length = (uint64_t)(recv_list->length);	
+	bool flush_on_complete = recv_list->flush_hash;
 
-	PartialAgg** this_list = evicted_list[next_buffer];
-	PartialAgg** this_merge_list = merge_list[next_buffer];
-	PartialAgg** this_mergand_list = mergand_list[next_buffer];
-	FilterInfo* this_send = send[next_buffer];
+	PartialAgg** this_list = (*evicted_list)[next_buffer];
+	PartialAgg** this_merge_list = (*merge_list)[next_buffer];
+	PartialAgg** this_mergand_list = (*mergand_list)[next_buffer];
+	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % aggregator->getNumBuffers();
 
 	// PAO to be evicted next. We maintain pointer because begin() on an unordered

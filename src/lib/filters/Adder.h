@@ -27,8 +27,8 @@ public:
 private:
 	Aggregator* aggregator;
 	size_t next_buffer;
-	PartialAgg*** agged_list;
-	FilterInfo** send;
+	MultiBuffer<PartialAgg*>* agged_list;
+	MultiBuffer<FilterInfo>* send;
 	uint64_t tokens_processed;
 	void* operator()(void* pao_list);
 };

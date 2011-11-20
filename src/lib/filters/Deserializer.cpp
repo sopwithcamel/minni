@@ -22,13 +22,9 @@ Deserializer::Deserializer(Aggregator* agg,
 	inputfile_prefix = (char*)malloc(FILENAME_LENGTH);
 	strcpy(inputfile_prefix, inp_prefix);
 
-	pao_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
-	send = (FilterInfo**)malloc(sizeof(FilterInfo*) * num_buffers);
-	// Allocate buffers and structures to send results to next filter    
-	for (int i=0; i<num_buffers; i++) {
-		pao_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * list_size);
-		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
-	}
+	pao_list = new MultiBuffer<PartialAgg*>(num_buffers,
+			list_size);
+	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 	read_buf = malloc(BUF_SIZE + 1);
 }
 
@@ -36,12 +32,8 @@ Deserializer::~Deserializer()
 {
 	size_t num_buffers = aggregator->getNumBuffers();
 	free(inputfile_prefix);
-	for (int i=0; i<num_buffers; i++) {
-		free(pao_list[i]);
-		free(send[i]);
-	}
-	free(pao_list);
-	free(send);
+	delete pao_list;
+	delete send;
 	free(read_buf);
 }
 
@@ -56,8 +48,8 @@ void* Deserializer::operator()(void*)
 	size_t num_buffers = aggregator->getNumBuffers();
 	PartialAgg* new_pao;
 
-	PartialAgg** this_list = pao_list[next_buffer];
-	FilterInfo* this_send = send[next_buffer];
+	PartialAgg** this_list = (*pao_list)[next_buffer];
+	FilterInfo* this_send = (*send)[next_buffer];
 	this_send->flush_hash = false;
 	next_buffer = (next_buffer + 1) % num_buffers;
 

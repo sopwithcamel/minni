@@ -11,38 +11,29 @@ Adder::Adder(Aggregator* agg,
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	uint64_t list_size = aggregator->getPAOsPerToken();
 
-	agged_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers);
-	send = (FilterInfo**)malloc(sizeof(FilterInfo*) * num_buffers);
-	// Allocate buffers and structure to send results to next filter
-	for (int i=0; i<num_buffers; i++) {
-		agged_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) * list_size);
-		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
-	}
+	agged_list = new MultiBuffer<PartialAgg*>(num_buffers,
+			list_size);
+	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 }
 
 Adder::~Adder()
 {
-	uint64_t num_buffers = aggregator->getNumBuffers();
-	for (int i=0; i<num_buffers; i++) {
-		free(agged_list[i]);
-		free(send[i]);
-	}
-	free(agged_list);
-	free(send);
+	delete agged_list;
+	delete send;
 }
 
-void* Adder::operator()(void* pao_list)
+void* Adder::operator()(void* recv)
 {
 	uint64_t ind = 0;
 	PartialAgg *pao, *merge_pao = NULL;
 	uint64_t pao_list_ctr = 0;
 
-	FilterInfo* recv = (FilterInfo*)pao_list;
-	PartialAgg** merge_list = (PartialAgg**)recv->result;
-	uint64_t merge_list_length = (uint64_t)recv->length;
+	FilterInfo* recv_list = (FilterInfo*)recv;
+	PartialAgg** merge_list = (PartialAgg**)recv_list->result;
+	uint64_t merge_list_length = (uint64_t)recv_list->length;
 
-	FilterInfo* this_send = send[next_buffer];
-	PartialAgg** this_list = agged_list[next_buffer];
+	FilterInfo* this_send = (*send)[next_buffer];
+	PartialAgg** this_list = (*agged_list)[next_buffer];
 	next_buffer = (next_buffer + 1) % aggregator->getNumBuffers();
 
 	while (ind < merge_list_length) {

@@ -35,14 +35,14 @@ public:
 	void (*destroyPAO)(PartialAgg* p);
 private:
 	Aggregator* aggregator;
-	PartialAgg*** evicted_list;
-	PartialAgg*** merge_list;
-	PartialAgg*** mergand_list;
+	MultiBuffer<PartialAgg*>* evicted_list;
+	MultiBuffer<PartialAgg*>* merge_list;
+	MultiBuffer<PartialAgg*>* mergand_list;
 	const size_t max_keys_per_token;
 	size_t ht_size;
 	size_t ht_capacity;
 	size_t next_buffer;
-	FilterInfo** send;
+	MultiBuffer<FilterInfo>* send;
 	PartialAgg* hashtable;
 	uint64_t tokens_processed;
 	void* operator()(void* pao_list);

@@ -10,14 +10,9 @@ FileTokenizer::FileTokenizer(Aggregator* agg, const Config& cfg,
 		createPAO(createPAOFunc)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
-	pao_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers); 
-	send = (FilterInfo**)malloc(sizeof(FilterInfo*) * num_buffers);
-	// Allocate buffers and structure to send results to next filter
-	for (int i=0; i<num_buffers; i++) {
-		pao_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) 
-				* max_keys_per_token);
-		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
-	}	
+	pao_list = new MultiBuffer<PartialAgg*>(num_buffers,
+		 	max_keys_per_token); 
+	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 
 	Setting& c_query = readConfigFile(cfg, "minni.query");
 	int query = c_query;
@@ -34,13 +29,8 @@ FileTokenizer::FileTokenizer(Aggregator* agg, const Config& cfg,
 
 FileTokenizer::~FileTokenizer()
 {
-	uint64_t num_buffers = aggregator->getNumBuffers();
-	for (int i=0; i<num_buffers; i++) {
-		free(pao_list[i]);
-		free(send[i]);
-	}
-	free(pao_list);
-	free(send);
+	delete pao_list;
+	delete send;
 }
 
 /**
@@ -64,8 +54,8 @@ void* FileTokenizer::operator()(void* input_data)
 	void* file_size_buf = recv->result2;
 	uint64_t recv_length = (uint64_t)recv->length;	
 
-	PartialAgg** this_pao_list = pao_list[next_buffer];
-	FilterInfo* this_send = send[next_buffer];
+	PartialAgg** this_pao_list = (*pao_list)[next_buffer];
+	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
 	
 	uint64_t num_tokens_proc = 0;

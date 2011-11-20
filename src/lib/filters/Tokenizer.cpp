@@ -10,14 +10,14 @@ Tokenizer::Tokenizer(Aggregator* agg, const Config& cfg,
 		createPAO(createPAOFunc)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
-	pao_list = (PartialAgg***)malloc(sizeof(PartialAgg**) * num_buffers); 
-	send = (FilterInfo**)malloc(sizeof(FilterInfo*) * num_buffers);
-	// Allocate buffers and structure to send results to next filter
+	tok_list = new MultiBuffer<char**>(num_buffers, max_keys_per_token);
+	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
+
 	for (int i=0; i<num_buffers; i++) {
-		pao_list[i] = (PartialAgg**)malloc(sizeof(PartialAgg*) 
-				* max_keys_per_token);
-		send[i] = (FilterInfo*)malloc(sizeof(FilterInfo));
-	}	
+		for (int j=0; j<max_keys_per_token; j++) {
+			(*tok_list)[i][j] = (char**)malloc(sizeof(char*) * 2);
+		}
+	}
 
 	Setting& c_query = readConfigFile(cfg, "minni.query");
 	int query = c_query;
@@ -36,11 +36,13 @@ Tokenizer::~Tokenizer()
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	for (int i=0; i<num_buffers; i++) {
-		free(pao_list[i]);
-		free(send[i]);
+		for (int j=0; j<max_keys_per_token; j++) {
+			free(tok_list[i][j]);
+		}
 	}
-	free(pao_list);
-	free(send);
+
+	delete tok_list;
+	delete send;
 }
 
 /**
@@ -62,8 +64,8 @@ void* Tokenizer::operator()(void* input_data)
 	void* tok_buf = recv->result;
 	uint64_t recv_length = (uint64_t)recv->length;	
 
-	PartialAgg** this_pao_list = pao_list[next_buffer];
-	FilterInfo* this_send = send[next_buffer];
+	char*** this_tok_list = (*tok_list)[next_buffer];
+	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
 	
 	uint64_t num_tokens_proc = 0;
@@ -81,23 +83,18 @@ void* Tokenizer::operator()(void* input_data)
 		if (memCache) {
 			for (int i=0; i<mc_size; i++) {
 				tokens[1] = memCache->getItem(i);
-				// Insert token sizes; TODO
-				new_pao = createPAO(tokens, NULL);
-				this_pao_list[this_list_ctr++] = new_pao;
+				this_tok_list[this_list_ctr++] = tokens;
 				assert(this_list_ctr < max_keys_per_token);
 			}
 		} else {
-			// Insert token sizes; TODO
-			new_pao = createPAO(tokens, NULL);
-			this_pao_list[this_list_ctr++] = new_pao;
+			this_tok_list[this_list_ctr++] = tokens;
 			assert(this_list_ctr < max_keys_per_token);
 		}
 	}
-	this_send->result = this_pao_list;
+	this_send->result = this_tok_list;
 	this_send->length = this_list_ctr;
 	this_send->flush_hash = false;
 
-	free(tokens);
 	return this_send;
 }
 
