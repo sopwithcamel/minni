@@ -58,6 +58,9 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 			pipeline_list[0].add_filter(*filetoker);
 		}
 
+		creator = new PAOCreator(this, createPAOFunc, max_keys_per_token);
+		pipeline_list[0].add_filter(*creator);
+
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
 		strcpy(input_file, fprefix.c_str());
@@ -67,9 +70,6 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 		pipeline_list[0].add_filter(*inp_deserializer);
 		free(input_file);
 	}
-
-	creator = new PAOCreator(this, createPAOFunc, max_keys_per_token);
-	pipeline_list[0].add_filter(*creator);
 
 	if (agg_in_mem) {
 		hasher = new Hasher(this, capacity, destroyPAOFunc,

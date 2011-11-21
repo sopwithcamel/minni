@@ -44,6 +44,9 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 
 		toker = new Tokenizer(this, cfg, createPAOFunc);
 		pipeline_list[0].add_filter(*toker);
+
+		creator = new PAOCreator(this, createPAOFunc);
+		pipeline_list[0].add_filter(*creator);
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
 		strcpy(input_file, fprefix.c_str());
@@ -54,8 +57,6 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		free(input_file);
 	}
 
-	creator = new PAOCreator(this, createPAOFunc);
-	pipeline_list[0].add_filter(*creator);
 	if (agg_in_mem) {
 		hasher = new Hasher(this, internal_capacity, destroyPAOFunc);
 		pipeline_list[0].add_filter(*hasher);
@@ -63,9 +64,10 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		merger = new Merger(this, destroyPAOFunc);
 		pipeline_list[0].add_filter(*merger);
 	}
-
+/*
 	ext_hasher = new ExternalHasher(this, htname.c_str(), external_capacity, 
 			destroyPAOFunc);
+*/
 	pipeline_list[0].add_filter(*ext_hasher);
 
 
