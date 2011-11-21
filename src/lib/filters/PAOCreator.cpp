@@ -26,29 +26,29 @@ PAOCreator::~PAOCreator()
  */
 void* PAOCreator::operator()(void* recv)
 {
-	char **tok, **tok_size;
+	char** tok;
+	size_t* tok_size;
 	size_t this_list_ctr = 0;
-	size_t mc_size;
-	uint64_t ind;
+	size_t ind;
 
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	PartialAgg* new_pao;
 
 	FilterInfo* recv_list = (FilterInfo*)recv;
 	char*** tok_list = (char***)(recv_list->result);
+	size_t** tok_size_list = (size_t**)(recv_list->result1);
 	uint64_t recv_length = (uint64_t)recv_list->length;	
 
 	PartialAgg** this_pao_list = (*pao_list)[next_buffer];
 	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
 	
-	if (memCache)
-		mc_size = memCache->size();
 	while (ind < recv_length) {
 		tok = tok_list[ind];
+		tok_size = tok_size_list[ind];
 
 		// Insert token sizes; TODO
-		new_pao = createPAO(tok, NULL);
+		new_pao = createPAO(tok, tok_size);
 		this_pao_list[this_list_ctr++] = new_pao;
 		assert(this_list_ctr < max_keys_per_token);
 
