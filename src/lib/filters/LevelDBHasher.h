@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include <iostream>
-#include <tr1/unordered_map>
 
 #include "tbb/pipeline.h"
 #include "tbb/tick_count.h"
@@ -11,7 +10,6 @@
 #include "tbb/tbb_allocator.h"
 
 #include "PartialAgg.h"
-#include "Mapper.h"
 #include "Aggregator.h"
 #include "Util.h"
 
@@ -27,29 +25,53 @@
 class ExternalHasher : public tbb::filter {
 public:
 	ExternalHasher(Aggregator* agg,
+			leveldb::DB** dbp,
 			const char* ht_name,
 			uint64_t ext_ht_size,
-			void (*destroyPAOFunc)(PartialAgg* p));
+			void (*destroyPAOFunc)(PartialAgg* p),
+			const size_t max_keys);
 	~ExternalHasher();
 	void (*destroyPAO)(PartialAgg* p);
 private:
 	Aggregator* aggregator;
-	leveldb::DB* db;
+	const size_t max_keys_per_token;
+	leveldb::DB** db;
 	void* operator()(void* pao_list);
 };
 
-class ExthashReader : public tbb::filter {
+class ExternalHashReader : public tbb::filter {
 public:
-	ExthashReader(Aggregator* agg, 
+	ExternalHashReader(Aggregator* agg,
+			leveldb::DB** dbp,
+			const char* ht_name,
+			uint64_t ext_ht_size,
+			PartialAgg* (*createPAOFunc)(char** t, size_t* ts),
+			const size_t max_keys);
+	~ExternalHashReader();
+	PartialAgg* (*createPAO)(char** t, size_t* ts);
+private:
+	Aggregator* aggregator;
+	size_t next_buffer;
+	const size_t max_keys_per_token;
+	leveldb::DB** db;
+	MultiBuffer<FilterInfo>* send;
+	MultiBuffer<PartialAgg*>* pao_list;
+	void* operator()(void* pao_list);
+};
+
+class ExternalHashSerializer : public tbb::filter {
+public:
+	ExternalHashSerializer(Aggregator* agg, 
+			leveldb::DB** dbp,
 			const char* ht_name,
 			uint64_t ext_capacity,
 			const char* outfile);
-	~ExthashReader();
+	~ExternalHashSerializer();
 private:
 	Aggregator* aggregator;
 
 	/* External hashtable fields */
-	leveldb::DB *db;
+	leveldb::DB** db;
 	const char* ht_name;
 	const uint64_t external_capacity;
 
