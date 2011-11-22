@@ -31,7 +31,7 @@ class DFS
 		virtual bool isDirectory(string path) = 0;
 		virtual void getDirSummary(string path, uint64_t& num_fil, uint64_t& num_byt) = 0;
 		virtual int64_t readDir(string path, vector<string>& conts) = 0;
-		virtual int64_t readFile(string path, char** buf, size_t& fil_size) = 0;
+		virtual int64_t readFile(string path, char*& buf, size_t& fil_size) = 0;
 	protected:
 		string host;
 		uint16_t port;

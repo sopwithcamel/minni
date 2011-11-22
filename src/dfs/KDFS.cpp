@@ -167,16 +167,16 @@ int64_t KDFS::readDir(string path, vector<string>& files)
 	return fs->Readdir(path.c_str(), files);
 }
 
-int64_t KDFS::readFile(string path, char** buf, size_t& fil_size)
+int64_t KDFS::readFile(string path, char*& buf, size_t& fil_size)
 {
 	struct stat result;
 	int64_t ret;
 	int64_t fd;
 	assert((fd = fs->Open(path.c_str(), O_RDONLY)) >= 0);
 	fs->Stat(path.c_str(), result, true);
-	*buf = (char*)malloc(result.st_size + 1);
+	buf = (char*)malloc(result.st_size + 1);
 	fil_size = result.st_size;
-	ret = (int64_t) fs->Read(fd, *buf, (size_t)result.st_size);
+	ret = (int64_t) fs->Read(fd, buf, (size_t)result.st_size);
 	assert(ret >= 0);
 }
 

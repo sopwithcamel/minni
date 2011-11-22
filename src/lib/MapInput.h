@@ -39,7 +39,7 @@ class FileInput : public MapInput {
 	FileInput();
 	~FileInput();
 	void getFileNames(vector<string>& filn);
-	int64_t readFile(string file, char** buf, size_t& fil_size);
+	int64_t readFile(string file, char*& buf, size_t& fil_size);
 	void ParseProperties(Properties* p);
 	uint64_t file_ind_beg;
 	uint64_t file_ind_end;
