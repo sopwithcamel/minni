@@ -59,7 +59,8 @@ int MapperWrapperTask::ParseProperties(string& soname, uint64_t& num_partitions)
 	return 0;	
 }
 
-int MapperWrapperTask::UserMapLinking(const char* soname)  { //TODO link Partial aggregates also
+int MapperWrapperTask::UserMapLinking(const char* soname)
+{ 
 	const char* err;
 	void* handle;
 	fprintf(stdout, "Given path: %s\n", soname);
@@ -70,16 +71,20 @@ int MapperWrapperTask::UserMapLinking(const char* soname)  { //TODO link Partial
 		return 1;
 	}
 
-	__libminni_create_pao = (PartialAgg* (*)(char**, size_t*)) dlsym(handle, "__libminni_pao_create");
+	__libminni_create_pao = (PartialAgg* (*)(char**, size_t*)) dlsym(
+			handle, "__libminni_pao_create");
 	if ((err = dlerror()) != NULL)
 	{
-		fprintf(stderr, "Error locating symbol __libminni_create_pao in %s\n", err);
+		fprintf(stderr, "Error locating symbol __libminni_create_pao
+				in %s\n", err);
 		exit(-1);
 	}
-	__libminni_destroy_pao = (void (*)(PartialAgg*)) dlsym(handle, "__libminni_pao_destroy");
+	__libminni_destroy_pao = (void (*)(PartialAgg*)) dlsym(handle, 
+			"__libminni_pao_destroy");
 	if ((err = dlerror()) != NULL)
 	{
-		fprintf(stderr, "Error locating symbol __libminni_destroy_pao in %s\n", err);
+		fprintf(stderr, "Error locating symbol __libminni_destroy_pao
+			in %s\n", err);
 		exit(-1);
 	}
 	mapper = new Mapper(__libminni_create_pao, __libminni_destroy_pao);
