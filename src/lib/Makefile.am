@@ -15,6 +15,7 @@ libminni_la_SOURCES =   Mapper.cpp \
 			filters/Hasher.cpp \
 			filters/MemCache.cpp \
 			filters/Merger.cpp \
+			filters/PAOCreator.cpp \
 			filters/Serializer.cpp \
 			filters/Sorter.cpp \
 			filters/Store.cpp \
@@ -23,6 +24,7 @@ libminni_la_SOURCES =   Mapper.cpp \
 			aggregators/BucketAggregator.cpp \
 			aggregators/ExthashAggregator.cpp \
 			aggregators/HashsortAggregator.cpp \
+			aggregators/IterAggregator.cpp \
 			aggregators/TesterAggregator.cpp
 
 libminni_la_LIBADD = ../dfs/libdfs.la
@@ -55,6 +57,7 @@ minni_include_HEADERS = PartialAgg.h \
 			filters/Hasher.h \
 			filters/MemCache.h \
 			filters/Merger.h \
+			filters/PAOCreator.h \
 			filters/Serializer.h \
 			filters/Sorter.h \
 			filters/Store.h \
@@ -62,6 +65,7 @@ minni_include_HEADERS = PartialAgg.h \
 			aggregators/BucketAggregator.h \
 			aggregators/ExthashAggregator.h \
 			aggregators/HashsortAggregator.h \
+			aggregators/IterAggregator.h \
 			aggregators/TesterAggregator.h \
 			aggregators/Aggregator.h \
 			Defs.h \

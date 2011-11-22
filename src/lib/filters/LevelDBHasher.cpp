@@ -20,16 +20,19 @@ ExternalHasher::ExternalHasher(Aggregator* agg,
 //	options.write_buffer_size = ;
 	leveldb::Status s = leveldb::DB::Open(options, ht_name, db);
 	assert(s.ok());
+	buf = (char*)malloc(BUF_SIZE);
 }
 
 ExternalHasher::~ExternalHasher()
 {
 	delete *db;
+	free(buf);
 }
 
 void* ExternalHasher::operator()(void* recv)
 {
 	char *key;
+	char* buf = (char*)malloc(BUF_SIZE);
 	string value;
 	size_t ind = 0;
 	PartialAgg* pao;
@@ -47,13 +50,17 @@ void* ExternalHasher::operator()(void* recv)
 		leveldb::Status s = (*db)->Get(leveldb::ReadOptions(), pao->key,
 				&value);
 		if (s.ok()) {
-			pao->add((void*)value.c_str());
+			strcpy(buf, value.c_str());
+			pao->add((void*)buf);
 		}
-		s = (*db)->Put(leveldb::WriteOptions(), pao->key, (char*)pao->value);
+		pao->serialize((void*)buf);
+		fprintf(stderr, "Writing %s to ext\n", buf);
+		s = (*db)->Put(leveldb::WriteOptions(), pao->key, buf);
 		assert(s.ok());
 		destroyPAO(pao);
 		ind++;
 	}
+	free(buf);
 }
 
 ExternalHashReader::ExternalHashReader(Aggregator* agg, 
@@ -151,6 +158,7 @@ ExternalHashSerializer::ExternalHashSerializer(Aggregator* agg,
 		strcat(fname, num);
 		fl[i] = fopen(fname, "w");
 	}
+	fprintf(stderr, "Serializing to file: %s\n", fname);
 	free(fname);
 	buf = (char*)malloc(BUF_SIZE);
 }
@@ -180,10 +188,9 @@ void* ExternalHashSerializer::operator()(void*)
 		buc = sum % n_part;
 		if (buc < 0)
 			buc += n_part;
-		strcpy(buf, k);
-		strcat(buf, " ");
-		strcat(buf, iter->value().data());
+		strcpy(buf, iter->value().ToString().c_str());
 		strcat(buf, "\n");
+		fwrite(buf, 1, strlen(buf), fl[buc]);
 	}
 	fprintf(stderr, "Closing files\n");
 	for (int i=0; i<n_part; i++)

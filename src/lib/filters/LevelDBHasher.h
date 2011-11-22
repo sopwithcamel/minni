@@ -36,6 +36,7 @@ private:
 	Aggregator* aggregator;
 	const size_t max_keys_per_token;
 	leveldb::DB** db;
+	char* buf;
 	void* operator()(void* pao_list);
 };
 
