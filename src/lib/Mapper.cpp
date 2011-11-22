@@ -3,6 +3,7 @@
 #include "BucketAggregator.h"
 #include "ExthashAggregator.h"
 #include "HashsortAggregator.h"
+#include "IterAggregator.h"
 #include "TesterAggregator.h"
 #include <dlfcn.h>
 
@@ -75,7 +76,7 @@ int MapperWrapperTask::UserMapLinking(const char* soname)
 			handle, "__libminni_pao_create");
 	if ((err = dlerror()) != NULL)
 	{
-		fprintf(stderr, "Error locating symbol __libminni_create_pao
+		fprintf(stderr, "Error locating symbol __libminni_create_pao\
 				in %s\n", err);
 		exit(-1);
 	}
@@ -83,7 +84,7 @@ int MapperWrapperTask::UserMapLinking(const char* soname)
 			"__libminni_pao_destroy");
 	if ((err = dlerror()) != NULL)
 	{
-		fprintf(stderr, "Error locating symbol __libminni_destroy_pao
+		fprintf(stderr, "Error locating symbol __libminni_destroy_pao\
 			in %s\n", err);
 		exit(-1);
 	}
@@ -149,6 +150,11 @@ task* MapperWrapperTask::execute() {
 						map_out_file.c_str()));
 	} else if (!selected_map_aggregator.compare("tester")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new TesterAggregator(
+						cfg, Map, npart, myinput, NULL,
+						mapper->createPAO, mapper->destroyPAO,
+						map_out_file.c_str()));
+	} else if (!selected_map_aggregator.compare("iterative")) {
+		mapper->aggregs = dynamic_cast<Aggregator*>(new IterAggregator(
 						cfg, Map, npart, myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO,
 						map_out_file.c_str()));
