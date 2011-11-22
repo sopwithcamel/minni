@@ -37,9 +37,11 @@ Aggregator::~Aggregator()
 void Aggregator::runPipeline()
 {
 	for (int i=0; i<num_pipelines; i++) {
-		fprintf(stderr, "Running pipeline %d\n", i);
-		pipeline_list[i].run(num_buffers);
-		resetFlags();
+		do {
+			fprintf(stderr, "Running pipeline %d\n", i);
+			pipeline_list[i].run(num_buffers);
+			resetFlags();
+		} while (repeatPipeline(i));
 		TimeLog::addTimeStamp("Pipeline completed");
 	}
 }
@@ -78,4 +80,9 @@ uint64_t Aggregator::getPAOsPerToken(void) const
 AggType Aggregator::getType() const
 {
 	return type;
+}
+
+bool Aggregator::repeatPipeline(uint64_t it)
+{
+	return false;
 }

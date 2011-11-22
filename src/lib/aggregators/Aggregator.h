@@ -41,6 +41,7 @@ public:
 	uint64_t getNumPartitions() const;
 	uint64_t getPAOsPerToken() const;
 	AggType getType() const;
+	virtual bool repeatPipeline(uint64_t it);
 private:
 	AggType type;
 	uint64_t num_threads;
