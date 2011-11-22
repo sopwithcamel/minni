@@ -47,8 +47,33 @@ ImagePAO::~ImagePAO()
 	}
 }
 
-void ImagePAO::add(void* neighbor_key)
-{
+void ImagePAO::add(void* val)
+{	
+	char* spl;
+	char* read_buf = (char*)val;
+	Neighbor* n;
+	std::list<Neighbor>::iterator it; 
+	std::list<Neighbor>* v = (std::list<Neighbor>*)value;
+	// read key
+	spl = strtok(read_buf, " ");
+	while (true) {
+		/* read in neighbor key */
+		spl = strtok(NULL, " ");
+		if (spl == NULL)
+			break;
+		/* create new neighbor */
+		n = new Neighbor(spl, strlen(spl)+1);
+		/* read in neighbor distance */
+		spl = strtok(NULL, " ");
+		n->distance = atof(spl);	
+		v->push_back(*n);
+	}
+	v->sort(Neighbor::comp);
+	if (v->size() > NEAREST) {
+		it = v->begin();
+		advance(it, NEAREST);	
+		v->erase(it, v->end());
+	}
 }
 
 void ImagePAO::merge(PartialAgg* add_agg)
@@ -71,6 +96,15 @@ void ImagePAO::merge(PartialAgg* add_agg)
 
 void ImagePAO::serialize(FILE* f, void* buf, size_t buf_size)
 {
+	serialize(buf);
+	char* wr_buf = (char*)buf;
+	assert(NULL != f);
+	size_t l = strlen(wr_buf);
+	assert(fwrite(wr_buf, sizeof(char), l, f) == l);
+}
+
+void ImagePAO::serialize(void* buf)
+{
 	char* wr_buf = (char*)buf;
 	char dist[20];
 	list<Neighbor>* this_list = (list<Neighbor>*)value;
@@ -84,9 +118,6 @@ void ImagePAO::serialize(FILE* f, void* buf, size_t buf_size)
 		strcat(wr_buf, dist);
 	}	
 	strcat(wr_buf, "\n");
-	assert(NULL != f);
-	size_t l = strlen(wr_buf);
-	assert(fwrite(wr_buf, sizeof(char), l, f) == l);
 }
 
 bool ImagePAO::deserialize(FILE* f, void* buf, size_t buf_size)

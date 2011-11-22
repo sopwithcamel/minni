@@ -41,15 +41,21 @@ void WordCountPartialAgg::merge(PartialAgg* add_agg)
 
 void WordCountPartialAgg::serialize(FILE* f, void* buf, size_t buf_size)
 {
+	serialize(buf);
+	char* wr_buf = (char*)buf;
+	assert(NULL != f);
+	size_t l = strlen(wr_buf);
+	assert(fwrite(wr_buf, sizeof(char), l, f) == l);
+}
+
+void WordCountPartialAgg::serialize(void* buf)
+{
 	char* c_value = (char*)value;
 	char* wr_buf = (char*)buf;
 	strcpy(wr_buf, key);
 	strcat(wr_buf, " ");
 	strcat(wr_buf, c_value);
 	strcat(wr_buf, "\n");
-	assert(NULL != f);
-	size_t l = strlen(wr_buf);
-	assert(fwrite(wr_buf, sizeof(char), l, f) == l);
 }
 
 bool WordCountPartialAgg::deserialize(FILE* f, void *buf, size_t buf_size)
