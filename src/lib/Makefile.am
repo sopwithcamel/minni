@@ -26,7 +26,9 @@ libminni_la_SOURCES =   Mapper.cpp \
 			aggregators/HashsortAggregator.cpp \
 			aggregators/IterAggregator.cpp \
 			aggregators/TesterAggregator.cpp \
-			record_creation/FileTokenizer.cpp
+			record_creation/Tokenizer.cpp \
+			record_creation/FileTokenizer.cpp \
+			record_creation/DelimitedTokenizer.cpp
 
 libminni_la_LIBADD = ../dfs/libdfs.la
 
@@ -71,6 +73,7 @@ minni_include_HEADERS = PartialAgg.h \
 			aggregators/TesterAggregator.h \
 			aggregators/Aggregator.h \
 			record_creation/FileTokenizer.h \
+			record_creation/DelimitedTokenizer.h \
 			record_creation/Tokenizer.h \
 			Defs.h \
 			Util.h \
