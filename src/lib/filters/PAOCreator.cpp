@@ -1,7 +1,7 @@
 #include "PAOCreator.h"
 
 PAOCreator::PAOCreator(Aggregator* agg,
-			PartialAgg* (*createPAOFunc)(char** t, size_t* ts),
+			PartialAgg* (*createPAOFunc)(Token* t),
 			const size_t max_keys) :
 		aggregator(agg),
 		filter(serial_in_order),
@@ -26,7 +26,7 @@ PAOCreator::~PAOCreator()
  */
 void* PAOCreator::operator()(void* recv)
 {
-	char** tok;
+	Token* tok;
 	size_t* tok_size;
 	size_t this_list_ctr = 0;
 	size_t ind;
@@ -35,8 +35,7 @@ void* PAOCreator::operator()(void* recv)
 	PartialAgg* new_pao;
 
 	FilterInfo* recv_list = (FilterInfo*)recv;
-	char*** tok_list = (char***)(recv_list->result);
-	size_t** tok_size_list = (size_t**)(recv_list->result1);
+	Token** tok_list = (Token**)(recv_list->result);
 	uint64_t recv_length = (uint64_t)recv_list->length;	
 
 	PartialAgg** this_pao_list = (*pao_list)[next_buffer];
@@ -45,15 +44,21 @@ void* PAOCreator::operator()(void* recv)
 	
 	while (ind < recv_length) {
 		tok = tok_list[ind];
-		tok_size = tok_size_list[ind];
-
 		// Insert token sizes; TODO
-		new_pao = createPAO(tok, tok_size);
+		new_pao = createPAO(tok);
 		this_pao_list[this_list_ctr++] = new_pao;
 		assert(this_list_ctr < max_keys_per_token);
 
 		ind++;
 	}
+
+	ind = 0;
+	while (ind < recv_length) {
+		delete tok_list[ind];
+		ind++;
+	}
+	free(tok_list);
+
 	this_send->result = this_pao_list;
 	this_send->length = this_list_ctr;
 	this_send->flush_hash = false;

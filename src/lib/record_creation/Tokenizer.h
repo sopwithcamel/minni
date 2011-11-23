@@ -1,18 +1,19 @@
 #ifndef LIB_TOKENIZER_H
 #define LIB_TOKENIZER_H
 #include <stdint.h>
+#include <stdlib.h>
+#include "PartialAgg.h"
 #include <vector>
 
+class PartialAgg;
 class Token {
   public:
-	Token()
-	{
-		tokens.reserve(4);
-		token_sizes.reserve(4);
-	}
-	~Token() {}
-	std::vector<char*> tokens;
+	Token();
+	Token(const Token&);
+	~Token();
+	std::vector<void*> tokens;
 	std::vector<size_t> token_sizes;
+	std::vector<PartialAgg*> objs;
 };
 
 class Tokenizer {
@@ -26,7 +27,7 @@ class Tokenizer {
 	 *   for each Token as well as the array of Tokens will be allocated
 	 *   and must be freed by caller. 
 	 */
-	virtual void getTokens(void*& data_fragments, uint64_t num_tokens,
+	virtual uint64_t getTokens(void*& data_fragments, uint64_t num_tokens,
 			Token**& tokens) = 0;
 };
 

@@ -9,7 +9,7 @@ class FileTokenizer : public Tokenizer {
   public:
 	FileTokenizer(MapInput* inp);
 	~FileTokenizer();
-	void getTokens(void*& data_fragments, uint64_t num_tokens,
+	uint64_t getTokens(void*& data_fragments, uint64_t num_tokens,
 			Token**& tokens);
   private:
 	uint64_t num_tokens_sent;

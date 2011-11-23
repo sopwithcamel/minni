@@ -12,9 +12,9 @@
 #include "tbb/tbb_allocator.h"
 
 #include "Defs.h"
-#include "MemCache.h"
 #include "PartialAgg.h"
 #include "Aggregator.h"
+#include "Tokenizer.h"
 #include "Util.h"
 
 /**
@@ -25,17 +25,16 @@
 class PAOCreator : public tbb::filter {
 public:
 	PAOCreator(Aggregator* agg, 
-			PartialAgg* (*createPAOFunc)(char** t, size_t* ts),
+			PartialAgg* (*createPAOFunc)(Token* t),
 			const size_t max_keys = DEFAULT_MAX_KEYS_PER_TOKEN);
 	~PAOCreator();
 private:
 	Aggregator* aggregator;
-	MemCache* memCache;
 	size_t next_buffer;
 	const size_t max_keys_per_token;
 	MultiBuffer<PartialAgg*>* pao_list;
 	MultiBuffer<FilterInfo>* send;
-	PartialAgg* (*createPAO)(char** token, size_t* ts);
+	PartialAgg* (*createPAO)(Token* token);
 	void* operator()(void* pao);
 };
 
