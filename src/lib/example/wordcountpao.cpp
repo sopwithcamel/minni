@@ -98,21 +98,4 @@ bool WordCountPartialAgg::deserialize(void *buf)
 	return true;
 }
 
-bool WordCountPartialAgg::tokenize(void* buf, void* prog, void* tot, 
-		char** toks)
-{
-	char* spl;
-	int* num_tok = (int*)prog;
-	if (*num_tok == 0) {
-		spl = strtok((char*)buf, " .\n\r\'\"?,;:!*()-\uFEFF");
-	} else {
-		spl = strtok(NULL, " .\n\r\'\"?,;:!*()-\uFEFF");
-	}
-	if (!spl)
-		return false;
-	toks[0] = spl;
-	(*num_tok)++;
-	return true;
-}
-
 REGISTER_PAO(WordCountPartialAgg);

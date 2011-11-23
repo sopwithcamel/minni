@@ -34,8 +34,6 @@ class PartialAgg {
 	virtual bool deserialize(FILE* f, void* buf, size_t buf_size) = 0;
 	/* Deserialize from buffer */
 	virtual bool deserialize(void* buf) = 0;
-	virtual bool tokenize(void* inp, void* progress, void* tot, 
-			char** result) = 0;
 
 	char* key;
 	void* value;

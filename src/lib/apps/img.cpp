@@ -180,18 +180,6 @@ bool ImagePAO::deserialize(void* buf)
 	return true;
 }
 
-bool ImagePAO::tokenize(void* buf, void* prog, void* tot, char** toks)
-{
-	char** file_list = (char**)buf;
-	uint64_t* tok_index = (uint64_t*)prog;
-	uint64_t* tottok = (uint64_t*)tot;
-	if (*tok_index == *tottok)
-		return false;
-	toks[0] = file_list[*tok_index];
-	(*tok_index)++;
-	return true;
-}
-
 CImg<float>* ImagePAO::ph_dct_matrix(const int N)
 {
 	CImg<float> *ptr_matrix = new CImg<float>(N,N,1,1,1/sqrt((float)N));

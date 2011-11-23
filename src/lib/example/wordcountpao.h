@@ -12,6 +12,5 @@ class WordCountPartialAgg : public PartialAgg {
 	void serialize(void* buf);
 	bool deserialize(FILE* f, void* buf, size_t buf_size);
 	bool deserialize(void* buf);
-	bool tokenize(void*, void*, void*, char**);
 };
 
