@@ -16,7 +16,7 @@ ExternalHasher::ExternalHasher(Aggregator* agg,
 {
 	leveldb::Options options;
 	options.create_if_missing = true;
-//	options.block_cache = cache_;
+	options.block_cache = leveldb::NewLRUCache(100 * 1048576);
 //	options.write_buffer_size = ;
 	leveldb::Status s = leveldb::DB::Open(options, ht_name, db);
 	assert(s.ok());
@@ -54,7 +54,6 @@ void* ExternalHasher::operator()(void* recv)
 			pao->add((void*)buf);
 		}
 		pao->serialize((void*)buf);
-		fprintf(stderr, "Writing %s to ext\n", buf);
 		s = (*db)->Put(leveldb::WriteOptions(), pao->key, buf);
 		assert(s.ok());
 		destroyPAO(pao);

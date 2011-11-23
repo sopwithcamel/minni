@@ -16,6 +16,7 @@
 #include "leveldb/db.h"
 #include "leveldb/iterator.h"
 #include "leveldb/options.h"
+#include "leveldb/cache.h"
 
 /**
  * - Consumes: array of PAOs to be aggregated into an external hashtable

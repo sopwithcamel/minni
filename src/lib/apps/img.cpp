@@ -7,6 +7,19 @@
 #define IMG_SIZE	500000
 #define NEAREST		5
 
+/**
+ * Creates a PAO that represents the relationship between a query image and a 
+ * reference image. The pHash values for both images are calculated and the
+ * absolute value of the difference is used as the distance. Note that the
+ * PAO doesn't store the image data.
+ *
+ * Arguments:
+ *  - tokens[0] to have the query image name
+ *  - tokens[1] to have the query image data
+ *  - tokens[2] to have neighbor name
+ *  - tokens[3] to have neighbor image data
+ *  - token_sizes to have the respective buffer lengths
+ */
 ImagePAO::ImagePAO(char** tokens, size_t* token_sizes)
 {
 	if (tokens == NULL) {
@@ -47,6 +60,13 @@ ImagePAO::~ImagePAO()
 	}
 }
 
+/**
+ * Adds the serialized images and distances to the current PAO, sorts the list
+ * and keeps the K-nearest neighbors.
+ *
+ * Arguments:
+ *  - val is expected to be a mutable array
+ */ 
 void ImagePAO::add(void* val)
 {	
 	char* spl;
