@@ -13,7 +13,7 @@
 #include "Mapper.h"
 #include "PartialAgg.h"
 #include "DFSReader.h"
-#include "Tokenizer.h"
+#include "TokenizerFilter.h"
 #include "Hasher.h"
 #include "Merger.h"
 #include "Sorter.h"
@@ -39,7 +39,7 @@ private:
 	/* For testing tokenizer */
 	MapInput* map_input; 
 	DFSReader* reader;
-	Tokenizer* toker;
+	TokenizerFilter* toker;
 	
 	/* For testing sorter */
 	Sorter* sorter;

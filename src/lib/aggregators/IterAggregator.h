@@ -13,9 +13,9 @@
 #include "Mapper.h"
 #include "PartialAgg.h"
 #include "DFSReader.h"
-#include "FileReader.h"
-#include "FileTokenizer.h"
-#include "Tokenizer.h"
+#include "FileReaderFilter.h"
+#include "FileTokenizerFilter.h"
+#include "TokenizerFilter.h"
 #include "Hasher.h"
 #include "Merger.h"
 #include "ExternalHasher.h"
@@ -48,9 +48,9 @@ private:
 	/* for chunk input from DFS */
 	MapInput* map_input; 
 	DFSReader* chunkreader;
-	FileReader* filereader;
-	FileTokenizer* filetoker;
-	Tokenizer* toker;
+	FileReaderFilter* filereader;
+	FileTokenizerFilter* filetoker;
+	TokenizerFilter* toker;
 
 	ExternalHashReader* hash_reader;
 	PAOCreator* creator;

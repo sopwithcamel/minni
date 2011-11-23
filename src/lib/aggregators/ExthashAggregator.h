@@ -13,7 +13,7 @@
 #include "Mapper.h"
 #include "PartialAgg.h"
 #include "DFSReader.h"
-#include "Tokenizer.h"
+#include "TokenizerFilter.h"
 #include "Hasher.h"
 #include "Merger.h"
 #include "PAOCreator.h"
@@ -41,7 +41,7 @@ private:
 	/* for chunk input from DFS */
 	MapInput* map_input; 
 	DFSReader* reader;
-	Tokenizer* toker;
+	TokenizerFilter* toker;
 
 	/* for serialized PAOs from local file */
 	const char* infile;

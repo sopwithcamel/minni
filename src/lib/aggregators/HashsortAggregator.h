@@ -19,7 +19,7 @@
 #include "PAOCreator.h"
 #include "Serializer.h"
 #include "Sorter.h"
-#include "Tokenizer.h"
+#include "TokenizerFilter.h"
 #include "Deserializer.h"
 #include "util.h"
 
@@ -40,7 +40,7 @@ private:
 	/* for chunk input from DFS */
 	MapInput* map_input; 
 	DFSReader* reader;
-	Tokenizer* toker;
+	TokenizerFilter* toker;
 
 	/* for serialized PAOs from local file */
 	const char* infile;

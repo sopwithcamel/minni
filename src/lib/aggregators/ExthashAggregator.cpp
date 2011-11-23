@@ -42,7 +42,7 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		reader = new DFSReader(this, map_input);
 		pipeline_list[0].add_filter(*reader);
 
-		toker = new Tokenizer(this, cfg, createPAOFunc);
+		toker = new TokenizerFilter(this, cfg, createPAOFunc);
 		pipeline_list[0].add_filter(*toker);
 
 		creator = new PAOCreator(this, createPAOFunc);

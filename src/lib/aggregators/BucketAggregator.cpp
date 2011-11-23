@@ -47,14 +47,14 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 			chunkreader = new DFSReader(this, map_input, 
 					token_size);
 			pipeline_list[0].add_filter(*chunkreader);
-			toker = new Tokenizer(this, cfg, createPAOFunc,
+			toker = new TokenizerFilter(this, cfg, createPAOFunc,
 					max_keys_per_token);
 			pipeline_list[0].add_filter(*toker);
 		} else if (!inp_type.compare("file")) {
-			filereader = new FileReader(this, map_input);
+			filereader = new FileReaderFilter(this, map_input);
 			pipeline_list[0].add_filter(*filereader);
-			filetoker = new FileTokenizer(this, cfg, createPAOFunc,
-					 max_keys_per_token);
+			filetoker = new FileTokenizerFilter(this, cfg,
+					map_input, max_keys_per_token);
 			pipeline_list[0].add_filter(*filetoker);
 		}
 
