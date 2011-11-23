@@ -15,6 +15,7 @@
 #include "MemCache.h"
 #include "PartialAgg.h"
 #include "Aggregator.h"
+#include "DelimitedTokenizer.h"
 #include "Util.h"
 
 /**
@@ -27,7 +28,7 @@
 class TokenizerFilter : public tbb::filter {
 public:
 	TokenizerFilter(Aggregator* agg, const Config& cfg,
-			PartialAgg* (*createPAOFunc)(char** t, size_t* ts),
+			PartialAgg* (*createPAOFunc)(Token* t),
 			const size_t max_keys = DEFAULT_MAX_KEYS_PER_TOKEN);
 	~TokenizerFilter();
 private:
@@ -35,10 +36,9 @@ private:
 	MemCache* memCache;
 	size_t next_buffer;
 	const size_t max_keys_per_token;
-	MultiBuffer<char**>* tok_list;
-	MultiBuffer<size_t*>* tok_size_list;
+	DelimitedTokenizer* chunk_tokenizer;
 	MultiBuffer<FilterInfo>* send;
-	PartialAgg* (*createPAO)(char** token, size_t* ts);
+	PartialAgg* (*createPAO)(Token* token);
 	void* operator()(void* pao);
 };
 

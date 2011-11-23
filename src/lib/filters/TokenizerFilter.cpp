@@ -1,7 +1,7 @@
 #include "TokenizerFilter.h"
 
 TokenizerFilter::TokenizerFilter(Aggregator* agg, const Config& cfg,
-			PartialAgg* (*createPAOFunc)(char** t, size_t* ts),
+			PartialAgg* (*createPAOFunc)(Token* t),
 			const size_t max_keys) :
 		aggregator(agg),
 		filter(serial_in_order),
@@ -10,18 +10,7 @@ TokenizerFilter::TokenizerFilter(Aggregator* agg, const Config& cfg,
 		createPAO(createPAOFunc)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
-	tok_list = new MultiBuffer<char**>(num_buffers, max_keys_per_token);
-	tok_size_list = new MultiBuffer<size_t*>(num_buffers,
-		 	max_keys_per_token);
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
-
-	for (int i=0; i<num_buffers; i++) {
-		for (int j=0; j<max_keys_per_token; j++) {
-			(*tok_list)[i][j] = (char**)malloc(sizeof(char*) * 2);
-			(*tok_size_list)[i][j] = (size_t*)malloc(
-					sizeof(size_t) * 2);
-		}
-	}
 
 	Setting& c_query = readConfigFile(cfg, "minni.query");
 	int query = c_query;
@@ -34,18 +23,13 @@ TokenizerFilter::TokenizerFilter(Aggregator* agg, const Config& cfg,
 	} else {
 		memCache = NULL;
 	}
+
+	chunk_tokenizer = new DelimitedTokenizer(" .\n\r\'\"?,;:!*()-\uFEFF");
 }
 
 TokenizerFilter::~TokenizerFilter()
 {
-	uint64_t num_buffers = aggregator->getNumBuffers();
-	for (int i=0; i<num_buffers; i++) {
-		for (int j=0; j<max_keys_per_token; j++) {
-			free((*tok_list)[i][j]);
-		}
-	}
-
-	delete tok_list;
+	delete chunk_tokenizer;
 	delete send;
 }
 
@@ -56,50 +40,49 @@ TokenizerFilter::~TokenizerFilter()
 void* TokenizerFilter::operator()(void* input_data)
 {
 	char *spl = NULL ;
-	int tok_ctr = 0;
-	size_t this_list_ctr = 0;
-	size_t mc_size;
+	size_t tok_ctr = 0;
+	size_t num_tokens = 0;
 	uint64_t num_buffers = aggregator->getNumBuffers();
-	// passes just one token to createPAO
-	char** tokens;
-	size_t* token_sizes;
-	PartialAgg* new_pao;
+	Token* new_token;
 
 	FilterInfo* recv = (FilterInfo*)input_data;
 	void* tok_buf = recv->result;
 	uint64_t recv_length = (uint64_t)recv->length;	
 
-	char*** this_tok_list = (*tok_list)[next_buffer];
-	size_t** this_tok_size_list = (*tok_size_list)[next_buffer];
+	// fetch all tokens from chunk
+	Token** chunk_tokens;
+	num_tokens = chunk_tokenizer->getTokens(tok_buf, max_keys_per_token,
+			chunk_tokens);
+
 	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
 	
-	uint64_t num_tokens_proc = 0;
-	PartialAgg* dummyPAO = createPAO(NULL, NULL);
-	if (tok_buf == NULL) {
-		perror("Buffer sent to TokenizerFilter is empty!");
-		exit(1);
-	}
-	if (memCache)
-		mc_size = memCache->size();
-	while (1) {
-		tokens = this_tok_list[this_list_ctr];
-		token_sizes = this_tok_size_list[this_list_ctr];
-		if (!dummyPAO->tokenize(tok_buf, &num_tokens_proc,
-				&recv_length, tokens))
-			break;
-		if (memCache) {
-			for (int i=0; i<mc_size; i++) {
-				tokens[1] = memCache->getItem(i);
-				assert(++this_list_ctr < max_keys_per_token);
+	if (!memCache)
+		goto pass_through;
+	for (int j=0; j<num_tokens; j++) {
+		for (int i=0; i<memCache->size(); i++) {
+			// do a shallow copy of the file token
+			// for the first iteration, use the existing
+			// token
+			if (i == 0) {
+				chunk_tokens[j]->tokens.push_back((void*)(
+						memCache->getItem(i)));
+				chunk_tokens[j]->token_sizes.push_back(
+						memCache->getItemSize(i));
+			} else {
+				*new_token = Token(*chunk_tokens[j]);
+				new_token->tokens.push_back((void*)(
+						memCache->getItem(i)));
+				new_token->token_sizes.push_back(
+						memCache->getItemSize(i));
+				chunk_tokens[num_tokens] = new_token;
+				assert(++num_tokens < max_keys_per_token);
 			}
-		} else {
-			assert(++this_list_ctr < max_keys_per_token);
 		}
 	}
-	this_send->result = this_tok_list;
-	this_send->result1 = this_tok_size_list;
-	this_send->length = this_list_ctr;
+pass_through:
+	this_send->result = chunk_tokens;
+	this_send->length = num_tokens;
 	this_send->flush_hash = false;
 
 	return this_send;
