@@ -10,8 +10,8 @@ libminni_la_SOURCES =   Mapper.cpp \
 			filters/Deserializer.cpp \
 		       	filters/DFSReader.cpp \
 			filters/ExternalHasher.cpp \
-			filters/FileReader.cpp \
-			filters/FileTokenizer.cpp \
+			filters/FileReaderFilter.cpp \
+			filters/FileTokenizerFilter.cpp \
 			filters/Hasher.cpp \
 			filters/MemCache.cpp \
 			filters/Merger.cpp \
@@ -19,13 +19,14 @@ libminni_la_SOURCES =   Mapper.cpp \
 			filters/Serializer.cpp \
 			filters/Sorter.cpp \
 			filters/Store.cpp \
-		       	filters/Tokenizer.cpp \
+		       	filters/TokenizerFilter.cpp \
 		       	aggregators/Aggregator.cpp \
 			aggregators/BucketAggregator.cpp \
 			aggregators/ExthashAggregator.cpp \
 			aggregators/HashsortAggregator.cpp \
 			aggregators/IterAggregator.cpp \
-			aggregators/TesterAggregator.cpp
+			aggregators/TesterAggregator.cpp \
+			record_creation/FileTokenizer.cpp
 
 libminni_la_LIBADD = ../dfs/libdfs.la
 
@@ -36,6 +37,7 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 			-I$(srcdir)/../dfs \
 			-I$(srcdir)/filters/ \
 			-I$(srcdir)/aggregators/ \
+			-I$(srcdir)/record_creation/ \
 			-I/home/hamur/leveldb/include
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
@@ -52,8 +54,8 @@ minni_include_HEADERS = PartialAgg.h \
 			filters/Deserializer.h \
 		       	filters/DFSReader.h \
 			filters/ExternalHasher.h \
-			filters/FileReader.h \
-			filters/FileTokenizer.h \
+			filters/FileReaderFilter.h \
+			filters/FileTokenizerFilter.h \
 			filters/Hasher.h \
 			filters/MemCache.h \
 			filters/Merger.h \
@@ -61,13 +63,15 @@ minni_include_HEADERS = PartialAgg.h \
 			filters/Serializer.h \
 			filters/Sorter.h \
 			filters/Store.h \
-			filters/Tokenizer.h \
+			filters/TokenizerFilter.h \
 			aggregators/BucketAggregator.h \
 			aggregators/ExthashAggregator.h \
 			aggregators/HashsortAggregator.h \
 			aggregators/IterAggregator.h \
 			aggregators/TesterAggregator.h \
 			aggregators/Aggregator.h \
+			record_creation/FileTokenizer.h \
+			record_creation/Tokenizer.h \
 			Defs.h \
 			Util.h \
 			fnv.h

@@ -1,6 +1,6 @@
-#include "Tokenizer.h"
+#include "TokenizerFilter.h"
 
-Tokenizer::Tokenizer(Aggregator* agg, const Config& cfg,
+TokenizerFilter::TokenizerFilter(Aggregator* agg, const Config& cfg,
 			PartialAgg* (*createPAOFunc)(char** t, size_t* ts),
 			const size_t max_keys) :
 		aggregator(agg),
@@ -36,7 +36,7 @@ Tokenizer::Tokenizer(Aggregator* agg, const Config& cfg,
 	}
 }
 
-Tokenizer::~Tokenizer()
+TokenizerFilter::~TokenizerFilter()
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	for (int i=0; i<num_buffers; i++) {
@@ -53,7 +53,7 @@ Tokenizer::~Tokenizer()
  * Can't use const for argument because strtok modifies the string. 
  * Not re-entrant!
  */
-void* Tokenizer::operator()(void* input_data)
+void* TokenizerFilter::operator()(void* input_data)
 {
 	char *spl = NULL ;
 	int tok_ctr = 0;
@@ -77,7 +77,7 @@ void* Tokenizer::operator()(void* input_data)
 	uint64_t num_tokens_proc = 0;
 	PartialAgg* dummyPAO = createPAO(NULL, NULL);
 	if (tok_buf == NULL) {
-		perror("Buffer sent to Tokenizer is empty!");
+		perror("Buffer sent to TokenizerFilter is empty!");
 		exit(1);
 	}
 	if (memCache)

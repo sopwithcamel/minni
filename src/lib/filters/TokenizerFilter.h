@@ -1,5 +1,5 @@
-#ifndef LIB_TOKENIZER_H
-#define LIB_TOKENIZER_H
+#ifndef LIB_TOKENIZERFILTER_H
+#define LIB_TOKENIZERFILTER_H
 
 #include <stdlib.h>
 #include <assert.h>
@@ -24,12 +24,12 @@
  * 
  */
 
-class Tokenizer : public tbb::filter {
+class TokenizerFilter : public tbb::filter {
 public:
-	Tokenizer(Aggregator* agg, const Config& cfg,
+	TokenizerFilter(Aggregator* agg, const Config& cfg,
 			PartialAgg* (*createPAOFunc)(char** t, size_t* ts),
 			const size_t max_keys = DEFAULT_MAX_KEYS_PER_TOKEN);
-	~Tokenizer();
+	~TokenizerFilter();
 private:
 	Aggregator* aggregator;
 	MemCache* memCache;
@@ -42,4 +42,4 @@ private:
 	void* operator()(void* pao);
 };
 
-#endif // LIB_TOKENIZER_H
+#endif // LIB_TOKENIZERFILTER_H

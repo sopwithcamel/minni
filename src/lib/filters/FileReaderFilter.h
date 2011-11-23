@@ -1,5 +1,5 @@
-#ifndef LIB_FILEREADER_H
-#define LIB_FILEREADER_H
+#ifndef LIB_FILEREADERFILTER_H
+#define LIB_FILEREADERFILTER_H
 
 #include <stdlib.h>
 #include <iostream>
@@ -22,22 +22,20 @@
  * single-buffered for now.
  */
 
-class FileReader : public tbb::filter {
+class FileReaderFilter : public tbb::filter {
 public:
-	FileReader(Aggregator* agg, MapInput* _input);
-	~FileReader();
+	FileReaderFilter(Aggregator* agg, MapInput* _input);
+	~FileReaderFilter();
 private:
 	Aggregator* aggregator;
 	FileInput* input;
 	vector<string> file_list;
 	size_t files_per_call;
 	size_t files_sent;
-	char*** file_content_list;
-	char*** file_name_list;
-	size_t** file_size_list;
-	FilterInfo** send;
+	MultiBuffer<char*>* file_names;
+	MultiBuffer<FilterInfo>* send;
 	uint64_t next_buffer;
 	void* operator()(void* pao);
 };
 
-#endif // LIB_FILEREADER_H
+#endif // LIB_FILEREADERFILTER_H
