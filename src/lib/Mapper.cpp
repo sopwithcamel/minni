@@ -8,7 +8,7 @@
 #include <dlfcn.h>
 
 //Mapper
-Mapper::Mapper(PartialAgg* (*__createPAO)(char** t, size_t* ts), 
+Mapper::Mapper(PartialAgg* (*__createPAO)(Token* t), 
 			void (*__destroyPAO)(PartialAgg* p)):
 		createPAO(__createPAO),
 		destroyPAO(__destroyPAO)	
@@ -72,7 +72,7 @@ int MapperWrapperTask::UserMapLinking(const char* soname)
 		return 1;
 	}
 
-	__libminni_create_pao = (PartialAgg* (*)(char**, size_t*)) dlsym(
+	__libminni_create_pao = (PartialAgg* (*)(Token*)) dlsym(
 			handle, "__libminni_pao_create");
 	if ((err = dlerror()) != NULL)
 	{

@@ -23,8 +23,8 @@ public:
 	~MemCache();
 	size_t size();
 	char* getItem(uint64_t i);
+	size_t getItemSize(uint64_t i);
 	char* getFileContents(uint64_t i);
-	size_t getFileSize(uint64_t i);
 private:
 	std::vector<char*> queryList;
 	std::vector<char*> queryContents;

@@ -4,7 +4,7 @@ Aggregator::Aggregator(const Config &cfg,
 			AggType where,
 			uint64_t num_pipelines, 
 			uint64_t num_part,
-			PartialAgg* (*createPAOFunc)(char** t, size_t* ts),
+			PartialAgg* (*createPAOFunc)(Token* t),
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		type(where),
 		num_pipelines(num_pipelines),

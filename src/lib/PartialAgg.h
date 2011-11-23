@@ -2,16 +2,23 @@
 #define PartialAgg_H
 #include <string>
 #include <sstream>
-#include <map>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "uthash.h"
-#define REGISTER_PAO(x) extern "C" PartialAgg* __libminni_pao_create(char** toks, size_t* tok_sz) {return new x(toks, tok_sz);} \
-	                extern "C" void __libminni_pao_destroy(x* pao) {delete pao;}
+#include "Tokenizer.h"
 
+#define REGISTER_PAO(x) extern "C"\
+	PartialAgg* __libminni_pao_create(Token*\
+			 tok)\
+	{\
+		return new x(tok);\
+	}\
+	extern "C" void __libminni_pao_destroy(x* pao)\
+	{\
+		delete pao;\
+	}
 
-using namespace std;
 
 class PartialAgg {
   public:
@@ -36,5 +43,3 @@ class PartialAgg {
 };
 
 #endif
-
-

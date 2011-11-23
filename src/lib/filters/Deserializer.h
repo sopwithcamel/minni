@@ -29,12 +29,12 @@ public:
 	Deserializer(Aggregator* agg, 
 			const uint64_t num_buckets, 
 			const char* inp_prefix,
-			PartialAgg* (*createPAOFunc)(char** k, size_t* ts),
+			PartialAgg* (*createPAOFunc)(Token* t),
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~Deserializer();
 private:
 	Aggregator* aggregator;
-	PartialAgg* (*createPAO)(char** k, size_t* ts);
+	PartialAgg* (*createPAO)(Token* t);
 	void (*destroyPAO)(PartialAgg* p);
 	char* inputfile_prefix;
 	const uint64_t num_buckets;	// Number of files to process serially

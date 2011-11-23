@@ -66,7 +66,7 @@ ExternalHashReader::ExternalHashReader(Aggregator* agg,
 			leveldb::DB** db_ptr,
 			const char* ht_name,
 			uint64_t ext_ht_size,
-			PartialAgg* (*createPAOFunc)(char** t, size_t* ts),
+			PartialAgg* (*createPAOFunc)(Token* t),
 			const size_t max_keys) :
 		filter(/*serial=*/true),
 		aggregator(agg),
@@ -82,14 +82,12 @@ ExternalHashReader::ExternalHashReader(Aggregator* agg,
 	assert(s.ok());
 
 	uint64_t num_buffers = aggregator->getNumBuffers();
-	pao_list = new MultiBuffer<PartialAgg*>(num_buffers, max_keys_per_token);
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 }
 
 ExternalHashReader::~ExternalHashReader()
 {
 	delete *db;
-	delete pao_list;
 	delete send;
 }
 
@@ -99,33 +97,33 @@ void* ExternalHashReader::operator()(void* recv)
 	string value;
 	size_t ind = 0;
 	char* buf = (char*)malloc(BUF_SIZE);
+	PartialAgg* ext_pao;
+	Token* tok;
 
 	FilterInfo* recv_list = (FilterInfo*)recv;
-	char*** tok_list = (char***)recv_list->result;
+	Token** tok_list = (Token**)recv_list->result;
 	uint64_t recv_length = (uint64_t)recv_list->length;
 
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	FilterInfo* this_send = (*send)[next_buffer];
-	PartialAgg** this_pao_list = (*pao_list)[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers;
 
 	// Insert PAOs
 	while (ind < recv_length) {
-		key = tok_list[ind][0];
+		tok = tok_list[ind];
+		key = (char*)(tok->tokens[2]);
 		leveldb::Status s = (*db)->Get(leveldb::ReadOptions(), key,
 				&value);
 		if (s.ok()) {
 			strcpy(buf, value.c_str());
-			this_pao_list[ind] = createPAO(NULL, NULL);
-			this_pao_list[ind]->deserialize((void*)buf);
-		} else
-			this_pao_list[ind] = NULL;
+			ext_pao = createPAO(NULL);
+			ext_pao->deserialize((void*)buf);
+			tok->objs.push_back(ext_pao);
+		} 
 		ind++;
 	}
-	this_send->result2 = this_pao_list;
-pass_through:
 	this_send->result = recv_list->result;
-	this_send->result1 = recv_list->result1;
+	this_send->length = recv_length;
 	free(buf);
 }
 

@@ -33,6 +33,16 @@ char* MemCache::getItem(uint64_t ind)
 	return queryList[ind];
 }
 
+size_t MemCache::getItemSize(uint64_t ind)
+{	
+	if (ind >= queryFileSizes.size())
+		return NULL;
+	if (queryType == WORD)
+		return strlen(queryList[ind]);
+	else
+		return queryFileSizes[ind];
+}
+
 char* MemCache::getFileContents(uint64_t ind)
 {	
 	if (ind >= queryContents.size())
@@ -40,15 +50,6 @@ char* MemCache::getFileContents(uint64_t ind)
 	if (queryType == WORD)
 		return NULL;
 	return queryContents[ind];
-}
-
-size_t MemCache::getFileSize(uint64_t ind)
-{	
-	if (ind >= queryFileSizes.size())
-		return NULL;
-	if (queryType == WORD)
-		return NULL;
-	return queryFileSizes[ind];
 }
 
 void MemCache::loadWordCache()

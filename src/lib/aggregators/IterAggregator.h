@@ -32,7 +32,7 @@ public:
 				const uint64_t _partid, 
 				MapInput* _map_input,
 				const char* infile, 
-				PartialAgg* (*createPAOFunc)(char** t, size_t* ts), 
+				PartialAgg* (*createPAOFunc)(Token* t), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile);
 	~IterAggregator();
