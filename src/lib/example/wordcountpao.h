@@ -1,9 +1,10 @@
 #include "Mapper.h"
 #include "PartialAgg.h"
+#include "Tokenizer.h"
 
 class WordCountPartialAgg : public PartialAgg {
   public:
-	WordCountPartialAgg(char** tokens, size_t* token_sizes);
+	WordCountPartialAgg(Token* token);
 	~WordCountPartialAgg();
 	void add(void* value);
 	void merge(PartialAgg* add_agg);

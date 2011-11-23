@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "PartialAgg.h"
+#include "Tokenizer.h"
 #include <assert.h>
 #include <jpeglib.h>
 #include <jerror.h>
@@ -10,7 +11,7 @@ using namespace cimg_library;
 
 class ImagePAO : public PartialAgg {
   public:
-	ImagePAO(char** tokens, size_t* token_sizes);
+	ImagePAO(Token* token);
 	~ImagePAO();
 	/* add new neighbor if it is k-nearest */ 
 	void add(void* neighbor_key);

@@ -21,6 +21,7 @@ img_la_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I$(srcdir)/../ \
 			-I$(srcdir)/../filters/ \
 			-I$(srcdir)/../aggregators/ \
+			-I$(srcdir)/../record_creation/ \
 			-I$(srcdir)/../../worker/gen-cpp \
 			-I$(srcdir)/../../dfs/ \
 			-I/usr/include/CImg/

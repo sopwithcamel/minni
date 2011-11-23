@@ -20,27 +20,29 @@
  *  - tokens[3] to have neighbor image data
  *  - token_sizes to have the respective buffer lengths
  */
-ImagePAO::ImagePAO(char** tokens, size_t* token_sizes)
+ImagePAO::ImagePAO(Token* token)
 {
-	if (tokens == NULL) {
+	if (token == NULL) {
 		key = NULL;
 		value = NULL;
 		return;
 	}
 
 	// Set key equal to the query file name
-	key = (char*)malloc(token_sizes[0]);
-	strcpy(key, tokens[0]);
+	key = (char*)malloc(token->token_sizes[2]);
+	strcpy(key, (char*)(token->tokens[2]));
 
 	// Calculate image hash
 	CImg<unsigned char> img;
-	img.load_jpeg_buffer((JOCTET*)tokens[1], token_sizes[1]);
+	img.load_jpeg_buffer((JOCTET*)(token->tokens[3]), token->token_sizes[3]);
 	pHash(img, hash);
 
 	uint64_t ne_hash;
-	Neighbor* n = new Neighbor(tokens[2], token_sizes[0]);
+	Neighbor* n = new Neighbor((char*)(token->tokens[0]),
+			token->token_sizes[0]);
 	CImg<unsigned char> ne_img;
-	ne_img.load_jpeg_buffer((JOCTET*)tokens[3], token_sizes[3]);
+	ne_img.load_jpeg_buffer((JOCTET*)(token->tokens[1]),
+			token->token_sizes[1]);
 	pHash(ne_img, ne_hash);
 	n->distance = abs((long)(hash - ne_hash));
 
@@ -127,9 +129,9 @@ void ImagePAO::serialize(void* buf)
 {
 	char* wr_buf = (char*)buf;
 	char dist[20];
-	list<Neighbor>* this_list = (list<Neighbor>*)value;
+	std::list<Neighbor>* this_list = (std::list<Neighbor>*)value;
 	strcpy(wr_buf, key);
-	for (list<Neighbor>::iterator it = this_list->begin(); 
+	for (std::list<Neighbor>::iterator it = this_list->begin(); 
 			it != this_list->end(); ++it) {
 		strcat(wr_buf, " ");
 		strcat(wr_buf, (*it).key);
