@@ -56,30 +56,38 @@ void* FileTokenizerFilter::operator()(void* input_data)
 	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
 	
-	if (memCache)
-		mc_size = memCache->size();
-	for (int j=0; j<recv_length; j++) {
-		if (memCache) {
-			for (int i=0; i<mc_size; i++) {
-				// do a shallow copy of the file token
-				// for the first iteration, use the existing
-				// token
-				if (i == 0) 
-					new_token = file_tokens[j];
-				else
-					*new_token = Token(*file_tokens[j]);
-				new_token->tokens.push_back(
-						memCache->getItem(i));
-				new_token->tokens.push_back(
-						memCache->getFileContents(i));
+	if (!memCache)
+		goto pass_through;
+	for (int i=0; i<memCache->size(); i++) {
+		for (int j=0; j<recv_length; j++) {
+			// Do a shallow copy of the file token.
+			// For the first iteration, use the existing
+			// token
+			if (i == 0) {
+				file_tokens[j]->tokens.push_back((void*)(
+						memCache->getItem(i)));
+				file_tokens[j]->tokens.push_back((void*)(
+						memCache->getFileContents(i)));
+				file_tokens[j]->token_sizes.push_back(
+						FILENAME_LENGTH);
+				file_tokens[j]->token_sizes.push_back(
+						memCache->getItemSize(i));
+			} else {
+				*new_token = Token(*file_tokens[j]);
+				new_token->tokens.push_back((void*)(
+						memCache->getItem(i)));
+				new_token->tokens.push_back((void*)(
+						memCache->getFileContents(i)));
 				new_token->token_sizes.push_back(
 						FILENAME_LENGTH);
 				new_token->token_sizes.push_back(
-						memCache->getFileSize(i));
+						memCache->getItemSize(i));
+				file_tokens[this_list_ctr] = new_token;
 				assert(++this_list_ctr < max_keys_per_token);
 			}
-		} 
+		}
 	}
+pass_through:
 	this_send->result = file_tokens;
 	this_send->length = this_list_ctr;
 	this_send->flush_hash = false;
