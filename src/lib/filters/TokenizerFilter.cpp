@@ -64,17 +64,18 @@ void* TokenizerFilter::operator()(void* input_data)
 			// do a shallow copy of the file token
 			// for the first iteration, use the existing
 			// token
+			size_t mi_size = memCache->getItemSize(i);
+			void* mem_it = malloc(mi_size);
+			memcpy(mem_it, memCache->getItem(i), mi_size);
 			if (i == 0) {
-				chunk_tokens[j]->tokens.push_back((void*)(
-						memCache->getItem(i)));
+				chunk_tokens[j]->tokens.push_back(mem_it);
 				chunk_tokens[j]->token_sizes.push_back(
-						memCache->getItemSize(i));
+						mi_size);
 			} else {
 				*new_token = Token(*chunk_tokens[j]);
-				new_token->tokens.push_back((void*)(
-						memCache->getItem(i)));
+				new_token->tokens.push_back(mem_it);
 				new_token->token_sizes.push_back(
-						memCache->getItemSize(i));
+						mi_size);
 				chunk_tokens[num_tokens] = new_token;
 				assert(++num_tokens < max_keys_per_token);
 			}

@@ -8,11 +8,12 @@
 class DelimitedTokenizer : public Tokenizer {
 public:
 	DelimitedTokenizer(const char* delim);
+	DelimitedTokenizer(const char* delim_first, const char* delim_sec);
 	~DelimitedTokenizer();
 	uint64_t getTokens(void*& data_fragments, uint64_t num_tokens,
 			Token**& tokens);
 private:
-	char* delimiters;
+	char** delimiters;
 	size_t num_tokens_sent;
 	vector<string> file_list;
 };

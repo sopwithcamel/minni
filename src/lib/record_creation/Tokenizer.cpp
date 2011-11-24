@@ -23,8 +23,7 @@ Token::~Token()
 {
 	int i;
 //	for (i=0; i<tokens.size(); i++)
-	for (i=0; i<2; i++)
-		free(tokens[i]);
+//		free(tokens[i]);
 	for (i=0; i<objs.size(); i++)
 		delete objs[i];
 }
