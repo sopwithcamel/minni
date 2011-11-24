@@ -38,6 +38,7 @@ private:
 	const size_t max_keys_per_token;
 	DelimitedTokenizer* chunk_tokenizer;
 	MultiBuffer<FilterInfo>* send;
+	MultiBuffer<Token*>* tokens;
 	PartialAgg* (*createPAO)(Token* token);
 	void* operator()(void* pao);
 };

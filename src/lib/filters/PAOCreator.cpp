@@ -52,13 +52,6 @@ void* PAOCreator::operator()(void* recv)
 		ind++;
 	}
 
-	ind = 0;
-	while (ind < recv_length) {
-		delete tok_list[ind];
-		ind++;
-	}
-	free(tok_list);
-
 	this_send->result = this_pao_list;
 	this_send->length = this_list_ctr;
 	this_send->flush_hash = false;

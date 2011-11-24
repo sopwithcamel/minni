@@ -11,6 +11,7 @@ class Token {
 	Token();
 	Token(const Token&);
 	~Token();
+	void clear();
 	std::vector<void*> tokens;
 	std::vector<size_t> token_sizes;
 	std::vector<PartialAgg*> objs;

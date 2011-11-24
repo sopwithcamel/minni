@@ -11,6 +11,13 @@ TokenizerFilter::TokenizerFilter(Aggregator* agg, const Config& cfg,
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
+	tokens = new MultiBuffer<Token*>(num_buffers, max_keys_per_token);
+
+	for (int i=0; i<num_buffers; i++) {
+		for (int j=0; j<max_keys_per_token; j++) {
+			(*tokens)[i][j] = new Token();
+		}
+	}
 
 	Setting& c_query = readConfigFile(cfg, "minni.query");
 	int query = c_query;
@@ -29,6 +36,14 @@ TokenizerFilter::TokenizerFilter(Aggregator* agg, const Config& cfg,
 
 TokenizerFilter::~TokenizerFilter()
 {
+	uint64_t num_buffers = aggregator->getNumBuffers();
+	for (int i=0; i<num_buffers; i++) {
+		for (int j=0; j<max_keys_per_token; j++) {
+			delete (*tokens)[i][j];
+		}
+	}
+
+	delete tokens; 
 	delete chunk_tokenizer;
 	delete send;
 }
@@ -49,40 +64,43 @@ void* TokenizerFilter::operator()(void* input_data)
 	void* tok_buf = recv->result;
 	uint64_t recv_length = (uint64_t)recv->length;	
 
-	// fetch all tokens from chunk
-	Token** chunk_tokens;
-	num_tokens = chunk_tokenizer->getTokens(tok_buf, max_keys_per_token,
-			chunk_tokens);
-
+	Token** this_token_list = (*tokens)[next_buffer];
 	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
+
+	for (int i=0; i < max_keys_per_token; i++)
+		this_token_list[i]->clear();
+	// fetch all tokens from chunk
+	num_tokens = chunk_tokenizer->getTokens(tok_buf, max_keys_per_token,
+			this_token_list);
 	
 	if (!memCache)
 		goto pass_through;
-	for (int j=0; j<num_tokens; j++) {
-		for (int i=0; i<memCache->size(); i++) {
+	for (int i=0; i<memCache->size(); i++) {
+		for (int j=0; j<num_tokens; j++) {
 			// do a shallow copy of the file token
 			// for the first iteration, use the existing
 			// token
 			size_t mi_size = memCache->getItemSize(i);
-			void* mem_it = malloc(mi_size);
-			memcpy(mem_it, memCache->getItem(i), mi_size);
+			void* mem_it = memCache->getItem(i);
+
 			if (i == 0) {
-				chunk_tokens[j]->tokens.push_back(mem_it);
-				chunk_tokens[j]->token_sizes.push_back(
+				this_token_list[j]->tokens.push_back(mem_it);
+				this_token_list[j]->token_sizes.push_back(
 						mi_size);
 			} else {
-				*new_token = Token(*chunk_tokens[j]);
+				new_token = this_token_list[num_tokens++];
+				// initialize new_token
+				*new_token = Token(*this_token_list[j]);
 				new_token->tokens.push_back(mem_it);
 				new_token->token_sizes.push_back(
 						mi_size);
-				chunk_tokens[num_tokens] = new_token;
-				assert(++num_tokens < max_keys_per_token);
+				assert(num_tokens < max_keys_per_token);
 			}
 		}
 	}
 pass_through:
-	this_send->result = chunk_tokens;
+	this_send->result = this_token_list;
 	this_send->length = num_tokens;
 	this_send->flush_hash = false;
 

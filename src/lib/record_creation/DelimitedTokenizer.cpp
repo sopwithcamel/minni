@@ -25,11 +25,6 @@ DelimitedTokenizer::~DelimitedTokenizer()
 }
 
 /**
- * @param[in] data_fragments	mutable buffer that needs to be tokenized
- * @param[in] num_tokens	ignored
- * @param[out] tokens		list of tokens. NULL if none. Memory
- *   for each Token as well as the array of Tokens will be allocated
- *   and must be freed by caller. 
  */
 uint64_t DelimitedTokenizer::getTokens(void*& data_fragments, 
 		uint64_t num_tokens, Token**& tokens)
@@ -40,18 +35,14 @@ uint64_t DelimitedTokenizer::getTokens(void*& data_fragments,
 	char* buf = (char*)data_fragments;
 	char *saveptr1, *saveptr2;
 	char *str1, *str2;
-	char* new_spl;
 	Token* tok;
-	tokens = (Token**)malloc(sizeof(Token*) * num_tokens);
 
 	for (str1=buf;; str1=NULL) {
 		// split token
 		spl = strtok_r(str1, delimiters[0], &saveptr1);
 		if (spl == NULL)
 			return tok_ctr;
-		// create a new Token
-		tok = new Token();
-		tokens[tok_ctr++] = tok;
+		tok = tokens[tok_ctr++];
 
 		if (delimiters[1]) { // sub-tokenize
 			for (str2=spl;; str2=NULL) {
@@ -59,14 +50,10 @@ uint64_t DelimitedTokenizer::getTokens(void*& data_fragments,
 						&saveptr2);
 				if (spl_sec == NULL)
 					break;
-				new_spl = (char*)malloc(strlen(spl_sec) + 1);
-				strcpy(new_spl, spl_sec);
-				tok->tokens.push_back((void*)new_spl);
+				tok->tokens.push_back((void*)spl_sec);
 			}
 		} else {
-			new_spl = (char*)malloc(strlen(spl) + 1);
-			strcpy(new_spl, spl);
-			tok->tokens.push_back((void*)new_spl);
+			tok->tokens.push_back((void*)spl);
 		}
 	}
 }
