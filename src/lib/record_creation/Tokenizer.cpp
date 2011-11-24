@@ -22,7 +22,6 @@ Token::Token(const Token& rhs)
 Token::~Token()
 {
 	int i;
-	fprintf(stderr, "%s:%d\n", tokens[0], tokens.size());
 //	for (i=0; i<tokens.size(); i++)
 	for (i=0; i<2; i++)
 		free(tokens[i]);
