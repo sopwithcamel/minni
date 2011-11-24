@@ -59,14 +59,14 @@ uint64_t DelimitedTokenizer::getTokens(void*& data_fragments,
 						&saveptr2);
 				if (spl_sec == NULL)
 					break;
-//				new_spl = (char*)malloc(strlen(spl_sec) + 1);
-//				strcpy(new_spl, spl_sec);
-				tok->tokens.push_back((void*)spl_sec);
+				new_spl = (char*)malloc(strlen(spl_sec) + 1);
+				strcpy(new_spl, spl_sec);
+				tok->tokens.push_back((void*)new_spl);
 			}
 		} else {
-//			new_spl = (char*)malloc(strlen(spl) + 1);
-//			strcpy(new_spl, spl);
-			tok->tokens.push_back((void*)spl);
+			new_spl = (char*)malloc(strlen(spl) + 1);
+			strcpy(new_spl, spl);
+			tok->tokens.push_back((void*)new_spl);
 		}
 	}
 }

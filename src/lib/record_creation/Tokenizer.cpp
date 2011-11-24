@@ -22,8 +22,8 @@ Token::Token(const Token& rhs)
 Token::~Token()
 {
 	int i;
-//	for (i=0; i<tokens.size(); i++)
-//		free(tokens[i]);
+	for (i=0; i<tokens.size(); i++)
+		free(tokens[i]);
 	for (i=0; i<objs.size(); i++)
 		delete objs[i];
 }
