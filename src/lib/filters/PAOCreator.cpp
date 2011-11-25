@@ -44,7 +44,6 @@ void* PAOCreator::operator()(void* recv)
 	
 	while (ind < recv_length) {
 		tok = tok_list[ind];
-		// Insert token sizes; TODO
 		new_pao = createPAO(tok);
 		this_pao_list[this_list_ctr++] = new_pao;
 		assert(this_list_ctr < max_keys_per_token);

@@ -37,6 +37,9 @@ private:
 	size_t next_buffer;
 	const size_t max_keys_per_token;
 	MultiBuffer<FilterInfo>* send;
+	MultiBuffer<Token*>* tokens;
+	MultiBuffer<char*>* contents;
+	MultiBuffer<size_t>* content_list_sizes;
 	MapInput* input;
 	void* operator()(void* input_data);
 };

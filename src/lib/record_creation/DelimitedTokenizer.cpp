@@ -8,7 +8,8 @@ DelimitedTokenizer::DelimitedTokenizer(const char* delim)
 	delimiters[1] = NULL;
 }
 
-DelimitedTokenizer::DelimitedTokenizer(const char* delim_first, const char* delim_sec)
+DelimitedTokenizer::DelimitedTokenizer(const char* delim_first,
+		const char* delim_sec)
 {
 	delimiters = (char**)malloc(sizeof(char*) * 2);
 	delimiters[0] = (char*)malloc(100);
