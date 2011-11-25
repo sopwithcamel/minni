@@ -1,6 +1,5 @@
 #include "ExternalHasher.h"
 #include "Util.h"
-#include <libconfig.h++>
 
 #define BUF_SIZE	65535
 

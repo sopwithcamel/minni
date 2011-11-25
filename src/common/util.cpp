@@ -18,6 +18,13 @@ Setting& readConfigFile(const Config &cfg, const char* set_name)
 	}
 }
 
+bool configExists(const Config &cfg, const char* set_name)
+{
+	if (cfg.exists(set_name))
+		return true;
+	return false;
+}
+
 bool openConfigFile(Config &cfg)
 {
 	try {

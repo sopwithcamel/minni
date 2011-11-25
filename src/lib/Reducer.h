@@ -11,7 +11,6 @@
 #include <unistd.h>
 #include <sstream>
 #include <fstream>
-#include <libconfig.h++>
 #include "daemon_types.h"
 #include "WorkDaemon_file.h"
 #include "WorkDaemon_tasks.h"

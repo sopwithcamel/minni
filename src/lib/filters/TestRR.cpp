@@ -1,6 +1,6 @@
 #include "TestRR.h"
 #include "Util.h"
-#include <libconfig.h++>
+#include <util.h>
 
 #define BUF_SIZE	65535
 
