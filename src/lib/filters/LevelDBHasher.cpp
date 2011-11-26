@@ -66,7 +66,7 @@ ExternalHashReader::ExternalHashReader(Aggregator* agg,
 			leveldb::DB** db_ptr,
 			const char* ht_name,
 			uint64_t ext_ht_size,
-			PartialAgg* (*createPAOFunc)(Token* t),
+			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			const size_t max_keys) :
 		filter(/*serial=*/true),
 		aggregator(agg),
@@ -116,7 +116,7 @@ void* ExternalHashReader::operator()(void* recv)
 				&value);
 		if (s.ok()) {
 			strcpy(buf, value.c_str());
-			ext_pao = createPAO(NULL);
+			createPAO(NULL, &ext_pao);
 			ext_pao->deserialize((void*)buf);
 			tok->objs.push_back(ext_pao);
 		} 

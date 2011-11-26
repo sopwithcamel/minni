@@ -31,10 +31,10 @@ using namespace libconfig;
 
 class Mapper {
 public:
-	Mapper(PartialAgg* (*__createPAO)(Token* t), 
+	Mapper(size_t (*__createPAO)(Token* t, PartialAgg** p), 
 			void (*__destroyPAO)(PartialAgg* p));
 	~Mapper();
-	PartialAgg* (*createPAO)(Token* token); 
+	size_t (*createPAO)(Token* token, PartialAgg** p); 
 	void (*destroyPAO)(PartialAgg* p);
 	int num_partition;
 	Aggregator* aggregs;
@@ -44,7 +44,7 @@ private:
 class MapperWrapperTask : public task {
   public:
 	Mapper* mapper;	
-	PartialAgg* (*__libminni_create_pao)(Token* t);
+	size_t (*__libminni_create_pao)(Token* t, PartialAgg** p);
 	void (*__libminni_destroy_pao)(PartialAgg* pao);
 	string so_path;
 	MapInput* myinput;

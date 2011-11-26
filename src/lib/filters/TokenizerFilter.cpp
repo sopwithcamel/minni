@@ -1,13 +1,11 @@
 #include "TokenizerFilter.h"
 
 TokenizerFilter::TokenizerFilter(Aggregator* agg, const Config& cfg,
-			PartialAgg* (*createPAOFunc)(Token* t),
 			const size_t max_keys) :
 		aggregator(agg),
 		filter(serial_in_order),
 		max_keys_per_token(max_keys),
-		next_buffer(0),
-		createPAO(createPAOFunc)
+		next_buffer(0)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
@@ -22,6 +20,18 @@ TokenizerFilter::TokenizerFilter(Aggregator* agg, const Config& cfg,
 	Setting& c_query = readConfigFile(cfg, "minni.query");
 	int query = c_query;
 
+	Setting& c_delimf = readConfigFile(cfg, "minni.delimiter");
+	string delimf = (const char*)c_delimf;
+
+	string delims;
+	if (configExists(cfg, "minni.delimiter_second")) {
+		Setting& c_delims = readConfigFile(cfg, "minni.delimiter_second");
+		string delims = (const char*)c_delims;
+		chunk_tokenizer = new DelimitedTokenizer(delimf.c_str(),
+				delims.c_str());
+	} else
+		chunk_tokenizer = new DelimitedTokenizer(delimf.c_str());
+
 	if (1 == query) {
 		Setting& c_query_file = readConfigFile(cfg, 
 				"minni.query_file");
@@ -31,7 +41,6 @@ TokenizerFilter::TokenizerFilter(Aggregator* agg, const Config& cfg,
 		memCache = NULL;
 	}
 
-	chunk_tokenizer = new DelimitedTokenizer(" .\n\r\'\"?,;:!*()-\uFEFF");
 }
 
 TokenizerFilter::~TokenizerFilter()

@@ -1,7 +1,4 @@
 #include "img.h"
-#include "Neighbor.h"
-#include <math.h>
-#include <list>
 
 #define KEYSIZE		64
 #define IMG_SIZE	500000
@@ -46,9 +43,8 @@ ImagePAO::ImagePAO(Token* token)
 	pHash(ne_img, ne_hash);
 	n->distance = abs((long)(hash - ne_hash));
 
-	std::list<Neighbor>* n_list = new std::list<Neighbor>();
-	n_list->push_back(*n);
-	value = (std::list<Neighbor>*)(n_list);
+	neigh_list = new std::list<Neighbor>();
+	neigh_list->push_back(*n);
 	fprintf(stderr, "Found neighbor: %s, %ld\n", n->key, n->distance);
 }
 
@@ -56,10 +52,15 @@ ImagePAO::~ImagePAO()
 {
 	if (key)
 		free(key);
-	if (value) {
-		std::list<Neighbor>* v = (std::list<Neighbor>*)value;
-		v->clear();
-	}
+	neigh_list->clear();
+}
+
+size_t ImagePAO::create(Token* t, PartialAgg** p)
+{
+	ImagePAO* img;
+	img = new ImagePAO(t);
+	p[0] = img;
+	return 1;
 }
 
 /**
@@ -75,7 +76,6 @@ void ImagePAO::add(void* val)
 	char* read_buf = (char*)val;
 	Neighbor* n;
 	std::list<Neighbor>::iterator it; 
-	std::list<Neighbor>* v = (std::list<Neighbor>*)value;
 	// read key
 	spl = strtok(read_buf, " ");
 	while (true) {
@@ -88,31 +88,31 @@ void ImagePAO::add(void* val)
 		/* read in neighbor distance */
 		spl = strtok(NULL, " ");
 		n->distance = atof(spl);	
-		v->push_back(*n);
+		neigh_list->push_back(*n);
 	}
-	v->sort(Neighbor::comp);
-	if (v->size() > NEAREST) {
-		it = v->begin();
+	neigh_list->sort(Neighbor::comp);
+	if (neigh_list->size() > NEAREST) {
+		it = neigh_list->begin();
 		advance(it, NEAREST);	
-		v->erase(it, v->end());
+		neigh_list->erase(it, neigh_list->end());
 	}
 }
 
 void ImagePAO::merge(PartialAgg* add_agg)
 {
-	std::list<Neighbor>* this_list = (std::list<Neighbor>*)value;
-	std::list<Neighbor>* mg_list = (std::list<Neighbor>*)(add_agg->value);
+	ImagePAO* mg_pao = (ImagePAO*)add_agg;
+	std::list<Neighbor>* mg_list = mg_pao->neigh_list;
 	Neighbor* new_neighbor;
 	std::list<Neighbor>::iterator it; 
 	for (it=mg_list->begin(); it != mg_list->end(); ++it) {
 		new_neighbor = new Neighbor(*it);
-		this_list->push_back(*new_neighbor);
+		neigh_list->push_back(*new_neighbor);
 	}
-	this_list->sort(Neighbor::comp);
-	if (this_list->size() > NEAREST) {
-		it = this_list->begin();
+	neigh_list->sort(Neighbor::comp);
+	if (neigh_list->size() > NEAREST) {
+		it = neigh_list->begin();
 		advance(it, NEAREST);	
-		this_list->erase(it, this_list->end());
+		neigh_list->erase(it, neigh_list->end());
 	}
 }
 
@@ -129,10 +129,9 @@ void ImagePAO::serialize(void* buf)
 {
 	char* wr_buf = (char*)buf;
 	char dist[20];
-	std::list<Neighbor>* this_list = (std::list<Neighbor>*)value;
+	std::list<Neighbor>::iterator it; 
 	strcpy(wr_buf, key);
-	for (std::list<Neighbor>::iterator it = this_list->begin(); 
-			it != this_list->end(); ++it) {
+	for (it = neigh_list->begin(); it != neigh_list->end(); ++it) {
 		strcat(wr_buf, " ");
 		strcat(wr_buf, (*it).key);
 		strcat(wr_buf, " ");
@@ -158,7 +157,7 @@ bool ImagePAO::deserialize(void* buf)
 	char* spl;
 	char* read_buf = (char*)buf;
 	Neighbor* n;
-	std::list<Neighbor>* this_list = new std::list<Neighbor>();
+	neigh_list = new std::list<Neighbor>();
 	spl = strtok(read_buf, " ");
 	if (spl == NULL)
 		return false;
@@ -174,9 +173,8 @@ bool ImagePAO::deserialize(void* buf)
 		/* read in neighbor distance */
 		spl = strtok(NULL, " ");
 		n->distance = atof(spl);	
-		this_list->push_back(*n);
+		neigh_list->push_back(*n);
 	}
-	value = (std::list<Neighbor>*)this_list;
 	return true;
 }
 

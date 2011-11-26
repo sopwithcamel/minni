@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <iostream>
-#include <libconfig.h++>
 
 #include "tbb/pipeline.h"
 #include "tbb/tick_count.h"

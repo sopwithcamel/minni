@@ -9,17 +9,16 @@
 #include "Tokenizer.h"
 
 #define REGISTER_PAO(x) extern "C"\
-	PartialAgg* __libminni_pao_create(Token*\
-			 tok)\
+	size_t __libminni_pao_create(Token* tok, PartialAgg** p_list)\
 	{\
-		return new x(tok);\
+		return x::create(tok, p_list);\
 	}\
 	extern "C" void __libminni_pao_destroy(x* pao)\
 	{\
 		delete pao;\
 	}
 
-
+class Token;
 class PartialAgg {
   public:
 	PartialAgg() {}
@@ -34,6 +33,7 @@ class PartialAgg {
 	virtual bool deserialize(FILE* f, void* buf, size_t buf_size) = 0;
 	/* Deserialize from buffer */
 	virtual bool deserialize(void* buf) = 0;
+	static size_t create(Token*& t, PartialAgg** p_list) { return 0; }
 
 	char* key;
 	void* value;

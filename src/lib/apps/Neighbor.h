@@ -1,3 +1,6 @@
+#ifndef APPS_NEIGHBOR_H
+#define APPS_NEIGHBOR_H
+
 class Neighbor {
   public:
 	char* key;
@@ -32,3 +35,5 @@ class Neighbor {
 		return (n1.distance < n2.distance);
 	}
 };
+
+#endif // APPS_NEIGHBOR_H

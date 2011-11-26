@@ -8,7 +8,7 @@ IterAggregator::IterAggregator(const Config& cfg,
 				const uint64_t num_part, 
 				MapInput* _map_input,
 				const char* infile, 
-				PartialAgg* (*createPAOFunc)(Token* t), 
+				size_t (*createPAOFunc)(Token* t, PartialAgg** p), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile):
 		Aggregator(cfg, type, 2, num_part, createPAOFunc, destroyPAOFunc),
@@ -55,7 +55,7 @@ IterAggregator::IterAggregator(const Config& cfg,
 			chunkreader = new DFSReader(this, map_input, 
 					token_size);
 			pipeline_list[0].add_filter(*chunkreader);
-			toker = new TokenizerFilter(this, cfg, createPAOFunc,
+			toker = new TokenizerFilter(this, cfg,
 					max_keys_per_token);
 			pipeline_list[0].add_filter(*toker);
 		} else if (!inp_type.compare("file")) {

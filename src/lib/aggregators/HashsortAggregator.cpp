@@ -8,7 +8,7 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 				const uint64_t num_part,
 				MapInput* _map_input,
 				const char* infile, 
-				PartialAgg* (*createPAOFunc)(Token* t), 
+				size_t (*createPAOFunc)(Token* t, PartialAgg** p), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile):
 		Aggregator(cfg, type, 3, num_part, createPAOFunc, destroyPAOFunc),
@@ -42,7 +42,7 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 		reader = new DFSReader(this, map_input, token_size);
 		pipeline_list[0].add_filter(*reader);
 
-		toker = new TokenizerFilter(this, cfg, createPAOFunc, max_keys_per_token);
+		toker = new TokenizerFilter(this, cfg, max_keys_per_token);
 		pipeline_list[0].add_filter(*toker);
 
 		creator = new PAOCreator(this, createPAOFunc, max_keys_per_token);

@@ -45,12 +45,12 @@ public:
 	const size_t max_keys_per_token;
 
 	Store(Aggregator* agg,
-			PartialAgg* (*createPAOFunc)(Token* t),
+			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys);
 	~Store();
 	void (*destroyPAO)(PartialAgg* p);
-	PartialAgg* (*createPAO)(Token* t);
+	size_t (*createPAO)(Token* t, PartialAgg** p);
 
 	/* Stages of the pipeline */
 	StoreHasher* hasher;

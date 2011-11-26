@@ -30,7 +30,7 @@ public:
 				const uint64_t _partid,
 				MapInput* _map_input,
 				const char* infile, 
-				PartialAgg* (*createPAOFunc)(Token* t), 
+				size_t (*createPAOFunc)(Token* t, PartialAgg** p), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile);
 	~HashsortAggregator();

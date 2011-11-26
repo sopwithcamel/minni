@@ -47,10 +47,10 @@ public:
 			leveldb::DB** dbp,
 			const char* ht_name,
 			uint64_t ext_ht_size,
-			PartialAgg* (*createPAOFunc)(Token* t),
+			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			const size_t max_keys);
 	~ExternalHashReader();
-	PartialAgg* (*createPAO)(Token* t);
+	size_t (*createPAO)(Token* t, PartialAgg** p);
 private:
 	Aggregator* aggregator;
 	size_t next_buffer;

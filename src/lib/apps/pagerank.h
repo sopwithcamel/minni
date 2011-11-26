@@ -1,19 +1,19 @@
-#include "Mapper.h"
+#include <stdlib.h>
 #include "PartialAgg.h"
+#include <assert.h>
 #include "Tokenizer.h"
 
-class WordCountPartialAgg : public PartialAgg {
+class PageRankPAO : public PartialAgg {
   public:
-	WordCountPartialAgg(char* wrd);
-	~WordCountPartialAgg();
+	PageRankPAO(char* name, double pr);
+	~PageRankPAO();
 	static size_t create(Token* t, PartialAgg** p);
-	void add(void* value);
+	void add(void* neighbor_key);
 	void merge(PartialAgg* add_agg);
 	void serialize(FILE* f, void* buf, size_t buf_size);
 	void serialize(void* buf);
 	bool deserialize(FILE* f, void* buf, size_t buf_size);
 	bool deserialize(void* buf);
   private:
-	uint64_t count;
+	double pagerank;
 };
-

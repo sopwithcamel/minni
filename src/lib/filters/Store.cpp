@@ -1,7 +1,7 @@
 #include "Store.h"
 
 Store::Store(Aggregator* agg, 
-			PartialAgg* (*createPAOFunc)(Token* t),
+			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys) :
 		aggregator(agg),
@@ -295,7 +295,8 @@ void* StoreAggregator::operator()(void* pao_list)
 		}
 		// Aggregate values
 		if (this_flag_list[ind] == 0) {
-			PartialAgg* deszd_pao = store->createPAO(NULL);
+			PartialAgg* deszd_pao;
+			store->createPAO(NULL, &deszd_pao);
 			deszd_pao->deserialize(this_value_list[ind]);
 			pao->merge(deszd_pao);
 			store->destroyPAO(deszd_pao);

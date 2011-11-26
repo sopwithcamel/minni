@@ -91,7 +91,6 @@ void* FileTokenizerFilter::operator()(void* input_data)
 	*this_content_size_list = recv_length;
 	for (int i=0; i<recv_length; i++) {
 		this_content_list[i] = (char*)this_token_list[i]->tokens[1];
-		fprintf(stderr, "%s\n", this_token_list[i]->tokens[1]);
 	}
 	
 	if (!memCache)
