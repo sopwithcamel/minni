@@ -21,7 +21,7 @@ ImagePAO::ImagePAO(Token* token)
 {
 	if (token == NULL) {
 		key = NULL;
-		value = NULL;
+		neigh_list = NULL;
 		return;
 	}
 
@@ -52,7 +52,8 @@ ImagePAO::~ImagePAO()
 {
 	if (key)
 		free(key);
-	neigh_list->clear();
+	if (neigh_list)
+		neigh_list->clear();
 }
 
 size_t ImagePAO::create(Token* t, PartialAgg** p)
