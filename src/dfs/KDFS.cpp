@@ -177,6 +177,6 @@ int64_t KDFS::readFile(string path, char*& buf, size_t& fil_size)
 	buf = (char*)malloc(result.st_size + 1);
 	fil_size = result.st_size;
 	ret = (int64_t) fs->Read(fd, buf, (size_t)result.st_size);
-	assert(ret >= 0);
+	assert(ret == result.st_size);
 }
 
