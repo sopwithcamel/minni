@@ -13,6 +13,8 @@
 #include "Mapper.h"
 #include "PartialAgg.h"
 #include "DFSReader.h"
+#include "FileReaderFilter.h"
+#include "FileTokenizerFilter.h"
 #include "TokenizerFilter.h"
 #include "Hasher.h"
 #include "Merger.h"
@@ -38,9 +40,13 @@ private:
 	uint64_t internal_capacity; // aggregator capacity
 	uint64_t external_capacity; // external hashtable capacity
 
+	leveldb::DB* hash_table;
+
 	/* for chunk input from DFS */
 	MapInput* map_input; 
-	DFSReader* reader;
+	DFSReader* chunkreader;
+	FileReaderFilter* filereader;
+	FileTokenizerFilter* filetoker;
 	TokenizerFilter* toker;
 
 	/* for serialized PAOs from local file */

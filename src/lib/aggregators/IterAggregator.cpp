@@ -108,6 +108,8 @@ IterAggregator::~IterAggregator()
 		delete(filereader);
 	if (toker)
 		delete toker;
+	if (filetoker)
+		delete filetoker;
 	if (inp_deserializer)
 		delete inp_deserializer;
 	if (hash_reader)

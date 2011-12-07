@@ -31,19 +31,32 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 			"minni.aggregator.hashtable_external.file");
 	string htname = (const char*)c_ehtname;
 
+	Setting& c_max_keys = readConfigFile(cfg, "minni.tbb.max_keys_per_token");
+	size_t max_keys_per_token = c_max_keys;
+
 	Setting& c_agginmem = readConfigFile(cfg, "minni.aggregator.bucket.aggregate");
 	int agg_in_mem = c_agginmem;
+
+	Setting& c_inp_typ = readConfigFile(cfg, "minni.input_type");
+	string inp_type = (const char*)c_inp_typ;
 
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
 		 * entire input, chunk by chunk, tokenizes, Maps each Minni-token,
 		 * aggregates/writes to buckets. For this pipeline, a "token" or a
 		 * a basic pipeline unit is a chunk read from the DFS */
-		reader = new DFSReader(this, map_input);
-		pipeline_list[0].add_filter(*reader);
-
-		toker = new TokenizerFilter(this, cfg);
-		pipeline_list[0].add_filter(*toker);
+		if (!inp_type.compare("chunk")) { 
+			chunkreader = new DFSReader(this, map_input);
+			pipeline_list[0].add_filter(*chunkreader);
+			toker = new TokenizerFilter(this, cfg);
+			pipeline_list[0].add_filter(*toker);
+		} else if (!inp_type.compare("file")) {
+			filereader = new FileReaderFilter(this, map_input);
+			pipeline_list[0].add_filter(*filereader);
+			filetoker = new FileTokenizerFilter(this, cfg,
+					 map_input, max_keys_per_token);
+			pipeline_list[0].add_filter(*filetoker);
+		}
 
 		creator = new PAOCreator(this, createPAOFunc);
 		pipeline_list[0].add_filter(*creator);
@@ -64,10 +77,10 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		merger = new Merger(this, destroyPAOFunc);
 		pipeline_list[0].add_filter(*merger);
 	}
-/*
-	ext_hasher = new ExternalHasher(this, htname.c_str(), external_capacity, 
-			destroyPAOFunc);
-*/
+
+	ext_hasher = new ExternalHasher(this, &hash_table, htname.c_str(), 
+			external_capacity, destroyPAOFunc, max_keys_per_token);
+
 	pipeline_list[0].add_filter(*ext_hasher);
 
 
@@ -83,10 +96,14 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 
 ExthashAggregator::~ExthashAggregator()
 {
-	if (reader)
-		delete reader;
+	if (chunkreader)
+		delete chunkreader;
+	if (filereader)
+		delete filereader;
 	if (toker)
 		delete toker;
+	if (filetoker)
+		delete filetoker;
 	if (inp_deserializer)
 		delete inp_deserializer;
 	if (hasher) {

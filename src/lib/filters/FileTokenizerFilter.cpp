@@ -96,14 +96,16 @@ void* FileTokenizerFilter::operator()(void* input_data)
 	
 	if (!memCache)
 		goto pass_through;
-	for (int i=0; i<memCache->size(); i++) {
+	mc_size = memCache->size();
+	for (int i=0; i<mc_size; i++) {
+		size_t mi_size = memCache->getItemSize(i);
+		void* mem_it = memCache->getItem(i);
+		fprintf(stderr, "Current query: %s\n", (char*)mem_it);
 		for (int j=0; j<recv_length; j++) {
 			// Do a shallow copy of the file token.
 			// For the first iteration, use the existing
 			// token
-			size_t mi_size = memCache->getItemSize(i);
-			void* mem_it = memCache->getItem(i);
-			if (i == 0) {
+			if (i == mc_size - 1) {
 				// File data
 				this_token_list[j]->tokens.push_back(mem_it);
 				this_token_list[j]->token_sizes.push_back(
@@ -114,8 +116,8 @@ void* FileTokenizerFilter::operator()(void* input_data)
 				this_token_list[j]->token_sizes.push_back(
 						mi_size);
 			} else {
-				*new_token = Token(*this_token_list[j]);
-				new_token->tokens.push_back(mem_it);				
+				new_token = new Token(*this_token_list[j]);
+				new_token->tokens.push_back(mem_it);
 				new_token->token_sizes.push_back(
 						FILENAME_LENGTH);
 				new_token->tokens.push_back((void*)(

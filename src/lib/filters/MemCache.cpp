@@ -56,14 +56,16 @@ void MemCache::loadWordCache()
 {
 	FILE* f = fopen(queryFile, "r");
 	assert(f != NULL);
-	char* buf = (char*)malloc(FILENAME_LENGTH);
 	while(!feof(f)) {
+		char* buf = (char*)malloc(FILENAME_LENGTH);
 		if (fgets(buf, FILENAME_LENGTH, f) == NULL)
 			break;
 		int len = strlen(buf);
 		buf[len-1] = '\0'; // remove trailing \n
-		if (strlen(buf) > 0)
+		if (strlen(buf) > 0) {
 			queryList.push_back(buf);
+			fprintf(stderr, "Adding file to query list: %s\n", buf);
+		}
 	}
 	fclose(f);
 }
