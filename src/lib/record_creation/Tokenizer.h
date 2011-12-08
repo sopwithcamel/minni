@@ -9,8 +9,8 @@ class PartialAgg;
 class Token {
   public:
 	Token();
-	Token(const Token&);
 	~Token();
+	void init(const Token&);
 	void clear();
 	std::vector<void*> tokens;
 	std::vector<size_t> token_sizes;

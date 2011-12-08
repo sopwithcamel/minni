@@ -20,6 +20,7 @@ FileTokenizerFilter::FileTokenizerFilter(Aggregator* agg, const Config& cfg,
 			(*tokens)[i][j] = new Token();
 			(*contents)[i][j] = NULL;
 		}
+		*(*content_list_sizes)[i] = 0;
 	}
 
 	Setting& c_query = readConfigFile(cfg, "minni.query");
@@ -73,11 +74,11 @@ void* FileTokenizerFilter::operator()(void* input_data)
 	Token** this_token_list = (*tokens)[next_buffer];
 	FilterInfo* this_send = (*send)[next_buffer];
 	char** this_content_list = (*contents)[next_buffer];
-	size_t* this_content_size_list = (*content_list_sizes)[next_buffer];
+	size_t* this_content_list_size = (*content_list_sizes)[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
 
 	// Free contents from previous invocation
-	for (int i=0; i<*this_content_size_list; i++) {
+	for (int i=0; i<*this_content_list_size; i++) {
 		if (this_content_list[i] != NULL) {
 			free(this_content_list[i]);
 			this_content_list[i] = NULL;
@@ -89,7 +90,7 @@ void* FileTokenizerFilter::operator()(void* input_data)
 	file_tokenizer->getTokens(file_name_buf, recv_length,
 			this_token_list);
 
-	*this_content_size_list = recv_length;
+	*this_content_list_size = recv_length;
 	for (int i=0; i<recv_length; i++) {
 		this_content_list[i] = (char*)(this_token_list[i]->tokens[1]);
 	}
@@ -116,15 +117,17 @@ void* FileTokenizerFilter::operator()(void* input_data)
 				this_token_list[j]->token_sizes.push_back(
 						mi_size);
 			} else {
-				new_token = new Token(*this_token_list[j]);
-				new_token->tokens.push_back(mem_it);
-				new_token->token_sizes.push_back(
-						FILENAME_LENGTH);
-				new_token->tokens.push_back((void*)(
+				this_token_list[this_list_ctr]->init(
+						*this_token_list[j]);
+				this_token_list[this_list_ctr]->tokens.
+						push_back(mem_it);
+				this_token_list[this_list_ctr]->token_sizes.
+						push_back(FILENAME_LENGTH);
+				this_token_list[this_list_ctr]->tokens.
+						push_back((void*)(
 						memCache->getFileContents(i)));
-				new_token->token_sizes.push_back(
-						mi_size);
-				this_token_list[this_list_ctr] = new_token;
+				this_token_list[this_list_ctr]->token_sizes.
+						push_back(mi_size);
 				assert(++this_list_ctr < max_keys_per_token);
 			}
 		}

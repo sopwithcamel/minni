@@ -6,7 +6,7 @@ Token::Token()
 	token_sizes.reserve(4);
 }
 
-Token::Token(const Token& rhs)
+void Token::init(const Token& rhs)
 {
 	int i;
 	void* buf;
