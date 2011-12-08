@@ -58,9 +58,9 @@ private:
 	Hasher* hasher;
 	Merger* merger;
 	ExternalHasher* ext_hasher;
+	ExternalHashSerializer* ehash_serializer;
 
 	/* scan from external ht into files for reducer */
-	Serializer* final_serializer; 
 	const char* outfile;
 };
 

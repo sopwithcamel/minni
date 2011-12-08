@@ -34,7 +34,7 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	Setting& c_max_keys = readConfigFile(cfg, "minni.tbb.max_keys_per_token");
 	size_t max_keys_per_token = c_max_keys;
 
-	Setting& c_agginmem = readConfigFile(cfg, "minni.aggregator.bucket.aggregate");
+	Setting& c_agginmem = readConfigFile(cfg, "minni.aggregator.hashtable_external.aggregate");
 	int agg_in_mem = c_agginmem;
 
 	Setting& c_inp_typ = readConfigFile(cfg, "minni.input_type");
@@ -91,6 +91,9 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
 	strcpy(final_path, fprefix.c_str());
 	strcat(final_path, outfile);
+	ehash_serializer =  new ExternalHashSerializer(this, &hash_table,
+			htname.c_str(), external_capacity, final_path);
+	pipeline_list[1].add_filter(*ehash_serializer);
 	free(final_path);
 }
 
