@@ -90,7 +90,6 @@ void* FileTokenizerFilter::operator()(void* input_data)
 	file_tokenizer->getTokens(file_name_buf, recv_length,
 			this_token_list);
 
-	*this_content_list_size = recv_length;
 	for (int i=0; i<recv_length; i++) {
 		this_content_list[i] = (char*)(this_token_list[i]->tokens[1]);
 	}
@@ -135,6 +134,7 @@ void* FileTokenizerFilter::operator()(void* input_data)
 pass_through:
 	this_send->result = this_token_list;
 	this_send->length = this_list_ctr;
+	*this_content_list_size = this_list_ctr;
 	this_send->flush_hash = false;
 
 	return this_send;
