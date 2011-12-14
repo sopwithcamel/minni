@@ -8,7 +8,7 @@
 
 #define DEL_THRESHOLD		1000
 
-class UTHashtable : public Hashtable, public ElasticObject {
+class UTHashtable : public Hashtable, public ElasticHashtable {
   public:
     UTHashtable(size_t capacity);
     ~UTHashtable();
@@ -27,8 +27,8 @@ class UTHashtable : public Hashtable, public ElasticObject {
     /* Call these to change the size of the hashtable dynamically. These
      * return false if the respective lower and upper limits are hit and
      * true otherwise.  */
-    bool increaseMemory();
-    bool reduceMemory();
+    bool increaseSize();
+    bool reduceSize();
 
   private:
 	PartialAgg* hashtable;
