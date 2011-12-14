@@ -7,7 +7,6 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux/m4])
 AM_INIT_AUTOMAKE([1.11 foreign -Wall -Werror])
 AM_SILENT_RULES([yes])
-AC_CONFIG_SRCDIR([src/scripts/plot/plot_memory.m])
 AC_CONFIG_HEADERS([src/common/config.h])
 
 # Checks for programs.
@@ -55,7 +54,6 @@ AC_CONFIG_FILES([Makefile
 		 src/dfs/Makefile
 		 src/dfs/tools/Makefile
 		 src/lib/Makefile
-		 src/lib/example/Makefile
 		 src/lib/apps/Makefile
 		 src/lib/libminni.pc:src/lib/libminni.pc.in
 		 src/master/Makefile
