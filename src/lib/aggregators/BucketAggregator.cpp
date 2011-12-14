@@ -147,3 +147,13 @@ BucketAggregator::~BucketAggregator()
     pipeline_list[0].clear();
     pipeline_list[1].clear();
 }
+
+bool BucketAggregator::increaseMemory()
+{
+    return false;
+}
+
+bool BucketAggregator::reduceMemory()
+{
+    return false;
+}

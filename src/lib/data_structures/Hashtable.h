@@ -1,9 +1,11 @@
 #ifndef LIB_HASHTABLE_H
 #define LIB_HASHTABLE_H
 
+#include "ElasticObject.h"
 #include "PartialAgg.h"
 
-class Hashtable {
+class Hashtable :
+    public ElasticHashtable {
   public:
     Hashtable() {}
     ~Hashtable() {}

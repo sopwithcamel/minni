@@ -1,14 +1,14 @@
 #ifndef LIB_UTHASHTABLE_H
 #define LIB_UTHASHTABLE_H
 
-#include "ElasticObject.h"
 #include "Hashtable.h"
 #include "PartialAgg.h"
 #include "uthash.h"
 
 #define DEL_THRESHOLD		1000
 
-class UTHashtable : public Hashtable, public ElasticHashtable {
+class UTHashtable : 
+    public Hashtable {
   public:
     UTHashtable(size_t capacity);
     ~UTHashtable();

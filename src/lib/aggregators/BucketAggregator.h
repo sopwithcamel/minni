@@ -10,23 +10,25 @@
 #include "tbb/task_scheduler_init.h"
 #include "tbb/tbb_allocator.h"
 
-#include "Mapper.h"
-#include "PartialAgg.h"
+#include "Deserializer.h"
 #include "DFSReader.h"
+#include "ElasticObject.h"
 #include "FileReaderFilter.h"
 #include "FileTokenizerFilter.h"
-#include "TokenizerFilter.h"
-#include "Hashtable.h"
-#include "UTHashtable.h"
 #include "Hasher.h"
+#include "Hashtable.h"
+#include "Mapper.h"
 #include "Merger.h"
 #include "PAOCreator.h"
+#include "PartialAgg.h"
 #include "Serializer.h"
-#include "Deserializer.h"
+#include "TokenizerFilter.h"
+#include "UTHashtable.h"
 #include "util.h"
 
-class BucketAggregator : public Aggregator {
-public:
+class BucketAggregator : 
+    public Aggregator {
+  public:
     BucketAggregator(const Config &cfg, 
                 AggType type, 
                 const uint64_t num_part,
@@ -36,7 +38,10 @@ public:
                 void (*destroyPAOFunc)(PartialAgg* p), 
                 const char* outfile);
     ~BucketAggregator();
-private:
+
+    bool increaseMemory();
+    bool reduceMemory();
+  private:
     uint64_t capacity; // aggregator capacity
 
     /* data structures */

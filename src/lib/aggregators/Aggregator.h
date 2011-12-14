@@ -10,16 +10,18 @@
 #include "tbb/task_scheduler_init.h"
 #include "tbb/tbb_allocator.h"
 
-#include "PartialAgg.h"
+#include "ElasticObject.h"
 #include "Defs.h"
+#include "PartialAgg.h"
 #include "util.h"
 
 using namespace libconfig;
 
 enum AggType {Map, Reduce};
 
-class Aggregator {
-public:
+class Aggregator :
+    public ElasticAggregator {
+  public:
 	Aggregator(const Config &cfg,
 			AggType where,
 			uint64_t num_pipelines, 
@@ -41,7 +43,7 @@ public:
 	uint64_t getPAOsPerToken() const;
 	AggType getType() const;
 	virtual bool repeatPipeline(uint64_t it);
-private:
+  private:
 	AggType type;
 	uint64_t num_threads;
 	uint64_t num_buffers;
