@@ -19,12 +19,6 @@ class Hashtable {
      * by caller */
     virtual size_t evictAll(PartialAgg** evict_list) = 0;
 
-    /* Call these to change the size of the hashtable dynamically. These
-     * return false if the respective lower and upper limits are hit and
-     * true otherwise.  */
-    virtual bool reduceSize() = 0;
-    virtual bool increaseSize() = 0;
-
   protected:
 	size_t ht_size;
 	size_t ht_capacity;

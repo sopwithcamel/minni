@@ -42,6 +42,7 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 					   -I$(srcdir)/aggregators/ \
 					   -I$(srcdir)/record_creation/ \
 					   -I$(srcdir)/data_structures/ \
+					   -I$(srcdir)/resources/ \
 					   -I/home/hamur/leveldb/include
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
@@ -79,7 +80,8 @@ minni_include_HEADERS = core/PartialAgg.h \
 			record_creation/DelimitedTokenizer.h \
 			record_creation/Tokenizer.h \
 			data_structures/Hashtable.h \
-			data_structures/UTHashtable.h
+			data_structures/UTHashtable.h \
+			resources/ElasticObject.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 
