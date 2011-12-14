@@ -40,6 +40,9 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	Setting& c_inp_typ = readConfigFile(cfg, "minni.input_type");
 	string inp_type = (const char*)c_inp_typ;
 
+    /* Initialize data structures */
+    hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(internal_capacity));
+
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
 		 * entire input, chunk by chunk, tokenizes, Maps each Minni-token,
@@ -71,7 +74,7 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	}
 
 	if (agg_in_mem) {
-		hasher = new Hasher(this, internal_capacity, destroyPAOFunc);
+		hasher = new Hasher(this, hashtable_, destroyPAOFunc);
 		pipeline_list[0].add_filter(*hasher);
 
 		merger = new Merger(this, destroyPAOFunc);

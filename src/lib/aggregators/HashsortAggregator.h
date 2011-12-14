@@ -16,6 +16,8 @@
 #include "DFSReader.h"
 #include "FileReaderFilter.h"
 #include "FileTokenizerFilter.h"
+#include "Hashtable.h"
+#include "UTHashtable.h"
 #include "Hasher.h"
 #include "Merger.h"
 #include "PAOCreator.h"
@@ -38,6 +40,9 @@ public:
 	~HashsortAggregator();
 private:
 	uint64_t capacity; // aggregator capacity
+
+    /* data structures */
+    Hashtable* hashtable_;
 
 	/* for chunk input from DFS */
 	MapInput* map_input; 

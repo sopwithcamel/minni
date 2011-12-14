@@ -16,6 +16,8 @@
 #include "FileReaderFilter.h"
 #include "FileTokenizerFilter.h"
 #include "TokenizerFilter.h"
+#include "Hashtable.h"
+#include "UTHashtable.h"
 #include "Hasher.h"
 #include "Merger.h"
 #include "PAOCreator.h"
@@ -41,6 +43,9 @@ private:
 	uint64_t external_capacity; // external hashtable capacity
 
 	leveldb::DB* hash_table;
+
+    /* data structures */
+    Hashtable* hashtable_;
 
 	/* for chunk input from DFS */
 	MapInput* map_input; 

@@ -3,18 +3,17 @@
 
 #include <stdlib.h>
 #include <iostream>
-#include <tr1/unordered_map>
 
 #include "tbb/pipeline.h"
 #include "tbb/tick_count.h"
 #include "tbb/task_scheduler_init.h"
 #include "tbb/tbb_allocator.h"
 
+#include "Hashtable.h"
 #include "PartialAgg.h"
 #include "Mapper.h"
 #include "Aggregator.h"
 #include "Util.h"
-#include "uthash.h"
 
 /**
  * - Consumes: array of PAOs to be aggregated
@@ -28,7 +27,7 @@
 
 class Hasher : public tbb::filter {
 public:
-	Hasher(Aggregator* agg, size_t capacity, 
+	Hasher(Aggregator* agg, Hashtable* ht, 
 			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys = DEFAULT_MAX_KEYS_PER_TOKEN);
 	~Hasher();
@@ -39,11 +38,9 @@ private:
 	MultiBuffer<PartialAgg*>* merge_list;
 	MultiBuffer<PartialAgg*>* mergand_list;
 	const size_t max_keys_per_token;
-	size_t ht_size;
-	size_t ht_capacity;
 	size_t next_buffer;
+    Hashtable* hashtable;
 	MultiBuffer<FilterInfo>* send;
-	PartialAgg* hashtable;
 	uint64_t tokens_processed;
 	void* operator()(void* pao_list);
 };

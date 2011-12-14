@@ -5,9 +5,11 @@
 #include "PartialAgg.h"
 #include "uthash.h"
 
+#define DEL_THRESHOLD		1000
+
 class UTHashtable : public Hashtable {
   public:
-    UTHashtable();
+    UTHashtable(size_t capacity);
     ~UTHashtable();
     void search(const char* key, PartialAgg*& found);
     /* Insert the key, value pair. Any evictions due to overflow will cause

@@ -1,10 +1,10 @@
 #include "UTHashtable.h"
 
 UTHashtable::UTHashtable(size_t capacity) :
-    hashtable(NULL),
-    ht_size(0),
-    Hashtable(capacity)
+    hashtable(NULL)
 {
+    ht_size = 0;
+    ht_capacity = capacity;
     min_capacity = ht_capacity / 10;
     max_capacity = ht_capacity * 2;
     capacity_step = ht_capacity / 100;
@@ -24,7 +24,7 @@ void UTHashtable::search(const char* key, PartialAgg*& found)
 		HASH_FIND_STR(hashtable, key, found);
 }
 
-size_t UTHashtable::insert(const char* key, size_t key_len, PartialAgg* value.
+size_t UTHashtable::insert(const char* key, size_t key_len, PartialAgg* value,
         PartialAgg** evict_list)
 {
     size_t evict_list_ctr = 0;
@@ -52,6 +52,7 @@ size_t UTHashtable::evictAll(PartialAgg** evict_list)
     }	
     HASH_CLEAR(hh, hashtable);
     ht_size = 0;
+    return evict_list_ctr;
 }
 
 bool UTHashtable::reduceSize()

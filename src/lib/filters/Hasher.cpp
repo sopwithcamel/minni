@@ -1,18 +1,14 @@
 #include "Hasher.h"
+#include "Hashtable.h"
 
-#define DEL_THRESHOLD		1000
-
-Hasher::Hasher(Aggregator* agg, 
-			size_t capacity,
+Hasher::Hasher(Aggregator* agg, Hashtable* ht,
 			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys) :
 		filter(/*serial=*/true),	/* maintains global state which is not yet concurrent access */
 		aggregator(agg),
+        hashtable(ht),
 		destroyPAO(destroyPAOFunc),
 		max_keys_per_token(max_keys),
-		ht_size(0),
-		ht_capacity(capacity),
-		hashtable(NULL),
 		next_buffer(0),
 		tokens_processed(0)
 {
@@ -29,11 +25,6 @@ Hasher::Hasher(Aggregator* agg,
 Hasher::~Hasher()
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
-	PartialAgg *s, *tmp;
-	HASH_ITER(hh, hashtable, s, tmp) {
-		HASH_DEL(hashtable, s);
-		free(s);
-	}
 	delete evicted_list;
 	delete merge_list;
 	delete mergand_list;
@@ -67,25 +58,16 @@ void* Hasher::operator()(void* recv)
 	while (ind < recv_length) {
 		pao = pao_l[ind];
 		PartialAgg* found = NULL;
-		HASH_FIND_STR(hashtable, pao->key, found);
+		hashtable->search(pao->key, found);
 		if (found) { // the insertion didn't occur
 			this_merge_list[merge_list_ctr] = found;
 			this_mergand_list[merge_list_ctr++] = pao;
 		} else { // the PAO was inserted
-			HASH_ADD_KEYPTR(hh, hashtable, pao->key, strlen(pao->key), pao);
-			ht_size++;
-		}
-		if (ht_size > ht_capacity + DEL_THRESHOLD) { // PAO has to be evicted
-			PartialAgg *entry, *tmp;
-			HASH_ITER(hh, hashtable, entry, tmp) {
-				this_list[evict_list_ctr++] = entry;
-				assert(evict_list_ctr < max_keys_per_token);
-				HASH_DEL(hashtable, entry);
-				ht_size--;
-				if (ht_size < ht_capacity)
-					break;
-			}
-		}
+            size_t num_evicted = hashtable->insert(pao->key, strlen(pao->key),
+                    pao, this_list + evict_list_ctr);
+            evict_list_ctr += num_evicted;
+            assert(evict_list_ctr < max_keys_per_token);
+        }
 		ind++;
 	}
 
@@ -99,13 +81,9 @@ void* Hasher::operator()(void* recv)
 	// if the number of buffers > 1 then some might be queued up
 	if (flush_on_complete || (aggregator->input_finished && 
 			tokens_processed == aggregator->tot_input_tokens)) {
-		PartialAgg *s, *tmp;
-		HASH_ITER(hh, hashtable, s, tmp) {
-			this_list[evict_list_ctr++] = s;
-			assert(evict_list_ctr < max_keys_per_token);
-		}	
-		HASH_CLEAR(hh, hashtable);
-		ht_size = 0;
+        size_t num_evicted = hashtable->evictAll(this_list + evict_list_ctr);
+        evict_list_ctr += num_evicted;
+        assert(evict_list_ctr < max_keys_per_token);
 	}
 	this_send->result = this_list;
 	this_send->length = evict_list_ctr;

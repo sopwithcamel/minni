@@ -16,6 +16,8 @@
 #include "FileReaderFilter.h"
 #include "FileTokenizerFilter.h"
 #include "TokenizerFilter.h"
+#include "Hashtable.h"
+#include "UTHashtable.h"
 #include "Hasher.h"
 #include "Merger.h"
 #include "PAOCreator.h"
@@ -25,39 +27,42 @@
 
 class BucketAggregator : public Aggregator {
 public:
-	BucketAggregator(const Config &cfg, 
-				AggType type, 
-				const uint64_t num_part,
-				MapInput* _map_input,
-				const char* infile, 
-				size_t (*createPAOFunc)(Token* t, PartialAgg** p), 
-				void (*destroyPAOFunc)(PartialAgg* p), 
-				const char* outfile);
-	~BucketAggregator();
+    BucketAggregator(const Config &cfg, 
+                AggType type, 
+                const uint64_t num_part,
+                MapInput* _map_input,
+                const char* infile, 
+                size_t (*createPAOFunc)(Token* t, PartialAgg** p), 
+                void (*destroyPAOFunc)(PartialAgg* p), 
+                const char* outfile);
+    ~BucketAggregator();
 private:
-	uint64_t capacity; // aggregator capacity
+    uint64_t capacity; // aggregator capacity
 
-	/* for chunk input from DFS */
-	MapInput* map_input; 
-	DFSReader* chunkreader;
-	FileReaderFilter* filereader;
-	FileTokenizerFilter* filetoker;
-	TokenizerFilter* toker;
+    /* data structures */
+    Hashtable* hashtable_;
 
-	/* for serialized PAOs from local file */
-	const char* infile;
-	Deserializer* inp_deserializer;
+    /* for chunk input from DFS */
+    MapInput* map_input; 
+    DFSReader* chunkreader;
+    FileReaderFilter* filereader;
+    FileTokenizerFilter* filetoker;
+    TokenizerFilter* toker;
 
-	PAOCreator* creator;
-	Hasher* hasher;
-	Merger* merger;
-	Serializer* bucket_serializer;
-	Deserializer* deserializer;
-	Hasher* bucket_hasher;
-	Merger* bucket_merger;
-	Serializer* final_serializer;
-	uint64_t num_buckets;
-	const char* outfile;
+    /* for serialized PAOs from local file */
+    const char* infile;
+    Deserializer* inp_deserializer;
+
+    PAOCreator* creator;
+    Hasher* hasher;
+    Merger* merger;
+    Serializer* bucket_serializer;
+    Deserializer* deserializer;
+    Hasher* bucket_hasher;
+    Merger* bucket_merger;
+    Serializer* final_serializer;
+    uint64_t num_buckets;
+    const char* outfile;
 };
 
 #endif // LIB_BUCKETAGGREGATOR_H

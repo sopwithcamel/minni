@@ -5,10 +5,10 @@ lib_LTLIBRARIES = libminni.la
 
 libminni_la_SOURCES =   Mapper.cpp \
 			MapInput.cpp \
-		       	Reducer.cpp \
+			Reducer.cpp \
 			filters/Adder.cpp \
 			filters/Deserializer.cpp \
-		       	filters/DFSReader.cpp \
+			filters/DFSReader.cpp \
 			filters/ExternalHasher.cpp \
 			filters/FileReaderFilter.cpp \
 			filters/FileTokenizerFilter.cpp \
@@ -19,28 +19,29 @@ libminni_la_SOURCES =   Mapper.cpp \
 			filters/Serializer.cpp \
 			filters/Sorter.cpp \
 			filters/Store.cpp \
-		       	filters/TokenizerFilter.cpp \
-		       	aggregators/Aggregator.cpp \
+			filters/TokenizerFilter.cpp \
+			aggregators/Aggregator.cpp \
 			aggregators/BucketAggregator.cpp \
 			aggregators/ExthashAggregator.cpp \
 			aggregators/HashsortAggregator.cpp \
-			aggregators/IterAggregator.cpp \
 			aggregators/TesterAggregator.cpp \
 			record_creation/Tokenizer.cpp \
 			record_creation/FileTokenizer.cpp \
-			record_creation/DelimitedTokenizer.cpp
+			record_creation/DelimitedTokenizer.cpp \
+			data_structures/UTHashtable.cpp
 
 libminni_la_LIBADD = ../dfs/libdfs.la
 
 libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
-		       $(THRIFT_CFLAGS) \
-			-I$(srcdir)/../worker/gen-cpp \
-			-I$(srcdir)/../master \
-			-I$(srcdir)/../dfs \
-			-I$(srcdir)/filters/ \
-			-I$(srcdir)/aggregators/ \
-			-I$(srcdir)/record_creation/ \
-			-I/home/hamur/leveldb/include
+					   $(THRIFT_CFLAGS) \
+					   -I$(srcdir)/../worker/gen-cpp \
+					   -I$(srcdir)/../master \
+					   -I$(srcdir)/../dfs \
+					   -I$(srcdir)/filters/ \
+					   -I$(srcdir)/aggregators/ \
+					   -I$(srcdir)/record_creation/ \
+					   -I$(srcdir)/data_structures/ \
+					   -I/home/hamur/leveldb/include
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
 			-lltdl -lpthread -ltbb -lconfig++ -lleveldb
@@ -54,7 +55,7 @@ minni_include_HEADERS = PartialAgg.h \
 			Minnie.h \
 			filters/Adder.h \
 			filters/Deserializer.h \
-		       	filters/DFSReader.h \
+			filters/DFSReader.h \
 			filters/ExternalHasher.h \
 			filters/FileReaderFilter.h \
 			filters/FileTokenizerFilter.h \
@@ -69,12 +70,13 @@ minni_include_HEADERS = PartialAgg.h \
 			aggregators/BucketAggregator.h \
 			aggregators/ExthashAggregator.h \
 			aggregators/HashsortAggregator.h \
-			aggregators/IterAggregator.h \
 			aggregators/TesterAggregator.h \
 			aggregators/Aggregator.h \
 			record_creation/FileTokenizer.h \
 			record_creation/DelimitedTokenizer.h \
 			record_creation/Tokenizer.h \
+			data_structures/Hashtable.h \
+			data_structures/UTHashtable.h \
 			Defs.h \
 			Util.h \
 			fnv.h

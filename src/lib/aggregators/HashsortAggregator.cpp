@@ -16,6 +16,7 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 		infile(infile),
 		outfile(outfile)
 {
+    /* Set up configuration options */
 	Setting& c_token_size = readConfigFile(cfg, "minni.tbb.token_size");
 	size_t token_size = c_token_size;
 
@@ -36,6 +37,9 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 
 	Setting& c_inp_typ = readConfigFile(cfg, "minni.input_type");
 	string inp_type = (const char*)c_inp_typ;
+
+    /* Initialize data structures */
+    hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(capacity));
 
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
@@ -63,14 +67,15 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
-		inp_deserializer = new Deserializer(this, 1/*TODO: how many?*/, input_file,
-			createPAOFunc, destroyPAOFunc);
+		inp_deserializer = new Deserializer(this, 1/*TODO: how many?*/, 
+                input_file, createPAOFunc, destroyPAOFunc);
 		pipeline_list[0].add_filter(*inp_deserializer);
 		free(input_file);
 	}
 
 	if (agg_in_mem) {
-		hasher = new Hasher(this, capacity, destroyPAOFunc, max_keys_per_token);
+		hasher = new Hasher(this, hashtable_, destroyPAOFunc, 
+                max_keys_per_token);
 		pipeline_list[0].add_filter(*hasher);
 		merger = new Merger(this, destroyPAOFunc);
 		pipeline_list[0].add_filter(*merger);
@@ -134,6 +139,7 @@ HashsortAggregator::~HashsortAggregator()
 	if (inp_deserializer)
 		delete(inp_deserializer);
 	if (hasher) {
+        delete(hashtable_);
 		delete(hasher);
 		delete(merger);
 	}
