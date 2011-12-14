@@ -17,6 +17,7 @@ libdaemon_la_SOURCES = daemon_types.cpp \
 
 workdaemon_CPPFLAGS = $(TBB_CFLAGS) $(THRIFT_CFLAGS) \
 		      -I$(srcdir)/../../lib \
+		      -I$(srcdir)/../../lib/core \
 		      -I$(srcdir)/../../lib/filters \
 		      -I$(srcdir)/../../lib/aggregators \
 		      -I$(srcdir)/../../lib/record_creation \

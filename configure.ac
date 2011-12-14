@@ -54,11 +54,11 @@ AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 src/dfs/Makefile
 		 src/dfs/tools/Makefile
-                 src/lib/Makefile
-                 src/lib/example/Makefile
-                 src/lib/apps/Makefile
+		 src/lib/Makefile
+		 src/lib/example/Makefile
+		 src/lib/apps/Makefile
 		 src/lib/libminni.pc:src/lib/libminni.pc.in
 		 src/master/Makefile
 		 src/worker/Makefile
-                 src/worker/gen-cpp/Makefile])
+		 src/worker/gen-cpp/Makefile])
 AC_OUTPUT

@@ -31,13 +31,14 @@ size_t PageRankPAO::create(Token* t, PartialAgg** p)
 		return 1;
 	}
 	size_t num_links = (t->tokens.size() - 1);
-	PageRankPAO* ref_page = (PageRankPAO*)(t->objs[0]);
-	if (ref_page == NULL)
+	if (t->objs.size() == 0)
 		pgrank = 1;
-	else
+	else {
+		PageRankPAO* ref_page = (PageRankPAO*)(t->objs[0]);
 		pgrank = ref_page->pagerank / num_links;
+	}
 	for (int i=1; i<t->tokens.size(); i++) {
-		new_pao = new PageRankPAO((char*)t->tokens[0], pgrank);
+		new_pao = new PageRankPAO((char*)t->tokens[i], pgrank);
 		p[p_ctr++] = new_pao;
 	}
 	return num_links;

@@ -1,11 +1,11 @@
 AUTOMAKE_OPTIONS = subdir-objects
-SUBDIRS = example apps
+SUBDIRS = apps
 
 lib_LTLIBRARIES = libminni.la 
 
-libminni_la_SOURCES =   Mapper.cpp \
-			MapInput.cpp \
-			Reducer.cpp \
+libminni_la_SOURCES =   core/Mapper.cpp \
+			core/MapInput.cpp \
+			core/Reducer.cpp \
 			filters/Adder.cpp \
 			filters/Deserializer.cpp \
 			filters/DFSReader.cpp \
@@ -37,6 +37,7 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 					   -I$(srcdir)/../worker/gen-cpp \
 					   -I$(srcdir)/../master \
 					   -I$(srcdir)/../dfs \
+					   -I$(srcdir)/core/ \
 					   -I$(srcdir)/filters/ \
 					   -I$(srcdir)/aggregators/ \
 					   -I$(srcdir)/record_creation/ \
@@ -48,11 +49,13 @@ libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
 
 minni_includedir = $(includedir)/libminni/libminni
 
-minni_include_HEADERS = PartialAgg.h \
-			Mapper.h \
-			MapInput.h \
-			Reducer.h \
-			Minnie.h \
+minni_include_HEADERS = core/PartialAgg.h \
+			core/Mapper.h \
+			core/MapInput.h \
+			core/Reducer.h \
+			core/Minnie.h \
+			core/Defs.h \
+			core/Util.h \
 			filters/Adder.h \
 			filters/Deserializer.h \
 			filters/DFSReader.h \
@@ -76,9 +79,7 @@ minni_include_HEADERS = PartialAgg.h \
 			record_creation/DelimitedTokenizer.h \
 			record_creation/Tokenizer.h \
 			data_structures/Hashtable.h \
-			data_structures/UTHashtable.h \
-			Defs.h \
-			Util.h
+			data_structures/UTHashtable.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 

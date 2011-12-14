@@ -29,12 +29,14 @@ ImagePAO::ImagePAO(Token* token)
 	key = (char*)malloc(token->token_sizes[2]);
 	strcpy(key, (char*)(token->tokens[2]));
 
+//	fprintf(stderr, "Key: %s\t", key);
 	// Calculate image hash
 	CImg<unsigned char> img;
 	img.load_jpeg_buffer((JOCTET*)(token->tokens[3]), token->token_sizes[3]);
 	pHash(img, hash);
 
 	uint64_t ne_hash;
+	fprintf(stderr, "Neigh: %s\n", (char*)token->tokens[0]);
 	Neighbor* n = new Neighbor((char*)(token->tokens[0]),
 			token->token_sizes[0]);
 	CImg<unsigned char> ne_img;
@@ -45,7 +47,7 @@ ImagePAO::ImagePAO(Token* token)
 
 	neigh_list = new std::list<Neighbor>();
 	neigh_list->push_back(*n);
-	fprintf(stderr, "Found neighbor: %s, %ld\n", n->key, n->distance);
+//	fprintf(stderr, "Found neighbor: %s, %ld\n", n->key, n->distance);
 }
 
 ImagePAO::~ImagePAO()

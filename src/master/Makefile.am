@@ -10,7 +10,7 @@ test_SOURCES = example/Driver.cpp \
 
 test_CPPFLAGS = $(TBB_CFLAGS) \
 		$(THRIFT_CFLAGS) \
-		-I$(srcdir)/../lib \
+		-I$(srcdir)/../lib/core \
 		-I$(srcdir)/../worker/gen-cpp \
 		-I$(srcdir)/../common \
 		-I$(srcdir)/../dfs
