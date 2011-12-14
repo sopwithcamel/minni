@@ -78,8 +78,7 @@ minni_include_HEADERS = PartialAgg.h \
 			data_structures/Hashtable.h \
 			data_structures/UTHashtable.h \
 			Defs.h \
-			Util.h \
-			fnv.h
+			Util.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 
