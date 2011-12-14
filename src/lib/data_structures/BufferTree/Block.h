@@ -2,14 +2,12 @@
 #define LIB_BT_BLOCK_H
 
 namespace BufferTree {
-
-    const size_t BLOCK_SIZE = 4096;
-
     struct RecordHeader {
         uint32_t recordLength;
     };
 
     class Block {
+        friend class Node;
       public:
         Block();
         ~Block();

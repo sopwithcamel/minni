@@ -34,16 +34,28 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	Setting& c_nsort_mem = readConfigFile(cfg, "minni.aggregator.hashsort.nsort_mem");
 	int nsort_mem = c_nsort_mem;
 
+	Setting& c_inp_typ = readConfigFile(cfg, "minni.input_type");
+	string inp_type = (const char*)c_inp_typ;
+
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
 		 * entire input, chunk by chunk, tokenizes, Maps each Minni-token,
 		 * aggregates/writes to buckets. For this pipeline, a "token" or a
 		 * a basic pipeline unit is a chunk read from the DFS */
-		reader = new DFSReader(this, map_input, token_size);
-		pipeline_list[0].add_filter(*reader);
-
-		toker = new TokenizerFilter(this, cfg, max_keys_per_token);
-		pipeline_list[0].add_filter(*toker);
+		if (!inp_type.compare("chunk")) { 
+			chunkreader = new DFSReader(this, map_input, 
+					token_size);
+			pipeline_list[0].add_filter(*chunkreader);
+			toker = new TokenizerFilter(this, cfg,
+					max_keys_per_token);
+			pipeline_list[0].add_filter(*toker);
+		} else if (!inp_type.compare("file")) {
+			filereader = new FileReaderFilter(this, map_input);
+			pipeline_list[0].add_filter(*filereader);
+			filetoker = new FileTokenizerFilter(this, cfg,
+					map_input, max_keys_per_token);
+			pipeline_list[0].add_filter(*filetoker);
+		}
 
 		creator = new PAOCreator(this, createPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*creator);
@@ -111,10 +123,14 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 
 HashsortAggregator::~HashsortAggregator()
 {
-	if (reader)
-		delete(reader);
+	if (chunkreader)
+		delete(chunkreader);
+	if (filereader)
+		delete(filereader);
 	if (toker)
 		delete(toker);
+	if (filetoker)
+		delete(filetoker);
 	if (inp_deserializer)
 		delete(inp_deserializer);
 	if (hasher) {

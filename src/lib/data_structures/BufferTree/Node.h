@@ -2,6 +2,7 @@
 #define LIB_BT_NODE_H
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "Block.h"
 
@@ -27,6 +28,8 @@ namespace buffertree {
         bool isLeafNode();
         // am i an internal node?
         bool isInternalNode();
+        /* Check if the buffer is loaded in memory */
+        bool isInMemory();
       private:
         /* empty the buffer into the buffers in the next level. If any buffer
          * in the next level overflows, recursively call emptyBuffer(). Before
@@ -35,9 +38,22 @@ namespace buffertree {
         bool emptyBuffer();
         bool splitNode();
 
+        /* Load buffer into memory */
+        bool loadBuffer();
+
       private:
-        std::string bufferFile_; // File acting as buffer for node
+        /* File acting as buffer for node */
+        std::string bufferFile_;
         NodeType typ_;
+        /* Buffer pointer if loaded in memory */
+        char* data_;
+        /* the number of blocks that have been written */
+        size_t numBlocks_;
+        /* Flag denoting whether the buffer is loaded in memory */
+        bool isInMemory;
+
+        /* Pointers to children */
+        std::vector<Node*> children;
     };
 }
 
