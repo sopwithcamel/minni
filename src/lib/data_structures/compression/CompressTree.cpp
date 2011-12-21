@@ -23,6 +23,22 @@ namespace compresstree {
 
     bool CompressTree::addLeafToEmpty(Node* node)
     {
-        nodesToBeEmptied_.push(node);
+        leavesToBeEmptied_.push(node);
+        return true;
+    }
+
+    /* A full leaf is handled by splitting the leaf into two leaves.*/
+    bool CompressTree::handleFullLeaves()
+    {
+        for (int i=0; i<leavesToBeEmptied_.size(); i++) {
+            Node* node = leavesToBeEmptied_.front();
+            leavesToBeEmptied_.pop();
+            node->decompress();
+            node->sortBuffer();
+            if (!node->splitLeaf())
+                return false;
+            node->compress();
+        }
+        return true;
     }
 }

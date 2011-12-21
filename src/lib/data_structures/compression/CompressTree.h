@@ -21,13 +21,14 @@ namespace compresstree {
         /* Add leaf whose buffer is full to be emptied once all internal node
          * buffers have been emptied */
         void addLeafToEmpty(Node* node);
+        bool handleFullLeaves();
       public:
         // (a,b)-tree...
         const uint32_t a;
         const uint32_t b;
       private:
         Node* rootNode_;
-        std::queue<Node*> nodesToBeEmptied_;
+        std::queue<Node*> leavesToBeEmptied_;
     };
 }
 

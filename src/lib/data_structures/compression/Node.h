@@ -4,8 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "Block.h"
-
 namespace compresstree {
 
     enum NodeType {
@@ -42,6 +40,9 @@ namespace compresstree {
         bool decompress();
         bool isCompressed();
       private:
+
+        /* Buffer handling functions */
+
         /* Function: empty the buffer into the buffers in the next level. 
          *  + Must be called with buffer decompressed.
          *  + Buffer will be freed after invocation.
@@ -54,14 +55,30 @@ namespace compresstree {
          *    handleFullLeaves() call.
          */
         bool emptyBuffer();
-        /* Full leaves are dealt with by redistribution among leaves or 
-         * creation of more */
-        bool handleFullLeaves();
         /* sort the buffer based on hash value */
         bool sortBuffer();
-        /* called when the node has to be split. Must be called with the buffer
-         * decompressed and sorted */
-        bool splitNode();
+        /* advance n elements in the buffer; the starting offset must be
+         * passed, which is updated; returns false if past end */
+        bool advance(size_t n, size_t& offset);
+        void setNumElements(size_t numElements);
+
+        /* Tree-related functions */
+
+        /* split leaf node */
+        bool splitLeaf();
+        /* Add a new child to the node; if the number of children is more than
+         * the allowed number:
+         * + first check if siblings have fewer children
+         * + if not, split the node into two and call addChild recursively
+         */
+        bool addChild(uint64_t* med, Node* newNode);
+        /* Split non-leaf node; must be called with the buffer decompressed
+         * and sorted. If called on the root, then a new root is created */
+        bool splitNonLeaf();
+        /* Children of internal node shared with sibling internal node.
+         * Returns true if sharing solved the problem, false otherwise in 
+         * which case splitNonLeaf() has to be called */
+        bool shareChildren();
 
       private:
         /* pointer to the tree */
@@ -69,6 +86,7 @@ namespace compresstree {
         NodeType typ_;
         /* Buffer pointer */
         char* data_;
+        Node* parent;
         size_t numElements_;
         size_t curOffset_;
         bool isCompressed;

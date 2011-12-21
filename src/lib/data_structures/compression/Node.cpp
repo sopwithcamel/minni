@@ -31,12 +31,14 @@ namespace compresstree {
         // copy the entire Block into the buffer
         memmove(data + curOffset_, buf, buf_size);
         curOffset_ += buf_size;
+
+        numElements_++;
         
         // if buffer threshold is reached, call emptyBuffer
         if (isFull()) {
             sortBuffer();
             emptyBuffer();
-            handleFullLeaves();
+            tree->handleFullLeaves();
             curOffset_ = 0;
         }
     }
@@ -67,9 +69,7 @@ namespace compresstree {
         while (curOffset < curOffset_) {
             curHash = (uint64_t*)(data_ + curOffset);
             while (*curHash <= sepValues_[curChild]) {
-                curOffset += sizeof(uint64_t);
-                bufSize = (size_t*)(data_ + curOffset);
-                curOffset += sizeof(size_t) + *bufSize;
+                advance(1, curOffset);
                 curHash = (uint64_t*)(data_ + curOffset);
             }
             if (curOffset > lastOffset) { // at least one element for this
@@ -94,6 +94,80 @@ namespace compresstree {
 
     bool Node::sortBuffer()
     {
+    }
+
+    bool Node::splitNode()
+    {
+        if (isLeaf)
+            return splitLeaf();
+        else
+            return splitInternal();
+    }
+
+    /* A leaf is split by moving half the elements of the buffer into a
+     * new leaf and inserting a median value as the separator element into the
+     * parent */
+    bool Node::splitLeaf()
+    {
+        size_t curOffset;
+        if (!advance(numElements_/2, curOffset))
+            return false;
+
+        // select median value
+        uint64_t* median_hash = (uint64_t*)curOffset;
+
+        // create new leaf
+        Node* newLeaf = new Node(LEAF);
+        newLeaf->copyIntoBuffer(data_ + curOffset, curOffset_ - curOffset);
+        newLeaf->setNumElements(numElements_ - numElements_/2);
+        newLeaf->compress();
+
+        // set this leaf properties
+        curOffset_ = curOffset;
+        setNumElements(numElements_ / 2);
+
+        return parent->addChild(median_hash, newLeaf);
+    }
+
+    bool Node::addChild(uint64_t* med, Node* newNode)   
+    {
+        for (int i=0; i<sepValues_.size(); i++) {
+            if (*med > sepValues_[i])
+                continue;
+            std::vector<Node*>::iterator it = sepValues_.begin() + i;
+            sepValues_.insert(it, *med);
+            break;
+        }
+        if (children.size() > tree->b) {
+        }
+        return true;
+    }
+
+    bool Node::splitNonLeaf()
+    {
+        if (isRoot()) {
+            // create new root
+            // update tree's notion of root
+        }
+    }
+
+    bool Node::shareChildren()
+    {
+    }
+
+    bool Node::advance(size_t n, size_t& offset)
+    {
+        size_t bufSize;
+        for (int i=0; i<n; i++) {
+            offset += sizeof(uint64_t);
+            bufSize = (size_t*)(data_ + curOffset);
+            offset += sizeof(size_t) + *bufSize;
+        }
+    }
+
+    inline void Node::setNumElements(size_t numElements)
+    {
+        numElements_ = numElements;
     }
 
     bool Node::isFull()
