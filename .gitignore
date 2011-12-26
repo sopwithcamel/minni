@@ -35,3 +35,4 @@ src/dfs/tools/cpFromDFS
 src/dfs/tools/cpToDFS
 sample.cfg
 *cscope.out
+*.swp

@@ -2,10 +2,12 @@
 
 namespace compresstree {
 
-    CompressTree::CompressTree()
+    CompressTree::CompressTree(uint32_t a, uint32_t b) :
+        a_(a),
+        b_(b)
     {
-        // create root node
-        rootNode_ = new Node(ROOT);
+        // create root node; initially a leaf
+        rootNode_ = new Node(LEAF);
     }
 
     CompressTree::~CompressTree()

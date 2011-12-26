@@ -1,0 +1,18 @@
+
+
+Leaf nodes:
+
+In the case of the compressed buffer tree, the leaf nodes must actually contain
+the data and not just pointers to data. This causes greater overhead when
+splitting leaf nodes (because data must be actually copied to another leaf's
+buffer rather than just pointers), but is necessary for the benefits of
+compression.
+
+
+Insert:
+* always split node when the number of children is greater than the number
+ allowed
+* splitting is always performed on nodes with empty buffers. This happens
+ naturally because of the structure of the buffer tree. A leaf can be split
+ only after the buffers of all nodes on the path from the root to that leaf
+ have had their buffers emptied.

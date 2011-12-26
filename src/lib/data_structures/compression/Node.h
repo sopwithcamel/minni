@@ -4,10 +4,13 @@
 #include <string>
 #include <vector>
 
+#include "CompressTree.h"
+
 namespace compresstree {
 
+    class CompressTree;
+
     enum NodeType {
-        ROOT,
         INTERNAL,       // any node that is not a leaf or the root
         LEAF            // a leaf node is an actual leaf
     };
@@ -15,6 +18,8 @@ namespace compresstree {
     class Node {
         friend class CompressTree;
       public:
+        Node(NodeType typ);
+        ~Node();
         /* copy user data into buffer. Buffer should be decompressed
            before calling. */
         bool insert(uint64_t hash, void* buf, size_t buf_size);
@@ -75,10 +80,6 @@ namespace compresstree {
         /* Split non-leaf node; must be called with the buffer decompressed
          * and sorted. If called on the root, then a new root is created */
         bool splitNonLeaf();
-        /* Children of internal node shared with sibling internal node.
-         * Returns true if sharing solved the problem, false otherwise in 
-         * which case splitNonLeaf() has to be called */
-        bool shareChildren();
 
       private:
         /* pointer to the tree */
@@ -86,10 +87,10 @@ namespace compresstree {
         NodeType typ_;
         /* Buffer pointer */
         char* data_;
-        Node* parent;
+        Node* parent_;
         size_t numElements_;
         size_t curOffset_;
-        bool isCompressed;
+        bool isCompressed_;
 
         /* Pointers to children */
         std::vector<Node*> children;
