@@ -15,4 +15,4 @@ ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 
 cttest_SOURCES = CompressTree.cpp Node.cpp CTTest.cpp
 
-cttest_CPPFLAGS = $(ALL_CPPFLAGS) -g -Wall
+cttest_CPPFLAGS = $(ALL_CPPFLAGS) -g -Wall -D__STDC_LIMIT_MACROS

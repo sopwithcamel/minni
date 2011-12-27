@@ -1,6 +1,7 @@
 #ifndef LIB_COMPRESS_NODE_H
 #define LIB_COMPRESS_NODE_H
 #include <iostream>
+#include <stdint.h>
 #include <string>
 #include <vector>
 
@@ -11,28 +12,18 @@ namespace compresstree {
     class CompressTree;
 
     enum NodeType {
-        INTERNAL,       // any node that is not a leaf or the root
+        NON_LEAF,       // any node that is not a leaf or the root
         LEAF            // a leaf node is an actual leaf
     };
 
     class Node {
         friend class CompressTree;
       public:
-        Node(NodeType typ);
+        Node(NodeType typ, CompressTree* tree);
         ~Node();
         /* copy user data into buffer. Buffer should be decompressed
            before calling. */
         bool insert(uint64_t hash, void* buf, size_t buf_size);
-        /* copy entire buffer into the this node's buffer. This can be used
-         * by the parent to write a set of sorted elements directly into the
-         * child.
-         */
-        bool copyIntoBuffer(void* buf, size_t buf_size);
-        /* add a child to this node. If the number of children becomes > b, 
-         * the node is split and the children shared. */
-        bool addChild(Node& node);
-        /* Write out all buffers to leaves. Do this before reading */
-        bool emptyAllBuffers();
 
         // identification functions
         bool isLeaf();
@@ -65,7 +56,13 @@ namespace compresstree {
         /* advance n elements in the buffer; the starting offset must be
          * passed, which is updated; returns false if past end */
         bool advance(size_t n, size_t& offset);
-        void setNumElements(size_t numElements);
+        void addElements(size_t numElements);
+        void reduceElements(size_t numElements);
+        /* copy entire buffer into the this node's buffer. This can be used
+         * by the parent to write a set of sorted elements directly into the
+         * child.
+         */
+        bool copyIntoBuffer(void* buf, size_t buf_size);
 
         /* Tree-related functions */
 
@@ -76,14 +73,14 @@ namespace compresstree {
          * + first check if siblings have fewer children
          * + if not, split the node into two and call addChild recursively
          */
-        bool addChild(uint64_t* med, Node* newNode);
+        bool addChild(uint64_t med, Node* newNode);
         /* Split non-leaf node; must be called with the buffer decompressed
          * and sorted. If called on the root, then a new root is created */
         bool splitNonLeaf();
 
       private:
         /* pointer to the tree */
-        CompressTree* tree;
+        CompressTree* tree_;
         NodeType typ_;
         /* Buffer pointer */
         char* data_;
@@ -93,7 +90,7 @@ namespace compresstree {
         bool isCompressed_;
 
         /* Pointers to children */
-        std::vector<Node*> children;
+        std::vector<Node*> children_;
         /* Separation values for children */
         std::vector<uint64_t> sepValues_;
     };
