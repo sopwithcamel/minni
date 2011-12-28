@@ -18,10 +18,13 @@ int main()
     size_t buf_size;
     char* read_buf;
     uint64_t read_hash;
+    size_t readValues = 0;
     while (true) {
         bool ret = ct->nextValue(read_hash, read_buf, buf_size);
-        fprintf(stderr, "Read hash: %lu, size: %lu\n", read_hash, buf_size);
+//        fprintf(stderr, "Read hash: %lu, size: %lu\n", read_hash, buf_size);
+        readValues++;
         if (!ret)
             break;
     }
+    fprintf(stderr, "Number of values read: %lu\n", readValues);
 }

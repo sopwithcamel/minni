@@ -200,6 +200,9 @@ namespace compresstree {
         std::vector<Node*>::iterator ch_it = children_.begin() + i;
         children_.insert(ch_it, newNode);
 
+        // set parent
+        newNode->parent_ = this;
+
         // check if the number of children exceeds what is allowed
         if (children_.size() > tree_->b_) {
             splitNonLeaf();
@@ -210,8 +213,6 @@ namespace compresstree {
     /* This function will be called only when the node's buffer is empty */
     bool Node::splitNonLeaf()
     {
-        assert(data_ == NULL);
-
         if (isRoot()) {
             // create new root
             // update tree's notion of root

@@ -58,7 +58,7 @@ namespace compresstree {
         lastOffset_ += sizeof(size_t);
         buf = curLeaf->data_ + lastOffset_;
         lastOffset_ += buf_size;
-        if (lastOffset_ >= BUFFER_SIZE) {
+        if (lastOffset_ >= curLeaf->curOffset_) {
             if (++lastLeafRead_ == allLeaves_.size())
                 return false;
             lastOffset_ = 0;
