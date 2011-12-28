@@ -106,7 +106,7 @@ namespace compresstree {
             numCopied++;
             curHash = (uint64_t*)(data_ + curOffset);
 
-            if (*curHash >= sepValues_[curChild] || curOffset == curOffset_) {
+            if (curOffset >= curOffset_ || *curHash >= sepValues_[curChild]) {
                 assert(curChild < children_.size());
                 if (curOffset > lastOffset) { // at least one element for this
                     assert(children_[curChild]->decompress());
@@ -213,37 +213,41 @@ namespace compresstree {
     /* This function will be called only when the node's buffer is empty */
     bool Node::splitNonLeaf()
     {
-        if (isRoot()) {
-            // create new root
-            // update tree's notion of root
-        } else {
-            // create new node
-            Node* newNode = new Node(NON_LEAF, tree_);
+        // create new node
+        Node* newNode = new Node(NON_LEAF, tree_);
 
-            // move the last floor((b+1)/2) children to new node
-            int newNodeChildIndex = children_.size() - (tree_->b_ + 1)/2;
+        // move the last floor((b+1)/2) children to new node
+        int newNodeChildIndex = children_.size()-(tree_->b_+1)/2;
 
-            // add children to new node
-            for (uint32_t i=newNodeChildIndex; i<children_.size(); i++)
-                newNode->children_.push_back(children_[i]);
-            // remove children from current node
-            std::vector<Node*>::iterator it = children_.begin() + 
-                    newNodeChildIndex;
-            children_.erase(it, children_.end());
-            // add separator values to new node
-            for (uint32_t i=newNodeChildIndex; i<sepValues_.size(); i++)
-                newNode->sepValues_.push_back(sepValues_[i]);
-            // remove separator values from current node
-            std::vector<uint64_t>::iterator sep_it = sepValues_.begin() + 
-                    newNodeChildIndex;
-            sepValues_.erase(sep_it, sepValues_.end());
-            
-            // add child into parent node
-            parent_->addChild(sepValues_[sepValues_.size()-1], newNode);
-            // remove separator from node
-            sepValues_.pop_back();
-        }
-        return true;
+        // add children to new node
+        for (uint32_t i=newNodeChildIndex; i<children_.size(); i++)
+            newNode->children_.push_back(children_[i]);
+        // remove children from current node
+        std::vector<Node*>::iterator it = children_.begin() + 
+                newNodeChildIndex;
+        children_.erase(it, children_.end());
+        // add separator values to new node
+        for (uint32_t i=newNodeChildIndex; i<sepValues_.size(); i++)
+            newNode->sepValues_.push_back(sepValues_[i]);
+        // remove separator values from current node
+        std::vector<uint64_t>::iterator sep_it = sepValues_.begin() + 
+                newNodeChildIndex;
+        sepValues_.erase(sep_it, sepValues_.end());
+
+        // median separator from node
+        uint64_t med = sepValues_.back();
+        fprintf(stderr, "After split [");
+        for (uint32_t j=0; j<sepValues_.size(); j++)
+            fprintf(stderr, "%lu, ", sepValues_[j]);
+        fprintf(stderr, "] and [");
+        for (uint32_t j=0; j<newNode->sepValues_.size(); j++)
+            fprintf(stderr, "%lu, ", newNode->sepValues_[j]);
+        fprintf(stderr, "]\n");
+
+        if (isRoot())
+            return tree_->createNewRoot(med, newNode);
+        else
+            return parent_->addChild(med, newNode);
     }
 
     bool Node::advance(size_t n, size_t& offset)
