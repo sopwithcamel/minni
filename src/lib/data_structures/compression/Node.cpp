@@ -63,7 +63,6 @@ namespace compresstree {
              * is deferred until all full non-leaf buffers have been handled.
              * So we now handle the deferred tasks */
             tree_->handleFullLeaves();
-            curOffset_ = 0;
         }
         return true;
     }

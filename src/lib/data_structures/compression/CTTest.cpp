@@ -7,12 +7,14 @@
 
 int main()
 {
+    size_t i;
     compresstree::CompressTree* ct = new compresstree::CompressTree(2, 8);
     char* buf = (char*)malloc(100);
     strcpy(buf, "testing");
-    for (int i=0; i<1000; i++) {
-        assert(ct->insert(i, buf, strlen(buf)));
+    for (i=0; i<1000; i++) {
+        assert(ct->insert(i, buf, strlen(buf) + 1));
     }
+    fprintf(stderr, "Number of values inserted: %lu\n", i);
     assert(ct->flushBuffers());
     
     size_t buf_size;
@@ -21,7 +23,7 @@ int main()
     size_t readValues = 0;
     while (true) {
         bool ret = ct->nextValue(read_hash, read_buf, buf_size);
-//        fprintf(stderr, "Read hash: %lu, size: %lu\n", read_hash, buf_size);
+//        fprintf(stderr, "Read hash: %lu, buf: %s, size: %lu\n", read_hash, read_buf, buf_size);
         readValues++;
         if (!ret)
             break;
