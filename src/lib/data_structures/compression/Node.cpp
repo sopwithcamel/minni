@@ -105,7 +105,9 @@ namespace compresstree {
         while (*curHash >= sepValues_[curChild])
             curChild++;
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node: %d: first node chosen: %d (sep: %lu, child: %d); first element: %ld\n", id_, children_[curChild]->id_, sepValues_[curChild], curChild, *curHash);
+        fprintf(stderr, "Node: %d: first node chosen: %d (sep: %lu,\
+            child: %d); first element: %ld\n", id_, children_[curChild]->id_,
+            sepValues_[curChild], curChild, *curHash);
 #endif
 
         while (offset < curOffset_) {
@@ -117,12 +119,14 @@ namespace compresstree {
                 assert(curChild < children_.size());
                 if (offset > lastOffset) { // at least one element for this
                     assert(children_[curChild]->decompress());
-                    assert(children_[curChild]->copyIntoBuffer(data_ + lastOffset,
-                                offset - lastOffset));
+                    assert(children_[curChild]->copyIntoBuffer(data_ + 
+                                lastOffset, offset - lastOffset));
                     children_[curChild]->addElements(numCopied);
                     assert(children_[curChild]->compress());
 #ifdef CT_NODE_DEBUG
-                    fprintf(stderr, "Copied %lu elements into node %d; offset: %ld\n", numCopied, children_[curChild]->id_, children_[curChild]->curOffset_);
+                    fprintf(stderr, "Copied %lu elements into node %d; offset\
+                            : %ld\n", numCopied, children_[curChild]->id_, 
+                            children_[curChild]->curOffset_);
 #endif
                     lastOffset = offset;
                     numCopied = 0;
@@ -168,7 +172,8 @@ namespace compresstree {
 
         // set this leaf properties
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node %d splits to Node %d: new offsets: %ld and %ld\n", id_, newLeaf->id_, offset, curOffset_ - offset);
+        fprintf(stderr, "Node %d splits to Node %d: new offsets: %ld and\
+                %ld\n", id_, newLeaf->id_, offset, curOffset_ - offset);
 #endif
         curOffset_ = offset;
         reduceElements(numElements_ - numElements_/2);
@@ -204,7 +209,8 @@ namespace compresstree {
         it = sepValues_.begin() + i;
         sepValues_.insert(it, med);
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node: %d: Separator %lu added at pos %u, [", id_, med, i);
+        fprintf(stderr, "Node: %d: Separator %lu added at pos %u, [", id_, 
+                med, i);
         for (uint32_t j=0; j<sepValues_.size(); j++)
             fprintf(stderr, "%lu, ", sepValues_[j]);
         fprintf(stderr, "]\n");
@@ -216,7 +222,8 @@ namespace compresstree {
             ch_it++;
         children_.insert(ch_it, newNode);
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node: %d: Node %d added at pos %u, [", id_, newNode->id_, i);
+        fprintf(stderr, "Node: %d: Node %d added at pos %u, [", id_, 
+                newNode->id_, i);
         for (uint32_t j=0; j<children_.size(); j++)
             fprintf(stderr, "%d, ", children_[j]->id_);
         fprintf(stderr, "]\n");

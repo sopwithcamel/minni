@@ -5,10 +5,11 @@
 
 #include "CompressTree.h"
 
-int main()
+int testMonotonicIncrease(uint32_t a, uint32_t b)
 {
     size_t i;
-    compresstree::CompressTree* ct = new compresstree::CompressTree(2, 8);
+    compresstree::CompressTree* ct = new compresstree::CompressTree(a, b);
+    fprintf(stderr, "Testing insertion of monotonically increasing values\n");
     char* buf = (char*)malloc(100);
     strcpy(buf, "testing");
     for (i=0; i<1000; i++) {
@@ -29,4 +30,12 @@ int main()
             break;
     }
     fprintf(stderr, "Number of values read: %lu\n", readValues);
+    if (i != readValues)
+        return false;
+    return true;
+}
+
+int main()
+{
+    assert(testMonotonicIncrease(2, 8));
 }
