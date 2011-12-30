@@ -7,6 +7,8 @@
 
 #include "CompressTree.h"
 
+//#define CT_NODE_DEBUG
+
 namespace compresstree {
 
     class CompressTree;
@@ -14,6 +16,11 @@ namespace compresstree {
     enum NodeType {
         NON_LEAF,       // any node that is not a leaf or the root
         LEAF            // a leaf node is an actual leaf
+    };
+
+    enum ChildType {
+        LEFT,
+        RIGHT
     };
 
     class Node {
@@ -68,12 +75,13 @@ namespace compresstree {
 
         /* split leaf node */
         bool splitLeaf();
-        /* Add a new child to the node; if the number of children is more than
-         * the allowed number:
+        /* Add a new child to the node; the child type indicates which side 
+         * of the separator the child must be inserted. 
+         * if the number of children is more than the allowed number:
          * + first check if siblings have fewer children
          * + if not, split the node into two and call addChild recursively
          */
-        bool addChild(uint64_t med, Node* newNode);
+        bool addChild(uint64_t med, Node* newNode, ChildType ctyp);
         /* Split non-leaf node; must be called with the buffer decompressed
          * and sorted. If called on the root, then a new root is created */
         bool splitNonLeaf();
@@ -84,6 +92,7 @@ namespace compresstree {
         NodeType typ_;
         /* Buffer pointer */
         char* data_;
+        uint32_t id_;
         Node* parent_;
         size_t numElements_;
         size_t curOffset_;

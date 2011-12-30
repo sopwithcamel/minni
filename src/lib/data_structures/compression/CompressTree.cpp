@@ -44,7 +44,7 @@ namespace compresstree {
                     allLeaves_.push_back(curNode->children_[i]);
             }
         }
-        fprintf(stderr, "Tree has %d leaves\n", allLeaves_.size());
+        fprintf(stderr, "Tree has %ld leaves\n", allLeaves_.size());
         return true;
     }
 
@@ -80,9 +80,12 @@ namespace compresstree {
             leavesToBeEmptied_.pop();
             node->decompress();
             node->sortBuffer();
-            if (!node->splitLeaf())
-                return false;
+            while (node->isFull()) {
+                if (!node->splitLeaf())
+                    return false;
+            }
             node->compress();
+            fprintf(stderr, "Leaf node %d removed from full-leaf-list\n", node->id_);
         }
         return true;
     }
@@ -90,9 +93,10 @@ namespace compresstree {
     bool CompressTree::createNewRoot(uint64_t med, Node* otherChild)
     {
         Node* newRoot = new Node(NON_LEAF, this);
+        fprintf(stderr, "Node %d is new root; children are %d and %d\n", newRoot->id_, rootNode_->id_, otherChild->id_);
         // add two children of new root
-        newRoot->addChild(med, rootNode_);
-        newRoot->addChild(UINT64_MAX, otherChild);
+        newRoot->addChild(med, rootNode_, LEFT);
+        newRoot->addChild(UINT64_MAX, otherChild, LEFT);
         rootNode_ = newRoot;
         return true;
     }

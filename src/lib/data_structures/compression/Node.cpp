@@ -7,15 +7,17 @@
 #include "Node.h"
 
 namespace compresstree {
+    static uint32_t nodeCtr = 0;
 
     Node::Node(NodeType typ, CompressTree* tree) :
         tree_(tree),
         typ_(typ),
+        id_(nodeCtr++),
         parent_(NULL),
         numElements_(0),
+        curOffset_(0),
         isCompressed_(false)
     {
-        // Allocate file name and create file
         // Allocate memory for data buffer
         data_ = (char*)malloc(BUFFER_SIZE);
     }
@@ -85,7 +87,7 @@ namespace compresstree {
         uint32_t curChild = 0;
         // offset till which elements have been written
         size_t lastOffset = 0; 
-        size_t curOffset = 0;
+        size_t offset = 0;
         volatile uint64_t* curHash;
         size_t numCopied = 0;
 
@@ -93,29 +95,37 @@ namespace compresstree {
          * internal nodes have been processed */
         if (isLeaf()) {
             tree_->addLeafToEmpty(this);
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "Leaf node %d added to full-leaf-list\n", id_);
+#endif
             return true;
         }
 
         // find the first separator greater than the first element
-        curHash = (uint64_t*)(data_ + curOffset);
+        curHash = (uint64_t*)(data_ + offset);
         while (*curHash >= sepValues_[curChild])
             curChild++;
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "Node: %d: first node chosen: %d (sep: %lu, child: %d); first element: %ld\n", id_, children_[curChild]->id_, sepValues_[curChild], curChild, *curHash);
+#endif
 
-        while (curOffset < curOffset_) {
-            advance(1, curOffset);
+        while (offset < curOffset_) {
+            advance(1, offset);
             numCopied++;
-            curHash = (uint64_t*)(data_ + curOffset);
+            curHash = (uint64_t*)(data_ + offset);
 
-            if (curOffset >= curOffset_ || *curHash >= sepValues_[curChild]) {
+            if (offset >= curOffset_ || *curHash >= sepValues_[curChild]) {
                 assert(curChild < children_.size());
-                if (curOffset > lastOffset) { // at least one element for this
+                if (offset > lastOffset) { // at least one element for this
                     assert(children_[curChild]->decompress());
                     assert(children_[curChild]->copyIntoBuffer(data_ + lastOffset,
-                                curOffset - lastOffset));
+                                offset - lastOffset));
                     children_[curChild]->addElements(numCopied);
                     assert(children_[curChild]->compress());
-                    fprintf(stderr, "Copied %lu elements into child %d\n", numCopied, curChild);
-                    lastOffset = curOffset;
+#ifdef CT_NODE_DEBUG
+                    fprintf(stderr, "Copied %lu elements into node %d; offset: %ld\n", numCopied, children_[curChild]->id_, children_[curChild]->curOffset_);
+#endif
+                    lastOffset = offset;
                     numCopied = 0;
                 }
                 curChild++;
@@ -144,28 +154,31 @@ namespace compresstree {
      * parent */
     bool Node::splitLeaf()
     {
-        size_t curOffset = 0;
-        if (!advance(numElements_/2, curOffset))
+        size_t offset = 0;
+        if (!advance(numElements_/2, offset))
             return false;
 
         // select median value
-        uint64_t* median_hash = (uint64_t*)(data_ + curOffset);
+        uint64_t* median_hash = (uint64_t*)(data_ + offset);
 
         // create new leaf
         Node* newLeaf = new Node(LEAF, tree_);
-        newLeaf->copyIntoBuffer(data_ + curOffset, curOffset_ - curOffset);
+        newLeaf->copyIntoBuffer(data_ + offset, curOffset_ - offset);
         newLeaf->addElements(numElements_ - numElements_/2);
         newLeaf->compress();
 
         // set this leaf properties
-        curOffset_ = curOffset;
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "Node %d splits to Node %d: new offsets: %ld and %ld\n", id_, newLeaf->id_, offset, curOffset_ - offset);
+#endif
+        curOffset_ = offset;
         reduceElements(numElements_ - numElements_/2);
 
         // if leaf is also the root, create new root
         if (isRoot()) {
             return tree_->createNewRoot(*median_hash, newLeaf);
         } else {
-            return parent_->addChild(*median_hash, newLeaf);
+            return parent_->addChild(*median_hash, newLeaf, RIGHT);
         }
     }
 
@@ -177,7 +190,7 @@ namespace compresstree {
         return true;
     }
 
-    bool Node::addChild(uint64_t med, Node* newNode)   
+    bool Node::addChild(uint64_t med, Node* newNode, ChildType ctyp)   
     {
         uint32_t i;
         // insert separator value
@@ -191,14 +204,24 @@ namespace compresstree {
         }
         it = sepValues_.begin() + i;
         sepValues_.insert(it, med);
-        fprintf(stderr, "Separator %lu added at pos %u, [", med, i);
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "Node: %d: Separator %lu added at pos %u, [", id_, med, i);
         for (uint32_t j=0; j<sepValues_.size(); j++)
             fprintf(stderr, "%lu, ", sepValues_[j]);
         fprintf(stderr, "]\n");
+#endif
 
         // insert child
         std::vector<Node*>::iterator ch_it = children_.begin() + i;
+        if (ctyp == RIGHT)
+            ch_it++;
         children_.insert(ch_it, newNode);
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "Node: %d: Node %d added at pos %u, [", id_, newNode->id_, i);
+        for (uint32_t j=0; j<children_.size(); j++)
+            fprintf(stderr, "%d, ", children_[j]->id_);
+        fprintf(stderr, "]\n");
+#endif
 
         // set parent
         newNode->parent_ = this;
@@ -220,8 +243,11 @@ namespace compresstree {
         int newNodeChildIndex = children_.size()-(tree_->b_+1)/2;
 
         // add children to new node
-        for (uint32_t i=newNodeChildIndex; i<children_.size(); i++)
+        for (uint32_t i=newNodeChildIndex; i<children_.size(); i++) {
             newNode->children_.push_back(children_[i]);
+            children_[i]->parent_ = newNode;
+        }
+
         // remove children from current node
         std::vector<Node*>::iterator it = children_.begin() + 
                 newNodeChildIndex;
@@ -236,6 +262,7 @@ namespace compresstree {
 
         // median separator from node
         uint64_t med = sepValues_.back();
+#ifdef CT_NODE_DEBUG
         fprintf(stderr, "After split [");
         for (uint32_t j=0; j<sepValues_.size(); j++)
             fprintf(stderr, "%lu, ", sepValues_[j]);
@@ -244,10 +271,19 @@ namespace compresstree {
             fprintf(stderr, "%lu, ", newNode->sepValues_[j]);
         fprintf(stderr, "]\n");
 
+        fprintf(stderr, "Children [");
+        for (uint32_t j=0; j<children_.size(); j++)
+            fprintf(stderr, "%d, ", children_[j]->id_);
+        fprintf(stderr, "] and [");
+        for (uint32_t j=0; j<newNode->children_.size(); j++)
+            fprintf(stderr, "%d, ", newNode->children_[j]->id_);
+        fprintf(stderr, "]\n");
+#endif
+
         if (isRoot())
             return tree_->createNewRoot(med, newNode);
         else
-            return parent_->addChild(med, newNode);
+            return parent_->addChild(med, newNode, RIGHT);
     }
 
     bool Node::advance(size_t n, size_t& offset)
