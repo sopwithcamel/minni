@@ -115,8 +115,6 @@ namespace compresstree {
 #endif
         while (offset < curOffset_) {
             curHash = (uint64_t*)(data_ + offset);
-            if (*curHash == 1152645729)
-                fprintf(stderr, "1152645729 going into node %d with separator %lu\n", children_[curChild]->id_, sepValues_[curChild]);
 
             if (offset >= curOffset_ || *curHash >= sepValues_[curChild]) {
                 // this separator is the largest separator that is not greater

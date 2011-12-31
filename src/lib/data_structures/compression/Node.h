@@ -7,7 +7,7 @@
 
 #include "CompressTree.h"
 
-#define CT_NODE_DEBUG
+//#define CT_NODE_DEBUG
 
 namespace compresstree {
 
