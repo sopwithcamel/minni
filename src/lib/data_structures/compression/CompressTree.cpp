@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -36,6 +37,7 @@ namespace compresstree {
     {
         Node* curNode;
         std::queue<Node*> visitQueue;
+begin_flush:
         visitQueue.push(rootNode_);
         while(!visitQueue.empty()) {
             curNode = visitQueue.front();
@@ -43,12 +45,29 @@ namespace compresstree {
             // flush buffer
             curNode->sortBuffer();
             curNode->emptyBuffer();
-            handleFullLeaves();
+            if (handleFullLeaves() > 0) {
+                while (!visitQueue.empty())
+                    visitQueue.pop();
+                goto begin_flush;
+            }
             for (uint32_t i=0; i<curNode->children_.size(); i++) {
-                if (!curNode->children_[i]->isLeaf())
+                if (!curNode->children_[i]->isLeaf()) {
                     visitQueue.push(curNode->children_[i]);
-                else
+                }
+            }
+        }
+
+        // add all leaves
+        visitQueue.push(rootNode_);
+        while(!visitQueue.empty()) {
+            curNode = visitQueue.front();
+            visitQueue.pop();
+            for (uint32_t i=0; i<curNode->children_.size(); i++) {
+                if (!curNode->children_[i]->isLeaf()) {
+                    visitQueue.push(curNode->children_[i]);
+                } else {
                     allLeaves_.push_back(curNode->children_[i]);
+                }
             }
         }
 #ifdef CT_NODE_DEBUG
@@ -82,23 +101,23 @@ namespace compresstree {
     }
 
     /* A full leaf is handled by splitting the leaf into two leaves.*/
-    bool CompressTree::handleFullLeaves()
+    size_t CompressTree::handleFullLeaves()
     {
+        size_t num = leavesToBeEmptied_.size();
         for (uint32_t i=0; i<leavesToBeEmptied_.size(); i++) {
             Node* node = leavesToBeEmptied_.front();
             leavesToBeEmptied_.pop();
             node->decompress();
             node->sortBuffer();
             while (node->isFull()) {
-                if (!node->splitLeaf())
-                    return false;
+                assert(node->splitLeaf());
             }
             node->compress();
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Leaf node %d removed from full-leaf-list\n", node->id_);
 #endif
         }
-        return true;
+        return num;
     }
 
     bool CompressTree::createNewRoot(uint64_t med, Node* otherChild)

@@ -113,31 +113,62 @@ namespace compresstree {
             child: %d); first element: %ld\n", id_, children_[curChild]->id_,
             sepValues_[curChild], curChild, *curHash);
 #endif
-
         while (offset < curOffset_) {
-            advance(1, offset);
-            numCopied++;
             curHash = (uint64_t*)(data_ + offset);
+            if (*curHash == 1152645729)
+                fprintf(stderr, "1152645729 going into node %d with separator %lu\n", children_[curChild]->id_, sepValues_[curChild]);
 
             if (offset >= curOffset_ || *curHash >= sepValues_[curChild]) {
-                assert(curChild < children_.size());
-                if (offset > lastOffset) { // at least one element for this
+                // this separator is the largest separator that is not greater
+                // than *curHash. This invariant needs to be maintained.
+                if (numCopied > 0) { // at least one element for this
                     assert(children_[curChild]->decompress());
                     assert(children_[curChild]->copyIntoBuffer(data_ + 
                                 lastOffset, offset - lastOffset));
                     children_[curChild]->addElements(numCopied);
                     assert(children_[curChild]->compress());
 #ifdef CT_NODE_DEBUG
-                    fprintf(stderr, "Copied %lu elements into node %d; offset\
-                            : %ld\n", numCopied, children_[curChild]->id_, 
-                            children_[curChild]->curOffset_);
+                    fprintf(stderr, "Copied %lu elements into node %d; child\
+                            offset: %ld, sep: %lu, off:(%ld/%ld)\n", numCopied, 
+                            children_[curChild]->id_,
+                            children_[curChild]->curOffset_,
+                            sepValues_[curChild],
+                            offset, curOffset_);
 #endif
                     lastOffset = offset;
                     numCopied = 0;
                 }
-                curChild++;
+                // skip past all separators not greater than *curHash
+                while (*curHash >= sepValues_[curChild])
+                    curChild++;
+                if (curChild >= children_.size()) {
+                    fprintf(stderr, "Can't place %ld\n", *curHash);
+                    assert(false);
+                }
+
             }
+            // proceed to next element
+            advance(1, offset);
+            numCopied++;
         }
+
+        // copy remaining elements into child
+        if (offset > lastOffset) {
+            assert(children_[curChild]->decompress());
+            assert(children_[curChild]->copyIntoBuffer(data_ + 
+                        lastOffset, offset - lastOffset));
+            children_[curChild]->addElements(numCopied);
+            assert(children_[curChild]->compress());
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "Copied %lu elements into node %d; child\
+                    offset: %ld, sep: %lu, off:(%ld/%ld)\n", numCopied, 
+                    children_[curChild]->id_,
+                    children_[curChild]->curOffset_,
+                    sepValues_[curChild],
+                    offset, curOffset_);
+#endif
+        }
+
         // reset
         curOffset_ = 0;
         numElements_ = 0;
@@ -229,7 +260,6 @@ namespace compresstree {
                 (void*)(els_[lastIndex]), el_size);
         auxOffset += el_size;
         assert(auxOffset == curOffset_);
-        fprintf(stderr, "diff: %d\n", memcmp(data_, tree_->auxBuffer_, curOffset_));
 
         // swap buffer pointers
         char* tp = data_;
@@ -275,7 +305,11 @@ namespace compresstree {
 
     bool Node::copyIntoBuffer(void* buf, size_t buf_size)
     {
-        assert(curOffset_ + buf_size < BUFFER_SIZE);
+        if (curOffset_ + buf_size >= BUFFER_SIZE) {
+            fprintf(stderr, "Node: %d, cOffset: %ld, buf: %ld\n", id_, 
+                    curOffset_, buf_size); 
+            assert(false);
+        }
         memmove(data_+curOffset_, buf, buf_size);
         curOffset_ += buf_size;
         return true;
@@ -326,9 +360,14 @@ namespace compresstree {
         return true;
     }
 
-    /* This function will be called only when the node's buffer is empty */
     bool Node::splitNonLeaf()
     {
+        // Ensure that the node's buffer is empty
+        if (numElements_ > 0) {
+            emptyBuffer();
+            tree_->handleFullLeaves();
+        }
+
         // create new node
         Node* newNode = new Node(NON_LEAF, tree_);
 

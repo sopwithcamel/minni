@@ -28,7 +28,7 @@ namespace compresstree {
         /* Add leaf whose buffer is full to be emptied once all internal node
          * buffers have been emptied */
         bool addLeafToEmpty(Node* node);
-        bool handleFullLeaves();
+        size_t handleFullLeaves();
         bool createNewRoot(uint64_t med, Node* otherChild);
       public:
         // (a,b)-tree...
