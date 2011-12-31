@@ -227,6 +227,8 @@ namespace compresstree {
         el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
         memmove(tree_->auxBuffer_ + auxOffset, 
                 (void*)(els_[lastIndex]), el_size);
+        auxOffset += el_size;
+        assert(auxOffset == curOffset_);
         fprintf(stderr, "diff: %d\n", memcmp(data_, tree_->auxBuffer_, curOffset_));
 
         // swap buffer pointers

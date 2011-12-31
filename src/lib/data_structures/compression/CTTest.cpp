@@ -46,7 +46,7 @@ int testMonotonicDecrease(uint32_t a, uint32_t b)
     fprintf(stderr, "Testing insertion of monotonically increasing values\n");
     char* buf = (char*)malloc(100);
     strcpy(buf, "testing");
-    for (i=1000; i>0; i--) {
+    for (i=245; i>0; i--) {
         assert(ct->insert(i, buf, strlen(buf) + 1));
     }
     fprintf(stderr, "Number of values inserted: %lu\n", i);
