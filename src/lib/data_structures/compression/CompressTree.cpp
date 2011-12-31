@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "CompressTree.h"
 
@@ -13,11 +14,15 @@ namespace compresstree {
     {
         // create root node; initially a leaf
         rootNode_ = new Node(LEAF, this);
+
+        // aux buffer for use in sorting
+        auxBuffer_ = (char*)malloc(BUFFER_SIZE);
     }
 
     CompressTree::~CompressTree()
     {
         delete rootNode_;
+        free(auxBuffer_);
     }
 
     bool CompressTree::insert(uint64_t hash, void* buf, size_t buf_size)
@@ -36,7 +41,9 @@ namespace compresstree {
             curNode = visitQueue.front();
             visitQueue.pop();
             // flush buffer
+            curNode->sortBuffer();
             curNode->emptyBuffer();
+            handleFullLeaves();
             for (uint32_t i=0; i<curNode->children_.size(); i++) {
                 if (!curNode->children_[i]->isLeaf())
                     visitQueue.push(curNode->children_[i]);

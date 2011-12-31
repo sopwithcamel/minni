@@ -20,6 +20,9 @@ namespace compresstree {
     {
         // Allocate memory for data buffer
         data_ = (char*)malloc(BUFFER_SIZE);
+
+        // allocate space for element pointers
+        els_ = (uint64_t**)malloc(sizeof(uint64_t*) * MAX_ELS_PER_BUFFER);
     }
 
     Node::~Node()
@@ -27,7 +30,8 @@ namespace compresstree {
         if (data_) {
             free(data_);
             data_ = NULL;
-        }            
+        }
+        free(els_);
     }
 
     bool Node::insert(uint64_t hash, void* buf, size_t buf_size)
@@ -146,9 +150,90 @@ namespace compresstree {
         return true;
     }
 
+    void Node::swapPointers(uint64_t*& el1, uint64_t*& el2)
+    {
+        uint64_t* temp = el1;   
+        el1 = el2;
+        el2 = temp;
+    }
+
+    size_t Node::partition(uint64_t** arr, size_t left, size_t right,
+            size_t pivIndex)
+    {
+        size_t storeIndex = left;
+        uint64_t pivotValue = *arr[pivIndex];
+        // swap pivot element and right-most element
+        swapPointers(arr[pivIndex], arr[right]);
+        for (size_t i=left; i<right; i++) {
+            if (*arr[i] < pivotValue) {
+                swapPointers(arr[i], arr[storeIndex]);
+                storeIndex++;
+            }
+        }
+        // move pivot to final place
+        swapPointers(arr[storeIndex], arr[right]);
+        return storeIndex;
+    }
+
+    void Node::quicksort(uint64_t** arr, size_t left, size_t right)
+    {
+        size_t pivIndex, newPivIndex;
+        if (left < right) {
+            pivIndex = (left + right) / 2;
+            newPivIndex = partition(arr, left, right, pivIndex);
+            if (left < newPivIndex)
+                quicksort(arr, left, newPivIndex - 1);
+            if (newPivIndex < right)
+                quicksort(arr, newPivIndex + 1, right);
+        }
+    }
+
     bool Node::sortBuffer()
     {
-        //TODO: Implement this!
+        size_t offset = 0;
+        size_t el_size;
+        size_t auxOffset = 0;
+        size_t buf_size;
+
+        if (numElements_ == 0)
+            return true;
+
+        for (uint64_t i=0; i<numElements_; i++) {
+            els_[i] = (uint64_t*)(data_ + offset);
+            if (!advance(1, offset))
+                return false;
+        }
+
+        // quicksort elements
+        quicksort(els_, 0, numElements_ - 1);
+
+        // aggregate elements in buffer
+        uint64_t lastIndex = 0;
+        for (uint64_t i=1; i<numElements_; i++) {
+            if (*els_[i] == *els_[lastIndex]) {
+                // aggregate elements
+            } else {
+                // copy into auxBuffer_
+                buf_size = *(size_t*)(els_[lastIndex] + 1);
+                el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
+                memmove(tree_->auxBuffer_ + auxOffset, 
+                        (void*)(els_[lastIndex]), el_size);
+                auxOffset += el_size;
+
+                lastIndex = i;
+            }
+        }
+        buf_size = *(size_t*)(els_[lastIndex] + 1);
+        el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
+        memmove(tree_->auxBuffer_ + auxOffset, 
+                (void*)(els_[lastIndex]), el_size);
+        fprintf(stderr, "diff: %d\n", memcmp(data_, tree_->auxBuffer_, curOffset_));
+
+        // swap buffer pointers
+        char* tp = data_;
+        data_ = tree_->auxBuffer_;
+        tree_->auxBuffer_ = tp;
+
         return true;
     }
 

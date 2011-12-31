@@ -7,7 +7,7 @@
 
 #include "CompressTree.h"
 
-//#define CT_NODE_DEBUG
+#define CT_NODE_DEBUG
 
 namespace compresstree {
 
@@ -58,7 +58,8 @@ namespace compresstree {
          *    handleFullLeaves() call.
          */
         bool emptyBuffer();
-        /* sort the buffer based on hash value */
+        /* sort the buffer based on hash value. After sorting perform an
+         * aggregation pass */
         bool sortBuffer();
         /* advance n elements in the buffer; the starting offset must be
          * passed, which is updated; returns false if past end */
@@ -86,6 +87,12 @@ namespace compresstree {
          * and sorted. If called on the root, then a new root is created */
         bool splitNonLeaf();
 
+        /* Sorting-related functions */
+        void quicksort(uint64_t** arr, size_t left, size_t right);
+        size_t partition(uint64_t** arr, size_t left, size_t right,
+                size_t pivIndex);
+        void swapPointers(uint64_t*& el1, uint64_t*& el2);
+
       private:
         /* pointer to the tree */
         CompressTree* tree_;
@@ -102,6 +109,9 @@ namespace compresstree {
         std::vector<Node*> children_;
         /* Separation values for children */
         std::vector<uint64_t> sepValues_;
+
+        /* Sorting related */
+        uint64_t** els_;         // pointers to elements in buffer
     };
 }
 

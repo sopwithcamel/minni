@@ -6,9 +6,9 @@
 
 namespace compresstree {
 
-    const size_t BLOCKS_PER_BUFFER = 4096;
     const size_t BUFFER_SIZE = 2048;
     const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 2.5;
+    const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
     
     class Node;
 
@@ -40,6 +40,7 @@ namespace compresstree {
         std::vector<Node*> allLeaves_;
         size_t lastLeafRead_;
         size_t lastOffset_;
+        char* auxBuffer_;
     };
 }
 
