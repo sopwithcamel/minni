@@ -108,6 +108,10 @@ namespace compresstree {
         curHash = (uint64_t*)(data_ + offset);
         while (*curHash >= sepValues_[curChild])
             curChild++;
+        if (curChild >= sepValues_.size()) {
+            fprintf(stderr, "ccchild: %d, curhash: %ld\n", curChild, *curHash);
+            assert(false);
+        }
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node: %d: first node chosen: %d (sep: %lu,\
             child: %d); first element: %ld\n", id_, children_[curChild]->id_,
@@ -115,6 +119,8 @@ namespace compresstree {
 #endif
         while (offset < curOffset_) {
             curHash = (uint64_t*)(data_ + offset);
+            if (*curHash == 1869846033)
+                fprintf(stderr, "1869846033 going into child %d with sep %lu\n", children_[curChild]->id_, sepValues_[curChild]);
 
             if (offset >= curOffset_ || *curHash >= sepValues_[curChild]) {
                 // this separator is the largest separator that is not greater
@@ -140,7 +146,8 @@ namespace compresstree {
                 while (*curHash >= sepValues_[curChild])
                     curChild++;
                 if (curChild >= children_.size()) {
-                    fprintf(stderr, "Can't place %ld\n", *curHash);
+                    fprintf(stderr, "Can't place %ld among children\n", *curHash);
+                        
                     assert(false);
                 }
 
@@ -173,8 +180,10 @@ namespace compresstree {
         
         // check if any children are full
         for (curChild=0; curChild < children_.size(); curChild++) {
-            if (children_[curChild]->isFull())
+            if (children_[curChild]->isFull()) {
                 children_[curChild]->emptyBuffer();
+                tree_->handleFullLeaves();
+            }
         }
         return true;
     }
@@ -355,6 +364,10 @@ namespace compresstree {
         if (children_.size() > tree_->b_) {
             splitNonLeaf();
         }
+
+        assert(sepValues_.size() == children_.size());
+        assert(children_.size() <= tree_->b_);
+        assert(newNode->sepValues_.size() == newNode->children_.size());
         return true;
     }
 
@@ -393,18 +406,18 @@ namespace compresstree {
         // median separator from node
         uint64_t med = sepValues_.back();
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "After split [");
+        fprintf(stderr, "After split, %d: [", id_);
         for (uint32_t j=0; j<sepValues_.size(); j++)
             fprintf(stderr, "%lu, ", sepValues_[j]);
-        fprintf(stderr, "] and [");
+        fprintf(stderr, "] and %d: [", newNode->id_);
         for (uint32_t j=0; j<newNode->sepValues_.size(); j++)
             fprintf(stderr, "%lu, ", newNode->sepValues_[j]);
         fprintf(stderr, "]\n");
 
-        fprintf(stderr, "Children [");
+        fprintf(stderr, "Children, %d: [", id_);
         for (uint32_t j=0; j<children_.size(); j++)
             fprintf(stderr, "%d, ", children_[j]->id_);
-        fprintf(stderr, "] and [");
+        fprintf(stderr, "] and %d: [", newNode->id_);
         for (uint32_t j=0; j<newNode->children_.size(); j++)
             fprintf(stderr, "%d, ", newNode->children_[j]->id_);
         fprintf(stderr, "]\n");

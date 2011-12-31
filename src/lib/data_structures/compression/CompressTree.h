@@ -7,7 +7,7 @@
 namespace compresstree {
 
     const size_t BUFFER_SIZE = 2048;
-    const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 2.5;
+    const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 3;
     const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
     
     class Node;

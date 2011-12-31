@@ -70,8 +70,9 @@ int testMonotonicDecrease(uint32_t a, uint32_t b)
 
 int testRandom(uint32_t a, uint32_t b)
 {
-    size_t i, numIns = 1000;
+    size_t i, numIns = 800;
     compresstree::CompressTree* ct = new compresstree::CompressTree(a, b);
+    srand(56);
     fprintf(stderr, "Testing insertion of random values... ");
     char* buf = (char*)malloc(100);
     strcpy(buf, "testing");
@@ -99,7 +100,7 @@ int testRandom(uint32_t a, uint32_t b)
 
 int main()
 {
-    assert(testMonotonicIncrease(2, 8));
-    assert(testMonotonicDecrease(2, 8));
-    assert(testRandom(2, 8));
+//    assert(testMonotonicIncrease(2, 8));
+//    assert(testMonotonicDecrease(2, 8));
+    assert(testRandom(2, 4));
 }
