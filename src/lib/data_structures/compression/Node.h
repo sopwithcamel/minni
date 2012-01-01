@@ -7,9 +7,11 @@
 
 #include "CompressTree.h"
 
-//#define CT_NODE_DEBUG
+#define ENABLE_ASSERT_CHECKS
+#define CT_NODE_DEBUG
 #define ENABLE_SORT_VERIFICATION
 #define ENABLE_INTEGRITY_CHECK
+#define ENABLE_COMPRESSION
 
 namespace compresstree {
 
@@ -61,7 +63,8 @@ namespace compresstree {
          */
         bool emptyBuffer();
         /* sort the buffer based on hash value. After sorting perform an
-         * aggregation pass */
+         * aggregation pass.
+         * Must be called when buffer is decompressed */
         bool sortBuffer();
         /* advance n elements in the buffer; the starting offset must be
          * passed, which is updated; returns false if past end */
@@ -108,7 +111,6 @@ namespace compresstree {
         Node* parent_;
         size_t numElements_;
         size_t curOffset_;
-        bool isCompressed_;
 
         /* Pointers to children */
         std::vector<Node*> children_;
@@ -116,6 +118,10 @@ namespace compresstree {
 
         /* Sorting related */
         uint64_t** els_;         // pointers to elements in buffer
+
+        /* Compression related */
+        bool isCompressed_;
+        size_t compLength_;
     };
 }
 

@@ -5,6 +5,7 @@
 
 #include "CompressTree.h"
 #include "Node.h"
+#include "snappy.h"
 
 namespace compresstree {
     static uint32_t nodeCtr = 0;
@@ -184,8 +185,6 @@ namespace compresstree {
         curOffset_ = 0;
         numElements_ = 0;
 
-        checkIntegrity();
-
 emptyChildren:
         // check if any children are full
         for (curChild=0; curChild < children_.size(); curChild++) {
@@ -301,15 +300,14 @@ emptyChildren:
         memmove(tree_->auxBuffer_ + auxOffset, 
                 (void*)(els_[lastIndex]), el_size);
         auxOffset += el_size;
+#ifdef ENABLE_ASSERT_CHECKS
         assert(auxOffset == curOffset_);
+#endif
 
         // swap buffer pointers
         char* tp = data_;
         data_ = tree_->auxBuffer_;
         tree_->auxBuffer_ = tp;
-
-        verifySort();
-
         return true;
     }
 
@@ -329,7 +327,6 @@ emptyChildren:
         Node* newLeaf = new Node(LEAF, tree_);
         newLeaf->copyIntoBuffer(data_ + offset, curOffset_ - offset);
         newLeaf->addElements(numElements_ - numElements_/2);
-        newLeaf->compress();
         newLeaf->separator_ = separator_;
         newLeaf->checkIntegrity();
 
@@ -441,8 +438,6 @@ emptyChildren:
             fprintf(stderr, "%d, ", newNode->children_[j]->id_);
         fprintf(stderr, "]\n");
 #endif
-        checkIntegrity();
-        newNode->checkIntegrity();
 
         if (isRoot())
             return tree_->createNewRoot(newNode);
@@ -480,15 +475,28 @@ emptyChildren:
 
     bool Node::compress()
     {
-        // TODO do compression
+#ifdef ENABLE_COMPRESSION
+        char* compressed = (char*)malloc(snappy::MaxCompressedLength(
+                curOffset_));
+        size_t compressed_length;
+        snappy::RawCompress(data_, curOffset_, compressed, &compressed_length);
+        free(data_);
+        data_ = compressed;
+        compLength_ = compressed_length;
         isCompressed_ = true;
+#endif
         return true;
     }
 
     bool Node::decompress()
     {
-        // TODO do decompression
+#ifdef ENABLE_COMPRESSION
+        char* buf = (char*)malloc(BUFFER_SIZE);
+        snappy::RawUncompress(data_, compLength_, buf);
+        free(data_);
+        data_ = buf;
         isCompressed_ = false;
+#endif
         return true;
     }
 

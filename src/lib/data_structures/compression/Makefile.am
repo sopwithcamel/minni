@@ -11,7 +11,10 @@ ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I$(srcdir)/../record_creation/ \
 			-I$(srcdir)/../resources/ \
 			-I$(srcdir)/../../worker/gen-cpp \
-			-I$(srcdir)/../../dfs/
+			-I$(srcdir)/../../dfs/\
+			-I/home/hamur/code/snappy/
+
+cttest_LDFLAGS = -L/home/hamur/code/snappy -lsnappy
 
 cttest_SOURCES = CompressTree.cpp Node.cpp CTTest.cpp
 

@@ -110,14 +110,21 @@ begin_flush:
         for (uint32_t i=0; i<leavesToBeEmptied_.size(); i++) {
             Node* node = leavesToBeEmptied_.front();
             leavesToBeEmptied_.pop();
-            node->decompress();
+            if (node->isCompressed()) {
+                node->decompress();
+            }
             node->sortBuffer();
             Node* newLeaf = node->splitLeaf();
-            if (node->isFull())
-                node->splitLeaf();
-            if (newLeaf->isFull())
-                newLeaf->splitLeaf();
+            if (node->isFull()) {
+                Node* l1 = node->splitLeaf();
+                l1->compress();
+            }
+            if (newLeaf->isFull()) {
+                Node* l2 = newLeaf->splitLeaf();
+                l2->compress();
+            }
             node->compress();
+            newLeaf->compress();
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Leaf node %d removed from full-leaf-list\n", node->id_);
 #endif
