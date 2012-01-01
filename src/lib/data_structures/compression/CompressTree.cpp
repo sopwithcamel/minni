@@ -15,6 +15,7 @@ namespace compresstree {
     {
         // create root node; initially a leaf
         rootNode_ = new Node(LEAF, this);
+        rootNode_->setSeparator(UINT64_MAX);
 
         // aux buffer for use in sorting
         auxBuffer_ = (char*)malloc(BUFFER_SIZE);
@@ -62,6 +63,8 @@ begin_flush:
         while(!visitQueue.empty()) {
             curNode = visitQueue.front();
             visitQueue.pop();
+            if (curNode->isLeaf())
+                allLeaves_.push_back(curNode);
             for (uint32_t i=0; i<curNode->children_.size(); i++) {
                 if (!curNode->children_[i]->isLeaf()) {
                     visitQueue.push(curNode->children_[i]);
@@ -109,9 +112,11 @@ begin_flush:
             leavesToBeEmptied_.pop();
             node->decompress();
             node->sortBuffer();
-            while (node->isFull()) {
-                assert(node->splitLeaf());
-            }
+            Node* newLeaf = node->splitLeaf();
+            if (node->isFull())
+                node->splitLeaf();
+            if (newLeaf->isFull())
+                newLeaf->splitLeaf();
             node->compress();
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Leaf node %d removed from full-leaf-list\n", node->id_);
@@ -120,16 +125,17 @@ begin_flush:
         return num;
     }
 
-    bool CompressTree::createNewRoot(uint64_t med, Node* otherChild)
+    bool CompressTree::createNewRoot(Node* otherChild)
     {
         Node* newRoot = new Node(NON_LEAF, this);
+        newRoot->setSeparator(UINT64_MAX);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node %d is new root; children are %d and %d\n", 
                 newRoot->id_, rootNode_->id_, otherChild->id_);
 #endif
         // add two children of new root
-        newRoot->addChild(med, rootNode_, LEFT);
-        newRoot->addChild(UINT64_MAX, otherChild, LEFT);
+        newRoot->addChild(rootNode_);
+        newRoot->addChild(otherChild);
         rootNode_ = newRoot;
         return true;
     }

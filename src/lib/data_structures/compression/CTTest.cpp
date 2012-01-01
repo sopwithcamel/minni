@@ -68,16 +68,18 @@ int testMonotonicDecrease(uint32_t a, uint32_t b)
     return true;
 }
 
-int testRandom(uint32_t a, uint32_t b)
+int testRandom(uint32_t a, uint32_t b, size_t numIns)
 {
-    size_t i, numIns = 800;
+    size_t i;
     compresstree::CompressTree* ct = new compresstree::CompressTree(a, b);
     srand(56);
-    fprintf(stderr, "Testing insertion of random values... ");
+    fprintf(stderr, "Testing insertion of %ld random values... ", numIns);
     char* buf = (char*)malloc(100);
     strcpy(buf, "testing");
     for (i=0; i<numIns; i++) {
-        assert(ct->insert(rand(), buf, strlen(buf) + 1));
+        uint64_t hash = rand();
+//        fprintf(stderr, "Inserted: %lu\n", hash);
+        assert(ct->insert(hash, buf, strlen(buf) + 1));
     }
     assert(ct->flushBuffers());
     
@@ -94,13 +96,18 @@ int testRandom(uint32_t a, uint32_t b)
     }
     if (readValues == numIns)
         fprintf(stderr, "passed\n");
+    else {
+        fprintf(stderr, "failed\n");
+        fprintf(stderr, "Inserted: %ld, Read: %ld\n", numIns, readValues);
+    }
     delete ct;
     return true;
 }
 
 int main()
 {
-//    assert(testMonotonicIncrease(2, 8));
-//    assert(testMonotonicDecrease(2, 8));
-    assert(testRandom(2, 4));
+    assert(testMonotonicIncrease(2, 8));
+    assert(testMonotonicDecrease(2, 8));
+    assert(testRandom(2, 4, 1));
+    assert(testRandom(2, 4, 1000));
 }

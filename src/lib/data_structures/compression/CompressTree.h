@@ -29,7 +29,7 @@ namespace compresstree {
          * buffers have been emptied */
         bool addLeafToEmpty(Node* node);
         size_t handleFullLeaves();
-        bool createNewRoot(uint64_t med, Node* otherChild);
+        bool createNewRoot(Node* otherChild);
       public:
         // (a,b)-tree...
         const uint32_t a_;

@@ -7,7 +7,9 @@
 
 #include "CompressTree.h"
 
-#define CT_NODE_DEBUG
+//#define CT_NODE_DEBUG
+#define ENABLE_SORT_VERIFICATION
+#define ENABLE_INTEGRITY_CHECK
 
 namespace compresstree {
 
@@ -74,24 +76,27 @@ namespace compresstree {
 
         /* Tree-related functions */
 
-        /* split leaf node */
-        bool splitLeaf();
+        /* split leaf node and return new leaf */
+        Node* splitLeaf();
         /* Add a new child to the node; the child type indicates which side 
          * of the separator the child must be inserted. 
          * if the number of children is more than the allowed number:
          * + first check if siblings have fewer children
          * + if not, split the node into two and call addChild recursively
          */
-        bool addChild(uint64_t med, Node* newNode, ChildType ctyp);
+        bool addChild(Node* newNode);
         /* Split non-leaf node; must be called with the buffer decompressed
          * and sorted. If called on the root, then a new root is created */
         bool splitNonLeaf();
+        bool checkIntegrity();
 
         /* Sorting-related functions */
         void quicksort(uint64_t** arr, size_t left, size_t right);
         size_t partition(uint64_t** arr, size_t left, size_t right,
                 size_t pivIndex);
         void swapPointers(uint64_t*& el1, uint64_t*& el2);
+        void verifySort();
+        void setSeparator(uint64_t sep);
 
       private:
         /* pointer to the tree */
@@ -107,8 +112,7 @@ namespace compresstree {
 
         /* Pointers to children */
         std::vector<Node*> children_;
-        /* Separation values for children */
-        std::vector<uint64_t> sepValues_;
+        uint64_t separator_;
 
         /* Sorting related */
         uint64_t** els_;         // pointers to elements in buffer

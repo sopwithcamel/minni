@@ -97,32 +97,39 @@ namespace compresstree {
         /* if i am a leaf node, queue up for action later after all the
          * internal nodes have been processed */
         if (isLeaf()) {
-            tree_->addLeafToEmpty(this);
+            /* this may be called even when buffer is not full (when flushing
+             * all buffers at the end). */
+            if (isFull()) {
+                tree_->addLeafToEmpty(this);
 #ifdef CT_NODE_DEBUG
-            fprintf(stderr, "Leaf node %d added to full-leaf-list\n", id_);
+                fprintf(stderr, "Leaf node %d added to full-leaf-list\n", id_);
 #endif
+            }
             return true;
         }
 
+        if (curOffset_ == 0)
+            goto emptyChildren;
+
         // find the first separator greater than the first element
         curHash = (uint64_t*)(data_ + offset);
-        while (*curHash >= sepValues_[curChild])
+        while (*curHash >= children_[curChild]->separator_) {
             curChild++;
-        if (curChild >= sepValues_.size()) {
-            fprintf(stderr, "ccchild: %d, curhash: %ld\n", curChild, *curHash);
-            assert(false);
+            if (curChild >= children_.size()) {
+                fprintf(stderr, "Node: %d: Can't place %ld among children\n", id_, *curHash);
+                checkIntegrity();
+                assert(false);
+            }
         }
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node: %d: first node chosen: %d (sep: %lu,\
             child: %d); first element: %ld\n", id_, children_[curChild]->id_,
-            sepValues_[curChild], curChild, *curHash);
+            children_[curChild]->separator_, curChild, *curHash);
 #endif
         while (offset < curOffset_) {
             curHash = (uint64_t*)(data_ + offset);
-            if (*curHash == 1869846033)
-                fprintf(stderr, "1869846033 going into child %d with sep %lu\n", children_[curChild]->id_, sepValues_[curChild]);
 
-            if (offset >= curOffset_ || *curHash >= sepValues_[curChild]) {
+            if (offset >= curOffset_ || *curHash >= children_[curChild]->separator_) {
                 // this separator is the largest separator that is not greater
                 // than *curHash. This invariant needs to be maintained.
                 if (numCopied > 0) { // at least one element for this
@@ -136,21 +143,20 @@ namespace compresstree {
                             offset: %ld, sep: %lu, off:(%ld/%ld)\n", numCopied, 
                             children_[curChild]->id_,
                             children_[curChild]->curOffset_,
-                            sepValues_[curChild],
+                            children_[curChild]->separator_,
                             offset, curOffset_);
 #endif
                     lastOffset = offset;
                     numCopied = 0;
                 }
                 // skip past all separators not greater than *curHash
-                while (*curHash >= sepValues_[curChild])
+                while (*curHash >= children_[curChild]->separator_) {
                     curChild++;
-                if (curChild >= children_.size()) {
-                    fprintf(stderr, "Can't place %ld among children\n", *curHash);
-                        
-                    assert(false);
+                    if (curChild >= children_.size()) {
+                        fprintf(stderr, "Can't place %ld among children\n", *curHash);
+                        assert(false);
+                    }
                 }
-
             }
             // proceed to next element
             advance(1, offset);
@@ -169,7 +175,7 @@ namespace compresstree {
                     offset: %ld, sep: %lu, off:(%ld/%ld)\n", numCopied, 
                     children_[curChild]->id_,
                     children_[curChild]->curOffset_,
-                    sepValues_[curChild],
+                    children_[curChild]->separator_,
                     offset, curOffset_);
 #endif
         }
@@ -177,14 +183,17 @@ namespace compresstree {
         // reset
         curOffset_ = 0;
         numElements_ = 0;
-        
+
+        checkIntegrity();
+
+emptyChildren:
         // check if any children are full
         for (curChild=0; curChild < children_.size(); curChild++) {
             if (children_[curChild]->isFull()) {
                 children_[curChild]->emptyBuffer();
-                tree_->handleFullLeaves();
             }
         }
+        tree_->handleFullLeaves();
         return true;
     }
 
@@ -193,6 +202,32 @@ namespace compresstree {
         uint64_t* temp = el1;   
         el1 = el2;
         el2 = temp;
+    }
+
+    void Node::verifySort()
+    {
+#ifdef ENABLE_SORT_VERIFICATION
+        size_t offset = 0;
+        uint64_t* curHash, *nextHash;
+        curHash = (uint64_t*)(data_ + offset);
+        while (offset < curOffset_) {
+            advance(1, offset);
+            if (offset >= curOffset_)
+                break;
+            nextHash = (uint64_t*)(data_ + offset);
+            if (*curHash > *nextHash) {
+                fprintf(stderr, "Node %d not sorted\n", id_);
+                fprintf(stderr, "%ld before %ld\n", *curHash, *nextHash);
+                assert(false);
+            }
+            curHash = nextHash;
+        }
+#endif
+    }
+
+    void Node::setSeparator(uint64_t sep)
+    {
+        separator_ = sep;
     }
 
     size_t Node::partition(uint64_t** arr, size_t left, size_t right,
@@ -273,13 +308,15 @@ namespace compresstree {
         data_ = tree_->auxBuffer_;
         tree_->auxBuffer_ = tp;
 
+        verifySort();
+
         return true;
     }
 
     /* A leaf is split by moving half the elements of the buffer into a
      * new leaf and inserting a median value as the separator element into the
      * parent */
-    bool Node::splitLeaf()
+    Node* Node::splitLeaf()
     {
         size_t offset = 0;
         if (!advance(numElements_/2, offset))
@@ -293,6 +330,8 @@ namespace compresstree {
         newLeaf->copyIntoBuffer(data_ + offset, curOffset_ - offset);
         newLeaf->addElements(numElements_ - numElements_/2);
         newLeaf->compress();
+        newLeaf->separator_ = separator_;
+        newLeaf->checkIntegrity();
 
         // set this leaf properties
 #ifdef CT_NODE_DEBUG
@@ -301,13 +340,16 @@ namespace compresstree {
 #endif
         curOffset_ = offset;
         reduceElements(numElements_ - numElements_/2);
+        separator_ = *median_hash;
+        checkIntegrity();
 
         // if leaf is also the root, create new root
         if (isRoot()) {
-            return tree_->createNewRoot(*median_hash, newLeaf);
+            tree_->createNewRoot(newLeaf);
         } else {
-            return parent_->addChild(*median_hash, newLeaf, RIGHT);
+            parent_->addChild(newLeaf);
         }
+        return newLeaf;
     }
 
     bool Node::copyIntoBuffer(void* buf, size_t buf_size)
@@ -322,39 +364,26 @@ namespace compresstree {
         return true;
     }
 
-    bool Node::addChild(uint64_t med, Node* newNode, ChildType ctyp)   
+    bool Node::addChild(Node* newNode)   
     {
         uint32_t i;
         // insert separator value
 
         // find position of insertion
-        std::vector<uint64_t>::iterator it = sepValues_.begin();
-        for (i=0; i<sepValues_.size(); i++) {
-            if (med > sepValues_[i])
+        std::vector<Node*>::iterator it = children_.begin();
+        for (i=0; i<children_.size(); i++) {
+            if (newNode->separator_ > children_[i]->separator_)
                 continue;
             break;
         }
-        it = sepValues_.begin() + i;
-        sepValues_.insert(it, med);
-#ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node: %d: Separator %lu added at pos %u, [", id_, 
-                med, i);
-        for (uint32_t j=0; j<sepValues_.size(); j++)
-            fprintf(stderr, "%lu, ", sepValues_[j]);
-        fprintf(stderr, "]\n");
-#endif
-
-        // insert child
-        std::vector<Node*>::iterator ch_it = children_.begin() + i;
-        if (ctyp == RIGHT)
-            ch_it++;
-        children_.insert(ch_it, newNode);
+        it += i;
+        children_.insert(it, newNode);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node: %d: Node %d added at pos %u, [", id_, 
                 newNode->id_, i);
         for (uint32_t j=0; j<children_.size(); j++)
             fprintf(stderr, "%d, ", children_[j]->id_);
-        fprintf(stderr, "]\n");
+        fprintf(stderr, "], num children: %d\n", children_.size());
 #endif
 
         // set parent
@@ -365,9 +394,6 @@ namespace compresstree {
             splitNonLeaf();
         }
 
-        assert(sepValues_.size() == children_.size());
-        assert(children_.size() <= tree_->b_);
-        assert(newNode->sepValues_.size() == newNode->children_.size());
         return true;
     }
 
@@ -381,37 +407,30 @@ namespace compresstree {
 
         // create new node
         Node* newNode = new Node(NON_LEAF, tree_);
-
         // move the last floor((b+1)/2) children to new node
         int newNodeChildIndex = children_.size()-(tree_->b_+1)/2;
-
         // add children to new node
         for (uint32_t i=newNodeChildIndex; i<children_.size(); i++) {
             newNode->children_.push_back(children_[i]);
             children_[i]->parent_ = newNode;
         }
+        // set separator
+        newNode->separator_ = separator_;
 
         // remove children from current node
         std::vector<Node*>::iterator it = children_.begin() + 
                 newNodeChildIndex;
         children_.erase(it, children_.end());
-        // add separator values to new node
-        for (uint32_t i=newNodeChildIndex; i<sepValues_.size(); i++)
-            newNode->sepValues_.push_back(sepValues_[i]);
-        // remove separator values from current node
-        std::vector<uint64_t>::iterator sep_it = sepValues_.begin() + 
-                newNodeChildIndex;
-        sepValues_.erase(sep_it, sepValues_.end());
 
         // median separator from node
-        uint64_t med = sepValues_.back();
+        separator_ = children_[children_.size()-1]->separator_;
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "After split, %d: [", id_);
-        for (uint32_t j=0; j<sepValues_.size(); j++)
-            fprintf(stderr, "%lu, ", sepValues_[j]);
+        for (uint32_t j=0; j<children_.size(); j++)
+            fprintf(stderr, "%lu, ", children_[j]->separator_);
         fprintf(stderr, "] and %d: [", newNode->id_);
-        for (uint32_t j=0; j<newNode->sepValues_.size(); j++)
-            fprintf(stderr, "%lu, ", newNode->sepValues_[j]);
+        for (uint32_t j=0; j<newNode->children_.size(); j++)
+            fprintf(stderr, "%lu, ", newNode->children_[j]->separator_);
         fprintf(stderr, "]\n");
 
         fprintf(stderr, "Children, %d: [", id_);
@@ -422,11 +441,13 @@ namespace compresstree {
             fprintf(stderr, "%d, ", newNode->children_[j]->id_);
         fprintf(stderr, "]\n");
 #endif
+        checkIntegrity();
+        newNode->checkIntegrity();
 
         if (isRoot())
-            return tree_->createNewRoot(med, newNode);
+            return tree_->createNewRoot(newNode);
         else
-            return parent_->addChild(med, newNode, RIGHT);
+            return parent_->addChild(newNode);
     }
 
     bool Node::advance(size_t n, size_t& offset)
@@ -474,6 +495,30 @@ namespace compresstree {
     bool Node::isCompressed()
     {
         return isCompressed_;
+    }
+
+    bool Node::checkIntegrity()
+    {
+#ifdef ENABLE_INTEGRITY_CHECK
+        size_t offset;
+        uint64_t* curHash;
+        offset = 0;
+        while (offset < curOffset_) {
+            curHash = (uint64_t*)(data_ + offset);
+            if (*curHash >= separator_) {
+                fprintf(stderr, "Node: %d: Value %ld at offset %ld/%ld\
+                        greater than %lu\n", id_, *curHash, offset, 
+                        curOffset_, separator_);
+                assert(false);
+            }
+            advance(1, offset);
+        }
+        for (uint32_t i=0; i<children_.size(); i++) {
+            if (!children_[i]->checkIntegrity())
+                return false;
+        }
+#endif
+        return true;
     }
 }
 
