@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "CompressTree.h"
 
@@ -74,12 +75,16 @@ int testRandom(uint32_t a, uint32_t b, size_t numIns)
     fprintf(stderr, "Testing insertion of %ld random values... ", numIns);
     char* buf = (char*)malloc(100);
     strcpy(buf, "testing");
+//    sprintf(buf, "%ld", rand());
+    time_t stime = time(NULL);
     for (i=0; i<numIns; i++) {
         uint64_t hash = rand();
 //        fprintf(stderr, "Inserted: %lu\n", hash);
         assert(ct->insert(hash, buf, strlen(buf) + 1));
     }
     assert(ct->flushBuffers());
+    time_t ftime = time(NULL);
+    fprintf(stderr, "inserted in %lds... ", ftime - stime);
     
     size_t buf_size;
     char* read_buf;
@@ -92,6 +97,7 @@ int testRandom(uint32_t a, uint32_t b, size_t numIns)
         if (!ret)
             break;
     }
+    char c = getchar();
     fprintf(stderr, "passed\n");
     delete ct;
     return true;
@@ -99,8 +105,8 @@ int testRandom(uint32_t a, uint32_t b, size_t numIns)
 
 int main()
 {
-    assert(testMonotonicIncrease(2, 8));
-    assert(testMonotonicDecrease(2, 8));
-    assert(testRandom(2, 4, 1));
-    assert(testRandom(2, 8, 1000000));
+//    assert(testMonotonicIncrease(2, 8));
+//    assert(testMonotonicDecrease(2, 8));
+//    assert(testRandom(2, 4, 1));
+    assert(testRandom(2, 8, 10000000));
 }

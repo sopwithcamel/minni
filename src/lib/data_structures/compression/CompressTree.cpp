@@ -20,12 +20,16 @@ namespace compresstree {
 
         // aux buffer for use in sorting
         auxBuffer_ = (char*)malloc(BUFFER_SIZE);
+
+        // buffer for use in compression
+        compBuffer_ = (char*)malloc(BUFFER_SIZE);
     }
 
     CompressTree::~CompressTree()
     {
         delete rootNode_;
         free(auxBuffer_);
+        free(compBuffer_);
     }
 
     bool CompressTree::insert(uint64_t hash, void* buf, size_t buf_size)
@@ -80,6 +84,9 @@ begin_flush:
             numit += allLeaves_[i]->numElements_;
         fprintf(stderr, "Tree has %ld elements\n", numit);
 #endif
+
+        free(rootNode_->data_);
+        rootNode_->data_ = NULL;
         return true;
     }
 

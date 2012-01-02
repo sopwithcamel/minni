@@ -190,6 +190,11 @@ namespace compresstree {
         curOffset_ = 0;
         numElements_ = 0;
 
+        if (!isRoot()) {
+            free(data_);
+            data_ = NULL;
+        }
+
 emptyChildren:
         // check if any children are full
         for (curChild=0; curChild < children_.size(); curChild++) {
@@ -365,11 +370,17 @@ emptyChildren:
 
     bool Node::copyIntoBuffer(void* buf, size_t buf_size)
     {
+#ifdef ENABLE_ASSERT_CHECKS
         if (curOffset_ + buf_size >= BUFFER_SIZE) {
             fprintf(stderr, "Node: %d, cOffset: %ld, buf: %ld\n", id_, 
                     curOffset_, buf_size); 
             assert(false);
         }
+        if (data_ == NULL) {
+            fprintf(stderr, "data buffer is null\n");
+            assert(false);
+        }
+#endif
         memmove(data_+curOffset_, buf, buf_size);
         curOffset_ += buf_size;
         return true;
@@ -453,9 +464,10 @@ emptyChildren:
         fprintf(stderr, "]\n");
 #endif
 
-        if (isRoot())
+        if (isRoot()) {
+            setCompressible(true);
             return tree_->createNewRoot(newNode);
-        else
+        } else
             return parent_->addChild(newNode);
     }
 
@@ -496,10 +508,16 @@ emptyChildren:
 #ifdef ENABLE_COMPRESSION
         if (!compressible_)
             return true;
-        char* compressed = (char*)malloc(snappy::MaxCompressedLength(
-                curOffset_));
         size_t compressed_length;
-        snappy::RawCompress(data_, curOffset_, compressed, &compressed_length);
+        snappy::RawCompress(data_, curOffset_, tree_->compBuffer_,
+                &compressed_length);
+        char* compressed = (char*)malloc(compressed_length);
+        memmove(compressed, tree_->compBuffer_, compressed_length);
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "len: %ld, max len: %ld, comp len: %ld\n", 
+                curOffset_, snappy::MaxCompressedLength(curOffset_),
+                compressed_length);
+#endif
         free(data_);
         data_ = compressed;
         compLength_ = compressed_length;
@@ -514,8 +532,10 @@ emptyChildren:
         if (!compressible_)
             return true;
         char* buf = (char*)malloc(BUFFER_SIZE);
-        snappy::RawUncompress(data_, compLength_, buf);
-        free(data_);
+        if (data_ != NULL) {
+            snappy::RawUncompress(data_, compLength_, buf);
+            free(data_);
+        }
         data_ = buf;
         isCompressed_ = false;
 #endif

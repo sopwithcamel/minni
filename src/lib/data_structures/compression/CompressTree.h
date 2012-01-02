@@ -41,6 +41,7 @@ namespace compresstree {
         size_t lastLeafRead_;
         size_t lastOffset_;
         char* auxBuffer_;
+        char* compBuffer_;
     };
 }
 
