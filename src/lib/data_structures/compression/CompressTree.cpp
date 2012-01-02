@@ -75,6 +75,10 @@ begin_flush:
         }
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Tree has %ld leaves\n", allLeaves_.size());
+        size_t numit = 0;
+        for (int i=0; i<allLeaves_.size(); i++)
+            numit += allLeaves_[i]->numElements_;
+        fprintf(stderr, "Tree has %ld elements\n", numit);
 #endif
         return true;
     }

@@ -131,6 +131,8 @@ namespace compresstree {
 #endif
         while (offset < curOffset_) {
             curHash = (uint64_t*)(data_ + offset);
+            size_t bs = *(size_t*)(data_ + offset + 8);
+            assert(bs > 0);
 
             if (offset >= curOffset_ || *curHash >= children_[curChild]->separator_) {
                 // this separator is the largest separator that is not greater
@@ -167,7 +169,7 @@ namespace compresstree {
         }
 
         // copy remaining elements into child
-        if (offset > lastOffset) {
+        if (offset >= lastOffset) {
             assert(children_[curChild]->decompress());
             assert(children_[curChild]->copyIntoBuffer(data_ + 
                         lastOffset, offset - lastOffset));
@@ -268,6 +270,7 @@ emptyChildren:
         size_t offset = 0;
         size_t el_size;
         size_t auxOffset = 0;
+        size_t auxEls = 0;
         size_t buf_size;
 
         if (numElements_ == 0)
@@ -299,6 +302,7 @@ emptyChildren:
                 memmove(tree_->auxBuffer_ + auxOffset, 
                         (void*)(els_[lastIndex]), el_size);
                 auxOffset += el_size;
+                auxEls++;
 
                 lastIndex = i;
             }
@@ -308,14 +312,14 @@ emptyChildren:
         memmove(tree_->auxBuffer_ + auxOffset, 
                 (void*)(els_[lastIndex]), el_size);
         auxOffset += el_size;
-#ifdef ENABLE_ASSERT_CHECKS
-        assert(auxOffset == curOffset_);
-#endif
+        auxEls++;
 
         // swap buffer pointers
         char* tp = data_;
         data_ = tree_->auxBuffer_;
         tree_->auxBuffer_ = tp;
+        curOffset_ = auxOffset;
+        numElements_ = auxEls;
         return true;
     }
 
@@ -462,6 +466,10 @@ emptyChildren:
             offset += sizeof(uint64_t);
             bufSize = (size_t*)(data_ + offset);
             offset += sizeof(size_t) + *bufSize;
+            if (*bufSize == 0) {
+                fprintf(stderr, "%lu, bufsize: %lu, %ld\n", offset, *bufSize, *(size_t*)(data_ + offset + 16));
+                assert(false);
+            }
         }
         return true;
     }
