@@ -85,9 +85,6 @@ begin_flush:
             numit += allLeaves_[i]->numElements_;
         fprintf(stderr, "Tree has %ld elements\n", numit);
 #endif
-
-        free(rootNode_->data_);
-        rootNode_->data_ = NULL;
         return true;
     }
 

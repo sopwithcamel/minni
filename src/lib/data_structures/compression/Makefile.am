@@ -1,6 +1,6 @@
 bin_PROGRAMS = cttest
 
-EXTRA_DIST = CompressTree.cpp CompressTree.h Node.cpp Node.h CTTest.cpp
+EXTRA_DIST = CompressTree.cpp CompressTree.h Node.cpp Node.h CTTest.cpp easyzlib.c easyzlib.h
 
 ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I$(srcdir)/../ \
@@ -16,6 +16,6 @@ ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 
 cttest_LDFLAGS = -L/home/hamur/code/snappy -lsnappy
 
-cttest_SOURCES = CompressTree.cpp Node.cpp CTTest.cpp
+cttest_SOURCES = CompressTree.cpp Node.cpp CTTest.cpp easyzlib.c
 
 cttest_CPPFLAGS = $(ALL_CPPFLAGS) -g -Wall -D__STDC_LIMIT_MACROS

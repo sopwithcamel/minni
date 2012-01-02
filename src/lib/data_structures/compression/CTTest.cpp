@@ -70,7 +70,7 @@ int testMonotonicDecrease(uint32_t a, uint32_t b)
 int testRandom(uint32_t a, uint32_t b, size_t numIns)
 {
     size_t i;
-    compresstree::CompressTree* ct = new compresstree::CompressTree(a, b, compresstree::SNAPPY);
+    compresstree::CompressTree* ct = new compresstree::CompressTree(a, b, compresstree::ZLIB);
     srand(56);
     fprintf(stderr, "Testing insertion of %ld random values... ", numIns);
     char* buf = (char*)malloc(100);
@@ -97,7 +97,7 @@ int testRandom(uint32_t a, uint32_t b, size_t numIns)
         if (!ret)
             break;
     }
-    char c = getchar();
+    getchar();
     fprintf(stderr, "passed\n");
     delete ct;
     return true;

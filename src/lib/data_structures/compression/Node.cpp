@@ -6,6 +6,7 @@
 #include "CompressTree.h"
 #include "Node.h"
 #include "snappy.h"
+#include "zlib.h"
 
 namespace compresstree {
     static uint32_t nodeCtr = 0;
@@ -29,6 +30,12 @@ namespace compresstree {
         if (tree_->alg_ == SNAPPY) {
             compress = &Node::snappyCompress;
             decompress = &Node::snappyDecompress;
+        } else if (tree_->alg_ == ZLIB) {
+            compress = &Node::zlibCompress;
+            decompress = &Node::zlibDecompress;
+        } else {
+            fprintf(stderr, "Compression algorithm\n");
+            assert(false);
         }
     }
 
@@ -543,6 +550,91 @@ emptyChildren:
         char* buf = (char*)malloc(BUFFER_SIZE);
         if (data_ != NULL) {
             snappy::RawUncompress(data_, compLength_, buf);
+            free(data_);
+        }
+        data_ = buf;
+        isCompressed_ = false;
+#endif
+        return true;
+    }
+
+    bool Node::zlibCompress()
+    {
+#ifdef ENABLE_COMPRESSION
+        int ret;
+        z_stream strm;
+        if (!compressible_)
+            return true;
+        /* allocate deflate state */
+        strm.zalloc = Z_NULL;
+        strm.zfree = Z_NULL;
+        strm.opaque = Z_NULL;
+        ret = deflateInit(&strm, Z_DEFAULT_COMPRESSION);
+        assert(ret == Z_OK);
+
+        /* set input/output buffer */
+        strm.avail_in = curOffset_;
+        strm.next_in = (unsigned char*)data_;
+        strm.avail_out = BUFFER_SIZE;
+        strm.next_out = (unsigned char*)tree_->compBuffer_;
+
+        /* compress */
+        ret = deflate(&strm, Z_FINISH);
+        assert(strm.avail_in == 0);
+        compLength_ = BUFFER_SIZE - strm.avail_out;
+        (void)deflateEnd(&strm);
+
+        free(data_);
+        char* compressed = (char*)malloc(compLength_);
+        memmove(compressed, tree_->compBuffer_, compLength_);
+        data_ = compressed;
+        isCompressed_ = true;
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "len: %ld, comp len: %ld\n", 
+                curOffset_, compLength_);
+#endif
+
+#endif
+        return true;
+    }
+
+    bool Node::zlibDecompress()
+    {
+#ifdef ENABLE_COMPRESSION
+        if (!compressible_)
+            return true;
+
+        char* buf = (char*)malloc(BUFFER_SIZE);
+
+        if (data_ != NULL) {
+            int ret;
+            z_stream strm;
+            strm.zalloc = Z_NULL;
+            strm.zfree = Z_NULL;
+            strm.opaque = Z_NULL;
+            strm.avail_in = 0;
+            strm.next_in = NULL;
+            ret = inflateInit(&strm);
+            assert(ret == Z_OK);
+
+            /* set input/output buffers */
+            strm.avail_in = compLength_;
+            strm.next_in = (unsigned char*)data_;
+            strm.avail_out = BUFFER_SIZE;
+            strm.next_out = (unsigned char*)buf;
+
+            /* do decompression */
+            ret = inflate(&strm, Z_NO_FLUSH);
+            assert(ret != Z_STREAM_ERROR);
+            size_t uncomp_length = BUFFER_SIZE - strm.avail_out;
+            (void)inflateEnd(&strm);
+#ifdef ENABLE_ASSERT_CHECKS
+            assert(curOffset_ == uncomp_length);
+#endif
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "comp len: %ld, len: %ld\n", 
+                    compLength_, curOffset_);
+#endif
             free(data_);
         }
         data_ = buf;
