@@ -16,6 +16,7 @@ namespace compresstree {
         // create root node; initially a leaf
         rootNode_ = new Node(LEAF, this);
         rootNode_->setSeparator(UINT64_MAX);
+        rootNode_->setCompressible(false);
 
         // aux buffer for use in sorting
         auxBuffer_ = (char*)malloc(BUFFER_SIZE);
@@ -44,7 +45,6 @@ begin_flush:
             curNode = visitQueue.front();
             visitQueue.pop();
             // flush buffer
-            curNode->sortBuffer();
             curNode->emptyBuffer();
             if (handleFullLeaves() > 0) {
                 while (!visitQueue.empty())
@@ -82,6 +82,8 @@ begin_flush:
     bool CompressTree::nextValue(uint64_t& hash, char*& buf, size_t& buf_size)
     {
         Node* curLeaf = allLeaves_[lastLeafRead_];
+        if (curLeaf->isCompressed())
+            curLeaf->decompress();
 
         hash = *(uint64_t*)(curLeaf->data_ + lastOffset_);
         lastOffset_ += sizeof(uint64_t);
@@ -90,8 +92,10 @@ begin_flush:
         buf = curLeaf->data_ + lastOffset_;
         lastOffset_ += buf_size;
         if (lastOffset_ >= curLeaf->curOffset_) {
+            curLeaf->compress();
             if (++lastLeafRead_ == allLeaves_.size())
                 return false;
+            allLeaves_[lastLeafRead_]->decompress();
             lastOffset_ = 0;
         }
         return true;
@@ -136,6 +140,7 @@ begin_flush:
     {
         Node* newRoot = new Node(NON_LEAF, this);
         newRoot->setSeparator(UINT64_MAX);
+        newRoot->setCompressible(false);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node %d is new root; children are %d and %d\n", 
                 newRoot->id_, rootNode_->id_, otherChild->id_);

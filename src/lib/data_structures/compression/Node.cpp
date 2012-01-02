@@ -17,7 +17,8 @@ namespace compresstree {
         parent_(NULL),
         numElements_(0),
         curOffset_(0),
-        isCompressed_(false)
+        isCompressed_(false),
+        compressible_(true)
     {
         // Allocate memory for data buffer
         data_ = (char*)malloc(BUFFER_SIZE);
@@ -60,7 +61,6 @@ namespace compresstree {
         
         // if buffer threshold is reached, call emptyBuffer
         if (isFull()) {
-            sortBuffer();
             emptyBuffer();
 
             /* emptying the buffer could have caused recursive calls leading
@@ -112,6 +112,8 @@ namespace compresstree {
         if (curOffset_ == 0)
             goto emptyChildren;
 
+        decompress();
+        sortBuffer();
         // find the first separator greater than the first element
         curHash = (uint64_t*)(data_ + offset);
         while (*curHash >= children_[curChild]->separator_) {
@@ -180,6 +182,7 @@ namespace compresstree {
                     offset, curOffset_);
 #endif
         }
+        compress();
 
         // reset
         curOffset_ = 0;
@@ -269,6 +272,11 @@ emptyChildren:
 
         if (numElements_ == 0)
             return true;
+#ifdef ENABLE_ASSERT_CHECKS
+        if (isCompressed()) {
+            fprintf(stderr, "Node %d is compressed still!\n", id_);
+        }
+#endif
 
         for (uint64_t i=0; i<numElements_; i++) {
             els_[i] = (uint64_t*)(data_ + offset);
@@ -317,6 +325,7 @@ emptyChildren:
     Node* Node::splitLeaf()
     {
         size_t offset = 0;
+        sortBuffer();
         if (!advance(numElements_/2, offset))
             return false;
 
@@ -342,6 +351,7 @@ emptyChildren:
 
         // if leaf is also the root, create new root
         if (isRoot()) {
+            setCompressible(true);
             tree_->createNewRoot(newLeaf);
         } else {
             parent_->addChild(newLeaf);
@@ -380,7 +390,7 @@ emptyChildren:
                 newNode->id_, i);
         for (uint32_t j=0; j<children_.size(); j++)
             fprintf(stderr, "%d, ", children_[j]->id_);
-        fprintf(stderr, "], num children: %d\n", children_.size());
+        fprintf(stderr, "], num children: %ld\n", children_.size());
 #endif
 
         // set parent
@@ -476,6 +486,8 @@ emptyChildren:
     bool Node::compress()
     {
 #ifdef ENABLE_COMPRESSION
+        if (!compressible_)
+            return true;
         char* compressed = (char*)malloc(snappy::MaxCompressedLength(
                 curOffset_));
         size_t compressed_length;
@@ -491,6 +503,8 @@ emptyChildren:
     bool Node::decompress()
     {
 #ifdef ENABLE_COMPRESSION
+        if (!compressible_)
+            return true;
         char* buf = (char*)malloc(BUFFER_SIZE);
         snappy::RawUncompress(data_, compLength_, buf);
         free(data_);
@@ -503,6 +517,11 @@ emptyChildren:
     bool Node::isCompressed()
     {
         return isCompressed_;
+    }
+
+    void Node::setCompressible(bool flag)
+    {
+        compressible_ = flag;
     }
 
     bool Node::checkIntegrity()

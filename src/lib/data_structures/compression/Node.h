@@ -8,7 +8,7 @@
 #include "CompressTree.h"
 
 #define ENABLE_ASSERT_CHECKS
-#define CT_NODE_DEBUG
+//#define CT_NODE_DEBUG
 #define ENABLE_SORT_VERIFICATION
 #define ENABLE_INTEGRITY_CHECK
 #define ENABLE_COMPRESSION
@@ -42,10 +42,6 @@ namespace compresstree {
         bool isRoot();
 
         bool isFull();
-
-        bool compress();
-        bool decompress();
-        bool isCompressed();
       private:
 
         /* Buffer handling functions */
@@ -101,6 +97,12 @@ namespace compresstree {
         void verifySort();
         void setSeparator(uint64_t sep);
 
+        /* Compression-related functions */
+        bool compress();
+        bool decompress();
+        bool isCompressed();
+        void setCompressible(bool flag);
+
       private:
         /* pointer to the tree */
         CompressTree* tree_;
@@ -121,6 +123,7 @@ namespace compresstree {
 
         /* Compression related */
         bool isCompressed_;
+        bool compressible_;
         size_t compLength_;
     };
 }

@@ -30,13 +30,11 @@ int testMonotonicIncrease(uint32_t a, uint32_t b)
     }
     if (readValues == numIns)
         fprintf(stderr, "passed\n");
-    else
-        goto error;
+    else {
+        fprintf(stderr, "failed; Ins: %ld, Read: %ld\n", numIns, readValues);
+    }
     delete ct;
     return true;
-error:
-    delete ct;
-    return false;
 }
 
 int testMonotonicDecrease(uint32_t a, uint32_t b)
