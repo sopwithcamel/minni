@@ -7,9 +7,10 @@
 
 namespace compresstree {
 
-    CompressTree::CompressTree(uint32_t a, uint32_t b) :
+    CompressTree::CompressTree(uint32_t a, uint32_t b, CompressAlgorithm alg) :
         a_(a),
         b_(b),
+        alg_(alg),
         lastLeafRead_(0),
         lastOffset_(0)
     {
@@ -94,7 +95,7 @@ begin_flush:
     {
         Node* curLeaf = allLeaves_[lastLeafRead_];
         if (curLeaf->isCompressed())
-            curLeaf->decompress();
+            CALL_MEM_FUNC(*curLeaf, curLeaf->decompress)();
 
         hash = *(uint64_t*)(curLeaf->data_ + lastOffset_);
         lastOffset_ += sizeof(uint64_t);
@@ -103,10 +104,11 @@ begin_flush:
         buf = curLeaf->data_ + lastOffset_;
         lastOffset_ += buf_size;
         if (lastOffset_ >= curLeaf->curOffset_) {
-            curLeaf->compress();
+            CALL_MEM_FUNC(*curLeaf, curLeaf->compress)();
             if (++lastLeafRead_ == allLeaves_.size())
                 return false;
-            allLeaves_[lastLeafRead_]->decompress();
+            CALL_MEM_FUNC(*allLeaves_[lastLeafRead_], 
+                    allLeaves_[lastLeafRead_]->decompress)();
             lastOffset_ = 0;
         }
         return true;
@@ -126,20 +128,20 @@ begin_flush:
             Node* node = leavesToBeEmptied_.front();
             leavesToBeEmptied_.pop();
             if (node->isCompressed()) {
-                node->decompress();
+                CALL_MEM_FUNC(*node, node->decompress)();
             }
             node->sortBuffer();
             Node* newLeaf = node->splitLeaf();
             if (node->isFull()) {
                 Node* l1 = node->splitLeaf();
-                l1->compress();
+                CALL_MEM_FUNC(*l1, l1->compress)();
             }
             if (newLeaf->isFull()) {
                 Node* l2 = newLeaf->splitLeaf();
-                l2->compress();
+                CALL_MEM_FUNC(*l2, l2->compress)();
             }
-            node->compress();
-            newLeaf->compress();
+            CALL_MEM_FUNC(*node, node->compress)();
+            CALL_MEM_FUNC(*newLeaf, newLeaf->compress)();
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Leaf node %d removed from full-leaf-list\n", node->id_);
 #endif

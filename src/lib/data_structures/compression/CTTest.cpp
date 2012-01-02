@@ -9,7 +9,7 @@
 int testMonotonicIncrease(uint32_t a, uint32_t b)
 {
     size_t i, numIns=1000000;
-    compresstree::CompressTree* ct = new compresstree::CompressTree(a, b);
+    compresstree::CompressTree* ct = new compresstree::CompressTree(a, b, compresstree::SNAPPY);
     fprintf(stderr, "Testing insertion of monotonically increasing values... ");
     char* buf = (char*)malloc(100);
     strcpy(buf, "testing");
@@ -41,7 +41,7 @@ int testMonotonicIncrease(uint32_t a, uint32_t b)
 int testMonotonicDecrease(uint32_t a, uint32_t b)
 {
     size_t i, numIns = 1000;
-    compresstree::CompressTree* ct = new compresstree::CompressTree(a, b);
+    compresstree::CompressTree* ct = new compresstree::CompressTree(a, b, compresstree::SNAPPY);
     fprintf(stderr, "Testing insertion of monotonically decreasing values... ");
     char* buf = (char*)malloc(100);
     strcpy(buf, "testing");
@@ -70,7 +70,7 @@ int testMonotonicDecrease(uint32_t a, uint32_t b)
 int testRandom(uint32_t a, uint32_t b, size_t numIns)
 {
     size_t i;
-    compresstree::CompressTree* ct = new compresstree::CompressTree(a, b);
+    compresstree::CompressTree* ct = new compresstree::CompressTree(a, b, compresstree::SNAPPY);
     srand(56);
     fprintf(stderr, "Testing insertion of %ld random values... ", numIns);
     char* buf = (char*)malloc(100);

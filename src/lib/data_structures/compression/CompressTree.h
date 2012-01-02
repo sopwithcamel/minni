@@ -9,13 +9,18 @@ namespace compresstree {
     const size_t BUFFER_SIZE = 10485760;
     const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 3;
     const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
+
+    enum CompressAlgorithm {
+        SNAPPY,
+        ZLIB
+    };
     
     class Node;
 
     class CompressTree {
         friend class Node;
       public:
-        CompressTree(uint32_t a, uint32_t b);
+        CompressTree(uint32_t a, uint32_t b, CompressAlgorithm alg);
         ~CompressTree();
 
         /* Insert record into tree */
@@ -35,6 +40,7 @@ namespace compresstree {
         const uint32_t a_;
         const uint32_t b_;
       private:
+        CompressAlgorithm alg_;
         Node* rootNode_;
         std::queue<Node*> leavesToBeEmptied_;
         std::vector<Node*> allLeaves_;

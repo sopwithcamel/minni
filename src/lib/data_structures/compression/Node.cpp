@@ -25,6 +25,11 @@ namespace compresstree {
 
         // allocate space for element pointers
         els_ = (uint64_t**)malloc(sizeof(uint64_t*) * MAX_ELS_PER_BUFFER);
+
+        if (tree_->alg_ == SNAPPY) {
+            compress = &Node::snappyCompress;
+            decompress = &Node::snappyDecompress;
+        }
     }
 
     Node::~Node()
@@ -112,7 +117,7 @@ namespace compresstree {
         if (curOffset_ == 0)
             goto emptyChildren;
 
-        decompress();
+        CALL_MEM_FUNC(*this, decompress)();
         sortBuffer();
         // find the first separator greater than the first element
         curHash = (uint64_t*)(data_ + offset);
@@ -138,11 +143,13 @@ namespace compresstree {
                 // this separator is the largest separator that is not greater
                 // than *curHash. This invariant needs to be maintained.
                 if (numCopied > 0) { // at least one element for this
-                    assert(children_[curChild]->decompress());
+                    assert(CALL_MEM_FUNC(*children_[curChild], 
+                            children_[curChild]->decompress)());
                     assert(children_[curChild]->copyIntoBuffer(data_ + 
                                 lastOffset, offset - lastOffset));
                     children_[curChild]->addElements(numCopied);
-                    assert(children_[curChild]->compress());
+                    assert(CALL_MEM_FUNC(*children_[curChild], 
+                            children_[curChild]->compress)());
 #ifdef CT_NODE_DEBUG
                     fprintf(stderr, "Copied %lu elements into node %d; child\
                             offset: %ld, sep: %lu, off:(%ld/%ld)\n", numCopied, 
@@ -170,11 +177,13 @@ namespace compresstree {
 
         // copy remaining elements into child
         if (offset >= lastOffset) {
-            assert(children_[curChild]->decompress());
+            CALL_MEM_FUNC(*children_[curChild], 
+                    children_[curChild]->decompress)();
             assert(children_[curChild]->copyIntoBuffer(data_ + 
                         lastOffset, offset - lastOffset));
             children_[curChild]->addElements(numCopied);
-            assert(children_[curChild]->compress());
+            CALL_MEM_FUNC(*children_[curChild], 
+                    children_[curChild]->compress)();
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Copied %lu elements into node %d; child\
                     offset: %ld, sep: %lu, off:(%ld/%ld)\n", numCopied, 
@@ -184,7 +193,7 @@ namespace compresstree {
                     offset, curOffset_);
 #endif
         }
-        compress();
+        CALL_MEM_FUNC(*this, compress)();
 
         // reset
         curOffset_ = 0;
@@ -503,7 +512,7 @@ emptyChildren:
         return false;
     }
 
-    bool Node::compress()
+    bool Node::snappyCompress()
     {
 #ifdef ENABLE_COMPRESSION
         if (!compressible_)
@@ -526,7 +535,7 @@ emptyChildren:
         return true;
     }
 
-    bool Node::decompress()
+    bool Node::snappyDecompress()
     {
 #ifdef ENABLE_COMPRESSION
         if (!compressible_)

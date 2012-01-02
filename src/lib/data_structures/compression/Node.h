@@ -13,6 +13,8 @@
 #define ENABLE_INTEGRITY_CHECK
 #define ENABLE_COMPRESSION
 
+#define CALL_MEM_FUNC(object,ptrToMember) ((object).*(ptrToMember))
+
 namespace compresstree {
 
     class CompressTree;
@@ -29,6 +31,7 @@ namespace compresstree {
 
     class Node {
         friend class CompressTree;
+        typedef bool (Node::*NodeCompFn)();
       public:
         Node(NodeType typ, CompressTree* tree);
         ~Node();
@@ -98,8 +101,12 @@ namespace compresstree {
         void setSeparator(uint64_t sep);
 
         /* Compression-related functions */
-        bool compress();
-        bool decompress();
+        NodeCompFn compress;
+        NodeCompFn decompress;
+        bool snappyCompress();
+        bool snappyDecompress();
+        bool zlibCompress();
+        bool zlibDecompress();
         bool isCompressed();
         void setCompressible(bool flag);
 
