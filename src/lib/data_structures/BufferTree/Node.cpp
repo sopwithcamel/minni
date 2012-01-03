@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "BufferTree.h"
 #include "Node.h"
@@ -23,10 +24,14 @@ namespace buffertree {
         // Allocate memory for data buffer
         data_ = (char*)malloc(BUFFER_SIZE);
         char* fileName = (char*)malloc(FILENAME_LENGTH);
-        sprintf(fileName, "%d", id_);
+        char* nodeNum = (char*)malloc(10);
+        strcpy(fileName, "/tmp/");
+        sprintf(nodeNum, "%d", id_);
+        strcat(fileName, nodeNum);
         strcat(fileName, ".buf");
-        fd_ = open(fileName, O_CREAT|O_RDWR, 0755);
+        fd_ = open(fileName, O_CREAT|O_RDWR|O_TRUNC, 0755);
         free(fileName);
+        free(nodeNum);
     }
 
     Node::~Node()
@@ -104,7 +109,7 @@ namespace buffertree {
              * all buffers at the end). */
             if (isFull()) {
                 tree_->addLeafToEmpty(this);
-#ifdef CT_NODE_DEBUG
+#ifdef BT_NODE_DEBUG
                 fprintf(stderr, "Leaf node %d added to full-leaf-list\n", id_);
 #endif
             }
@@ -126,7 +131,7 @@ namespace buffertree {
                 assert(false);
             }
         }
-#ifdef CT_NODE_DEBUG
+#ifdef BT_NODE_DEBUG
         fprintf(stderr, "Node: %d: first node chosen: %d (sep: %lu,\
             child: %d); first element: %ld\n", id_, children_[curChild]->id_,
             children_[curChild]->separator_, curChild, *curHash);
@@ -145,7 +150,7 @@ namespace buffertree {
                                 lastOffset, offset - lastOffset));
                     children_[curChild]->addElements(numCopied);
                     assert(children_[curChild]->flush());
-#ifdef CT_NODE_DEBUG
+#ifdef BT_NODE_DEBUG
                     fprintf(stderr, "Copied %lu elements into node %d; child\
                             offset: %ld, sep: %lu, off:(%ld/%ld)\n", numCopied, 
                             children_[curChild]->id_,
@@ -343,7 +348,7 @@ emptyChildren:
         newLeaf->checkIntegrity();
 
         // set this leaf properties
-#ifdef CT_NODE_DEBUG
+#ifdef BT_NODE_DEBUG
         fprintf(stderr, "Node %d splits to Node %d: new offsets: %ld and\
                 %ld\n", id_, newLeaf->id_, offset, curOffset_ - offset);
 #endif
@@ -394,7 +399,7 @@ emptyChildren:
         }
         it += i;
         children_.insert(it, newNode);
-#ifdef CT_NODE_DEBUG
+#ifdef BT_NODE_DEBUG
         fprintf(stderr, "Node: %d: Node %d added at pos %u, [", id_, 
                 newNode->id_, i);
         for (uint32_t j=0; j<children_.size(); j++)
@@ -440,7 +445,7 @@ emptyChildren:
 
         // median separator from node
         separator_ = children_[children_.size()-1]->separator_;
-#ifdef CT_NODE_DEBUG
+#ifdef BT_NODE_DEBUG
         fprintf(stderr, "After split, %d: [", id_);
         for (uint32_t j=0; j<children_.size(); j++)
             fprintf(stderr, "%lu, ", children_[j]->separator_);
@@ -500,9 +505,19 @@ emptyChildren:
     bool Node::flush()
     {
 #ifdef ENABLE_FLUSHING
+        size_t ret;
         if (!flushable_)
             return true;
+        ret = pwrite(fd_, data_, curOffset_, 0);
+#ifdef ENABLE_ASSERT_CHECKS
+        assert(ret == curOffset_);
+#endif
+#ifdef BT_NODE_DEBUG
+        fprintf(stderr, "Node: %d: Flushed %ld bytes\n", id_, ret); 
+#endif
+        sync();
         free(data_);
+        data_ = NULL;
         isFlushed_ = true;
 #endif
         return true;
@@ -510,13 +525,16 @@ emptyChildren:
 
     bool Node::load()
     {
+        if (data_ == NULL)
+            data_ = (char*)malloc(BUFFER_SIZE);
 #ifdef ENABLE_FLUSHING
         if (!flushable_)
             return true;
+        size_t ret = pread(fd_, data_, curOffset_, 0);
+#ifdef ENABLE_ASSERT_CHECKS
+        assert(ret == curOffset_);
+#endif
         isFlushed_ = false;
-#else
-        if (data_ == NULL)
-            data_ = (char*)malloc(BUFFER_SIZE);
 #endif
         return true;
     }
