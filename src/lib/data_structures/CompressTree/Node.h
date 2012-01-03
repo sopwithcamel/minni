@@ -125,9 +125,6 @@ namespace compresstree {
         std::vector<Node*> children_;
         uint64_t separator_;
 
-        /* Sorting related */
-        uint64_t** els_;         // pointers to elements in buffer
-
         /* Compression related */
         bool isCompressed_;
         bool compressible_;

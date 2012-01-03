@@ -22,6 +22,9 @@ namespace compresstree {
         // aux buffer for use in sorting
         auxBuffer_ = (char*)malloc(BUFFER_SIZE);
 
+        // allocate space for element pointers
+        els_ = (uint64_t**)malloc(sizeof(uint64_t*) * MAX_ELS_PER_BUFFER);
+
         // buffer for use in compression
         compBuffer_ = (char*)malloc(BUFFER_SIZE);
     }
@@ -31,6 +34,7 @@ namespace compresstree {
         delete rootNode_;
         free(auxBuffer_);
         free(compBuffer_);
+        free(els_);
     }
 
     bool CompressTree::insert(uint64_t hash, void* buf, size_t buf_size)

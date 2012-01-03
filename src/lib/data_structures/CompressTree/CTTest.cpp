@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <google/heap-profiler.h>
 
 #include "CompressTree.h"
 
@@ -67,19 +68,34 @@ int testMonotonicDecrease(uint32_t a, uint32_t b)
     return true;
 }
 
+void gen_random(char* s, const int len)
+{
+    for (int i = 0; i < len; ++i) {
+        int randomChar = rand()%(26+26+10);
+        if (randomChar < 26)
+            s[i] = 'a' + randomChar;
+        else if (randomChar < 26+26)
+            s[i] = 'A' + randomChar - 26;
+        else
+            s[i] = '0' + randomChar - 26 - 26;
+    }
+    s[len] = 0;
+}
+
 int testRandom(uint32_t a, uint32_t b, size_t numIns)
 {
     size_t i;
-    compresstree::CompressTree* ct = new compresstree::CompressTree(a, b, compresstree::ZLIB);
+    compresstree::CompressTree* ct = new compresstree::CompressTree(a, b, compresstree::SNAPPY);
     srand(56);
     fprintf(stderr, "Testing insertion of %ld random values... ", numIns);
     char* buf = (char*)malloc(100);
-    strcpy(buf, "testing");
+    strcpy(buf, "Add a new child to the node; the child type indicates which side");
 //    sprintf(buf, "%ld", rand());
     time_t stime = time(NULL);
     for (i=0; i<numIns; i++) {
-        uint64_t hash = rand();
 //        fprintf(stderr, "Inserted: %lu\n", hash);
+        gen_random(buf, rand() % 100);
+        uint64_t hash = rand();
         assert(ct->insert(hash, buf, strlen(buf) + 1));
     }
     assert(ct->flushBuffers());
@@ -103,10 +119,15 @@ int testRandom(uint32_t a, uint32_t b, size_t numIns)
     return true;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    if (argc < 2) {
+        perror("Input number of elements to insert\n");
+        exit(1);
+    }
+    size_t num_insert = atoi(argv[1]);
 //    assert(testMonotonicIncrease(2, 8));
 //    assert(testMonotonicDecrease(2, 8));
 //    assert(testRandom(2, 4, 1));
-    assert(testRandom(2, 8, 10000000));
+    assert(testRandom(2, 8, num_insert));
 }

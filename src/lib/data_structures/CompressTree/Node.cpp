@@ -24,9 +24,6 @@ namespace compresstree {
         // Allocate memory for data buffer
         data_ = (char*)malloc(BUFFER_SIZE);
 
-        // allocate space for element pointers
-        els_ = (uint64_t**)malloc(sizeof(uint64_t*) * MAX_ELS_PER_BUFFER);
-
         if (tree_->alg_ == SNAPPY) {
             compress = &Node::snappyCompress;
             decompress = &Node::snappyDecompress;
@@ -45,7 +42,6 @@ namespace compresstree {
             free(data_);
             data_ = NULL;
         }
-        free(els_);
     }
 
     bool Node::insert(uint64_t hash, void* buf, size_t buf_size)
@@ -303,35 +299,35 @@ emptyChildren:
 #endif
 
         for (uint64_t i=0; i<numElements_; i++) {
-            els_[i] = (uint64_t*)(data_ + offset);
+            tree_->els_[i] = (uint64_t*)(data_ + offset);
             if (!advance(1, offset))
                 return false;
         }
 
         // quicksort elements
-        quicksort(els_, 0, numElements_ - 1);
+        quicksort(tree_->els_, 0, numElements_ - 1);
 
         // aggregate elements in buffer
         uint64_t lastIndex = 0;
         for (uint64_t i=1; i<numElements_; i++) {
-            if (*els_[i] == *els_[lastIndex]) {
+            if (*(tree_->els_[i]) == *(tree_->els_[lastIndex])) {
                 // aggregate elements
             } else {
                 // copy into auxBuffer_
-                buf_size = *(size_t*)(els_[lastIndex] + 1);
+                buf_size = *(size_t*)(tree_->els_[lastIndex] + 1);
                 el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
                 memmove(tree_->auxBuffer_ + auxOffset, 
-                        (void*)(els_[lastIndex]), el_size);
+                        (void*)(tree_->els_[lastIndex]), el_size);
                 auxOffset += el_size;
                 auxEls++;
 
                 lastIndex = i;
             }
         }
-        buf_size = *(size_t*)(els_[lastIndex] + 1);
+        buf_size = *(size_t*)(tree_->els_[lastIndex] + 1);
         el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
         memmove(tree_->auxBuffer_ + auxOffset, 
-                (void*)(els_[lastIndex]), el_size);
+                (void*)(tree_->els_[lastIndex]), el_size);
         auxOffset += el_size;
         auxEls++;
 
@@ -554,6 +550,9 @@ emptyChildren:
         }
         data_ = buf;
         isCompressed_ = false;
+#else
+        if (data_ == NULL)
+            data_ = (char*)malloc(BUFFER_SIZE);
 #endif
         return true;
     }
