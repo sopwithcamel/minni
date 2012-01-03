@@ -1,59 +1,129 @@
-#ifndef LIB_BT_NODE_H
-#define LIB_BT_NODE_H
+#ifndef LIB_BUFFERTREE_NODE_H
+#define LIB_BUFFERTREE_NODE_H
 #include <iostream>
+#include <stdint.h>
 #include <string>
 #include <vector>
 
-#include "Block.h"
+#include "BufferTree.h"
+
+#define ENABLE_ASSERT_CHECKS
+//#define CT_NODE_DEBUG
+#define ENABLE_SORT_VERIFICATION
+#define ENABLE_INTEGRITY_CHECK
+
+#define CALL_MEM_FUNC(object,ptrToMember) ((object).*(ptrToMember))
 
 namespace buffertree {
 
+    class BufferTree;
+
     enum NodeType {
-        ROOT,
-        INTERNAL,
-        LEAF
+        NON_LEAF,       // any node that is not a leaf or the root
+        LEAF            // a leaf node is an actual leaf
+    };
+
+    enum ChildType {
+        LEFT,
+        RIGHT
     };
 
     class Node {
+        friend class BufferTree;
+        typedef bool (Node::*NodeCompFn)();
       public:
-        /* add a block into the node buffer. If the block causes the buffer
-         * to overflow, emptyBuffer() is called. */
-        bool addBlock(const Block& block);
-        /* add a child to this node. If the number of children becomes > b, 
-         * the node is split and the children shared. */
-        bool addChild(Node& node);
-        /* Write out all buffers to leaves. Do this before reading */
-        bool emptyAllBuffers();
-        // am i a leaf node?
-        bool isLeafNode();
-        // am i an internal node?
-        bool isInternalNode();
-        /* Check if the buffer is loaded in memory */
-        bool isInMemory();
+        Node(NodeType typ, BufferTree* tree);
+        ~Node();
+        /* copy user data into buffer. Buffer should be decompressed
+           before calling. */
+        bool insert(uint64_t hash, void* buf, size_t buf_size);
+
+        // identification functions
+        bool isLeaf();
+        bool isInternal();
+        bool isRoot();
+
+        bool isFull();
       private:
-        /* empty the buffer into the buffers in the next level. If any buffer
-         * in the next level overflows, recursively call emptyBuffer(). Before
-         * writing, the buffer is read into memory, sorted and aggregated and
-         * records are written out in the form of blocks into children */
+
+        /* Buffer handling functions */
+
+        /* Function: empty the buffer into the buffers in the next level. 
+         *  + Must be called with buffer decompressed.
+         *  + Buffer will be freed after invocation.
+         *  + If children buffers overflow, it recursively calls itself. 
+         *    until the recursion reaches the leaves. At this stage, handling
+         *    the leaf buffer overflows is queued for later because this may
+         *    cause splitting (recursively) up the tree which is best done
+         *    when no internal nodes are over-full.
+         *  + an emptyBuffer() invocation should be followed by a
+         *    handleFullLeaves() call.
+         */
         bool emptyBuffer();
-        bool splitNode();
+        /* sort the buffer based on hash value. After sorting perform an
+         * aggregation pass.
+         * Must be called when buffer is decompressed */
+        bool sortBuffer();
+        /* advance n elements in the buffer; the starting offset must be
+         * passed, which is updated; returns false if past end */
+        bool advance(size_t n, size_t& offset);
+        void addElements(size_t numElements);
+        void reduceElements(size_t numElements);
+        /* copy entire buffer into the this node's buffer. This can be used
+         * by the parent to write a set of sorted elements directly into the
+         * child.
+         */
+        bool copyIntoBuffer(void* buf, size_t buf_size);
 
-        /* Load buffer into memory */
-        bool loadBuffer();
+        /* Tree-related functions */
+
+        /* split leaf node and return new leaf */
+        Node* splitLeaf();
+        /* Add a new child to the node; the child type indicates which side 
+         * of the separator the child must be inserted. 
+         * if the number of children is more than the allowed number:
+         * + first check if siblings have fewer children
+         * + if not, split the node into two and call addChild recursively
+         */
+        bool addChild(Node* newNode);
+        /* Split non-leaf node; must be called with the buffer decompressed
+         * and sorted. If called on the root, then a new root is created */
+        bool splitNonLeaf();
+        bool checkIntegrity();
+
+        /* Sorting-related functions */
+        void quicksort(uint64_t** arr, size_t left, size_t right);
+        size_t partition(uint64_t** arr, size_t left, size_t right,
+                size_t pivIndex);
+        void swapPointers(uint64_t*& el1, uint64_t*& el2);
+        void verifySort();
+        void setSeparator(uint64_t sep);
+
+        /* Flushing-related functions */
+        bool flush();
+        bool load();
+        bool isFlushed();
+        void setFlushable(bool flag);
 
       private:
-        /* File acting as buffer for node */
-        std::string bufferFile_;
+        /* pointer to the tree */
+        BufferTree* tree_;
         NodeType typ_;
-        /* Buffer pointer if loaded in memory */
+        /* Buffer pointer */
         char* data_;
-        /* the number of blocks that have been written */
-        size_t numBlocks_;
-        /* Flag denoting whether the buffer is loaded in memory */
-        bool isInMemory;
+        uint32_t id_;
+        Node* parent_;
+        size_t numElements_;
+        size_t curOffset_;
 
         /* Pointers to children */
-        std::vector<Node*> children;
+        std::vector<Node*> children_;
+        uint64_t separator_;
+
+        /* Flushing related */
+        int fd_;                // flush file descriptor
+        bool isFlushed_;        // true if the buffer is on disk currently
+        bool flushable_;        // true if the buffer is not pinned in memory
     };
 }
 
