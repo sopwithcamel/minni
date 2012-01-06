@@ -625,11 +625,11 @@ emptyChildren:
             /* do decompression */
             ret = inflate(&strm, Z_NO_FLUSH);
             assert(ret != Z_STREAM_ERROR);
-            size_t uncomp_length = BUFFER_SIZE - strm.avail_out;
-            (void)inflateEnd(&strm);
 #ifdef ENABLE_ASSERT_CHECKS
+            size_t uncomp_length = BUFFER_SIZE - strm.avail_out;
             assert(curOffset_ == uncomp_length);
 #endif
+            (void)inflateEnd(&strm);
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "comp len: %ld, len: %ld\n", 
                     compLength_, curOffset_);

@@ -18,7 +18,7 @@ cttest_LDFLAGS = -L/home/hamur/code/snappy -lsnappy -ltcmalloc
 
 cttest_SOURCES = CompressTree.cpp Node.cpp CTTest.cpp easyzlib.c
 
-cttest_CPPFLAGS = $(ALL_CPPFLAGS) -g -Wall -D__STDC_LIMIT_MACROS
+cttest_CPPFLAGS = $(ALL_CPPFLAGS) -g -Wall -D__STDC_LIMIT_MACROS -O0
 
 tgsh_LDFLAGS = -lsnappy -ltcmalloc
 
