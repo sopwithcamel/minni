@@ -14,8 +14,6 @@ ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I$(srcdir)/../../dfs/\
 			-I/home/hamur/code/snappy/
 
-bttest_LDFLAGS = -ltcmalloc
-
 bttest_SOURCES = BufferTree.cpp Node.cpp BTTest.cpp
 
 bttest_CPPFLAGS = $(ALL_CPPFLAGS) -g -Wall -D__STDC_LIMIT_MACROS

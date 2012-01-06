@@ -126,8 +126,8 @@ int main(int argc, char* argv[])
         exit(1);
     }
     size_t num_insert = atoi(argv[1]);
-    assert(testMonotonicIncrease(2, 8, num_insert));
+//    assert(testMonotonicIncrease(2, 8, num_insert));
 //    assert(testMonotonicDecrease(2, 8));
 //    assert(testRandom(2, 4, 1));
-//    assert(testRandom(2, 8, num_insert));
+    assert(testRandom(2, 8, num_insert));
 }

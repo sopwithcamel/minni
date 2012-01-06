@@ -25,7 +25,7 @@ namespace buffertree {
         data_ = (char*)malloc(BUFFER_SIZE);
         char* fileName = (char*)malloc(FILENAME_LENGTH);
         char* nodeNum = (char*)malloc(10);
-        strcpy(fileName, "/tmp/");
+        strcpy(fileName, "/mnt/hamur/buffertree/");
         sprintf(nodeNum, "%d", id_);
         strcat(fileName, nodeNum);
         strcat(fileName, ".buf");

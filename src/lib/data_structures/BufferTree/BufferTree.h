@@ -6,8 +6,9 @@
 
 namespace buffertree {
 
-    const size_t BUFFER_SIZE = 1024;
-//    const size_t BUFFER_SIZE = 20971520;
+//    const size_t BUFFER_SIZE = 104857600;
+//    const size_t BUFFER_SIZE = 209715200;
+    const size_t BUFFER_SIZE = 629145600;
     const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 2.5;
     const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
     const size_t FILENAME_LENGTH = 200;

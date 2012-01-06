@@ -13,8 +13,6 @@
 #define ENABLE_INTEGRITY_CHECK
 #define ENABLE_FLUSHING
 
-#define CALL_MEM_FUNC(object,ptrToMember) ((object).*(ptrToMember))
-
 namespace buffertree {
 
     class BufferTree;
@@ -22,11 +20,6 @@ namespace buffertree {
     enum NodeType {
         NON_LEAF,       // any node that is not a leaf or the root
         LEAF            // a leaf node is an actual leaf
-    };
-
-    enum ChildType {
-        LEFT,
-        RIGHT
     };
 
     class Node {
