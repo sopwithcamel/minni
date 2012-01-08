@@ -43,6 +43,8 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	Setting& c_inp_typ = readConfigFile(cfg, "minni.input_type");
 	string inp_type = (const char*)c_inp_typ;
 
+    char* final_path;
+
     /* Initialize data structures */
     hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(internal_capacity));
     if (!accum_type.compare("buffertree")) {
@@ -51,9 +53,13 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
             acc_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                     BufferTreeInserter(this, accumulator_, 
                     destroyPAOFunc, max_keys_per_token));
+
+            final_path = (char*)malloc(FILENAME_LENGTH);
+            strcpy(final_path, fprefix.c_str());
+            strcat(final_path, outfile_);
             acc_reader_ =  dynamic_cast<AccumulatorReader*>(new 
                     BufferTreeReader(this, accumulator_, createPAOFunc,
-                    max_keys_per_token));
+                    final_path));
     }
 //    else if (!accum_type.compare("leveldb"))
 //          define others
@@ -103,13 +109,6 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	 * for the reducer. */
 
     pipeline_list[1].add_filter(*acc_reader_);
-
-	char* final_path = (char*)malloc(FILENAME_LENGTH);
-	strcpy(final_path, fprefix.c_str());
-	strcat(final_path, outfile_);
-    final_serializer_ = new Serializer(this, getNumPartitions(), 
-            final_path, destroyPAOFunc); 
-    pipeline_list[1].add_filter(*final_serializer_);
 	free(final_path);
 }
 
@@ -130,7 +129,6 @@ ExthashAggregator::~ExthashAggregator()
 		delete merger_;
 	}
     delete acc_reader_;
-    delete final_serializer_;
     delete hashtable_;
     delete accumulator_;
 	pipeline_list[0].clear();

@@ -67,7 +67,6 @@ private:
 	Merger* merger_;
 	AccumulatorInserter* acc_inserter_;
 	AccumulatorReader* acc_reader_;
-    Serializer* final_serializer_;
 
 	/* scan from external ht into files for reducer */
 	const char* outfile_;
