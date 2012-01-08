@@ -36,7 +36,7 @@ libminni_la_LIBADD = ../dfs/libdfs.la
 
 libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 					   $(THRIFT_CFLAGS) \
-						-D__STDC_LIMIT_MACROS
+						-D__STDC_LIMIT_MACROS \
 					   -I$(srcdir)/../worker/gen-cpp \
 					   -I$(srcdir)/../master \
 					   -I$(srcdir)/../dfs \
