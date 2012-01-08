@@ -2,7 +2,7 @@
 #define LIB_BUFFERTREE_BUFFERTREE_H
 
 #include <queue>
-#include "Node.h"
+#include "BTNode.h"
 #include "Accumulator.h"
 #include "PartialAgg.h"
 
