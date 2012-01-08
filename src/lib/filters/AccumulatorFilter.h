@@ -21,10 +21,10 @@ class AccumulatorInserter :
 	AccumulatorInserter(Aggregator* agg,
 			Accumulator* acc,
 			void (*destroyPAOFunc)(PartialAgg* p),
-			const size_t max_keys) {}
-	~AccumulatorInserter() {}
+			size_t max_keys);
+	~AccumulatorInserter();
 	void* operator()(void* pao_list) {}
-private:
+  protected:
 	Aggregator* aggregator_;
     Accumulator* accumulator_;
 	const size_t max_keys_per_token;
@@ -41,7 +41,7 @@ class AccumulatorReader :
 			const size_t max_keys);
 	~AccumulatorReader();
 	void* operator()(void* pao_list) {}
-private:
+  protected:
 	Aggregator* aggregator_;
     Accumulator* accumulator_;
 	size_t next_buffer;
@@ -49,24 +49,5 @@ private:
 	MultiBuffer<FilterInfo>* send;
 	MultiBuffer<PartialAgg*>* pao_list;
 	size_t (*createPAO)(Token* t, PartialAgg** p);
-};
-
-class AccumulatorSerializer :
-        public tbb::filter {
-  public:
-	AccumulatorSerializer(Aggregator* agg, 
-			Accumulator* acc,
-			const char* outfile) {}
-	~ExternalHashSerializer() {}
-	void* operator()(void*) {}
-private:
-	Aggregator* aggregator_;
-    Accumulator* accumulator_;
-
-	/* Write out fields */
-	FILE** fl;
-	char* outfile;
-	char* buf;
-
 };
 #endif // LIB_ACCUMFILTER_H
