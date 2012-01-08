@@ -43,14 +43,18 @@ BufferTreeReader::BufferTreeReader(Aggregator* agg,
         const size_t max_keys) :
     AccumulatorReader(agg, acc, createPAOFunc, max_keys)
 {
-	uint64_t num_buffers = aggregator_->getNumBuffers();
-	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
+}
+
+BufferTreeReader::BufferTreeReader(Aggregator* agg,
+        Accumulator* acc,
+        size_t (*createPAOFunc)(Token* t, PartialAgg** p),
+        const char* outfile_prefix) :
+    AccumulatorReader(agg, acc, createPAOFunc, outfile_prefix)
+{
 }
 
 BufferTreeReader::~BufferTreeReader()
 {
-    delete accumulator_;
-	delete send;
 }
 
 void* BufferTreeReader::operator()(void* recv)
@@ -63,7 +67,7 @@ void* BufferTreeReader::operator()(void* recv)
     buffertree::BufferTree* bt = (buffertree::BufferTree*)accumulator_;
 	uint64_t n_part = aggregator_->getNumPartitions();
     uint64_t hash;
-    createPAO(NULL, &pao);
+    createPAO_(NULL, &pao);
     void* ptrToHash = (void*)&hash;
     while (bt->nextValue(ptrToHash, pao)) {
 	}

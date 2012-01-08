@@ -38,6 +38,10 @@ class BufferTreeReader :
 			Accumulator* acc,
 			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			const size_t max_keys);
+    BufferTreeReader(Aggregator* agg,
+            Accumulator* acc,
+            size_t (*createPAOFunc)(Token* t, PartialAgg** p),
+            const char* outfile_prefix);
 	~BufferTreeReader();
 	void* operator()(void* pao_list);
 };
