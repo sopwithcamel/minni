@@ -4,6 +4,7 @@
 #include <queue>
 #include "Node.h"
 #include "Accumulator.h"
+#include "PartialAgg.h"
 
 namespace buffertree {
 

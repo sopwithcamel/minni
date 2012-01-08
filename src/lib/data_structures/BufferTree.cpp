@@ -5,7 +5,6 @@
 #include <string.h>
 
 #include "BufferTree.h"
-#include "PartialAgg.h"
 
 namespace buffertree {
 
