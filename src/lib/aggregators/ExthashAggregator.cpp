@@ -37,7 +37,7 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	Setting& c_agginmem = readConfigFile(cfg, "minni.aggregator.hashtable_external.aggregate");
 	int agg_in_mem = c_agginmem;
 
-	Setting& c_accumtyp = readConfigFile(cfg, "minni.aggregator.hashtable_external.external.type");
+	Setting& c_accumtyp = readConfigFile(cfg, "minni.aggregator.hashtable_external.type");
 	string accum_type = (const char*)c_accumtyp;
 
 	Setting& c_inp_typ = readConfigFile(cfg, "minni.input_type");
@@ -49,7 +49,8 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
     hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(internal_capacity));
     if (!accum_type.compare("buffertree")) {
             accumulator_ = dynamic_cast<Accumulator*>(new 
-                    buffertree::BufferTree(2, 8));
+                    buffertree::BufferTree(2, 8, createPAOFunc,
+                    destroyPAOFunc));
             acc_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                     BufferTreeInserter(this, accumulator_, 
                     destroyPAOFunc, max_keys_per_token));
