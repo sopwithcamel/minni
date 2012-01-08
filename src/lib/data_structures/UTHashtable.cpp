@@ -54,20 +54,3 @@ size_t UTHashtable::evictAll(PartialAgg** evict_list)
     ht_size = 0;
     return evict_list_ctr;
 }
-
-bool UTHashtable::reduceSize()
-{
-    if (ht_capacity - capacity_step < min_capacity)
-        return false;
-    ht_capacity -= capacity_step;
-    return true;
-}
-
-bool UTHashtable::increaseSize()
-{
-    if (ht_capacity + capacity_step > max_capacity)
-        return false;
-    ht_capacity += capacity_step;
-    return true;
-}
-

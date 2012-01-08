@@ -24,12 +24,6 @@ class UTHashtable :
      * by caller */
     size_t evictAll(PartialAgg** evict_list);
 
-    /* Call these to change the size of the hashtable dynamically. These
-     * return false if the respective lower and upper limits are hit and
-     * true otherwise.  */
-    bool increaseSize();
-    bool reduceSize();
-
   private:
 	PartialAgg* hashtable;
 };
