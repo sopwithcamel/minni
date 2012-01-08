@@ -51,25 +51,26 @@ private:
     Accumulator* accumulator_;
 
 	/* for chunk input from DFS */
-	MapInput* map_input; 
-	DFSReader* chunkreader;
-	FileReaderFilter* filereader;
-	FileTokenizerFilter* filetoker;
-	TokenizerFilter* toker;
+	MapInput* map_input_; 
+	DFSReader* chunkreader_;
+	FileReaderFilter* filereader_;
+	FileTokenizerFilter* filetoker_;
+	TokenizerFilter* toker_;
 
 	/* for serialized PAOs from local file */
-	const char* infile;
-	Deserializer* inp_deserializer;
+	const char* infile_;
+	Deserializer* inp_deserializer_;
 
-	PAOCreator* creator;
+	PAOCreator* creator_;
 	/* internal and external hashing */
-	Hasher* hasher;
-	Merger* merger;
+	Hasher* hasher_;
+	Merger* merger_;
 	AccumulatorInserter* acc_inserter_;
-	AccumulatorSerializer* acc_serializer_;
+	AccumulatorReader* acc_reader_;
+    Serializer* final_serializer_;
 
 	/* scan from external ht into files for reducer */
-	const char* outfile;
+	const char* outfile_;
 };
 
 #endif // LIB_EXTHASHAGGREGATOR_H

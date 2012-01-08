@@ -6,15 +6,15 @@
 ExthashAggregator::ExthashAggregator(const Config& cfg,
 				AggType type,
 				const uint64_t num_part, 
-				MapInput* _map_input,
+				MapInput* map_input,
 				const char* infile, 
 				size_t (*createPAOFunc)(Token* t, PartialAgg** p), 
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile):
 		Aggregator(cfg, type, 2, num_part, createPAOFunc, destroyPAOFunc),
-		map_input(_map_input),
-		infile(infile),
-		outfile(outfile)
+		map_input_(map_input),
+		infile_(infile),
+		outfile_(outfile)
 {
 	Setting& c_int_capacity = readConfigFile(cfg, 
 			"minni.aggregator.hashtable_external.capacity.internal");
@@ -48,11 +48,12 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
     if (!accum_type.compare("buffertree")) {
             accumulator_ = dynamic_cast<Accumulator*>(new 
                     buffertree::BufferTree(2, 8));
-            acc_inserter_ = dynamic_cast<AccumulatorFilter*>(new BufferTreeFilter(
-                    this, accumulator_, createPAOFunc, destroyPAOFunc, 
+            acc_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
+                    BufferTreeInserter(this, accumulator_, 
+                    destroyPAOFunc, max_keys_per_token));
+            acc_reader_ =  dynamic_cast<AccumulatorReader*>(new 
+                    BufferTreeReader(this, accumulator_, createPAOFunc,
                     max_keys_per_token));
-            acc_serializer_ =  dynamic_cast<AccumulatorSerializer*>(new 
-                    BufferTreeSerializer(this, accumulator_, final_path));
     }
 //    else if (!accum_type.compare("leveldb"))
 //          define others
@@ -63,36 +64,36 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		 * aggregates/writes to buckets. For this pipeline, a "token" or a
 		 * a basic pipeline unit is a chunk read from the DFS */
 		if (!inp_type.compare("chunk")) { 
-			chunkreader = new DFSReader(this, map_input);
-			pipeline_list[0].add_filter(*chunkreader);
-			toker = new TokenizerFilter(this, cfg);
-			pipeline_list[0].add_filter(*toker);
+			chunkreader_ = new DFSReader(this, map_input);
+			pipeline_list[0].add_filter(*chunkreader_);
+			toker_ = new TokenizerFilter(this, cfg);
+			pipeline_list[0].add_filter(*toker_);
 		} else if (!inp_type.compare("file")) {
-			filereader = new FileReaderFilter(this, map_input);
-			pipeline_list[0].add_filter(*filereader);
-			filetoker = new FileTokenizerFilter(this, cfg,
+			filereader_ = new FileReaderFilter(this, map_input);
+			pipeline_list[0].add_filter(*filereader_);
+			filetoker_ = new FileTokenizerFilter(this, cfg,
 					 map_input, max_keys_per_token);
-			pipeline_list[0].add_filter(*filetoker);
+			pipeline_list[0].add_filter(*filetoker_);
 		}
 
-		creator = new PAOCreator(this, createPAOFunc);
-		pipeline_list[0].add_filter(*creator);
+		creator_ = new PAOCreator(this, createPAOFunc);
+		pipeline_list[0].add_filter(*creator_);
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
-		inp_deserializer = new Deserializer(this, 1/*TODO: how many?*/, input_file,
+		inp_deserializer_ = new Deserializer(this, 1/*TODO: how many?*/, input_file,
 			createPAOFunc, destroyPAOFunc);
-		pipeline_list[0].add_filter(*inp_deserializer);
+		pipeline_list[0].add_filter(*inp_deserializer_);
 		free(input_file);
 	}
 
 	if (agg_in_mem) {
-		hasher = new Hasher(this, hashtable_, destroyPAOFunc);
-		pipeline_list[0].add_filter(*hasher);
+		hasher_ = new Hasher(this, hashtable_, destroyPAOFunc);
+		pipeline_list[0].add_filter(*hasher_);
 
-		merger = new Merger(this, destroyPAOFunc);
-		pipeline_list[0].add_filter(*merger);
+		merger_ = new Merger(this, destroyPAOFunc);
+		pipeline_list[0].add_filter(*merger_);
 	}
 
 	pipeline_list[0].add_filter(*acc_inserter_);
@@ -101,32 +102,37 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	 * PAOs read from the external hash table. The PAOs are partitioned
 	 * for the reducer. */
 
+    pipeline_list[1].add_filter(*acc_reader_);
+
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
 	strcpy(final_path, fprefix.c_str());
-	strcat(final_path, outfile);
-	pipeline_list[1].add_filter(*acc_serializer_);
+	strcat(final_path, outfile_);
+    final_serializer_ = new Serializer(this, getNumPartitions(), 
+            final_path, destroyPAOFunc); 
+    pipeline_list[1].add_filter(*final_serializer_);
 	free(final_path);
 }
 
 ExthashAggregator::~ExthashAggregator()
 {
-	if (chunkreader)
-		delete chunkreader;
-	if (filereader)
-		delete filereader;
-	if (toker)
-		delete toker;
-	if (filetoker)
-		delete filetoker;
-	if (inp_deserializer)
-		delete inp_deserializer;
-	if (hasher) {
-		delete hasher;
-		delete merger;
+	if (chunkreader_)
+		delete chunkreader_;
+	if (filereader_)
+		delete filereader_;
+	if (toker_)
+		delete toker_;
+	if (filetoker_)
+		delete filetoker_;
+	if (inp_deserializer_)
+		delete inp_deserializer_;
+	if (hasher_) {
+		delete hasher_;
+		delete merger_;
 	}
+    delete acc_reader_;
+    delete final_serializer_;
     delete hashtable_;
     delete accumulator_;
-	delete ext_hasher;
 	pipeline_list[0].clear();
 	pipeline_list[1].clear();
 }
