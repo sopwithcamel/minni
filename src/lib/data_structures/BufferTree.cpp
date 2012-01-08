@@ -8,9 +8,13 @@
 
 namespace buffertree {
 
-    BufferTree::BufferTree(uint32_t a, uint32_t b) :
+    BufferTree::BufferTree(uint32_t a, uint32_t b, 
+            size_t (*createPAOFunc)(Token* t, PartialAgg** p),
+			void (*destroyPAOFunc)(PartialAgg* p)) :
         a_(a),
         b_(b),
+        createPAO_(createPAOFunc),
+        destroyPAO_(destroyPAOFunc),
         allFlushed_(false),
         lastLeafRead_(0),
         lastOffset_(0)

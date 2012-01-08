@@ -8,9 +8,9 @@
 
 namespace buffertree {
 
-//    const size_t BUFFER_SIZE = 104857600;
+    const size_t BUFFER_SIZE = 10485760;
 //    const size_t BUFFER_SIZE = 209715200;
-    const size_t BUFFER_SIZE = 629145600;
+//    const size_t BUFFER_SIZE = 629145600;
     const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 2.5;
     const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
 
@@ -26,7 +26,9 @@ namespace buffertree {
     {
         friend class Node;
       public:
-        BufferTree(uint32_t a, uint32_t b);
+        BufferTree(uint32_t a, uint32_t b,
+                size_t (*createPAOFunc)(Token* t, PartialAgg** p),
+                void (*destroyPAOFunc)(PartialAgg* p));
         ~BufferTree();
 
         /* Insert record into tree */
@@ -47,6 +49,8 @@ namespace buffertree {
         // (a,b)-tree...
         const uint32_t a_;
         const uint32_t b_;
+        size_t (*createPAO_)(Token* t, PartialAgg** p);
+        void (*destroyPAO_)(PartialAgg* p);
         Node* rootNode_;
         bool allFlushed_;
         std::queue<Node*> leavesToBeEmptied_;

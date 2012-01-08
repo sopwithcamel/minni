@@ -299,19 +299,40 @@ emptyChildren:
 
         // aggregate elements in buffer
         uint64_t lastIndex = 0;
+        PartialAgg *lastPAO, *thisPAO;
+        tree_->createPAO_(NULL, &lastPAO);
+        tree_->createPAO_(NULL, &thisPAO);
+        lastPAO->deserialize(tree_->els_[0]);
         for (uint64_t i=1; i<numElements_; i++) {
             if (*(tree_->els_[i]) == *(tree_->els_[lastIndex])) {
                 // aggregate elements
+                thisPAO->deserialize(tree_->els_[i]);
+                lastPAO->merge(thisPAO);
             } else {
-                // copy into auxBuffer_
-                buf_size = *(size_t*)(tree_->els_[lastIndex] + 1);
-                el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
-                memmove(tree_->auxBuffer_ + auxOffset, 
-                        (void*)(tree_->els_[lastIndex]), el_size);
-                auxOffset += el_size;
+                // copy hash and size into auxBuffer_
+                if (i > lastIndex + 1) {
+                    lastPAO->serialize(tree_->serBuf_);
+                    buf_size = strlen(tree_->serBuf_);
+                    memmove(tree_->auxBuffer_ + auxOffset, 
+                            (void*)(tree_->els_[lastIndex]), sizeof(uint64_t));
+                    auxOffset += sizeof(uint64_t);
+                    memmove(tree_->auxBuffer_ + auxOffset, 
+                            (void*)(&buf_size), sizeof(size_t));
+                    auxOffset += sizeof(size_t);
+                    memmove(tree_->auxBuffer_ + auxOffset, 
+                            (void*)(tree_->serBuf_), buf_size);
+                    auxOffset += buf_size;
+                } else {
+                    buf_size = *(size_t*)(tree_->els_[lastIndex] + 1);
+                    el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
+                    memmove(tree_->auxBuffer_ + auxOffset, 
+                            (void*)(tree_->els_[lastIndex]), el_size);
+                    auxOffset += el_size;
+                }
                 auxEls++;
 
                 lastIndex = i;
+                lastPAO->deserialize(tree_->els_[i]);
             }
         }
         buf_size = *(size_t*)(tree_->els_[lastIndex] + 1);
@@ -320,6 +341,9 @@ emptyChildren:
                 (void*)(tree_->els_[lastIndex]), el_size);
         auxOffset += el_size;
         auxEls++;
+
+        tree_->destroyPAO_(lastPAO);
+        tree_->destroyPAO_(thisPAO);
 
         // swap buffer pointers
         char* tp = data_;
@@ -387,6 +411,11 @@ emptyChildren:
         memmove(data_+curOffset_, buf, buf_size);
         curOffset_ += buf_size;
         return true;
+    }
+
+    char* getValue(uint64_t* hashPtr)
+    {
+        return (char*)((char*)hashPtr + sizeof(uint64_t) + sizeof(size_t));
     }
 
     bool Node::addChild(Node* newNode)   

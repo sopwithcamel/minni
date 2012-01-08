@@ -68,6 +68,8 @@ namespace buffertree {
          * child.
          */
         bool copyIntoBuffer(void* buf, size_t buf_size);
+        /* get pointer to the value stored given the pointer to the hash */
+        char* getValue(uint64_t* hashPtr);
 
         /* Tree-related functions */
 
