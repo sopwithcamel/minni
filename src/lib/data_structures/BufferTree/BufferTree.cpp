@@ -2,14 +2,17 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "BufferTree.h"
+#include "PartialAgg.h"
 
 namespace buffertree {
 
     BufferTree::BufferTree(uint32_t a, uint32_t b) :
         a_(a),
         b_(b),
+        allFlushed_(false),
         lastLeafRead_(0),
         lastOffset_(0)
     {
@@ -17,6 +20,8 @@ namespace buffertree {
         rootNode_ = new Node(LEAF, this);
         rootNode_->setSeparator(UINT64_MAX);
         rootNode_->setFlushable(false);
+
+        serBuf_ = (char*)malloc(10240);
 
         // aux buffer for use in sorting
         auxBuffer_ = (char*)malloc(BUFFER_SIZE);
@@ -28,15 +33,43 @@ namespace buffertree {
     BufferTree::~BufferTree()
     {
         delete rootNode_;
+        free(serBuf_);
         free(auxBuffer_);
         free(els_);
     }
 
-    bool BufferTree::insert(uint64_t hash, void* buf, size_t buf_size)
+    bool BufferTree::insert(void* hash, PartialAgg* agg)
     {
         // copy buf into root node buffer
         // root node buffer always in memory
-        return rootNode_->insert(hash, buf, buf_size);
+        allFlushed_ = false;
+        agg->serialize(serBuf_);
+        return rootNode_->insert(*(uint64_t*)hash, serBuf_, strlen(serBuf_));
+    }
+
+    bool BufferTree::nextValue(void*& hash, PartialAgg*& agg)
+    {
+        if (!allFlushed_)
+            flushBuffers();
+        Node* curLeaf = allLeaves_[lastLeafRead_];
+        if (curLeaf->isFlushed())
+            curLeaf->load();
+
+        hash = (uint64_t*)(curLeaf->data_ + lastOffset_);
+        lastOffset_ += sizeof(uint64_t);
+        size_t buf_size = *(size_t*)(curLeaf->data_ + lastOffset_);
+        lastOffset_ += sizeof(size_t);
+        char* buf = curLeaf->data_ + lastOffset_;
+        lastOffset_ += buf_size;
+        agg->deserialize(buf);
+        if (lastOffset_ >= curLeaf->curOffset_) {
+            curLeaf->flush();
+            if (++lastLeafRead_ == allLeaves_.size())
+                return false;
+            allLeaves_[lastLeafRead_]->load();
+            lastOffset_ = 0;
+        }
+        return true;
     }
 
     bool BufferTree::flushBuffers()
@@ -84,29 +117,14 @@ begin_flush:
             numit += allLeaves_[i]->numElements_;
         fprintf(stderr, "Tree has %ld elements\n", numit);
 #endif
+        allFlushed_ = true;
         return true;
     }
 
-    bool BufferTree::nextValue(uint64_t& hash, char*& buf, size_t& buf_size)
+    void BufferTree::getAB(uint32_t& a, uint32_t& b)
     {
-        Node* curLeaf = allLeaves_[lastLeafRead_];
-        if (curLeaf->isFlushed())
-            curLeaf->load();
-
-        hash = *(uint64_t*)(curLeaf->data_ + lastOffset_);
-        lastOffset_ += sizeof(uint64_t);
-        buf_size = *(size_t*)(curLeaf->data_ + lastOffset_);
-        lastOffset_ += sizeof(size_t);
-        buf = curLeaf->data_ + lastOffset_;
-        lastOffset_ += buf_size;
-        if (lastOffset_ >= curLeaf->curOffset_) {
-            curLeaf->flush();
-            if (++lastLeafRead_ == allLeaves_.size())
-                return false;
-            allLeaves_[lastLeafRead_]->load();
-            lastOffset_ = 0;
-        }
-        return true;
+        a = a_;
+        b = b_;
     }
 
     bool BufferTree::addLeafToEmpty(Node* node)

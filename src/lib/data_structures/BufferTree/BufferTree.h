@@ -3,6 +3,7 @@
 
 #include <queue>
 #include "Node.h"
+#include "Accumulator.h"
 
 namespace buffertree {
 
@@ -20,34 +21,39 @@ namespace buffertree {
     
     class Node;
 
-    class BufferTree {
+    class BufferTree :
+            public Accumulator
+    {
         friend class Node;
       public:
         BufferTree(uint32_t a, uint32_t b);
         ~BufferTree();
 
         /* Insert record into tree */
-        bool insert(uint64_t hash, void* buf, size_t buf_size);
-        /* Write out all buffers to leaves. Do this before reading */
-        bool flushBuffers();
+        bool insert(void* hash, PartialAgg* agg);
         /* read values */
-        bool nextValue(uint64_t& hash, char*& buf, size_t& buf_size);
+        bool nextValue(void*& hash, PartialAgg*& agg);
+        /* get a,b values of(a,b)-tree... */
+        void getAB(uint32_t& a, uint32_t& b);
       private:
         /* Add leaf whose buffer is full to be emptied once all internal node
          * buffers have been emptied */
         bool addLeafToEmpty(Node* node);
         size_t handleFullLeaves();
         bool createNewRoot(Node* otherChild);
-      public:
+        /* Write out all buffers to leaves. Do this before reading */
+        bool flushBuffers();
+      private:
         // (a,b)-tree...
         const uint32_t a_;
         const uint32_t b_;
-      private:
         Node* rootNode_;
+        bool allFlushed_;
         std::queue<Node*> leavesToBeEmptied_;
         std::vector<Node*> allLeaves_;
         size_t lastLeafRead_;
         size_t lastOffset_;
+        char* serBuf_;          // buffer used for serializing PAOs
         /* Node related */
         uint64_t** els_;         // pointers to elements in buffer
         char* auxBuffer_;       // used in sorting
