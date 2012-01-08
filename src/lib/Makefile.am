@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = subdir-objects
-SUBDIRS = apps
+SUBDIRS = apps data_structures/CompressTree data_structures/BufferTree
 
 lib_LTLIBRARIES = libminni.la 
 
@@ -28,7 +28,9 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			record_creation/Tokenizer.cpp \
 			record_creation/FileTokenizer.cpp \
 			record_creation/DelimitedTokenizer.cpp \
-			data_structures/UTHashtable.cpp
+			data_structures/UTHashtable.cpp \
+			data_structures/BufferTree/BufferTree.cpp \
+			data_structures/BufferTree/Node.cpp
 
 libminni_la_LIBADD = ../dfs/libdfs.la
 
@@ -79,6 +81,7 @@ minni_include_HEADERS = core/PartialAgg.h \
 			record_creation/FileTokenizer.h \
 			record_creation/DelimitedTokenizer.h \
 			record_creation/Tokenizer.h \
+			data_structures/Accumulator.h \
 			data_structures/Hashtable.h \
 			data_structures/UTHashtable.h \
 			resources/ElasticObject.h
