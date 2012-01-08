@@ -13,7 +13,6 @@ namespace buffertree {
     const size_t BUFFER_SIZE = 629145600;
     const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 2.5;
     const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
-    const size_t FILENAME_LENGTH = 200;
 
     enum CompressAlgorithm {
         SNAPPY,
