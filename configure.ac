@@ -15,6 +15,7 @@ AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_MAKE_SET
+AM_PROG_CC_C_O
 
 # Initialize libtool
 LT_INIT
@@ -55,6 +56,8 @@ AC_CONFIG_FILES([Makefile
 		 src/dfs/tools/Makefile
 		 src/lib/Makefile
 		 src/lib/apps/Makefile
+		 src/lib/data_structures/CompressTree/Makefile
+		 src/lib/data_structures/BufferTree/Makefile
 		 src/lib/libminni.pc:src/lib/libminni.pc.in
 		 src/master/Makefile
 		 src/worker/Makefile
