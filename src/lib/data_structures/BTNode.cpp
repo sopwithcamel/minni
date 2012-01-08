@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "BufferTree.h"
+#include "Defs.h"
 #include "Node.h"
 
 namespace buffertree {
