@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = subdir-objects
-SUBDIRS = apps data_structures/CompressTree data_structures/BufferTree
+SUBDIRS = apps data_structures/CompressTree
 
 lib_LTLIBRARIES = libminni.la 
 
@@ -29,13 +29,14 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			record_creation/FileTokenizer.cpp \
 			record_creation/DelimitedTokenizer.cpp \
 			data_structures/UTHashtable.cpp \
-			data_structures/BufferTree/BufferTree.cpp \
-			data_structures/BufferTree/Node.cpp
+			data_structures/BufferTree.cpp \
+			data_structures/BTNode.cpp
 
 libminni_la_LIBADD = ../dfs/libdfs.la
 
 libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 					   $(THRIFT_CFLAGS) \
+						-D__STDC_LIMIT_MACROS
 					   -I$(srcdir)/../worker/gen-cpp \
 					   -I$(srcdir)/../master \
 					   -I$(srcdir)/../dfs \
@@ -84,6 +85,8 @@ minni_include_HEADERS = core/PartialAgg.h \
 			data_structures/Accumulator.h \
 			data_structures/Hashtable.h \
 			data_structures/UTHashtable.h \
+			data_structures/BufferTree.h \
+			data_structures/BTNode.h \
 			resources/ElasticObject.h
 
 pkgconfigdir = $(libdir)/pkgconfig
