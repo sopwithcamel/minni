@@ -6,7 +6,9 @@ lib_LTLIBRARIES = libminni.la
 libminni_la_SOURCES =   core/Mapper.cpp \
 			core/MapInput.cpp \
 			core/Reducer.cpp \
+			filters/AccumulatorFilter.cpp \
 			filters/Adder.cpp \
+			filters/BufferTreeFilter.cpp \
 			filters/Deserializer.cpp \
 			filters/DFSReader.cpp \
 			filters/ExternalHasher.cpp \
@@ -60,7 +62,9 @@ minni_include_HEADERS = core/PartialAgg.h \
 			core/Minnie.h \
 			core/Defs.h \
 			core/Util.h \
+			filters/AccumulatorFilter.h \
 			filters/Adder.h \
+			filters/BufferTreeFilter.h \
 			filters/Deserializer.h \
 			filters/DFSReader.h \
 			filters/ExternalHasher.h \
