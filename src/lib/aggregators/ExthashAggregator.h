@@ -10,6 +10,10 @@
 #include "tbb/task_scheduler_init.h"
 #include "tbb/tbb_allocator.h"
 
+#include "Accumulator.h"
+#include "AccumulatorFilter.h"
+#include "BufferTree.h"
+#include "BufferTreeFilter.h"
 #include "Mapper.h"
 #include "PartialAgg.h"
 #include "DFSReader.h"
@@ -42,10 +46,9 @@ private:
 	uint64_t internal_capacity; // aggregator capacity
 	uint64_t external_capacity; // external hashtable capacity
 
-	leveldb::DB* hash_table;
-
     /* data structures */
     Hashtable* hashtable_;
+    Accumulator* accumulator_;
 
 	/* for chunk input from DFS */
 	MapInput* map_input; 
@@ -62,8 +65,8 @@ private:
 	/* internal and external hashing */
 	Hasher* hasher;
 	Merger* merger;
-	ExternalHasher* ext_hasher;
-	ExternalHashSerializer* ehash_serializer;
+	AccumulatorInserter* acc_inserter_;
+	AccumulatorSerializer* acc_serializer_;
 
 	/* scan from external ht into files for reducer */
 	const char* outfile;

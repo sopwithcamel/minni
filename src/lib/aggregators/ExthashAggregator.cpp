@@ -37,11 +37,25 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	Setting& c_agginmem = readConfigFile(cfg, "minni.aggregator.hashtable_external.aggregate");
 	int agg_in_mem = c_agginmem;
 
+	Setting& c_accumtyp = readConfigFile(cfg, "minni.aggregator.hashtable_external.external.type");
+	string accum_type = (const char*)c_accumtyp;
+
 	Setting& c_inp_typ = readConfigFile(cfg, "minni.input_type");
 	string inp_type = (const char*)c_inp_typ;
 
     /* Initialize data structures */
     hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(internal_capacity));
+    if (!accum_type.compare("buffertree")) {
+            accumulator_ = dynamic_cast<Accumulator*>(new 
+                    buffertree::BufferTree(2, 8));
+            acc_inserter_ = dynamic_cast<AccumulatorFilter*>(new BufferTreeFilter(
+                    this, accumulator_, createPAOFunc, destroyPAOFunc, 
+                    max_keys_per_token));
+            acc_serializer_ =  dynamic_cast<AccumulatorSerializer*>(new 
+                    BufferTreeSerializer(this, accumulator_, final_path));
+    }
+//    else if (!accum_type.compare("leveldb"))
+//          define others
 
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
@@ -81,11 +95,7 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		pipeline_list[0].add_filter(*merger);
 	}
 
-	ext_hasher = new ExternalHasher(this, &hash_table, htname.c_str(), 
-			external_capacity, destroyPAOFunc, max_keys_per_token);
-
-	pipeline_list[0].add_filter(*ext_hasher);
-
+	pipeline_list[0].add_filter(*acc_inserter_);
 
 	/* Second pipeline: In this pipeline, a token is a fixed number of 
 	 * PAOs read from the external hash table. The PAOs are partitioned
@@ -94,9 +104,7 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
 	strcpy(final_path, fprefix.c_str());
 	strcat(final_path, outfile);
-	ehash_serializer =  new ExternalHashSerializer(this, &hash_table,
-			htname.c_str(), external_capacity, final_path);
-	pipeline_list[1].add_filter(*ehash_serializer);
+	pipeline_list[1].add_filter(*acc_serializer_);
 	free(final_path);
 }
 
@@ -116,6 +124,8 @@ ExthashAggregator::~ExthashAggregator()
 		delete hasher;
 		delete merger;
 	}
+    delete hashtable_;
+    delete accumulator_;
 	delete ext_hasher;
 	pipeline_list[0].clear();
 	pipeline_list[1].clear();
