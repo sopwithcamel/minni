@@ -38,8 +38,6 @@ public:
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile);
 	~ExthashAggregator();
-    bool increaseMemory();
-    bool reduceMemory();
 private:
 	uint64_t internal_capacity; // aggregator capacity
 	uint64_t external_capacity; // external hashtable capacity

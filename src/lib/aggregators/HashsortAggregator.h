@@ -38,8 +38,6 @@ public:
 				void (*destroyPAOFunc)(PartialAgg* p), 
 				const char* outfile);
 	~HashsortAggregator();
-    bool increaseMemory();
-    bool reduceMemory();
 private:
 	uint64_t capacity; // aggregator capacity
 

@@ -152,13 +152,3 @@ HashsortAggregator::~HashsortAggregator()
 	pipeline_list[1].clear();
 	pipeline_list[2].clear();
 }
-
-bool HashsortAggregator::increaseMemory()
-{
-    return false;
-}
-
-bool HashsortAggregator::reduceMemory()
-{
-    return false;
-}

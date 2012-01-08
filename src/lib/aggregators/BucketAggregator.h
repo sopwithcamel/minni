@@ -38,9 +38,6 @@ class BucketAggregator :
                 void (*destroyPAOFunc)(PartialAgg* p), 
                 const char* outfile);
     ~BucketAggregator();
-
-    bool increaseMemory();
-    bool reduceMemory();
   private:
     uint64_t capacity; // aggregator capacity
 

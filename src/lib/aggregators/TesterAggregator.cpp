@@ -67,13 +67,3 @@ TesterAggregator::~TesterAggregator()
 	}
 	pipeline_list[0].clear();
 }
-
-bool TesterAggregator::increaseMemory()
-{
-    return false;
-}
-
-bool TesterAggregator::reduceMemory()
-{
-    return false;
-}

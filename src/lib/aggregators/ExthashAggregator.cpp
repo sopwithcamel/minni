@@ -120,13 +120,3 @@ ExthashAggregator::~ExthashAggregator()
 	pipeline_list[0].clear();
 	pipeline_list[1].clear();
 }
-
-bool ExthashAggregator::increaseMemory()
-{
-    return false;
-}
-
-bool ExthashAggregator::reduceMemory()
-{
-    return false;
-}

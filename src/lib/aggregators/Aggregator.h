@@ -10,7 +10,6 @@
 #include "tbb/task_scheduler_init.h"
 #include "tbb/tbb_allocator.h"
 
-#include "ElasticObject.h"
 #include "Defs.h"
 #include "PartialAgg.h"
 #include "util.h"
@@ -19,8 +18,8 @@ using namespace libconfig;
 
 enum AggType {Map, Reduce};
 
-class Aggregator :
-    public ElasticAggregator {
+class Aggregator 
+{
   public:
 	Aggregator(const Config &cfg,
 			AggType where,

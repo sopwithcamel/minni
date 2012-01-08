@@ -33,8 +33,6 @@ public:
 				void (*destroyPAOFunc)(PartialAgg* p),
 				const char* outfile);
 	~TesterAggregator();
-    bool increaseMemory();
-    bool reduceMemory();
 private:
 	string test_element;
 
