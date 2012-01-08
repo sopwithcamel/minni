@@ -11,9 +11,12 @@
 
 #include "Aggregator.h"
 #include "Accumulator.h"
+#include "AccumulatorFilter.h"
 #include "BufferTree.h"
 #include "PartialAgg.h"
 #include "Util.h"
+
+static const size_t BUF_SIZE = 65535;
 
 class BufferTreeInserter :
         public AccumulatorInserter
@@ -22,52 +25,20 @@ class BufferTreeInserter :
 	BufferTreeInserter(Aggregator* agg,
 			Accumulator* acc,
 			void (*destroyPAOFunc)(PartialAgg* p),
-			const size_t max_keys) {}
-	~BufferTreeInserter() {}
-	void* operator()(void* pao_list) {}
-private:
-	Aggregator* aggregator_;
-    Accumulator* accumulator_;
-	const size_t max_keys_per_token;
-	void (*destroyPAO)(PartialAgg* p);
+			const size_t max_keys);
+	~BufferTreeInserter();
+	void* operator()(void* pao_list);
 };
 
-class AccumulatorReader :
-        public tbb::filter
+class BufferTreeReader :
+        public AccumulatorReader
 {
   public:
-	AccumulatorReader(Aggregator* agg,
+	BufferTreeReader(Aggregator* agg,
 			Accumulator* acc,
 			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			const size_t max_keys);
-	~AccumulatorReader();
-	void* operator()(void* pao_list) {}
-private:
-	Aggregator* aggregator_;
-    Accumulator* accumulator_;
-	size_t next_buffer;
-	const size_t max_keys_per_token;
-	MultiBuffer<FilterInfo>* send;
-	MultiBuffer<PartialAgg*>* pao_list;
-	size_t (*createPAO)(Token* t, PartialAgg** p);
-};
-
-class AccumulatorSerializer :
-        public tbb::filter {
-  public:
-	AccumulatorSerializer(Aggregator* agg, 
-			Accumulator* acc,
-			const char* outfile) {}
-	~ExternalHashSerializer() {}
-	void* operator()(void*) {}
-private:
-	Aggregator* aggregator_;
-    Accumulator* accumulator_;
-
-	/* Write out fields */
-	FILE** fl;
-	char* outfile;
-	char* buf;
-
+	~BufferTreeReader();
+	void* operator()(void* pao_list);
 };
 #endif // LIB_BUFFERTREEFILTER_H
