@@ -59,17 +59,28 @@ BufferTreeReader::~BufferTreeReader()
 
 void* BufferTreeReader::operator()(void* recv)
 {
-	PartialAgg* pao;
-	int buc;
-	uint32_t key_length;
-	bool valid, remove;
-	string val;
-    buffertree::BufferTree* bt = (buffertree::BufferTree*)accumulator_;
-	uint64_t n_part = aggregator_->getNumPartitions();
-    uint64_t hash;
-    createPAO_(NULL, &pao);
-    void* ptrToHash = (void*)&hash;
-    while (bt->nextValue(ptrToHash, pao)) {
-	}
-	return NULL;
+    if (writeToFile_) {
+        PartialAgg* pao;
+        uint64_t buc;
+        bool valid, remove;
+        string val;
+        buffertree::BufferTree* bt = (buffertree::BufferTree*)accumulator_;
+        uint64_t n_part = aggregator_->getNumPartitions();
+        uint64_t hash;
+        createPAO_(NULL, &pao);
+        void* ptrToHash = (void*)&hash;
+        while (bt->nextValue(ptrToHash, pao)) {
+            buc = *(uint64_t*)ptrToHash % n_part;
+            assert(buc >= 0);
+            pao->serialize(buf_);
+            fwrite(buf_, 1, strlen(buf_), fl_[buc]);
+        }
+        fprintf(stderr, "Closing files\n");
+        for (int i=0; i<n_part; i++)
+            fclose(fl_[i]);
+        return NULL;
+    } else {
+        fprintf(stderr, "Not implemented yet!");
+        assert(false);
+    }
 }
