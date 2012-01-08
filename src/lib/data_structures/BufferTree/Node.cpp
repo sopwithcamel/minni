@@ -25,7 +25,8 @@ namespace buffertree {
         data_ = (char*)malloc(BUFFER_SIZE);
         char* fileName = (char*)malloc(FILENAME_LENGTH);
         char* nodeNum = (char*)malloc(10);
-        strcpy(fileName, "/mnt/hamur/buffertree/");
+//        strcpy(fileName, "/mnt/hamur/buffertree/");
+        strcpy(fileName, "/tmp/");
         sprintf(nodeNum, "%d", id_);
         strcat(fileName, nodeNum);
         strcat(fileName, ".buf");
@@ -187,6 +188,7 @@ namespace buffertree {
         // reset
         curOffset_ = 0;
         numElements_ = 0;
+        assert(lseek(fd_, 0, SEEK_SET) >= 0);
 
         if (!isRoot()) {
             free(data_);
@@ -353,6 +355,7 @@ emptyChildren:
                 %ld\n", id_, newLeaf->id_, offset, curOffset_ - offset);
 #endif
         curOffset_ = offset;
+        assert(lseek(fd_, curOffset_, SEEK_SET) >= 0);
         reduceElements(numElements_ - numElements_/2);
         separator_ = *median_hash;
         checkIntegrity();
