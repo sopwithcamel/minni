@@ -1,4 +1,8 @@
 #include "BufferTreeFilter.h"
+#include "uthash.h"
+
+#define Hash    HASH_FCN
+#define HASH_FUNCTION   HASH_MUR
 
 BufferTreeInserter::BufferTreeInserter(Aggregator* agg,
         Accumulator* acc,
@@ -18,6 +22,9 @@ void* BufferTreeInserter::operator()(void* recv)
 	char* buf = (char*)malloc(BUF_SIZE);
 	string value;
 	size_t ind = 0;
+    uint64_t hashv;
+    void* ptrToHash;
+    uint64_t bkt;
 	PartialAgg* pao;
     buffertree::BufferTree* bt = (buffertree::BufferTree*)accumulator_;
 
@@ -30,7 +37,9 @@ void* BufferTreeInserter::operator()(void* recv)
 	// Insert PAOs
 	while (ind < recv_length) {
 		pao = pao_l[ind];
-        bt->insert(pao->key, pao);
+        Hash(pao->key, strlen(pao->key), NUM_BUCKETS, hashv, bkt); 
+        ptrToHash = (void*)&hashv;
+        bt->insert(ptrToHash, pao);
 		destroyPAO(pao);
 		ind++;
 	}

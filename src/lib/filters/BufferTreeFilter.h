@@ -21,6 +21,7 @@ static const size_t BUF_SIZE = 65535;
 class BufferTreeInserter :
         public AccumulatorInserter
 {
+    static const uint64_t NUM_BUCKETS = UINT64_MAX;
   public:
 	BufferTreeInserter(Aggregator* agg,
 			Accumulator* acc,

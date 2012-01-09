@@ -58,7 +58,6 @@ namespace buffertree {
 
         // copy buf_size into the buffer
         memmove(data_ + curOffset_, &buf_size, sizeof(buf_size));
-//        fprintf(stderr, ", size at %ld", curOffset_);
         curOffset_ += sizeof(buf_size);
         
         // copy the entire Block into the buffer
@@ -140,8 +139,6 @@ namespace buffertree {
 #endif
         while (offset < curOffset_) {
             curHash = (uint64_t*)(data_ + offset);
-            size_t bs = *(size_t*)(data_ + offset + 8);
-            assert(bs > 0);
 
             if (offset >= curOffset_ || *curHash >= children_[curChild]->separator_) {
                 // this separator is the largest separator that is not greater
@@ -306,7 +303,7 @@ emptyChildren:
         for (uint64_t i=1; i<numElements_; i++) {
             if (*(tree_->els_[i]) == *(tree_->els_[lastIndex])) {
                 // aggregate elements
-                thisPAO->deserialize(tree_->els_[i]);
+                thisPAO->deserialize(getValue(tree_->els_[i]));
                 lastPAO->merge(thisPAO);
             } else {
                 // copy hash and size into auxBuffer_
@@ -360,7 +357,6 @@ emptyChildren:
     Node* Node::splitLeaf()
     {
         size_t offset = 0;
-        sortBuffer();
         if (!advance(numElements_/2, offset))
             return false;
 
@@ -413,7 +409,7 @@ emptyChildren:
         return true;
     }
 
-    char* getValue(uint64_t* hashPtr)
+    char* Node::getValue(uint64_t* hashPtr)
     {
         return (char*)((char*)hashPtr + sizeof(uint64_t) + sizeof(size_t));
     }
@@ -506,10 +502,12 @@ emptyChildren:
     bool Node::advance(size_t n, size_t& offset)
     {
         size_t* bufSize;
-        for (uint32_t i=0; i<n; i++) {
+        uint32_t i;
+        for (i=0; i<n; i++) {
             offset += sizeof(uint64_t);
             bufSize = (size_t*)(data_ + offset);
             offset += sizeof(size_t) + *bufSize;
+            fprintf(stderr, "%d: offset: %ld\n", id_, offset);
             if (*bufSize == 0) {
                 fprintf(stderr, "%lu, bufsize: %lu, %ld\n", offset, *bufSize, *(size_t*)(data_ + offset + 16));
                 assert(false);

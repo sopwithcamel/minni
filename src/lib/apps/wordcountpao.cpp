@@ -1,14 +1,15 @@
 #include "wordcountpao.h"
 
+#define KEY_SIZE        10
+
 WordCountPartialAgg::WordCountPartialAgg(char* wrd)
 {
+    key = (char*)malloc(KEY_SIZE);
 	if (wrd) {
-		key = (char*)malloc(strlen(wrd) + 1);
 		strcpy(key, wrd);
-	} else {
-		key = NULL;
-	}
-	count = 0;
+        count = 1;
+	} else
+        count = 0;
 }
 
 WordCountPartialAgg::~WordCountPartialAgg()
@@ -76,7 +77,6 @@ bool WordCountPartialAgg::deserialize(void *buf)
 	spl = strtok(read_buf, " \n\r");
 	if (spl == NULL)
 		return false;
-	key = (char*)malloc(strlen(spl) + VALUE_SIZE + 1);
 	strcpy(key, spl);
 
 	spl = strtok(NULL, " \n\r");
