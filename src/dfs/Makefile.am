@@ -14,4 +14,5 @@ libdfs_la_LIBADD =  -lkfsClient \
 		    -lkfsIO \
 		    -lkfsCommon \
 		    -lqcdio \
-		    -lboost_regex
+		    -lboost_regex \
+			-ltcmalloc

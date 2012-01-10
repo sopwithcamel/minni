@@ -48,10 +48,11 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 					   -I$(srcdir)/record_creation/ \
 					   -I$(srcdir)/data_structures/ \
 					   -I$(srcdir)/resources/ \
+					   -I$(srcdir)/apps/ \
 					   -I/home/hamur/leveldb/include
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
-			-lltdl -lpthread -ltbb -lconfig++ -lleveldb
+			-lltdl -lpthread -ltbb -lconfig++ -lleveldb -ltcmalloc
 
 minni_includedir = $(includedir)/libminni/libminni
 
