@@ -6,11 +6,12 @@
 #include <vector>
 
 #include "CompressTree.h"
+#include "PartialAgg.h"
 
-//#define ENABLE_ASSERT_CHECKS
+#define ENABLE_ASSERT_CHECKS
 //#define CT_NODE_DEBUG
 //#define ENABLE_SORT_VERIFICATION
-//#define ENABLE_INTEGRITY_CHECK
+#define ENABLE_INTEGRITY_CHECK
 #define ENABLE_COMPRESSION
 
 #define CALL_MEM_FUNC(object,ptrToMember) ((object).*(ptrToMember))
@@ -75,6 +76,10 @@ namespace compresstree {
          * child.
          */
         bool copyIntoBuffer(void* buf, size_t buf_size);
+        /* get pointer to the value stored given the pointer to the hash */
+        char* getValue(uint64_t* hashPtr);
+        /* converts a pointer to a hash-value to a deserialized pao */
+        void deserializePAO(uint64_t* hashPtr, PartialAgg*& pao);
 
         /* Tree-related functions */
 

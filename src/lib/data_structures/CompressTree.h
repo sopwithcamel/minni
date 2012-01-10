@@ -2,7 +2,9 @@
 #define LIB_COMPRESS_COMPRESSTREE_H
 
 #include <queue>
-#include "Node.h"
+#include "CTNode.h"
+#include "Accumulator.h"
+#include "PartialAgg.h"
 
 namespace compresstree {
 
@@ -18,35 +20,51 @@ namespace compresstree {
     
     class Node;
 
-    class CompressTree {
+    class CompressTree :
+            public Accumulator
+    {
         friend class Node;
       public:
-        CompressTree(uint32_t a, uint32_t b, CompressAlgorithm alg);
+        CompressTree(uint32_t a, uint32_t b, uint32_t nodesInMemory,
+                size_t (*createPAOFunc)(Token* t, PartialAgg** p),
+                void (*destroyPAOFunc)(PartialAgg* p));
         ~CompressTree();
 
         /* Insert record into tree */
-        bool insert(uint64_t hash, void* buf, size_t buf_size);
-        /* Write out all buffers to leaves. Do this before reading */
-        bool flushBuffers();
+        bool insert(void* hash, PartialAgg* agg, PartialAgg**& evicted, 
+                size_t& num_evicted);
         /* read values */
-        bool nextValue(uint64_t& hash, char*& buf, size_t& buf_size);
+        bool nextValue(void*& hash, PartialAgg*& agg);
+        /* get a,b values of(a,b)-tree... */
+        void getAB(uint32_t& a, uint32_t& b);
       private:
         /* Add leaf whose buffer is full to be emptied once all internal node
          * buffers have been emptied */
         bool addLeafToEmpty(Node* node);
         size_t handleFullLeaves();
         bool createNewRoot(Node* otherChild);
-      public:
+        /* Write out all buffers to leaves. Do this before reading */
+        bool flushBuffers();
+      private:
         // (a,b)-tree...
         const uint32_t a_;
         const uint32_t b_;
-      private:
+        size_t (*createPAO_)(Token* t, PartialAgg** p);
+        void (*destroyPAO_)(PartialAgg* p);
         CompressAlgorithm alg_;
         Node* rootNode_;
+        bool allFlushed_;
         std::queue<Node*> leavesToBeEmptied_;
         std::vector<Node*> allLeaves_;
         size_t lastLeafRead_;
         size_t lastOffset_;
+        char* serBuf_;          // buffer used for serializing PAOs
+
+        /* Eviction-related */
+        uint32_t nodesInMemory_;
+        size_t numEvicted_;
+        char* evictedBuffer_;
+
         /* Node related */
         uint64_t** els_;         // pointers to elements in buffer
         char* auxBuffer_;       // used in sorting

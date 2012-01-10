@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "CompressTree.h"
-#include "Node.h"
+#include "CTNode.h"
 #include "snappy.h"
 #include "zlib.h"
 
@@ -127,7 +127,7 @@ namespace compresstree {
         while (*curHash >= children_[curChild]->separator_) {
             curChild++;
             if (curChild >= children_.size()) {
-                fprintf(stderr, "Node: %d: Can't place %ld among children\n", id_, *curHash);
+                fprintf(stderr, "Node: %d: Can't place %lu among children\n", id_, *curHash);
                 checkIntegrity();
                 assert(false);
             }
@@ -139,8 +139,6 @@ namespace compresstree {
 #endif
         while (offset < curOffset_) {
             curHash = (uint64_t*)(data_ + offset);
-            size_t bs = *(size_t*)(data_ + offset + 8);
-            assert(bs > 0);
 
             if (offset >= curOffset_ || *curHash >= children_[curChild]->separator_) {
                 // this separator is the largest separator that is not greater
@@ -155,10 +153,11 @@ namespace compresstree {
                             children_[curChild]->compress)());
 #ifdef CT_NODE_DEBUG
                     fprintf(stderr, "Copied %lu elements into node %d; child\
-                            offset: %ld, sep: %lu, off:(%ld/%ld)\n", numCopied, 
+                            offset: %ld, sep: %lu/%lu, off:(%ld/%ld)\n", numCopied, 
                             children_[curChild]->id_,
                             children_[curChild]->curOffset_,
                             children_[curChild]->separator_,
+                            UINT64_MAX,
                             offset, curOffset_);
 #endif
                     lastOffset = offset;
@@ -168,7 +167,7 @@ namespace compresstree {
                 while (*curHash >= children_[curChild]->separator_) {
                     curChild++;
                     if (curChild >= children_.size()) {
-                        fprintf(stderr, "Can't place %ld among children\n", *curHash);
+                        fprintf(stderr, "Can't place %lu among children\n", *curHash);
                         assert(false);
                     }
                 }
@@ -295,6 +294,7 @@ emptyChildren:
 #ifdef ENABLE_ASSERT_CHECKS
         if (isCompressed()) {
             fprintf(stderr, "Node %d is compressed still!\n", id_);
+            assert(false);
         }
 #endif
 
@@ -309,20 +309,43 @@ emptyChildren:
 
         // aggregate elements in buffer
         uint64_t lastIndex = 0;
+        PartialAgg *lastPAO, *thisPAO;
+        tree_->createPAO_(NULL, &lastPAO);
+        tree_->createPAO_(NULL, &thisPAO);
+        deserializePAO(tree_->els_[0], lastPAO);
         for (uint64_t i=1; i<numElements_; i++) {
             if (*(tree_->els_[i]) == *(tree_->els_[lastIndex])) {
                 // aggregate elements
+                deserializePAO(tree_->els_[i], thisPAO);
+                if (!strcmp(thisPAO->key, lastPAO->key)) {
+                    lastPAO->merge(thisPAO);
+                    continue;
+                }
+            }
+            // copy hash and size into auxBuffer_
+            if (i > lastIndex + 1) {
+                lastPAO->serialize(tree_->serBuf_);
+                buf_size = strlen(tree_->serBuf_);
+                memmove(tree_->auxBuffer_ + auxOffset, 
+                        (void*)(tree_->els_[lastIndex]), sizeof(uint64_t));
+                auxOffset += sizeof(uint64_t);
+                memmove(tree_->auxBuffer_ + auxOffset, 
+                        (void*)(&buf_size), sizeof(size_t));
+                auxOffset += sizeof(size_t);
+                memmove(tree_->auxBuffer_ + auxOffset, 
+                        (void*)(tree_->serBuf_), buf_size);
+                auxOffset += buf_size;
             } else {
-                // copy into auxBuffer_
                 buf_size = *(size_t*)(tree_->els_[lastIndex] + 1);
                 el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
                 memmove(tree_->auxBuffer_ + auxOffset, 
                         (void*)(tree_->els_[lastIndex]), el_size);
                 auxOffset += el_size;
-                auxEls++;
-
-                lastIndex = i;
             }
+            auxEls++;
+
+            lastIndex = i;
+            deserializePAO(tree_->els_[i], lastPAO);
         }
         buf_size = *(size_t*)(tree_->els_[lastIndex] + 1);
         el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
@@ -331,12 +354,16 @@ emptyChildren:
         auxOffset += el_size;
         auxEls++;
 
+        tree_->destroyPAO_(lastPAO);
+        tree_->destroyPAO_(thisPAO);
+
         // swap buffer pointers
         char* tp = data_;
         data_ = tree_->auxBuffer_;
         tree_->auxBuffer_ = tp;
         curOffset_ = auxOffset;
         numElements_ = auxEls;
+
         return true;
     }
 
@@ -353,31 +380,43 @@ emptyChildren:
         // select median value
         uint64_t* median_hash = (uint64_t*)(data_ + offset);
 
-        // create new leaf
-        Node* newLeaf = new Node(LEAF, tree_);
-        newLeaf->copyIntoBuffer(data_ + offset, curOffset_ - offset);
-        newLeaf->addElements(numElements_ - numElements_/2);
-        newLeaf->separator_ = separator_;
-        newLeaf->checkIntegrity();
+        // check if we have reached limit of nodes that can be kept in-memory
+        if (nodeCtr < tree_->nodesInMemory_) {
+            // create new leaf
+            Node* newLeaf = new Node(LEAF, tree_);
+            newLeaf->copyIntoBuffer(data_ + offset, curOffset_ - offset);
+            newLeaf->addElements(numElements_ - numElements_/2);
+            newLeaf->separator_ = separator_;
+            newLeaf->checkIntegrity();
 
-        // set this leaf properties
+            // set this leaf properties
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node %d splits to Node %d: new offsets: %ld and\
-                %ld\n", id_, newLeaf->id_, offset, curOffset_ - offset);
+            fprintf(stderr, "Node %d splits to Node %d: new offsets: %ld and\
+                    %ld\n", id_, newLeaf->id_, offset, curOffset_ - offset);
 #endif
-        curOffset_ = offset;
-        reduceElements(numElements_ - numElements_/2);
-        separator_ = *median_hash;
-        checkIntegrity();
+            curOffset_ = offset;
+            reduceElements(numElements_ - numElements_/2);
+            separator_ = *median_hash;
+            checkIntegrity();
 
-        // if leaf is also the root, create new root
-        if (isRoot()) {
-            setCompressible(true);
-            tree_->createNewRoot(newLeaf);
+            // if leaf is also the root, create new root
+            if (isRoot()) {
+                setCompressible(true);
+                tree_->createNewRoot(newLeaf);
+            } else {
+                parent_->addChild(newLeaf);
+            }
+            return newLeaf;
         } else {
-            parent_->addChild(newLeaf);
+            memmove(tree_->evictedBuffer_, data_ + offset, 
+                    curOffset_ - offset);
+            curOffset_ = offset;
+            reduceElements(numElements_ - numElements_/2);
+            checkIntegrity();
+            tree_->numEvicted_ = numElements_ - numElements_ / 2;
+
+            return NULL;
         }
-        return newLeaf;
     }
 
     bool Node::copyIntoBuffer(void* buf, size_t buf_size)
@@ -396,6 +435,18 @@ emptyChildren:
         memmove(data_+curOffset_, buf, buf_size);
         curOffset_ += buf_size;
         return true;
+    }
+
+    char* Node::getValue(uint64_t* hashPtr)
+    {
+        return (char*)((char*)hashPtr + sizeof(uint64_t) + sizeof(size_t));
+    }
+
+    void Node::deserializePAO(uint64_t* hashPtr, PartialAgg*& pao)
+    {
+        size_t buf_size = *(size_t*)(hashPtr + 1);
+        memmove(tree_->serBuf_, (void*)getValue(hashPtr), buf_size);
+        pao->deserialize(tree_->serBuf_);
     }
 
     bool Node::addChild(Node* newNode)   
