@@ -14,6 +14,8 @@
 #include "AccumulatorFilter.h"
 #include "BufferTree.h"
 #include "BufferTreeFilter.h"
+#include "CompressTree.h"
+#include "CompressTreeFilter.h"
 #include "Mapper.h"
 #include "PartialAgg.h"
 #include "DFSReader.h"
@@ -49,6 +51,7 @@ private:
     /* data structures */
     Hashtable* hashtable_;
     Accumulator* accumulator_;
+    Accumulator* acc_internal_;
 
 	/* for chunk input from DFS */
 	MapInput* map_input_; 
@@ -67,6 +70,7 @@ private:
 	Merger* merger_;
 	AccumulatorInserter* acc_inserter_;
 	AccumulatorReader* acc_reader_;
+	AccumulatorInserter* acc_int_inserter_;
 
 	/* scan from external ht into files for reducer */
 	const char* outfile_;

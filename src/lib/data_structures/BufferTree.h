@@ -9,15 +9,10 @@
 namespace buffertree {
 
     const size_t BUFFER_SIZE = 10485760;
-//    const size_t BUFFER_SIZE = 2048;
+//    const size_t BUFFER_SIZE = 838860800;
 //    const size_t BUFFER_SIZE = 629145600;
     const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 2.5;
     const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
-
-    enum CompressAlgorithm {
-        SNAPPY,
-        ZLIB
-    };
     
     class Node;
 
@@ -38,6 +33,8 @@ namespace buffertree {
         /* get a,b values of(a,b)-tree... */
         void getAB(uint32_t& a, uint32_t& b);
       private:
+        /* Hidden implementation of insert */
+        bool insert(void* hash, PartialAgg* agg, PartialAgg**&, size_t&);
         /* Add leaf whose buffer is full to be emptied once all internal node
          * buffers have been emptied */
         bool addLeafToEmpty(Node* node);

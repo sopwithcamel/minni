@@ -50,6 +50,12 @@ namespace buffertree {
         return rootNode_->insert(*(uint64_t*)hash, serBuf_, strlen(serBuf_));
     }
 
+    bool BufferTree::insert(void* hash, PartialAgg* agg, PartialAgg**& evicted, 
+                size_t& num_evicted)
+    {
+    }
+
+
     bool BufferTree::nextValue(void*& hash, PartialAgg*& agg)
     {
         if (!allFlushed_)

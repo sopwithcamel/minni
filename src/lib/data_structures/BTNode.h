@@ -25,7 +25,6 @@ namespace buffertree {
 
     class Node {
         friend class BufferTree;
-        typedef bool (Node::*NodeCompFn)();
       public:
         Node(NodeType typ, BufferTree* tree);
         ~Node();

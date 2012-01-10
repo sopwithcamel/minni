@@ -17,27 +17,30 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		outfile_(outfile)
 {
 	Setting& c_int_capacity = readConfigFile(cfg, 
-			"minni.aggregator.hashtable_external.capacity.internal");
+			"minni.aggregator.exthash.capacity.internal");
 	internal_capacity = c_int_capacity;
 
 	Setting& c_ext_capacity = readConfigFile(cfg, 
-			"minni.aggregator.hashtable_external.capacity.external");
+			"minni.aggregator.exthash.capacity.external");
 	external_capacity = c_ext_capacity;
 
 	Setting& c_fprefix = readConfigFile(cfg, "minni.common.file_prefix");
 	string fprefix = (const char*)c_fprefix;
 
 	Setting& c_ehtname = readConfigFile(cfg, 
-			"minni.aggregator.hashtable_external.file");
+			"minni.aggregator.exthash.file");
 	string htname = (const char*)c_ehtname;
 
 	Setting& c_max_keys = readConfigFile(cfg, "minni.tbb.max_keys_per_token");
 	size_t max_keys_per_token = c_max_keys;
 
-	Setting& c_agginmem = readConfigFile(cfg, "minni.aggregator.hashtable_external.aggregate");
+	Setting& c_intagg = readConfigFile(cfg, "minni.internal.selected");
+	string intagg = c_intagg;
+
+	Setting& c_agginmem = readConfigFile(cfg, "minni.aggregator.exthash.aggregate");
 	int agg_in_mem = c_agginmem;
 
-	Setting& c_accumtyp = readConfigFile(cfg, "minni.aggregator.hashtable_external.type");
+	Setting& c_accumtyp = readConfigFile(cfg, "minni.aggregator.exthash.type");
 	string accum_type = (const char*)c_accumtyp;
 
 	Setting& c_inp_typ = readConfigFile(cfg, "minni.input_type");
@@ -46,7 +49,17 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
     char* final_path;
 
     /* Initialize data structures */
-    hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(internal_capacity));
+    if (!intagg.compare("accumulator")) {
+        acc_internal_ = dynamic_cast<Accumulator*>(new 
+                compresstree::CompressTree(2, 8, 100, createPAOFunc, 
+                destroyPAOFunc));
+        acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
+                CompressTreeInserter(this, acc_internal_, 
+                destroyPAOFunc, max_keys_per_token));
+    } else {
+        hashtable_ = dynamic_cast<Hashtable*>(new 
+                UTHashtable(internal_capacity));
+    }
     if (!accum_type.compare("buffertree")) {
             accumulator_ = dynamic_cast<Accumulator*>(new 
                     buffertree::BufferTree(2, 8, createPAOFunc,
@@ -96,12 +109,16 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	}
 
 	if (agg_in_mem) {
-		hasher_ = new Hasher(this, hashtable_, destroyPAOFunc,
-                max_keys_per_token);
-		pipeline_list[0].add_filter(*hasher_);
+        if (!intagg.compare("accumulator")) {
+            pipeline_list[0].add_filter(*acc_int_inserter_);
+        } else {
+            hasher_ = new Hasher(this, hashtable_, destroyPAOFunc,
+                    max_keys_per_token);
+            pipeline_list[0].add_filter(*hasher_);
 
-		merger_ = new Merger(this, destroyPAOFunc);
-		pipeline_list[0].add_filter(*merger_);
+            merger_ = new Merger(this, destroyPAOFunc);
+            pipeline_list[0].add_filter(*merger_);
+        }
 	}
 
 	pipeline_list[0].add_filter(*acc_inserter_);
