@@ -18,7 +18,8 @@ class Hashtable
     /* Evict all entries from the hashtable into evict_list and return the 
      * number of elements evicted. Memory for evict_list must be allocated
      * by caller */
-    virtual size_t evictAll(PartialAgg** evict_list) = 0;
+    virtual bool evictAll(PartialAgg** evict_list, size_t& num_evicted, 
+            size_t max_evict) = 0;
 
   protected:
 	size_t ht_size;

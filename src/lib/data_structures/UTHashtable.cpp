@@ -43,14 +43,21 @@ size_t UTHashtable::insert(const char* key, size_t key_len, PartialAgg* value,
     return evict_list_ctr;
 }
 
-size_t UTHashtable::evictAll(PartialAgg** evict_list)
+bool UTHashtable::evictAll(PartialAgg** evict_list, size_t& num_evicted, 
+        size_t max)
 {
     PartialAgg *s, *tmp;
+    bool retDone = true;
     size_t evict_list_ctr = 0;
     HASH_ITER(hh, hashtable, s, tmp) {
         evict_list[evict_list_ctr++] = s;
+        HASH_DEL(hashtable, s);
+        if (evict_list_ctr == max) {
+            retDone = false;
+            break;
+        }
     }	
-    HASH_CLEAR(hh, hashtable);
-    ht_size = 0;
-    return evict_list_ctr;
+    ht_size -= evict_list_ctr;
+    num_evicted = evict_list_ctr;
+    return retDone;
 }

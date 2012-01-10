@@ -8,10 +8,10 @@
 #include "BufferTree.h"
 #include "PartialAgg.h"
 
-#define ENABLE_ASSERT_CHECKS
+//#define ENABLE_ASSERT_CHECKS
 //#define BT_NODE_DEBUG
-#define ENABLE_SORT_VERIFICATION
-#define ENABLE_INTEGRITY_CHECK
+//#define ENABLE_SORT_VERIFICATION
+//#define ENABLE_INTEGRITY_CHECK
 #define ENABLE_FLUSHING
 
 namespace buffertree {

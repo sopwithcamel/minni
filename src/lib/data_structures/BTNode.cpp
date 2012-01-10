@@ -27,7 +27,7 @@ namespace buffertree {
         char* fileName = (char*)malloc(FILENAME_LENGTH);
         char* nodeNum = (char*)malloc(10);
 //        strcpy(fileName, "/mnt/hamur/buffertree/");
-        strcpy(fileName, "/tmp/");
+        strcpy(fileName, "/localfs/hamur/");
         sprintf(nodeNum, "%d", id_);
         strcat(fileName, nodeNum);
         strcat(fileName, ".buf");
@@ -602,7 +602,7 @@ emptyChildren:
         while (offset < curOffset_) {
             curHash = (uint64_t*)(data_ + offset);
             if (*curHash >= separator_) {
-                fprintf(stderr, "Node: %d: Value %ld at offset %ld/%ld\
+                fprintf(stderr, "Node: %d: Value %lu at offset %ld/%ld\
                         greater than %lu\n", id_, *curHash, offset, 
                         curOffset_, separator_);
                 assert(false);

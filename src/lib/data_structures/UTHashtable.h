@@ -22,7 +22,7 @@ class UTHashtable :
     /* Evict all entries from the hashtable into evict_list and return the 
      * number of elements evicted. Memory for evict_list must be allocated
      * by caller */
-    size_t evictAll(PartialAgg** evict_list);
+    bool evictAll(PartialAgg** evict_list, size_t& num_evicted, size_t max);
 
   private:
 	PartialAgg* hashtable;
