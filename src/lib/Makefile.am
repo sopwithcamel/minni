@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = subdir-objects
-SUBDIRS = apps data_structures/CompressTree
+SUBDIRS = apps
 
 lib_LTLIBRARIES = libminni.la 
 
@@ -9,6 +9,7 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			filters/AccumulatorFilter.cpp \
 			filters/Adder.cpp \
 			filters/BufferTreeFilter.cpp \
+			filters/CompressTreeFilter.cpp \
 			filters/Deserializer.cpp \
 			filters/DFSReader.cpp \
 			filters/ExternalHasher.cpp \
@@ -32,7 +33,10 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			record_creation/DelimitedTokenizer.cpp \
 			data_structures/UTHashtable.cpp \
 			data_structures/BufferTree.cpp \
-			data_structures/BTNode.cpp
+			data_structures/BTNode.cpp \
+			data_structures/CompressTree.cpp \
+			data_structures/CTNode.cpp \
+			data_structures/easyzlib.c
 
 libminni_la_LIBADD = ../dfs/libdfs.la
 
@@ -49,10 +53,11 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 					   -I$(srcdir)/data_structures/ \
 					   -I$(srcdir)/resources/ \
 					   -I$(srcdir)/apps/ \
-					   -I/home/hamur/leveldb/include
+					   -I/home/hamur/leveldb/include \
+						-D__STDC_LIMIT_MACROS
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
-			-lltdl -lpthread -ltbb -lconfig++ -lleveldb -ltcmalloc
+			-lltdl -lpthread -ltbb -lconfig++ -lleveldb -lsnappy
 
 minni_includedir = $(includedir)/libminni/libminni
 
@@ -66,6 +71,7 @@ minni_include_HEADERS = core/PartialAgg.h \
 			filters/AccumulatorFilter.h \
 			filters/Adder.h \
 			filters/BufferTreeFilter.h \
+			filters/CompressTreeFilter.h \
 			filters/Deserializer.h \
 			filters/DFSReader.h \
 			filters/ExternalHasher.h \
@@ -92,6 +98,9 @@ minni_include_HEADERS = core/PartialAgg.h \
 			data_structures/UTHashtable.h \
 			data_structures/BufferTree.h \
 			data_structures/BTNode.h \
+			data_structures/CompressTree.h \
+			data_structures/CTNode.h \
+			data_structures/easyzlib.h \
 			resources/ElasticObject.h
 
 pkgconfigdir = $(libdir)/pkgconfig

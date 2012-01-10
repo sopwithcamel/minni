@@ -42,5 +42,4 @@ workdaemon_LDFLAGS = $(TBB_LIBS) \
 		     -lqcdio \
 		     -lboost_regex \
 		     -lpthread \
-		     -lconfig++ \
-			-ltcmalloc
+		     -lconfig++
