@@ -5,6 +5,7 @@
 #include "HashsortAggregator.h"
 #include "TesterAggregator.h"
 #include <dlfcn.h>
+#include <google/heap-profiler.h>
 
 //Mapper
 Mapper::Mapper(size_t (*__createPAO)(Token* t, PartialAgg** p), 
@@ -96,6 +97,11 @@ task* MapperWrapperTask::execute() {
 	string soname;
 	char *s_name;
 	uint64_t npart;
+
+	Setting& c_heapprof = readConfigFile(cfg, "minni.debug.heapprofile");
+	int heapprofile = c_heapprof;
+    if (heapprofile == 1)
+        HeapProfilerStart("/tmp/minni.hprof");
 	if(ParseProperties(soname,npart) == 1)  { //TODO
 		cout<<"Parse properties something wrong. I am leaving!"<<endl;
 		return NULL; 
