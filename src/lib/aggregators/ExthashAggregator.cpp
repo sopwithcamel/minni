@@ -54,7 +54,7 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
                 compresstree::CompressTree(2, 8, 100, createPAOFunc, 
                 destroyPAOFunc));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                CompressTreeInserter(this, acc_internal_, 
+                CompressTreeInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
     } else {
         hashtable_ = dynamic_cast<Hashtable*>(new 
