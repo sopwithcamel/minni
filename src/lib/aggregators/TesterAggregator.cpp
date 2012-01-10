@@ -20,13 +20,13 @@ TesterAggregator::TesterAggregator(const Config &cfg,
 
 	Setting& c_max_keys = readConfigFile(cfg, 
 				"minni.tbb.max_keys_per_token");
-	size_t max_keys = c_max_keys;
+	size_t max_keys_per_token = c_max_keys;
 
 	if (!test_element.compare("toker")) {
 		reader = new DFSReader(this, map_input);	
 		pipeline_list[0].add_filter(*reader);
 
-		toker = new TokenizerFilter(this, cfg);
+		toker = new TokenizerFilter(this, cfg, max_keys_per_token);
 		pipeline_list[0].add_filter(*toker);
 	} else if (!test_element.compare("sorter")) {
 		Setting& c_sort_input = readConfigFile(cfg, 
@@ -47,10 +47,10 @@ TesterAggregator::TesterAggregator(const Config &cfg,
 		reader = new DFSReader(this, map_input);	
 		pipeline_list[0].add_filter(*reader);
 
-		toker = new TokenizerFilter(this, cfg);
+		toker = new TokenizerFilter(this, cfg, max_keys_per_token);
 		pipeline_list[0].add_filter(*toker);
 
-		store = new Store(this, createPAOFunc, destroyPAOFunc, max_keys);
+		store = new Store(this, createPAOFunc, destroyPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*store->hasher);		
 		pipeline_list[0].add_filter(*store->agger);		
 		pipeline_list[0].add_filter(*store->writer);

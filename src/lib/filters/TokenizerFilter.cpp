@@ -48,7 +48,7 @@ TokenizerFilter::~TokenizerFilter()
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	for (int i=0; i<num_buffers; i++) {
 		for (int j=0; j<max_keys_per_token; j++) {
-			delete (*tokens)[i][j];
+            delete (*tokens)[i][j];
 		}
 	}
 
@@ -77,8 +77,11 @@ void* TokenizerFilter::operator()(void* input_data)
 	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
 
+    if (recv_length == 0)
+        goto pass_through;
+
 	for (int i=0; i < max_keys_per_token; i++)
-		this_token_list[i]->clear();
+        this_token_list[i]->clear();
 	// fetch all tokens from chunk
 	num_tokens = chunk_tokenizer->getTokens(tok_buf, max_keys_per_token,
 			this_token_list);

@@ -25,7 +25,7 @@ class PAOCreator : public tbb::filter {
 public:
 	PAOCreator(Aggregator* agg, 
 			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			const size_t max_keys = DEFAULT_MAX_KEYS_PER_TOKEN);
+			size_t max_keys);
 	~PAOCreator();
 private:
 	Aggregator* aggregator;

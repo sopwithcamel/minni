@@ -27,7 +27,7 @@
 class FileTokenizerFilter : public tbb::filter {
 public:
 	FileTokenizerFilter(Aggregator* agg, const Config& cfg, MapInput* inp,
-			const size_t max_keys = DEFAULT_MAX_KEYS_PER_TOKEN);
+			size_t max_keys);
 	~FileTokenizerFilter();
 private:
 	Aggregator* aggregator;

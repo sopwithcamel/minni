@@ -27,7 +27,7 @@
 class TokenizerFilter : public tbb::filter {
 public:
 	TokenizerFilter(Aggregator* agg, const Config& cfg,
-			const size_t max_keys = DEFAULT_MAX_KEYS_PER_TOKEN);
+			size_t max_keys);
 	~TokenizerFilter();
 private:
 	Aggregator* aggregator;

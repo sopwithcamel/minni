@@ -73,7 +73,7 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		if (!inp_type.compare("chunk")) { 
 			chunkreader_ = new DFSReader(this, map_input);
 			pipeline_list[0].add_filter(*chunkreader_);
-			toker_ = new TokenizerFilter(this, cfg);
+			toker_ = new TokenizerFilter(this, cfg, max_keys_per_token);
 			pipeline_list[0].add_filter(*toker_);
 		} else if (!inp_type.compare("file")) {
 			filereader_ = new FileReaderFilter(this, map_input);
@@ -83,7 +83,7 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 			pipeline_list[0].add_filter(*filetoker_);
 		}
 
-		creator_ = new PAOCreator(this, createPAOFunc);
+		creator_ = new PAOCreator(this, createPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*creator_);
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
@@ -96,7 +96,8 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	}
 
 	if (agg_in_mem) {
-		hasher_ = new Hasher(this, hashtable_, destroyPAOFunc);
+		hasher_ = new Hasher(this, hashtable_, destroyPAOFunc,
+                max_keys_per_token);
 		pipeline_list[0].add_filter(*hasher_);
 
 		merger_ = new Merger(this, destroyPAOFunc);
