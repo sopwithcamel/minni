@@ -51,39 +51,40 @@ void* Hasher::operator()(void* recv)
 	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % aggregator->getNumBuffers();
 
-	// PAO to be evicted next. We maintain pointer because begin() on an unordered
-	// map is an expensive operation!
-	PartialAgg* next_evict;
-
-	while (ind < recv_length) {
-		pao = pao_l[ind];
-		PartialAgg* found = NULL;
-		hashtable->search(pao->key, found);
-		if (found) { // the insertion didn't occur
-			this_merge_list[merge_list_ctr] = found;
-			this_mergand_list[merge_list_ctr++] = pao;
-		} else { // the PAO was inserted
-            size_t num_evicted = hashtable->insert(pao->key, strlen(pao->key),
-                    pao, this_list + evict_list_ctr);
-            evict_list_ctr += num_evicted;
-            assert(evict_list_ctr < max_keys_per_token);
+    if (recv_length > 0) {
+        while (ind < recv_length) {
+            pao = pao_l[ind];
+            PartialAgg* found = NULL;
+            hashtable->search(pao->key, found);
+            if (found) { // the insertion didn't occur
+                this_merge_list[merge_list_ctr] = found;
+                this_mergand_list[merge_list_ctr++] = pao;
+            } else { // the PAO was inserted
+                size_t num_evicted = hashtable->insert(pao->key,
+                        strlen(pao->key), pao, this_list + evict_list_ctr);
+                evict_list_ctr += num_evicted;
+                assert(evict_list_ctr < max_keys_per_token);
+            }
+            ind++;
         }
-		ind++;
-	}
+        tokens_processed++;
+    }
 
 	/* next bit of code tests whether the input stage has completed. If
 	   it has, and the number of tokens processed by the input stage is
 	   equal to the number processed by this one, then it also adds all
 	   the PAOs in the hash table to the list and clears the hashtable
            essentially flushing all global state. */
-
-	tokens_processed++;
 	// if the number of buffers > 1 then some might be queued up
 	if (flush_on_complete || (aggregator->input_finished && 
-			tokens_processed == aggregator->tot_input_tokens)) {
-        size_t num_evicted = hashtable->evictAll(this_list + evict_list_ctr);
+                tokens_processed == aggregator->tot_input_tokens)) {
+        size_t num_evicted;
+        bool evictDone = hashtable->evictAll(this_list + evict_list_ctr, 
+                num_evicted, max_keys_per_token);
+        if (!evictDone) {
+            aggregator->voteTerminate = false; // i'm not done yet!
+        }
         evict_list_ctr += num_evicted;
-        assert(evict_list_ctr < max_keys_per_token);
 	}
 	this_send->result = this_list;
 	this_send->length = evict_list_ctr;
