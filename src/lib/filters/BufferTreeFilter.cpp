@@ -32,8 +32,6 @@ void* BufferTreeInserter::operator()(void* recv)
 	PartialAgg** pao_l = (PartialAgg**)recv_list->result;
 	uint64_t recv_length = (uint64_t)recv_list->length;
 
-	fprintf(stderr, "Got %ld elements to exthash\n", recv_length);
-
 	// Insert PAOs
 	while (ind < recv_length) {
 		pao = pao_l[ind];
