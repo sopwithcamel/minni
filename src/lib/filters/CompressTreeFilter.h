@@ -25,6 +25,7 @@ class CompressTreeInserter :
   public:
 	CompressTreeInserter(Aggregator* agg,
 			Accumulator* acc,
+            size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys);
 	~CompressTreeInserter();
@@ -33,6 +34,7 @@ class CompressTreeInserter :
 	size_t next_buffer;
 	MultiBuffer<FilterInfo>* send_;
     MultiBuffer<PartialAgg*>* evicted_list_;
+	size_t (*createPAO_)(Token* t, PartialAgg** p);
 };
 
 class CompressTreeReader :

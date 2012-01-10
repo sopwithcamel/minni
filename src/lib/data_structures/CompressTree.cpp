@@ -70,10 +70,10 @@ namespace compresstree {
                 offset += sizeof(uint64_t);
                 bufSize = (size_t*)(buf + offset);
                 offset += sizeof(size_t);
-                createPAO_(NULL, &evicted[i]);
                 evicted[i]->deserialize(buf + offset);
                 offset += *bufSize;
             }
+            numEvicted_ = 0;
         }
         return ret;
     }
