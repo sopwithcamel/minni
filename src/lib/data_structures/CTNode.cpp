@@ -312,10 +312,11 @@ emptyChildren:
         PartialAgg *lastPAO, *thisPAO;
         tree_->createPAO_(NULL, &lastPAO);
         tree_->createPAO_(NULL, &thisPAO);
-        deserializePAO(tree_->els_[0], lastPAO);
         for (uint64_t i=1; i<numElements_; i++) {
             if (*(tree_->els_[i]) == *(tree_->els_[lastIndex])) {
                 // aggregate elements
+                if (i == lastIndex + 1)
+                    deserializePAO(tree_->els_[lastIndex], lastPAO);
                 deserializePAO(tree_->els_[i], thisPAO);
                 if (!strcmp(thisPAO->key, lastPAO->key)) {
                     lastPAO->merge(thisPAO);
@@ -343,9 +344,7 @@ emptyChildren:
                 auxOffset += el_size;
             }
             auxEls++;
-
             lastIndex = i;
-            deserializePAO(tree_->els_[i], lastPAO);
         }
         buf_size = *(size_t*)(tree_->els_[lastIndex] + 1);
         el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
