@@ -46,7 +46,10 @@ void WordCountPartialAgg::serialize(FILE* f, void* buf, size_t buf_size)
 	char* wr_buf = (char*)buf;
 	assert(NULL != f);
 	size_t l = strlen(wr_buf);
-	assert(fwrite(wr_buf, sizeof(char), l, f) == l);
+	size_t w = fwrite(wr_buf, sizeof(char), l, f);
+	if (w != l) {
+        fprintf(stderr, "buf size: %d, written: %d\n", l, w);
+    }
 }
 
 void WordCountPartialAgg::serialize(void* buf)
