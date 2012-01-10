@@ -28,6 +28,7 @@ class AccumulatorInserter :
 	Aggregator* aggregator_;
     Accumulator* accumulator_;
 	const size_t max_keys_per_token;
+	uint64_t tokens_processed;
 	void (*destroyPAO)(PartialAgg* p);
 };
 

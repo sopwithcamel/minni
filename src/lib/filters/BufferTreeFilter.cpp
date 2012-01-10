@@ -19,7 +19,6 @@ BufferTreeInserter::~BufferTreeInserter()
 void* BufferTreeInserter::operator()(void* recv)
 {
 	char *key;
-	char* buf = (char*)malloc(BUF_SIZE);
 	string value;
 	size_t ind = 0;
     uint64_t hashv;
@@ -33,15 +32,19 @@ void* BufferTreeInserter::operator()(void* recv)
 	uint64_t recv_length = (uint64_t)recv_list->length;
 
 	// Insert PAOs
-	while (ind < recv_length) {
-		pao = pao_l[ind];
-        Hash(pao->key, strlen(pao->key), NUM_BUCKETS, hashv, bkt); 
-        ptrToHash = (void*)&hashv;
-        bt->insert(ptrToHash, pao);
-		destroyPAO(pao);
-		ind++;
-	}
-	free(buf);
+    if (recv_length > 0) {
+        char* buf = (char*)malloc(BUF_SIZE);
+        fprintf(stderr, "Inserting %lu elements in BT\n", recv_length);
+        while (ind < recv_length) {
+            pao = pao_l[ind];
+            Hash(pao->key, strlen(pao->key), NUM_BUCKETS, hashv, bkt); 
+            ptrToHash = (void*)&hashv;
+            bt->insert(ptrToHash, pao);
+            //		destroyPAO(pao);
+            ind++;
+        }
+        free(buf);
+    }
 }
 
 BufferTreeReader::BufferTreeReader(Aggregator* agg, 

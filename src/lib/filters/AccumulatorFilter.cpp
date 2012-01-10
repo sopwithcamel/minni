@@ -10,7 +10,8 @@ AccumulatorInserter::AccumulatorInserter(Aggregator* agg,
     aggregator_(agg),
     accumulator_(acc),
     destroyPAO(destroyPAOFunc),
-    max_keys_per_token(max_keys)
+    max_keys_per_token(max_keys),
+    tokens_processed(0)
 {
 }
 
