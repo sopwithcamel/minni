@@ -108,6 +108,7 @@ namespace compresstree {
         /* Compression-related functions */
         NodeCompFn compress;
         NodeCompFn decompress;
+        bool asyncCompress();
         bool snappyCompress();
         bool snappyDecompress();
         bool zlibCompress();

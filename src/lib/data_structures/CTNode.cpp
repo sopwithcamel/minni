@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -270,10 +271,10 @@ emptyChildren:
 
     void Node::quicksort(uint64_t** arr, size_t uleft, size_t uright)
     {
-        int i, j, stack_pointer = -1;
-        int left = uleft;
-        int right = uright;
-        int* rstack = new int[128];
+        int64_t i, j, stack_pointer = -1;
+        int64_t left = uleft;
+        int64_t right = uright;
+        int64_t* rstack = new int64_t[128];
         uint64_t *swap, *temp;
         while (true) {
             if (right - left <= 7) {
@@ -431,11 +432,13 @@ emptyChildren:
         // select median value
         uint64_t* median_hash;
         size_t nj = 0;
+
         do {
             median_hash = (uint64_t*)(data_ + offset);
             advance(1, offset);
             nj++;
         } while (*(uint64_t*)(data_ + offset) == *median_hash);
+
         median_hash = (uint64_t*)(data_ + offset);
 
         // check if we have reached limit of nodes that can be kept in-memory
@@ -624,11 +627,23 @@ emptyChildren:
         return false;
     }
 
+    bool Node::asyncCompress()
+    {
+        pthread_mutex_lock(&(tree_->bufMutex_));
+        tree_->nodesToCompress_.push(this);
+        pthread_cond_signal(&(tree_->bufReady_));
+        pthread_mutex_unlock(&(tree_->bufMutex_));
+        // lock released after compression happens
+        return true;
+    }
+
     bool Node::snappyCompress()
     {
 #ifdef ENABLE_COMPRESSION
-        if (!compressible_)
+        if (!compressible_) {
             return true;
+        }
+
         size_t compressed_length;
         snappy::RawCompress(data_, curOffset_, tree_->compBuffer_,
                 &compressed_length);
@@ -652,6 +667,7 @@ emptyChildren:
 #ifdef ENABLE_COMPRESSION
         if (!compressible_)
             return true;
+
         char* buf = (char*)malloc(BUFFER_SIZE);
         if (data_ != NULL) {
             snappy::RawUncompress(data_, compLength_, buf);

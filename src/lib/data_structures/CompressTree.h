@@ -1,6 +1,7 @@
 #ifndef LIB_COMPRESS_COMPRESSTREE_H
 #define LIB_COMPRESS_COMPRESSTREE_H
 
+#include <pthread.h>
 #include <queue>
 #include "CTNode.h"
 #include "Accumulator.h"
@@ -8,8 +9,9 @@
 
 namespace compresstree {
 
-    const size_t BUFFER_SIZE = 10485760;
+//    const size_t BUFFER_SIZE = 10485760;
 //    const size_t BUFFER_SIZE = 20971520;
+    const size_t BUFFER_SIZE = 31457280;
     const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 2;
     const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
 
@@ -45,6 +47,9 @@ namespace compresstree {
         bool createNewRoot(Node* otherChild);
         /* Write out all buffers to leaves. Do this before reading */
         bool flushBuffers();
+
+        void* callCompress();
+        static void* callCompressHelper(void *context);
       private:
         // (a,b)-tree...
         const uint32_t a_;
@@ -59,6 +64,12 @@ namespace compresstree {
         size_t lastLeafRead_;
         size_t lastOffset_;
         char* serBuf_;          // buffer used for serializing PAOs
+
+        /* Compression-related */
+        pthread_t compressionThread_;
+        pthread_cond_t bufReady_;
+        pthread_mutex_t bufMutex_;
+        std::queue<Node*> nodesToCompress_;
 
         /* Eviction-related */
         uint32_t nodesInMemory_;

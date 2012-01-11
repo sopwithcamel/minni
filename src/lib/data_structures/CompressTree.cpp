@@ -40,6 +40,15 @@ namespace compresstree {
 
         // buffer for holding evicted values
         evictedBuffer_ = (char*)malloc(BUFFER_SIZE);
+
+        pthread_attr_t attr;
+        pthread_mutex_init(&bufMutex_, NULL);
+        pthread_cond_init(&bufReady_, NULL);
+        pthread_attr_init(&attr);
+/*
+        pthread_create(&compressionThread_, &attr, 
+                &CompressTree::callCompressHelper, (void*)this);
+*/
     }
 
     CompressTree::~CompressTree()
@@ -50,6 +59,8 @@ namespace compresstree {
         free(compBuffer_);
         free(evictedBuffer_);
         free(els_);
+        pthread_cond_destroy(&bufReady_);
+        pthread_mutex_destroy(&bufMutex_);
     }
 
     bool CompressTree::insert(void* hash, PartialAgg* agg, PartialAgg**& evicted,
@@ -151,6 +162,26 @@ begin_flush:
 #endif
         allFlushed_ = true;
         return true;
+    }
+
+    void* CompressTree::callCompress()
+    {
+        pthread_mutex_lock(&bufMutex_);
+        while (nodesToCompress_.empty()) {
+            pthread_cond_wait(&bufReady_, &bufMutex_);
+            while (!nodesToCompress_.empty()) {
+                Node* n = nodesToCompress_.front();
+                n->snappyCompress();
+                nodesToCompress_.pop();
+            }
+        }
+        pthread_mutex_unlock(&bufMutex_);
+        pthread_exit(NULL);
+    }
+
+    void* CompressTree::callCompressHelper(void *context)
+    {
+        return ((CompressTree*)context)->callCompress();
     }
 
     void CompressTree::getAB(uint32_t& a, uint32_t& b)
