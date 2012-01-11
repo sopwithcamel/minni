@@ -268,17 +268,69 @@ emptyChildren:
         return storeIndex;
     }
 
-    void Node::quicksort(uint64_t** arr, size_t left, size_t right)
+    void Node::quicksort(uint64_t** arr, size_t uleft, size_t uright)
     {
-        size_t pivIndex, newPivIndex;
-        if (left < right) {
-            pivIndex = (left + right) / 2;
-            newPivIndex = partition(arr, left, right, pivIndex);
-            if (left < newPivIndex)
-                quicksort(arr, left, newPivIndex - 1);
-            if (newPivIndex < right)
-                quicksort(arr, newPivIndex + 1, right);
-        }
+        int i, j, stack_pointer = -1;
+        int left = uleft;
+        int right = uright;
+        int* rstack = new int[128];
+        uint64_t *swap, *temp;
+        while (true) {
+            if (right - left <= 7) {
+                for (j = left + 1; j <= right; j++) {
+                    swap = arr[j];
+                    i = j - 1;
+                    if (i < 0) {
+                        fprintf(stderr, "Noo");
+                        assert(false);
+                    }
+                    while (i >= left && (*arr[i] > *swap)) {
+                        arr[i + 1] = arr[i--];
+                    }
+                    arr[i + 1] = swap;
+                }
+                if (stack_pointer == -1) {
+                    break;
+                }
+                right = rstack[stack_pointer--];
+                left = rstack[stack_pointer--];
+            } else {
+                int median = (left + right) >> 1;
+                i = left + 1;
+                j = right;
+                swap = arr[median]; arr[median] = arr[i]; arr[i] = swap;
+                if (*arr[left] > *arr[right]) {
+                    swap = arr[left]; arr[left] = arr[right]; arr[right] = swap;
+                }
+                if (*arr[i] > *arr[right]) {
+                    swap = arr[i]; arr[i] = arr[right]; arr[right] = swap;
+                }
+                if (*arr[left] > *arr[i]) {
+                    swap = arr[left]; arr[left] = arr[i]; arr[i] = swap;
+                }
+                temp = arr[i];
+                while (true) {
+                    while (*arr[++i] < *temp);
+                    //noinspection ControlFlowStatementWithoutBraces,StatementWithEmptyBody
+                    while (*arr[--j] > *temp);
+                    if (j < i) {
+                        break;
+                    }
+                    swap = arr[i]; arr[i] = arr[j]; arr[j] = swap;
+                }
+                arr[left + 1] = arr[j];
+                arr[j] = temp;
+                if (right - i + 1 >= j - left) {
+                    rstack[++stack_pointer] = i;
+                    rstack[++stack_pointer] = right;
+                    right = j - 1;
+                } else {
+                    rstack[++stack_pointer] = left;
+                    rstack[++stack_pointer] = j - 1;
+                    left = i;
+                }
+            }
+        } 
     }
 
     bool Node::sortBuffer()
@@ -377,14 +429,21 @@ emptyChildren:
             return false;
 
         // select median value
-        uint64_t* median_hash = (uint64_t*)(data_ + offset);
+        uint64_t* median_hash;
+        size_t nj = 0;
+        do {
+            median_hash = (uint64_t*)(data_ + offset);
+            advance(1, offset);
+            nj++;
+        } while (*(uint64_t*)(data_ + offset) == *median_hash);
+        median_hash = (uint64_t*)(data_ + offset);
 
         // check if we have reached limit of nodes that can be kept in-memory
         if (nodeCtr < tree_->nodesInMemory_) {
             // create new leaf
             Node* newLeaf = new Node(LEAF, tree_);
             newLeaf->copyIntoBuffer(data_ + offset, curOffset_ - offset);
-            newLeaf->addElements(numElements_ - numElements_/2);
+            newLeaf->addElements(numElements_ - numElements_/2 - nj);
             newLeaf->separator_ = separator_;
             newLeaf->checkIntegrity();
 
@@ -394,7 +453,7 @@ emptyChildren:
                     %ld\n", id_, newLeaf->id_, offset, curOffset_ - offset);
 #endif
             curOffset_ = offset;
-            reduceElements(numElements_ - numElements_/2);
+            reduceElements(numElements_ - numElements_/2 - nj);
             separator_ = *median_hash;
             checkIntegrity();
 
@@ -711,7 +770,7 @@ emptyChildren:
         while (offset < curOffset_) {
             curHash = (uint64_t*)(data_ + offset);
             if (*curHash >= separator_) {
-                fprintf(stderr, "Node: %d: Value %ld at offset %ld/%ld\
+                fprintf(stderr, "Node: %d: Value %lu at offset %ld/%ld\
                         greater than %lu\n", id_, *curHash, offset, 
                         curOffset_, separator_);
                 assert(false);
