@@ -20,13 +20,14 @@ namespace compresstree {
         numElements_(0),
         curOffset_(0),
         isCompressed_(false),
-        compressible_(true)
+        compressible_(true),
+        givenForComp_(false)
     {
         // Allocate memory for data buffer
         data_ = (char*)malloc(BUFFER_SIZE);
 
         if (tree_->alg_ == SNAPPY) {
-            compress = &Node::snappyCompress;
+            compress = &Node::asyncCompress;
             decompress = &Node::snappyDecompress;
         } else if (tree_->alg_ == ZLIB) {
             compress = &Node::zlibCompress;
@@ -35,6 +36,8 @@ namespace compresstree {
             fprintf(stderr, "Compression algorithm\n");
             assert(false);
         }
+        pthread_mutex_init(&gfcMutex_, NULL);
+        pthread_cond_init(&gfcCond_, NULL);
     }
 
     Node::~Node()
@@ -43,6 +46,8 @@ namespace compresstree {
             free(data_);
             data_ = NULL;
         }
+        pthread_mutex_destroy(&gfcMutex_);
+        pthread_cond_destroy(&gfcCond_);
     }
 
     bool Node::insert(uint64_t hash, void* buf, size_t buf_size)
@@ -152,6 +157,7 @@ namespace compresstree {
                     children_[curChild]->addElements(numCopied);
                     assert(CALL_MEM_FUNC(*children_[curChild], 
                             children_[curChild]->compress)());
+                    tree_->asyncSignal();
 #ifdef CT_NODE_DEBUG
                     fprintf(stderr, "Copied %lu elements into node %d; child\
                             offset: %ld, sep: %lu/%lu, off:(%ld/%ld)\n", numCopied, 
@@ -187,6 +193,7 @@ namespace compresstree {
             children_[curChild]->addElements(numCopied);
             CALL_MEM_FUNC(*children_[curChild], 
                     children_[curChild]->compress)();
+            
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Copied %lu elements into node %d; child\
                     offset: %ld, sep: %lu, off:(%ld/%ld)\n", numCopied, 
@@ -197,6 +204,7 @@ namespace compresstree {
 #endif
         }
         CALL_MEM_FUNC(*this, compress)();
+        tree_->asyncSignal();
 
         // reset
         curOffset_ = 0;
@@ -631,9 +639,10 @@ emptyChildren:
     {
         pthread_mutex_lock(&(tree_->bufMutex_));
         tree_->nodesToCompress_.push(this);
-        pthread_cond_signal(&(tree_->bufReady_));
         pthread_mutex_unlock(&(tree_->bufMutex_));
-        // lock released after compression happens
+        pthread_mutex_lock(&gfcMutex_);
+        givenForComp_ = true;
+        pthread_mutex_unlock(&gfcMutex_);
         return true;
     }
 
@@ -667,6 +676,11 @@ emptyChildren:
 #ifdef ENABLE_COMPRESSION
         if (!compressible_)
             return true;
+        pthread_mutex_lock(&gfcMutex_);
+        while (givenForComp_)
+            pthread_cond_wait(&gfcCond_, &gfcMutex_);
+        pthread_mutex_unlock(&gfcMutex_);
+//        fprintf(stderr, "Sync: decompressed node %d\n", id_);
 
         char* buf = (char*)malloc(BUFFER_SIZE);
         if (data_ != NULL) {

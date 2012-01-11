@@ -50,6 +50,7 @@ namespace compresstree {
 
         void* callCompress();
         static void* callCompressHelper(void *context);
+        bool asyncSignal();
       private:
         // (a,b)-tree...
         const uint32_t a_;

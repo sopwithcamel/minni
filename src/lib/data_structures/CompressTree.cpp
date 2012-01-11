@@ -45,10 +45,9 @@ namespace compresstree {
         pthread_mutex_init(&bufMutex_, NULL);
         pthread_cond_init(&bufReady_, NULL);
         pthread_attr_init(&attr);
-/*
+
         pthread_create(&compressionThread_, &attr, 
                 &CompressTree::callCompressHelper, (void*)this);
-*/
     }
 
     CompressTree::~CompressTree()
@@ -172,11 +171,24 @@ begin_flush:
             while (!nodesToCompress_.empty()) {
                 Node* n = nodesToCompress_.front();
                 n->snappyCompress();
+//                fprintf(stderr, "Async: compressed node %d\n", n->id_);
+                pthread_mutex_lock(&(n->gfcMutex_));
+                pthread_cond_signal(&(n->gfcCond_));
+                n->givenForComp_ = false;
+                pthread_mutex_unlock(&(n->gfcMutex_));
                 nodesToCompress_.pop();
             }
         }
         pthread_mutex_unlock(&bufMutex_);
         pthread_exit(NULL);
+    }
+
+    bool CompressTree::asyncSignal()
+    {
+        pthread_mutex_lock(&bufMutex_);
+        pthread_cond_signal(&bufReady_);
+        pthread_mutex_unlock(&bufMutex_);
+        return true;
     }
 
     void* CompressTree::callCompressHelper(void *context)
@@ -203,24 +215,26 @@ begin_flush:
         for (uint32_t i=0; i<leavesToBeEmptied_.size(); i++) {
             Node* node = leavesToBeEmptied_.front();
             leavesToBeEmptied_.pop();
-            if (node->isCompressed()) {
+//            if (node->isCompressed()) {
                 CALL_MEM_FUNC(*node, node->decompress)();
-            }
+//            }
             node->sortBuffer();
             Node* newLeaf = node->splitLeaf();
+            Node *l1 = NULL, *l2 = NULL;
             if (node->isFull()) {
-                Node* l1 = node->splitLeaf();
-                if (l1)
-                    CALL_MEM_FUNC(*l1, l1->compress)();
+                l1 = node->splitLeaf();
             }
             if (newLeaf && newLeaf->isFull()) {
-                Node* l2 = newLeaf->splitLeaf();
-                if (l2)
-                    CALL_MEM_FUNC(*l2, l2->compress)();
+                l2 = newLeaf->splitLeaf();
             }
             CALL_MEM_FUNC(*node, node->compress)();
             if (newLeaf)
                 CALL_MEM_FUNC(*newLeaf, newLeaf->compress)();
+            if (l1)
+                CALL_MEM_FUNC(*l1, l1->compress)();
+            if (l2)
+                CALL_MEM_FUNC(*l2, l2->compress)();
+            asyncSignal();
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Leaf node %d removed from full-leaf-list\n", node->id_);
 #endif

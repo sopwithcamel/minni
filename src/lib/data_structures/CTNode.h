@@ -135,6 +135,9 @@ namespace compresstree {
         bool isCompressed_;
         bool compressible_;
         size_t compLength_;
+        bool givenForComp_;
+        pthread_cond_t gfcCond_;
+        pthread_mutex_t gfcMutex_;
     };
 }
 
