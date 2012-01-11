@@ -103,7 +103,7 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
 		inp_deserializer_ = new Deserializer(this, 1/*TODO: how many?*/, input_file,
-			createPAOFunc, destroyPAOFunc);
+			createPAOFunc, destroyPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*inp_deserializer_);
 		free(input_file);
 	}

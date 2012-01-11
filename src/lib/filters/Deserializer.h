@@ -30,10 +30,12 @@ public:
 			const uint64_t num_buckets, 
 			const char* inp_prefix,
 			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			void (*destroyPAOFunc)(PartialAgg* p));
+			void (*destroyPAOFunc)(PartialAgg* p),
+            size_t max_keys);
 	~Deserializer();
 private:
 	Aggregator* aggregator;
+	const size_t max_keys_per_token;
 	size_t (*createPAO)(Token* t, PartialAgg** p);
 	void (*destroyPAO)(PartialAgg* p);
 	char* inputfile_prefix;

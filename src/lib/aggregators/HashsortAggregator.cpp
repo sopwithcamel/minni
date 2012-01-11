@@ -68,7 +68,8 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
 		inp_deserializer = new Deserializer(this, 1/*TODO: how many?*/, 
-                input_file, createPAOFunc, destroyPAOFunc);
+                input_file, createPAOFunc, destroyPAOFunc, 
+                max_keys_per_token);
 		pipeline_list[0].add_filter(*inp_deserializer);
 		free(input_file);
 	}
@@ -107,10 +108,10 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	/* In this pipeline, the sorted file is deserialized into
 	 * PAOs again, aggregated and serialized. */
 	deserializer = new Deserializer(this, 1, sorted_file,
-			createPAOFunc, destroyPAOFunc);
+			createPAOFunc, destroyPAOFunc, max_keys_per_token);
 	pipeline_list[2].add_filter(*deserializer);
 
-	adder = new Adder(this, destroyPAOFunc);
+	adder = new Adder(this, destroyPAOFunc, max_keys_per_token);
 	pipeline_list[2].add_filter(*adder);
 
 	char* final_path = (char*)malloc(FILENAME_LENGTH);

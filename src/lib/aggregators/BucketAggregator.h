@@ -10,6 +10,10 @@
 #include "tbb/task_scheduler_init.h"
 #include "tbb/tbb_allocator.h"
 
+#include "Accumulator.h"
+#include "AccumulatorFilter.h"
+#include "CompressTree.h"
+#include "CompressTreeFilter.h"
 #include "Deserializer.h"
 #include "DFSReader.h"
 #include "ElasticObject.h"
@@ -43,6 +47,7 @@ class BucketAggregator :
 
     /* data structures */
     Hashtable* hashtable_;
+    Accumulator* acc_internal_;
 
     /* for chunk input from DFS */
     MapInput* map_input; 
@@ -60,6 +65,7 @@ class BucketAggregator :
     Merger* merger;
     Serializer* bucket_serializer;
     Deserializer* deserializer;
+	AccumulatorInserter* acc_int_inserter_;
     Hasher* bucket_hasher;
     Merger* bucket_merger;
     Serializer* final_serializer;

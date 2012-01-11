@@ -31,7 +31,7 @@ void* Merger::operator()(void* recv)
 
 	while (ind < merge_list_length) {
 		merge_list[ind]->merge(mergand_list[ind]);
-		destroyPAO(mergand_list[ind]);
+//		destroyPAO(mergand_list[ind]);
 
 		ind++;
 	}

@@ -26,6 +26,9 @@ BucketAggregator::BucketAggregator(const Config &cfg,
     Setting& c_capacity = readConfigFile(cfg, "minni.aggregator.bucket.capacity");
     capacity = c_capacity;
 
+	Setting& c_intagg = readConfigFile(cfg, "minni.internal.selected");
+	string intagg = c_intagg;
+
     Setting& c_nb = readConfigFile(cfg, "minni.aggregator.bucket.num");
     num_buckets = c_nb;
 
@@ -39,6 +42,14 @@ BucketAggregator::BucketAggregator(const Config &cfg,
     string inp_type = (const char*)c_inp_typ;
 
     /* Initialize data structures */
+    if (!intagg.compare("accumulator")) {
+        acc_internal_ = dynamic_cast<Accumulator*>(new 
+                compresstree::CompressTree(2, 8, 30, createPAOFunc, 
+                destroyPAOFunc));
+        acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
+                CompressTreeInserter(this, acc_internal_, createPAOFunc,
+                destroyPAOFunc, max_keys_per_token));
+    } 
     hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(capacity));
 
     if (type == Map) {
@@ -70,17 +81,21 @@ BucketAggregator::BucketAggregator(const Config &cfg,
         strcpy(input_file, fprefix.c_str());
         strcat(input_file, infile);
         inp_deserializer = new Deserializer(this, 1, input_file,
-            createPAOFunc, destroyPAOFunc);
+            createPAOFunc, destroyPAOFunc, max_keys_per_token);
         pipeline_list[0].add_filter(*inp_deserializer);
         free(input_file);
     }
 
     if (agg_in_mem) {
-        hasher = new Hasher(this, hashtable_, destroyPAOFunc,
-                max_keys_per_token);
-        pipeline_list[0].add_filter(*hasher);
-        merger = new Merger(this, destroyPAOFunc);
-        pipeline_list[0].add_filter(*merger);
+        if (!intagg.compare("accumulator")) {
+            pipeline_list[0].add_filter(*acc_int_inserter_);
+        } else {
+            hasher = new Hasher(this, hashtable_, destroyPAOFunc,
+                    max_keys_per_token);
+            pipeline_list[0].add_filter(*hasher);
+            merger = new Merger(this, destroyPAOFunc);
+            pipeline_list[0].add_filter(*merger);
+        }
     }
 
     char* bucket_prefix = (char*)malloc(FILENAME_LENGTH);
@@ -103,7 +118,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
      * In this pipeline, a bucket is read back into memory (converted to 
      * PAOs again), aggregated using a hashtable, and serialized. */
     deserializer = new Deserializer(this, num_buckets, bucket_prefix,
-            createPAOFunc, destroyPAOFunc);
+            createPAOFunc, destroyPAOFunc, max_keys_per_token);
     pipeline_list[1].add_filter(*deserializer);
 
     bucket_hasher = new Hasher(this, hashtable_, destroyPAOFunc,

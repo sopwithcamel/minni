@@ -1,18 +1,19 @@
 #include "Adder.h"
 
 Adder::Adder(Aggregator* agg, 
-			void (*destroyPAOFunc)(PartialAgg* p)) :
+			void (*destroyPAOFunc)(PartialAgg* p),
+            size_t max_keys) :
 		filter(/*serial=*/true),
 		aggregator(agg),
+        max_keys_per_token(max_keys),
 		destroyPAO(destroyPAOFunc),
 		next_buffer(0),
 		tokens_processed(0)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
-	uint64_t list_size = aggregator->getPAOsPerToken();
 
 	agged_list = new MultiBuffer<PartialAgg*>(num_buffers,
-			list_size);
+			max_keys_per_token);
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 }
 

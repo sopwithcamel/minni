@@ -41,7 +41,6 @@ class Aggregator
 	uint64_t getNumThreads() const;
 	uint64_t getNumBuffers() const;
 	uint64_t getNumPartitions() const;
-	uint64_t getPAOsPerToken() const;
 	AggType getType() const;
 	virtual bool repeatPipeline(uint64_t it);
   private:
@@ -50,7 +49,6 @@ class Aggregator
 	uint64_t num_buffers;
 	const uint64_t num_pipelines; 	// number of pipelines in aggregator
 	const uint64_t num_partitions;	// number of partitions for map output
-	uint64_t paos_in_token;
 	size_t (*createPAO)(Token* t, PartialAgg** p);
 	void (*destroyPAO)(PartialAgg* p);
 };

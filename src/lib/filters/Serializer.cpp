@@ -62,7 +62,7 @@ void* Serializer::operator()(void* pao_list)
 		pao = pao_l[ind];
 		buc = partition(pao->key);	
 		pao->serialize(fl[buc], buf, BUF_SIZE);
-		destroyPAO(pao);
+//		destroyPAO(pao);
 		ind++;
 	}
 	// reset flags; TODO: why are flags being reset here?
@@ -70,13 +70,14 @@ void* Serializer::operator()(void* pao_list)
 
 	tokens_processed++;
 	if (aggregator->input_finished && 
-			tokens_processed == aggregator->tot_input_tokens) {
+			tokens_processed == aggregator->tot_input_tokens &&
+            aggregator->voteTerminate == true) {
 		fprintf(stderr, "Closing bucket files\n");
-/*
+
 		for (int i=0; i<num_buckets; i++) {
-            fprintf(stderr, "Closing file: %d\/%d\n", i, num_buckets);
+            fprintf(stderr, "Closing file: %d/%d\n", i, num_buckets);
 			fclose(fl[i]);
         }
-*/
+
 	}
 }

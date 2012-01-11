@@ -21,11 +21,13 @@
 
 class Adder : public tbb::filter {
 public:
-	Adder(Aggregator* agg, 	void (*destroyPAOFunc)(PartialAgg* p));
+	Adder(Aggregator* agg, 	void (*destroyPAOFunc)(PartialAgg* p),
+            size_t max_keys);
 	~Adder();
 	void (*destroyPAO)(PartialAgg* p);
 private:
 	Aggregator* aggregator;
+	const size_t max_keys_per_token;
 	size_t next_buffer;
 	MultiBuffer<PartialAgg*>* agged_list;
 	MultiBuffer<FilterInfo>* send;
