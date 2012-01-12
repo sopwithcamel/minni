@@ -27,7 +27,6 @@
 #include "Hasher.h"
 #include "Merger.h"
 #include "PAOCreator.h"
-#include "ExternalHasher.h"
 #include "Serializer.h"
 #include "Deserializer.h"
 #include "Util.h"

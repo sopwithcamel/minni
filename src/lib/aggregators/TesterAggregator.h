@@ -19,7 +19,7 @@
 #include "Sorter.h"
 #include "Serializer.h"
 #include "Deserializer.h"
-#include "Store.h"
+//#include "Store.h"
 #include "util.h"
 
 class TesterAggregator : public Aggregator {
@@ -47,7 +47,7 @@ private:
 	char* sort_out_file;
 
 	/* For testing external store */
-	Store* store;
+//	Store* store;
 };
 
 #endif // LIB_TESTERAGGREGATOR_H

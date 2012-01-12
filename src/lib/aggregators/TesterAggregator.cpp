@@ -49,11 +49,12 @@ TesterAggregator::TesterAggregator(const Config &cfg,
 
 		toker = new TokenizerFilter(this, cfg, max_keys_per_token);
 		pipeline_list[0].add_filter(*toker);
-
+/*
 		store = new Store(this, createPAOFunc, destroyPAOFunc, max_keys_per_token);
 		pipeline_list[0].add_filter(*store->hasher);		
 		pipeline_list[0].add_filter(*store->agger);		
 		pipeline_list[0].add_filter(*store->writer);
+*/
 	}
 }
 
