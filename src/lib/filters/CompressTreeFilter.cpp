@@ -50,6 +50,7 @@ void* CompressTreeInserter::operator()(void* recv)
 	FilterInfo* recv_list = (FilterInfo*)recv;
 	PartialAgg** pao_l = (PartialAgg**)recv_list->result;
 	uint64_t recv_length = (uint64_t)recv_list->length;
+	bool flush_on_complete = recv_list->flush_hash;
 
 	FilterInfo* this_send = (*send_)[next_buffer];
 	PartialAgg** this_list = (*evicted_list_)[next_buffer];
@@ -63,7 +64,8 @@ void* CompressTreeInserter::operator()(void* recv)
             pao = pao_l[ind];
             Hash(pao->key, strlen(pao->key), NUM_BUCKETS, hashv, bkt); 
             ptrToHash = (void*)&hashv;
-            ct->insert(ptrToHash, pao, this_list, numEvicted);
+            PartialAgg** l = this_list + evict_list_ctr;
+            ct->insert(ptrToHash, pao, l, numEvicted);
             evict_list_ctr += numEvicted;
             if (recv_list->destroy_pao)
                 destroyPAO(pao);
@@ -73,7 +75,7 @@ void* CompressTreeInserter::operator()(void* recv)
     }
 	free(buf);
     assert(evict_list_ctr < max_keys_per_token);
-	if (aggregator_->input_finished && 
+	if (flush_on_complete || aggregator_->input_finished && 
                 tokens_processed == aggregator_->tot_input_tokens) {
         uint64_t hash;
         void* ptrToHash = (void*)&hash;
@@ -88,6 +90,7 @@ void* CompressTreeInserter::operator()(void* recv)
 
     this_send->result = this_list;
     this_send->length = evict_list_ctr;
+    this_send->destroy_pao = false;
     return this_send;
 }
 
