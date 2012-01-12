@@ -49,14 +49,20 @@ BucketAggregator::BucketAggregator(const Config &cfg,
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
+        bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
+                CompressTreeInserter(this, acc_internal_, createPAOFunc,
+                destroyPAOFunc, max_keys_per_token));
     } else if (!intagg.compare("sparsehash")) {
-        acc_internal_ = dynamic_cast<Accumulator*>(new 
-                SparseHash(capacity));
+        acc_internal_ = dynamic_cast<Accumulator*>(new SparseHash(capacity));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 SparseHashInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
-    } 
-    hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(capacity));
+        bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
+                SparseHashInserter(this, acc_internal_, createPAOFunc,
+                destroyPAOFunc, max_keys_per_token));
+    } else if (!intagg.compare("uthash")) {
+        hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(capacity));
+    }
 
     if (type == Map) {
         /* Beginning of first pipeline: this pipeline takes the entire
@@ -93,7 +99,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
     }
 
     if (agg_in_mem) {
-        if (!intagg.compare("accumulator")) {
+        if (!intagg.compare("comp-bt") || !intagg.compare("sparsehash")) {
             pipeline_list[0].add_filter(*acc_int_inserter_);
         } else {
             hasher = new Hasher(this, hashtable_, destroyPAOFunc,
@@ -127,11 +133,15 @@ BucketAggregator::BucketAggregator(const Config &cfg,
             createPAOFunc, destroyPAOFunc, max_keys_per_token);
     pipeline_list[1].add_filter(*deserializer);
 
-    bucket_hasher = new Hasher(this, hashtable_, destroyPAOFunc,
-            max_keys_per_token);
-    pipeline_list[1].add_filter(*bucket_hasher);
-    bucket_merger = new Merger(this, destroyPAOFunc);
-    pipeline_list[1].add_filter(*bucket_merger);
+    if (!intagg.compare("comp-bt") || !intagg.compare("sparsehash")) {
+        pipeline_list[1].add_filter(*bucket_inserter_);
+    } else {
+        bucket_hasher = new Hasher(this, hashtable_, destroyPAOFunc,
+                max_keys_per_token);
+        pipeline_list[1].add_filter(*bucket_hasher);
+        bucket_merger = new Merger(this, destroyPAOFunc);
+        pipeline_list[1].add_filter(*bucket_merger);
+    }
 
     char* final_path = (char*)malloc(FILENAME_LENGTH);
     strcpy(final_path, fprefix.c_str());

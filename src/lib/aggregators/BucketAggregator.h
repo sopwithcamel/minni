@@ -68,6 +68,7 @@ class BucketAggregator :
     Serializer* bucket_serializer;
     Deserializer* deserializer;
 	AccumulatorInserter* acc_int_inserter_;
+	AccumulatorInserter* bucket_inserter_;
     Hasher* bucket_hasher;
     Merger* bucket_merger;
     Serializer* final_serializer;
