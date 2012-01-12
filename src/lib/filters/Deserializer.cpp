@@ -51,8 +51,6 @@ Deserializer::~Deserializer()
 
 void* Deserializer::operator()(void*)
 {
-	if (aggregator->input_finished)
-		return NULL;
 	size_t pao_list_ctr = 0;
 	size_t num_buffers = aggregator->getNumBuffers();
 	PartialAgg* new_pao;
@@ -61,6 +59,17 @@ void* Deserializer::operator()(void*)
 	FilterInfo* this_send = (*send)[next_buffer];
 	this_send->flush_hash = false;
 	next_buffer = (next_buffer + 1) % num_buffers;
+
+	if (aggregator->input_finished) {
+        if (aggregator->voteTerminate)
+            return NULL;
+        else {
+            aggregator->voteTerminate = true;
+            this_send->result = NULL;
+            this_send->length = 0;
+            return this_send;
+        }
+    }
 
 	if (!cur_bucket) { // new bucket has to be opened
 		string file_name = inputfile_prefix;
@@ -85,8 +94,10 @@ void* Deserializer::operator()(void*)
 		this_send->flush_hash = true;
 		if (buckets_processed == num_buckets) {
 			aggregator->input_finished = true;
+            aggregator->voteTerminate = true;
 		}
-	}
+	} else
+        this_send->flush_hash = false;
 //	fprintf(stderr, "list size: %d\n", pao_list_ctr);
 	this_send->result = this_list;
 	this_send->length = pao_list_ctr;
