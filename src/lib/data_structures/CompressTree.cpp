@@ -134,6 +134,7 @@ namespace compresstree {
         }
         allLeaves_.clear();
         leavesToBeEmptied_.clear();
+        nodesToCompress_.clear();
         allFlushed_ = false;
         lastLeafRead_ = 0;
         lastOffset_ = 0;
