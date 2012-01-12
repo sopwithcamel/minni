@@ -61,8 +61,10 @@ void* Serializer::operator()(void* pao_list)
 	while(ind < recv_length) {
 		pao = pao_l[ind];
 		buc = partition(pao->key);	
+        assert(pao != NULL);
 		pao->serialize(fl[buc], buf, BUF_SIZE);
-//		destroyPAO(pao);
+        if (recv->destroy_pao)
+    		destroyPAO(pao);
 		ind++;
 	}
 	// reset flags; TODO: why are flags being reset here?
