@@ -42,12 +42,18 @@ BucketAggregator::BucketAggregator(const Config &cfg,
     string inp_type = (const char*)c_inp_typ;
 
     /* Initialize data structures */
-    if (!intagg.compare("accumulator")) {
+    if (!intagg.compare("comp-bt")) {
         acc_internal_ = dynamic_cast<Accumulator*>(new 
-                compresstree::CompressTree(2, 8, 30, createPAOFunc, 
+                compresstree::CompressTree(2, 8, 90, createPAOFunc, 
                 destroyPAOFunc));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_, createPAOFunc,
+                destroyPAOFunc, max_keys_per_token));
+    } else if (!intagg.compare("sparsehash")) {
+        acc_internal_ = dynamic_cast<Accumulator*>(new 
+                SparseHash(capacity));
+        acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
+                SparseHashInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
     } 
     hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(capacity));
