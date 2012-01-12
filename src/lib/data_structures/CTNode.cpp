@@ -637,7 +637,7 @@ emptyChildren:
     bool Node::asyncCompress()
     {
         pthread_mutex_lock(&(tree_->bufMutex_));
-        tree_->nodesToCompress_.push(this);
+        tree_->nodesToCompress_.push_back(this);
         pthread_mutex_unlock(&(tree_->bufMutex_));
         pthread_mutex_lock(&gfcMutex_);
         givenForComp_ = true;

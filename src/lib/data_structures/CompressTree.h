@@ -1,6 +1,7 @@
 #ifndef LIB_COMPRESS_COMPRESSTREE_H
 #define LIB_COMPRESS_COMPRESSTREE_H
 
+#include <deque>
 #include <pthread.h>
 #include <queue>
 #include "CTNode.h"
@@ -9,9 +10,9 @@
 
 namespace compresstree {
 
-//    const size_t BUFFER_SIZE = 10485760;
+    const size_t BUFFER_SIZE = 10485760;
 //    const size_t BUFFER_SIZE = 20971520;
-    const size_t BUFFER_SIZE = 31457280;
+//    const size_t BUFFER_SIZE = 31457280;
     const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 2;
     const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
 
@@ -62,7 +63,7 @@ namespace compresstree {
         CompressAlgorithm alg_;
         Node* rootNode_;
         bool allFlushed_;
-        std::queue<Node*> leavesToBeEmptied_;
+        std::deque<Node*> leavesToBeEmptied_;
         std::vector<Node*> allLeaves_;
         size_t lastLeafRead_;
         size_t lastOffset_;
@@ -72,7 +73,7 @@ namespace compresstree {
         pthread_t compressionThread_;
         pthread_cond_t bufReady_;
         pthread_mutex_t bufMutex_;
-        std::queue<Node*> nodesToCompress_;
+        std::deque<Node*> nodesToCompress_;
 
         /* Eviction-related */
         uint32_t nodesInMemory_;

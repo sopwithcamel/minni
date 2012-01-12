@@ -132,8 +132,16 @@ namespace compresstree {
             delList2.pop_front();
             delete n;
         }
+        allLeaves_.clear();
+        leavesToBeEmptied_.clear();
+        allFlushed_ = false;
+        lastLeafRead_ = 0;
+        lastOffset_ = 0;
+    
         nodeCtr = 0;
         rootNode_ = new Node(LEAF, this);
+        rootNode_->setSeparator(UINT64_MAX);
+        rootNode_->setCompressible(false);
     }
 
     bool CompressTree::flushBuffers()
@@ -198,7 +206,7 @@ begin_flush:
                 pthread_cond_signal(&(n->gfcCond_));
                 n->givenForComp_ = false;
                 pthread_mutex_unlock(&(n->gfcMutex_));
-                nodesToCompress_.pop();
+                nodesToCompress_.pop_front();
             }
         }
         pthread_mutex_unlock(&bufMutex_);
@@ -226,7 +234,7 @@ begin_flush:
 
     bool CompressTree::addLeafToEmpty(Node* node)
     {
-        leavesToBeEmptied_.push(node);
+        leavesToBeEmptied_.push_back(node);
         return true;
     }
 
@@ -236,7 +244,7 @@ begin_flush:
         size_t num = leavesToBeEmptied_.size();
         for (uint32_t i=0; i<leavesToBeEmptied_.size(); i++) {
             Node* node = leavesToBeEmptied_.front();
-            leavesToBeEmptied_.pop();
+            leavesToBeEmptied_.pop_front();
 //            if (node->isCompressed()) {
                 CALL_MEM_FUNC(*node, node->decompress)();
 //            }
