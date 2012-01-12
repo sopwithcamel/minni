@@ -34,6 +34,7 @@ void* SparseHashInserter::operator()(void* recv)
 	FilterInfo* recv_list = (FilterInfo*)recv;
 	PartialAgg** pao_l = (PartialAgg**)recv_list->result;
 	uint64_t recv_length = (uint64_t)recv_list->length;
+	bool flush_on_complete = recv_list->flush_hash;
 
 	FilterInfo* this_send = (*send_)[next_buffer];
 	PartialAgg** this_list = (*evicted_list_)[next_buffer];
@@ -52,12 +53,17 @@ void* SparseHashInserter::operator()(void* recv)
         }
         tokens_processed++;
     }
-    assert(evict_list_ctr < max_keys_per_token);
-	if (aggregator_->input_finished && 
+    assert(evict_list_ctr <= max_keys_per_token);
+    
+	if (flush_on_complete || aggregator_->input_finished && 
                 tokens_processed == aggregator_->tot_input_tokens) {
         uint64_t hash;
         void* ptrToHash = (void*)&hash;
         bool remain;
+        if (evict_list_ctr == max_keys_per_token) {
+            aggregator_->voteTerminate = false; // i'm not done yet!
+            goto ship_tokens;
+        }
         while(sh->nextValue(ptrToHash, this_list[evict_list_ctr])) {
 //            fprintf(stderr, "read: key: %s\n", this_list[evict_list_ctr]->key);
             evict_list_ctr++;
@@ -67,10 +73,10 @@ void* SparseHashInserter::operator()(void* recv)
             }
         }
 	}
-
+ship_tokens:
     this_send->result = this_list;
     this_send->length = evict_list_ctr;
-    this_send->destroy_pao = true;
+    this_send->destroy_pao = recv_list->destroy_pao;
     return this_send;
 }
 

@@ -49,7 +49,10 @@ bool SparseHash::nextValue(void*& key, PartialAgg*& value)
         //  erase keeps iterator valid
         Hash::iterator t = readIterator_++;
         accumulator_.erase(t);
+        numElements_--;
         return true;
     }
+    accumulator_.clear();
+    numElements_ = 0;
     return false;
 }
