@@ -62,10 +62,13 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 SparseHashInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
-    } else if (!intagg.compare("uthash")) {
+    }
+#ifdef UTHASH
+    else if (!intagg.compare("uthash")) {
         hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(
                 internal_capacity));
     }
+#endif
 
     if (!accum_type.compare("buffertree")) {
             accumulator_ = dynamic_cast<Accumulator*>(new 

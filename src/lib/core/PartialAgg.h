@@ -36,7 +36,9 @@ class PartialAgg {
 	static size_t create(Token*& t, PartialAgg** p_list) { return 0; }
 
 	char* key;
+#ifdef UTHASH
 	UT_hash_handle hh;
+#endif
 };
 
 #endif

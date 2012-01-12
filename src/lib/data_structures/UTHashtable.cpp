@@ -1,3 +1,4 @@
+#ifdef UTHASH
 #include "UTHashtable.h"
 
 UTHashtable::UTHashtable(size_t capacity) :
@@ -61,3 +62,4 @@ bool UTHashtable::evictAll(PartialAgg** evict_list, size_t& num_evicted,
     num_evicted = evict_list_ctr;
     return retDone;
 }
+#endif
