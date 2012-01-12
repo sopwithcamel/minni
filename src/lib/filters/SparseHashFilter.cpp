@@ -16,21 +16,10 @@ SparseHashInserter::SparseHashInserter(Aggregator* agg,
 	send_ = new MultiBuffer<FilterInfo>(num_buffers, 1);
 	evicted_list_ = new MultiBuffer<PartialAgg*>(num_buffers,
 			max_keys_per_token);
-    for (uint32_t j=0; j<num_buffers; j++) {
-        for (uint64_t i=0; i<max_keys_per_token; i++) {
-            createPAO_(NULL, &((*evicted_list_)[j][i]));
-        }
-    }
 }
 
 SparseHashInserter::~SparseHashInserter()
 {
-	uint64_t num_buffers = aggregator_->getNumBuffers();
-    for (uint32_t j=0; j<num_buffers; j++) {
-        for (uint64_t i=0; i<max_keys_per_token; i++) {
-            destroyPAO((*evicted_list_)[j][i]);
-        }
-    }
 	delete evicted_list_;
 	delete send_;
 }
@@ -39,9 +28,6 @@ void* SparseHashInserter::operator()(void* recv)
 {
 	char *key;
 	size_t ind = 0;
-    uint64_t hashv;
-    void* ptrToHash;
-    uint64_t bkt;
 	PartialAgg* pao;
     SparseHash* sh = (SparseHash*)accumulator_;
 
@@ -59,12 +45,9 @@ void* SparseHashInserter::operator()(void* recv)
     if (recv_length > 0) {
         while (ind < recv_length) {
             pao = pao_l[ind];
-            Hash(pao->key, strlen(pao->key), NUM_BUCKETS, hashv, bkt); 
-            ptrToHash = (void*)&hashv;
-            sh->insert(ptrToHash, pao, this_list, numEvicted);
+            PartialAgg** l = this_list + evict_list_ctr;
+            sh->insert(pao->key, pao, l, numEvicted);
             evict_list_ctr += numEvicted;
-            if (recv_list->destroy_pao)
-                destroyPAO(pao);
             ind++;
         }
         tokens_processed++;
@@ -75,7 +58,9 @@ void* SparseHashInserter::operator()(void* recv)
         uint64_t hash;
         void* ptrToHash = (void*)&hash;
         bool remain;
-        while(sh->nextValue(ptrToHash, this_list[evict_list_ctr++])) {
+        while(sh->nextValue(ptrToHash, this_list[evict_list_ctr])) {
+//            fprintf(stderr, "read: key: %s\n", this_list[evict_list_ctr]->key);
+            evict_list_ctr++;
             if (evict_list_ctr == max_keys_per_token) {
                 aggregator_->voteTerminate = false; // i'm not done yet!
                 break;
@@ -85,6 +70,7 @@ void* SparseHashInserter::operator()(void* recv)
 
     this_send->result = this_list;
     this_send->length = evict_list_ctr;
+    this_send->destroy_pao = true;
     return this_send;
 }
 
