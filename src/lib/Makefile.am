@@ -26,7 +26,6 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			aggregators/BucketAggregator.cpp \
 			aggregators/ExthashAggregator.cpp \
 			aggregators/HashsortAggregator.cpp \
-			aggregators/TesterAggregator.cpp \
 			record_creation/Tokenizer.cpp \
 			record_creation/FileTokenizer.cpp \
 			record_creation/DelimitedTokenizer.cpp \
@@ -87,7 +86,6 @@ minni_include_HEADERS = core/PartialAgg.h \
 			aggregators/BucketAggregator.h \
 			aggregators/ExthashAggregator.h \
 			aggregators/HashsortAggregator.h \
-			aggregators/TesterAggregator.h \
 			aggregators/Aggregator.h \
 			record_creation/FileTokenizer.h \
 			record_creation/DelimitedTokenizer.h \
