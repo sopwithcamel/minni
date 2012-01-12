@@ -10,21 +10,27 @@
 #include "tbb/task_scheduler_init.h"
 #include "tbb/tbb_allocator.h"
 
-#include "Mapper.h"
-#include "PartialAgg.h"
+#include "Accumulator.h"
+#include "AccumulatorFilter.h"
 #include "Adder.h"
+#include "CompressTree.h"
+#include "CompressTreeFilter.h"
+#include "Deserializer.h"
 #include "DFSReader.h"
 #include "FileReaderFilter.h"
 #include "FileTokenizerFilter.h"
-#include "Hashtable.h"
-#include "UTHashtable.h"
 #include "Hasher.h"
+#include "Hashtable.h"
+#include "Mapper.h"
 #include "Merger.h"
 #include "PAOCreator.h"
+#include "PartialAgg.h"
 #include "Serializer.h"
 #include "Sorter.h"
+#include "SparseHash.h"
+#include "SparseHashFilter.h"
 #include "TokenizerFilter.h"
-#include "Deserializer.h"
+#include "UTHashtable.h"
 #include "util.h"
 
 class HashsortAggregator : public Aggregator {
@@ -43,6 +49,7 @@ private:
 
     /* data structures */
     Hashtable* hashtable_;
+    Accumulator* acc_internal_;
 
 	/* for chunk input from DFS */
 	MapInput* map_input; 
@@ -56,6 +63,7 @@ private:
 	Deserializer* inp_deserializer;
 
 	PAOCreator* creator;
+	AccumulatorInserter* acc_int_inserter_;
 	Hasher* hasher;
 	Merger* merger;
 	Serializer* serializer;

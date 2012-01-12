@@ -28,6 +28,8 @@
 #include "Merger.h"
 #include "PAOCreator.h"
 #include "Serializer.h"
+#include "SparseHash.h"
+#include "SparseHashFilter.h"
 #include "Deserializer.h"
 #include "Util.h"
 #include "util.h"

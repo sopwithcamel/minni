@@ -26,6 +26,9 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	Setting& c_capacity = readConfigFile(cfg, "minni.aggregator.hashsort.capacity");
 	capacity = c_capacity;
 
+	Setting& c_intagg = readConfigFile(cfg, "minni.internal.selected");
+	string intagg = c_intagg;
+
 	Setting& c_fprefix = readConfigFile(cfg, "minni.common.file_prefix");
 	string fprefix = (const char*)c_fprefix;
 
@@ -39,7 +42,21 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	string inp_type = (const char*)c_inp_typ;
 
     /* Initialize data structures */
-    hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(capacity));
+    if (!intagg.compare("comp-bt")) {
+        acc_internal_ = dynamic_cast<Accumulator*>(new 
+                compresstree::CompressTree(2, 8, 90, createPAOFunc, 
+                destroyPAOFunc));
+        acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
+                CompressTreeInserter(this, acc_internal_, createPAOFunc,
+                destroyPAOFunc, max_keys_per_token));
+    } else if (!intagg.compare("sparsehash")) {
+        acc_internal_ = dynamic_cast<Accumulator*>(new SparseHash(capacity));
+        acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
+                SparseHashInserter(this, acc_internal_, createPAOFunc,
+                destroyPAOFunc, max_keys_per_token));
+    } else if (!intagg.compare("uthash")) {
+        hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(capacity));
+    }
 
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
@@ -75,11 +92,15 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	}
 
 	if (agg_in_mem) {
-		hasher = new Hasher(this, hashtable_, destroyPAOFunc, 
-                max_keys_per_token);
-		pipeline_list[0].add_filter(*hasher);
-		merger = new Merger(this, destroyPAOFunc);
-		pipeline_list[0].add_filter(*merger);
+        if (!intagg.compare("comp-bt") || !intagg.compare("sparsehash")) {
+            pipeline_list[0].add_filter(*acc_int_inserter_);
+        } else {
+            hasher = new Hasher(this, hashtable_, destroyPAOFunc,
+                    max_keys_per_token);
+            pipeline_list[0].add_filter(*hasher);
+            merger = new Merger(this, destroyPAOFunc);
+            pipeline_list[0].add_filter(*merger);
+        }
 	}
 
 	char* sort_prefix = (char*)malloc(FILENAME_LENGTH);

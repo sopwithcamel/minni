@@ -49,17 +49,24 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
     char* final_path;
 
     /* Initialize data structures */
-    if (!intagg.compare("accumulator")) {
+    if (!intagg.compare("comp-bt")) {
         acc_internal_ = dynamic_cast<Accumulator*>(new 
-                compresstree::CompressTree(2, 8, 100, createPAOFunc, 
+                compresstree::CompressTree(2, 8, 90, createPAOFunc, 
                 destroyPAOFunc));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
-    } else {
-        hashtable_ = dynamic_cast<Hashtable*>(new 
-                UTHashtable(internal_capacity));
+    } else if (!intagg.compare("sparsehash")) {
+        acc_internal_ = dynamic_cast<Accumulator*>(new SparseHash(
+                internal_capacity));
+        acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
+                SparseHashInserter(this, acc_internal_, createPAOFunc,
+                destroyPAOFunc, max_keys_per_token));
+    } else if (!intagg.compare("uthash")) {
+        hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(
+                internal_capacity));
     }
+
     if (!accum_type.compare("buffertree")) {
             accumulator_ = dynamic_cast<Accumulator*>(new 
                     buffertree::BufferTree(2, 8, createPAOFunc,
@@ -109,13 +116,12 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
 	}
 
 	if (agg_in_mem) {
-        if (!intagg.compare("accumulator")) {
+        if (!intagg.compare("comp-bt") || !intagg.compare("sparsehash")) {
             pipeline_list[0].add_filter(*acc_int_inserter_);
         } else {
             hasher_ = new Hasher(this, hashtable_, destroyPAOFunc,
                     max_keys_per_token);
             pipeline_list[0].add_filter(*hasher_);
-
             merger_ = new Merger(this, destroyPAOFunc);
             pipeline_list[0].add_filter(*merger_);
         }
