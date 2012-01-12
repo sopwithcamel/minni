@@ -13,6 +13,7 @@ public:
 	uint64_t result4;
 	uint64_t length;
 	bool flush_hash;
+    bool destroy_pao;
 };
 
 template <class T>

@@ -65,7 +65,8 @@ void* CompressTreeInserter::operator()(void* recv)
             ptrToHash = (void*)&hashv;
             ct->insert(ptrToHash, pao, this_list, numEvicted);
             evict_list_ctr += numEvicted;
-            destroyPAO(pao);
+            if (recv_list->destroy_pao)
+                destroyPAO(pao);
             ind++;
         }
         tokens_processed++;

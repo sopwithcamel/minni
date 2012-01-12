@@ -10,12 +10,10 @@
 #include "zlib.h"
 
 namespace compresstree {
-    static uint32_t nodeCtr = 0;
-
     Node::Node(NodeType typ, CompressTree* tree) :
         tree_(tree),
         typ_(typ),
-        id_(nodeCtr++),
+        id_(CompressTree::nodeCtr++),
         parent_(NULL),
         numElements_(0),
         curOffset_(0),
@@ -117,7 +115,8 @@ namespace compresstree {
             if (isFull()) {
                 tree_->addLeafToEmpty(this);
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Leaf node %d added to full-leaf-list\n", id_);
+                fprintf(stderr, "Leaf node %d added to full-leaf-list\
+                        %lu/%lu\n", id_, curOffset_, EMPTY_THRESHOLD);
 #endif
             }
             return true;
@@ -450,7 +449,7 @@ emptyChildren:
         median_hash = (uint64_t*)(data_ + offset);
 
         // check if we have reached limit of nodes that can be kept in-memory
-        if (nodeCtr < tree_->nodesInMemory_) {
+        if (CompressTree::nodeCtr < tree_->nodesInMemory_) {
             // create new leaf
             Node* newLeaf = new Node(LEAF, tree_);
             newLeaf->copyIntoBuffer(data_ + offset, curOffset_ - offset);

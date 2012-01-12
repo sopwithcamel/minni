@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <deque>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -6,6 +7,7 @@
 #include "CompressTree.h"
 
 namespace compresstree {
+    uint32_t CompressTree::nodeCtr = 0; 
 
     CompressTree::CompressTree(uint32_t a, uint32_t b, uint32_t nodesInMemory,
                 size_t (*createPAOFunc)(Token* t, PartialAgg** p),
@@ -52,7 +54,6 @@ namespace compresstree {
 
     CompressTree::~CompressTree()
     {
-        delete rootNode_;
         free(serBuf_);
         free(auxBuffer_);
         free(compBuffer_);
@@ -77,11 +78,10 @@ namespace compresstree {
             size_t* bufSize;
             fprintf(stderr, "Evicting %lu elements\n", numEvicted_);
             for (uint32_t i=0; i<numEvicted_; i++) {
+                rootNode_->deserializePAO((uint64_t*)(buf + offset), evicted[i]);
                 offset += sizeof(uint64_t);
                 bufSize = (size_t*)(buf + offset);
-                offset += sizeof(size_t);
-                evicted[i]->deserialize(buf + offset);
-                offset += *bufSize;
+                offset += sizeof(size_t) + *bufSize;
             }
             numEvicted_ = 0;
         }
@@ -97,21 +97,43 @@ namespace compresstree {
             CALL_MEM_FUNC(*curLeaf, curLeaf->decompress)();
 
         hash = (uint64_t*)(curLeaf->data_ + lastOffset_);
+        rootNode_->deserializePAO((uint64_t*)hash, agg);
         lastOffset_ += sizeof(uint64_t);
         size_t buf_size = *(size_t*)(curLeaf->data_ + lastOffset_);
-        lastOffset_ += sizeof(size_t);
-        char* buf = curLeaf->data_ + lastOffset_;
-        lastOffset_ += buf_size;
-        agg->deserialize(buf);
+        lastOffset_ += sizeof(size_t) + buf_size;
         if (lastOffset_ >= curLeaf->curOffset_) {
             CALL_MEM_FUNC(*curLeaf, curLeaf->compress)();
-            if (++lastLeafRead_ == allLeaves_.size())
+            if (++lastLeafRead_ == allLeaves_.size()) {
+                emptyTree();
                 return false;
+            }
             CALL_MEM_FUNC(*allLeaves_[lastLeafRead_], 
                     allLeaves_[lastLeafRead_]->decompress)();
             lastOffset_ = 0;
         }
         return true;
+    }
+
+    void CompressTree::emptyTree()
+    {
+        std::deque<Node*> delList1;
+        std::deque<Node*> delList2;
+        delList1.push_back(rootNode_);
+        while (!delList1.empty()) {
+            Node* n = delList1.front();
+            delList1.pop_front();
+            for (int i=0; i<n->children_.size(); i++) {
+                delList1.push_back(n->children_[i]);
+            }            
+            delList2.push_back(n);
+        }
+        while (!delList2.empty()) {
+            Node* n = delList2.front();
+            delList2.pop_front();
+            delete n;
+        }
+        nodeCtr = 0;
+        rootNode_ = new Node(LEAF, this);
     }
 
     bool CompressTree::flushBuffers()

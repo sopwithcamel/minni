@@ -25,6 +25,7 @@ namespace compresstree {
     class CompressTree :
             public Accumulator
     {
+        static uint32_t nodeCtr;
         friend class Node;
       public:
         CompressTree(uint32_t a, uint32_t b, uint32_t nodesInMemory,
@@ -43,14 +44,15 @@ namespace compresstree {
         /* Add leaf whose buffer is full to be emptied once all internal node
          * buffers have been emptied */
         bool addLeafToEmpty(Node* node);
-        size_t handleFullLeaves();
-        bool createNewRoot(Node* otherChild);
-        /* Write out all buffers to leaves. Do this before reading */
-        bool flushBuffers();
-
+        bool asyncSignal();
         void* callCompress();
         static void* callCompressHelper(void *context);
-        bool asyncSignal();
+        bool createNewRoot(Node* otherChild);
+        void emptyTree();
+        /* Write out all buffers to leaves. Do this before reading */
+        bool flushBuffers();
+        size_t handleFullLeaves();
+
       private:
         // (a,b)-tree...
         const uint32_t a_;

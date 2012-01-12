@@ -53,7 +53,6 @@ void* Deserializer::operator()(void*)
 {
 	if (aggregator->input_finished)
 		return NULL;
-	bool eof_reached = false;
 	size_t pao_list_ctr = 0;
 	size_t num_buffers = aggregator->getNumBuffers();
 	PartialAgg* new_pao;
@@ -72,23 +71,14 @@ void* Deserializer::operator()(void*)
 		fprintf(stderr, "opening file %s\n", file_name.c_str());
 	}
 
-	try {
-		while (!feof(cur_bucket)) {
-			this_list[pao_list_ctr++]->deserialize(cur_bucket, read_buf,
-                    BUF_SIZE);
-            if (pao_list_ctr == max_keys_per_token)
-                goto ship_tokens;
-		}
-	} catch(...) {
-		fprintf(stderr, "error reading file\n");
-		exit(1);
-	}
-		
-	eof_reached = true;
-ship_tokens:
+    while (!feof(cur_bucket)) {
+        this_list[pao_list_ctr++]->deserialize(cur_bucket, read_buf,
+                BUF_SIZE);
+        if (pao_list_ctr == max_keys_per_token - 1)
+            break;
+    }
 	aggregator->tot_input_tokens++;
-
-	if (eof_reached) {
+	if (feof(cur_bucket)) {
 		fclose(cur_bucket);
 		cur_bucket = NULL;
 		// ask hashtable to flush itself afterwards
@@ -100,6 +90,7 @@ ship_tokens:
 //	fprintf(stderr, "list size: %d\n", pao_list_ctr);
 	this_send->result = this_list;
 	this_send->length = pao_list_ctr;
+    this_send->destroy_pao = false;
 	return this_send;
 }
 

@@ -54,6 +54,7 @@ void* PAOCreator::operator()(void* recv)
 	this_send->result = this_pao_list;
 	this_send->length = this_list_ctr;
 	this_send->flush_hash = false;
+    this_send->destroy_pao = true;
 
 	return this_send;
 }
