@@ -2,6 +2,8 @@
 #define LIB_SPARSEHASH_H
 
 #include <google/sparse_hash_map>
+#include <tr1/unordered_map>
+#include <string>
 
 #include "Accumulator.h"
 #include "PartialAgg.h"
@@ -9,7 +11,8 @@
 class SparseHash :
         public Accumulator
 {
-    typedef google::sparse_hash_map<int64_t, PartialAgg*> Hash;
+    typedef std::tr1::unordered_map<std::string, PartialAgg*> Hash;
+//    typedef google::sparse_hash_map<std::string, PartialAgg*> Hash;
   public:
     SparseHash(size_t capacity);
     ~SparseHash();
@@ -21,6 +24,7 @@ class SparseHash :
     size_t capacity_;
     const size_t evictAtTime_;
     size_t numElements_;
+    Hash::iterator readIterator_;
 };
 
 #endif
