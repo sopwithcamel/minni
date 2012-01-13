@@ -44,7 +44,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
     /* Initialize data structures */
     if (!intagg.compare("comp-bt")) {
         acc_internal_ = dynamic_cast<Accumulator*>(new 
-                compresstree::CompressTree(2, 8, 90, createPAOFunc, 
+                compresstree::CompressTree(2, 8, 1000, createPAOFunc, 
                 destroyPAOFunc));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_, createPAOFunc,
