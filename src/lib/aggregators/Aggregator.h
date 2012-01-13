@@ -34,7 +34,7 @@ class Aggregator
 	tbb::task_scheduler_init* init;
 	bool input_finished;		// indicates if input stage is done
     // set to false by filters that aren't ready to terminate
-    bool voteTerminate;
+    bool sendNextToken;
 	uint64_t tot_input_tokens;	// measures total input tokens
 
 	void resetFlags();

@@ -10,7 +10,7 @@ Aggregator::Aggregator(const Config &cfg,
 		num_pipelines(num_pipelines),
 		num_partitions(num_part),
 		input_finished(false),
-        voteTerminate(false),
+        sendNextToken(false),
 		tot_input_tokens(0),
 		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc)

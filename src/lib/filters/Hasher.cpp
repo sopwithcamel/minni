@@ -82,7 +82,7 @@ void* Hasher::operator()(void* recv)
         bool evictDone = hashtable->evictAll(this_list + evict_list_ctr, 
                 num_evicted, max_keys_per_token - evict_list_ctr);
         if (!evictDone) {
-            aggregator->voteTerminate = false; // i'm not done yet!
+            aggregator->sendNextToken = false; // i'm not done yet!
         }
         evict_list_ctr += num_evicted;
 	}

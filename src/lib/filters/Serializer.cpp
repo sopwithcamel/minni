@@ -73,7 +73,7 @@ void* Serializer::operator()(void* pao_list)
 	tokens_processed++;
 	if (aggregator->input_finished && 
 			tokens_processed == aggregator->tot_input_tokens &&
-            aggregator->voteTerminate == true) {
+            aggregator->sendNextToken == true) {
 		fprintf(stderr, "Closing bucket files\n");
 
 		for (int i=0; i<num_buckets; i++) {

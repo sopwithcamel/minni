@@ -61,14 +61,14 @@ void* SparseHashInserter::operator()(void* recv)
         void* ptrToHash = (void*)&hash;
         bool remain;
         if (evict_list_ctr == max_keys_per_token) {
-            aggregator_->voteTerminate = false; // i'm not done yet!
+            aggregator_->sendNextToken = false; // i'm not done yet!
             goto ship_tokens;
         }
         while(sh->nextValue(ptrToHash, this_list[evict_list_ctr])) {
 //            fprintf(stderr, "read: key: %s\n", this_list[evict_list_ctr]->key);
             evict_list_ctr++;
             if (evict_list_ctr == max_keys_per_token) {
-                aggregator_->voteTerminate = false; // i'm not done yet!
+                aggregator_->sendNextToken = false; // i'm not done yet!
                 break;
             }
         }

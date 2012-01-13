@@ -60,16 +60,16 @@ void* Deserializer::operator()(void*)
 	this_send->flush_hash = false;
 	next_buffer = (next_buffer + 1) % num_buffers;
 
-	if (aggregator->input_finished) {
-        if (aggregator->voteTerminate)
-            return NULL;
-        else {
-            aggregator->voteTerminate = true;
-            this_send->result = NULL;
-            this_send->length = 0;
-            return this_send;
-        }
+    if (!aggregator->sendNextToken) {
+        aggregator->sendNextToken = true;
+        this_send->result = NULL;
+        this_send->length = 0;
+        this_send->flush_hash = true;
+        return this_send;
     }
+
+	if (aggregator->input_finished)
+        return NULL;
 
 	if (!cur_bucket) { // new bucket has to be opened
 		string file_name = inputfile_prefix;
@@ -94,7 +94,7 @@ void* Deserializer::operator()(void*)
 		this_send->flush_hash = true;
 		if (buckets_processed == num_buckets) {
 			aggregator->input_finished = true;
-            aggregator->voteTerminate = true;
+            aggregator->sendNextToken = true;
 		}
 	} else
         this_send->flush_hash = false;

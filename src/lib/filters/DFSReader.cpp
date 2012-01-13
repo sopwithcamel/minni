@@ -42,16 +42,16 @@ void* DFSReader::operator()(void*)
 	FilterInfo* this_send = send[next_buffer];
 	next_chunk = (next_chunk + 1) % aggregator->getNumBuffers();
 
-	if (aggregator->input_finished) {
-        if (aggregator->voteTerminate)
-            return NULL;
-        else {
-            aggregator->voteTerminate = true;
-            this_send->result = NULL;
-            this_send->length = 0;
-            return this_send;
-        }
-	}
+    if (!aggregator->sendNextToken) {
+        aggregator->sendNextToken = true;
+        this_send->result = NULL;
+        this_send->length = 0;
+        return this_send;
+    }
+
+	if (aggregator->input_finished)
+        return NULL;
+
 	if (0 >= rem_buffer_size) {
 		cout << "Reading in buffer " << id << endl;
 		rem_buffer_size = input->key_value(&buffer, id); 
@@ -68,7 +68,7 @@ void* DFSReader::operator()(void*)
 	aggregator->tot_input_tokens++;
 	if (id > input->chunk_id_end && rem_buffer_size <= 0) {
 		aggregator->input_finished = true;
-        aggregator->voteTerminate = true;
+        aggregator->sendNextToken = true;
 	}
 	this_send->result = this_chunk;
 	this_send->length = 1;
