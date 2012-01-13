@@ -72,8 +72,8 @@ namespace compresstree {
 
         /* Compression-related */
         pthread_t compressionThread_;
-        pthread_cond_t bufReady_;
-        pthread_mutex_t bufMutex_;
+        pthread_cond_t nodesReadyForCompression_;
+        pthread_mutex_t readyNodesMutex_;
         std::deque<Node*> nodesToCompress_;
 
         /* Eviction-related */

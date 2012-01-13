@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "CompressTree.h"
 #include "CTNode.h"
@@ -641,9 +642,9 @@ emptyChildren:
 
     bool Node::asyncCompress()
     {
-        pthread_mutex_lock(&(tree_->bufMutex_));
+        pthread_mutex_lock(&(tree_->readyNodesMutex_));
         tree_->nodesToCompress_.push_back(this);
-        pthread_mutex_unlock(&(tree_->bufMutex_));
+        pthread_mutex_unlock(&(tree_->readyNodesMutex_));
         pthread_mutex_lock(&gfcMutex_);
         givenForComp_ = true;
         pthread_mutex_unlock(&gfcMutex_);
@@ -683,8 +684,9 @@ emptyChildren:
         if (!compressible_)
             return true;
         pthread_mutex_lock(&gfcMutex_);
-        while (givenForComp_)
+        while (givenForComp_) {
             pthread_cond_wait(&gfcCond_, &gfcMutex_);
+        }
         pthread_mutex_unlock(&gfcMutex_);
 //        fprintf(stderr, "Sync: decompressed node %d\n", id_);
 
