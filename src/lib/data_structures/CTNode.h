@@ -25,11 +25,6 @@ namespace compresstree {
         LEAF            // a leaf node is an actual leaf
     };
 
-    enum ChildType {
-        LEFT,
-        RIGHT
-    };
-
     class Node {
         friend class CompressTree;
         typedef bool (Node::*NodeCompFn)();
@@ -96,6 +91,7 @@ namespace compresstree {
          * and sorted. If called on the root, then a new root is created */
         bool splitNonLeaf();
         bool checkIntegrity();
+        bool parseNode();
 
         /* Sorting-related functions */
         void quicksort(uint64_t** arr, size_t left, size_t right);

@@ -127,7 +127,7 @@ namespace compresstree {
 
         CALL_MEM_FUNC(*this, decompress)();
         sortBuffer();
-        // find the first separator greater than the first element
+        // find the first separator strictly greater than the first element
         curHash = (uint64_t*)(data_ + offset);
         while (*curHash >= children_[curChild]->separator_) {
             curChild++;
@@ -139,7 +139,7 @@ namespace compresstree {
         }
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node: %d: first node chosen: %d (sep: %lu,\
-            child: %d); first element: %ld\n", id_, children_[curChild]->id_,
+            child: %d); first element: %lu\n", id_, children_[curChild]->id_,
             children_[curChild]->separator_, curChild, *curHash);
 #endif
         while (offset < curOffset_) {
@@ -154,6 +154,7 @@ namespace compresstree {
                     assert(children_[curChild]->copyIntoBuffer(data_ + 
                                 lastOffset, offset - lastOffset));
                     children_[curChild]->addElements(numCopied);
+        
                     assert(CALL_MEM_FUNC(*children_[curChild], 
                             children_[curChild]->compress)());
                     tree_->asyncSignal();
@@ -222,6 +223,11 @@ emptyChildren:
             }
         }
         tree_->handleFullLeaves();
+
+        // Split leaves can cause the number of children to increase. Check.
+        if (children_.size() > tree_->b_) {
+            splitNonLeaf();
+        }
         return true;
     }
 
@@ -319,7 +325,6 @@ emptyChildren:
                 temp = arr[i];
                 while (true) {
                     while (*arr[++i] < *temp);
-                    //noinspection ControlFlowStatementWithoutBraces,StatementWithEmptyBody
                     while (*arr[--j] > *temp);
                     if (j < i) {
                         break;
@@ -432,21 +437,21 @@ emptyChildren:
     Node* Node::splitLeaf()
     {
         size_t offset = 0;
-        sortBuffer();
         if (!advance(numElements_/2, offset))
             return false;
 
         // select median value
         uint64_t* median_hash;
         size_t nj = 0;
-
-        do {
-            median_hash = (uint64_t*)(data_ + offset);
-            advance(1, offset);
-            nj++;
-        } while (*(uint64_t*)(data_ + offset) == *median_hash);
+        size_t nextOffset = offset;
+        advance(1, nextOffset);
 
         median_hash = (uint64_t*)(data_ + offset);
+        while (*(uint64_t*)(data_ + nextOffset) == *median_hash) {
+            median_hash = (uint64_t*)(data_ + nextOffset);
+            advance(1, nextOffset);
+            nj++;
+        }
 
         // check if we have reached limit of nodes that can be kept in-memory
         if (CompressTree::nodeCtr < tree_->nodesInMemory_) {
@@ -458,14 +463,15 @@ emptyChildren:
             newLeaf->checkIntegrity();
 
             // set this leaf properties
-#ifdef CT_NODE_DEBUG
-            fprintf(stderr, "Node %d splits to Node %d: new offsets: %ld and\
-                    %ld\n", id_, newLeaf->id_, offset, curOffset_ - offset);
-#endif
             curOffset_ = offset;
             reduceElements(numElements_ - numElements_/2 - nj);
             separator_ = *median_hash;
             checkIntegrity();
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "Node %d splits to Node %d: new offsets: %lu and\
+                    %lu; new separators: %lu and %lu\n", id_, newLeaf->id_, 
+                    curOffset_, newLeaf->curOffset_, separator_, newLeaf->separator_);
+#endif
 
             // if leaf is also the root, create new root
             if (isRoot()) {
@@ -538,21 +544,16 @@ emptyChildren:
             fprintf(stderr, "%d, ", children_[j]->id_);
         fprintf(stderr, "], num children: %ld\n", children_.size());
 #endif
-
         // set parent
         newNode->parent_ = this;
-
-        // check if the number of children exceeds what is allowed
-        if (children_.size() > tree_->b_) {
-            splitNonLeaf();
-        }
 
         return true;
     }
 
     bool Node::splitNonLeaf()
     {
-        // Ensure that the node's buffer is empty
+        // Ensure that the node's buffer is empty. This should be the case because we now call
+        // this only from emptyBuffer() when we know that the buffer is empty
         if (numElements_ > 0) {
             emptyBuffer();
             tree_->handleFullLeaves();
@@ -562,6 +563,7 @@ emptyChildren:
         Node* newNode = new Node(NON_LEAF, tree_);
         // move the last floor((b+1)/2) children to new node
         int newNodeChildIndex = children_.size()-(tree_->b_+1)/2;
+        assert(children_[newNodeChildIndex]->separator_ > children_[newNodeChildIndex-1]->separator_);
         // add children to new node
         for (uint32_t i=newNodeChildIndex; i<children_.size(); i++) {
             newNode->children_.push_back(children_[i]);
@@ -605,6 +607,9 @@ emptyChildren:
     bool Node::advance(size_t n, size_t& offset)
     {
         size_t* bufSize;
+        if (offset >= curOffset_) {
+            assert(false);
+        }
         for (uint32_t i=0; i<n; i++) {
             offset += sizeof(uint64_t);
             bufSize = (size_t*)(data_ + offset);
@@ -648,7 +653,7 @@ emptyChildren:
     bool Node::snappyCompress()
     {
 #ifdef ENABLE_COMPRESSION
-        if (!compressible_) {
+        if (!compressible_ ) {
             return true;
         }
 
@@ -658,9 +663,11 @@ emptyChildren:
         char* compressed = (char*)malloc(compressed_length);
         memmove(compressed, tree_->compBuffer_, compressed_length);
 #ifdef CT_NODE_DEBUG
+/*
         fprintf(stderr, "len: %ld, max len: %ld, comp len: %ld\n", 
                 curOffset_, snappy::MaxCompressedLength(curOffset_),
                 compressed_length);
+*/
 #endif
         free(data_);
         data_ = compressed;
@@ -806,9 +813,46 @@ emptyChildren:
             }
             advance(1, offset);
         }
-        for (uint32_t i=0; i<children_.size(); i++) {
+        Node* parentNode = parent_;
+        uint64_t lastHash = *curHash;
+        while (parentNode != NULL) {
+            for (uint32_t i=0; i<parentNode->children_.size(); i++) {
+                if (parentNode->children_[i] == this) {
+                    assert(lastHash < parentNode->children_[i]->separator_);
+                    lastHash = parentNode->children_[i]->separator_;
+                }
+            }
+            parentNode = parentNode->parent_;
+        }
+        for (int32_t i=1; i<children_.size(); i++) {
+            if (children_[i-1]->separator_ >= children_[i]->separator_) {
+                fprintf(stderr, "Node: %d: Child %d has separator %lu\
+                        greater than child %d's %lu\n", id_, i-1, 
+                        children_[i-1]->separator_, i, children_[i]->separator_);
+                assert(false);
+            }
+        }
+        for (int32_t i=0; i<children_.size(); i++) {
             if (!children_[i]->checkIntegrity())
                 return false;
+        }
+#endif
+        return true;
+    }
+
+    bool Node::parseNode()
+    {
+#ifdef ENABLE_INTEGRITY_CHECK
+        size_t* bufSize;
+        size_t offset;
+        for (uint32_t i=0; i<numElements_; i++) {
+            offset += sizeof(uint64_t);
+            bufSize = (size_t*)(data_ + offset);
+            offset += sizeof(size_t) + *bufSize;
+            if (*bufSize == 0) {
+                fprintf(stderr, "%lu, bufsize: %lu, %ld\n", offset, *bufSize, *(size_t*)(data_ + offset + 16));
+                assert(false);
+            }
         }
 #endif
         return true;

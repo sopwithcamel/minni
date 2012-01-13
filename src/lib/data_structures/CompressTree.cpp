@@ -173,8 +173,12 @@ begin_flush:
         while(!visitQueue.empty()) {
             curNode = visitQueue.front();
             visitQueue.pop();
-            if (curNode->isLeaf())
+            if (curNode->isLeaf()) {
+                CALL_MEM_FUNC(*curNode, curNode->decompress)();
+                curNode->sortBuffer();
+                CALL_MEM_FUNC(*curNode, curNode->compress)();
                 allLeaves_.push_back(curNode);
+            }
             for (uint32_t i=0; i<curNode->children_.size(); i++) {
                 if (!curNode->children_[i]->isLeaf()) {
                     visitQueue.push(curNode->children_[i]);
@@ -246,10 +250,17 @@ begin_flush:
         for (uint32_t i=0; i<leavesToBeEmptied_.size(); i++) {
             Node* node = leavesToBeEmptied_.front();
             leavesToBeEmptied_.pop_front();
-//            if (node->isCompressed()) {
-                CALL_MEM_FUNC(*node, node->decompress)();
-//            }
+            CALL_MEM_FUNC(*node, node->decompress)();
             node->sortBuffer();
+            // check if sorting and aggregating made the leaf small enough
+            if (!node->isFull()) {
+                CALL_MEM_FUNC(*node, node->compress)();
+                asyncSignal();
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "Leaf node %d reduced in size, so no split\n", node->id_);
+#endif
+                return 0;                
+            }
             Node* newLeaf = node->splitLeaf();
             Node *l1 = NULL, *l2 = NULL;
             if (node->isFull()) {
