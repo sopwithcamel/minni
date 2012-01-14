@@ -46,7 +46,10 @@ namespace compresstree {
         /* Add leaf whose buffer is full to be emptied once all internal node
          * buffers have been emptied */
         bool addLeafToEmpty(Node* node);
-        bool asyncSignal();
+        bool asyncSignalWantToEmpty();
+        void* callEmpty();
+        static void* callEmptyHelper(void* context);
+        bool asyncSignalWantToCompress();
         void* callCompress();
         static void* callCompressHelper(void *context);
         bool createNewRoot(Node* otherChild);
@@ -80,11 +83,21 @@ namespace compresstree {
         uint32_t nodesInMemory_;
         size_t numEvicted_;
         char* evictedBuffer_;
+        size_t evictedBufferOffset_;
+        pthread_mutex_t evictedBufferMutex_;
 
         /* Node related */
         uint64_t** els_;         // pointers to elements in buffer
         char* auxBuffer_;       // used in sorting
         char* compBuffer_;
+
+        /* Members for async-emptying */
+        pthread_t emptierThread_;
+        pthread_mutex_t rootNodeAvailableMutex_;
+        pthread_cond_t rootNodeAvailableForWriting_;
+        pthread_cond_t nodesReadyForEmptying_;
+        pthread_mutex_t nodesReadyForEmptyMutex_;
+        std::deque<Node*> nodesToEmpty_;
     };
 }
 

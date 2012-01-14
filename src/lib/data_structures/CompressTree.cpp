@@ -50,6 +50,17 @@ namespace compresstree {
 
         pthread_create(&compressionThread_, &attr, 
                 &CompressTree::callCompressHelper, (void*)this);
+
+        pthread_mutex_init(&nodesReadyForEmptyMutex_, NULL);
+        pthread_cond_init(&nodesReadyForEmptying_, NULL);
+        pthread_attr_init(&attr);
+        pthread_create(&emptierThread_, &attr,
+                &CompressTree::callEmptyHelper, (void*)this);
+
+        pthread_mutex_init(&rootNodeAvailableMutex_, NULL);
+        pthread_cond_init(&rootNodeAvailableForWriting_, NULL);
+
+        pthread_mutex_init(&evictedBufferMutex_, NULL);
     }
 
     CompressTree::~CompressTree()
@@ -61,6 +72,11 @@ namespace compresstree {
         free(els_);
         pthread_cond_destroy(&nodesReadyForCompression_);
         pthread_mutex_destroy(&readyNodesMutex_);
+        pthread_cond_destroy(&nodesReadyForEmptying_);
+        pthread_mutex_destroy(&nodesReadyForEmptyMutex_);
+        pthread_cond_destroy(&rootNodeAvailableForWriting_);
+        pthread_mutex_destroy(&rootNodeAvailableMutex_);
+        pthread_mutex_destroy(&evictedBufferMutex_);
     }
 
     bool CompressTree::insert(void* hash, PartialAgg* agg, PartialAgg**& evicted,
@@ -69,8 +85,25 @@ namespace compresstree {
         // copy buf into root node buffer
         // root node buffer always decompressed
         allFlushed_ = false;
+        pthread_mutex_lock(&rootNodeAvailableMutex_);
+        while (rootNode_->isFull()) {
+            fprintf(stderr, "inserter sleeping\n");
+            nodesToEmpty_.push_back(rootNode_);
+            asyncSignalWantToEmpty();
+            pthread_cond_wait(&rootNodeAvailableForWriting_,
+                    &rootNodeAvailableMutex_);
+            fprintf(stderr, "inserter fingered\n");
+        }
         agg->serialize(serBuf_);
         bool ret = rootNode_->insert(*(uint64_t*)hash, serBuf_, strlen(serBuf_));
+        pthread_mutex_unlock(&rootNodeAvailableMutex_);
+
+        // check if any elements were evicted and pick those up
+        // returns non-zero if unsucc.
+        if (pthread_mutex_trylock(&evictedBufferMutex_)) {
+            num_evicted = 0;
+            return ret; 
+        }
         num_evicted = numEvicted_;
         if (numEvicted_ > 0) {
             char* buf = evictedBuffer_;
@@ -84,7 +117,9 @@ namespace compresstree {
                 offset += sizeof(size_t) + *bufSize;
             }
             numEvicted_ = 0;
+            evictedBufferOffset_ = 0;
         }
+        pthread_mutex_unlock(&evictedBufferMutex_);
         return ret;
     }
 
@@ -200,7 +235,6 @@ begin_flush:
 
     void* CompressTree::callCompress()
     {
-        time_t ltime;
         pthread_mutex_lock(&readyNodesMutex_);
         while (nodesToCompress_.empty()) {
             pthread_cond_wait(&nodesReadyForCompression_, &readyNodesMutex_);
@@ -219,7 +253,46 @@ begin_flush:
         pthread_exit(NULL);
     }
 
-    bool CompressTree::asyncSignal()
+    void* CompressTree::callEmpty()
+    {
+        bool rootFlag = false;
+        pthread_mutex_lock(&nodesReadyForEmptyMutex_);
+        while (nodesToEmpty_.empty()) {
+            fprintf(stderr, "emptier sleeping\n");
+            pthread_cond_wait(&nodesReadyForEmptying_, 
+                    &nodesReadyForEmptyMutex_);
+            fprintf(stderr, "emptier fingered\n");
+            while (!nodesToEmpty_.empty()) {
+                Node* n = nodesToEmpty_.front();
+                nodesToEmpty_.pop_front();
+                pthread_mutex_unlock(&nodesReadyForEmptyMutex_);
+                if (n->isRoot())
+                    rootFlag = true;
+                n->emptyBuffer();
+                handleFullLeaves(); // TODO: do we have to worry about root splitting here?
+                if (rootFlag) {
+                    rootFlag = false;
+                    pthread_mutex_lock(&rootNodeAvailableMutex_);
+                    pthread_cond_signal(&rootNodeAvailableForWriting_);
+                    pthread_mutex_unlock(&rootNodeAvailableMutex_);
+                }
+
+                pthread_mutex_lock(&nodesReadyForEmptyMutex_);
+            }
+        }
+        pthread_mutex_unlock(&nodesReadyForEmptyMutex_);
+        pthread_exit(NULL);
+    }
+
+    bool CompressTree::asyncSignalWantToEmpty()
+    {
+        pthread_mutex_lock(&nodesReadyForEmptyMutex_);
+        pthread_cond_signal(&nodesReadyForEmptying_);
+        pthread_mutex_unlock(&nodesReadyForEmptyMutex_);
+        return true;
+    }
+
+    bool CompressTree::asyncSignalWantToCompress()
     {
         pthread_mutex_lock(&readyNodesMutex_);
         pthread_cond_signal(&nodesReadyForCompression_);
@@ -230,6 +303,11 @@ begin_flush:
     void* CompressTree::callCompressHelper(void *context)
     {
         return ((CompressTree*)context)->callCompress();
+    }
+
+    void* CompressTree::callEmptyHelper(void *context)
+    {
+        return ((CompressTree*)context)->callEmpty();
     }
 
     void CompressTree::getAB(uint32_t& a, uint32_t& b)
@@ -256,7 +334,7 @@ begin_flush:
             // check if sorting and aggregating made the leaf small enough
             if (!node->isFull()) {
                 CALL_MEM_FUNC(*node, node->compress)();
-                asyncSignal();
+                asyncSignalWantToCompress();
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Leaf node %d reduced in size, so no split\n", node->id_);
 #endif
@@ -277,7 +355,7 @@ begin_flush:
                 CALL_MEM_FUNC(*l1, l1->compress)();
             if (l2)
                 CALL_MEM_FUNC(*l2, l2->compress)();
-            asyncSignal();
+            asyncSignalWantToCompress();
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Leaf node %d removed from full-leaf-list\n", node->id_);
 #endif

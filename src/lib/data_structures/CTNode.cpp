@@ -71,17 +71,6 @@ namespace compresstree {
         curOffset_ += buf_size;
 
         numElements_++;
-        
-        // if buffer threshold is reached, call emptyBuffer
-        if (isFull()) {
-            emptyBuffer();
-
-            /* emptying the buffer could have caused recursive calls leading
-             * till the leaves of the tree, but the handling of full leaves
-             * is deferred until all full non-leaf buffers have been handled.
-             * So we now handle the deferred tasks */
-            tree_->handleFullLeaves();
-        }
         return true;
     }
 
@@ -158,7 +147,7 @@ namespace compresstree {
         
                     assert(CALL_MEM_FUNC(*children_[curChild], 
                             children_[curChild]->compress)());
-                    tree_->asyncSignal();
+                    tree_->asyncSignalWantToCompress();
 #ifdef CT_NODE_DEBUG
                     fprintf(stderr, "Copied %lu elements into node %d; child\
                             offset: %ld, sep: %lu/%lu, off:(%ld/%ld)\n", numCopied, 
@@ -205,7 +194,7 @@ namespace compresstree {
 #endif
         }
         CALL_MEM_FUNC(*this, compress)();
-        tree_->asyncSignal();
+        tree_->asyncSignalWantToCompress();
 
         // reset
         curOffset_ = 0;
@@ -220,10 +209,13 @@ emptyChildren:
         // check if any children are full
         for (curChild=0; curChild < children_.size(); curChild++) {
             if (children_[curChild]->isFull()) {
-                children_[curChild]->emptyBuffer();
+                pthread_mutex_lock(&(tree_->nodesReadyForEmptyMutex_));
+                tree_->nodesToEmpty_.push_back(children_[curChild]);
+                fprintf(stderr, "Node %d added to to-empty list\n", children_[curChild]->id_);
+                pthread_mutex_unlock(&(tree_->nodesReadyForEmptyMutex_));
+                tree_->asyncSignalWantToEmpty();
             }
         }
-        tree_->handleFullLeaves();
 
         // Split leaves can cause the number of children to increase. Check.
         if (children_.size() > tree_->b_) {
@@ -483,12 +475,21 @@ emptyChildren:
             }
             return newLeaf;
         } else {
-            memmove(tree_->evictedBuffer_, data_ + offset, 
-                    curOffset_ - offset);
+            pthread_mutex_lock(&(tree_->evictedBufferMutex_));
+            size_t wrtDataSize = curOffset_ - offset;
+            if (wrtDataSize + tree_->evictedBufferOffset_ > BUFFER_SIZE) {
+                fprintf(stderr, "We're losing data. Handle this case!\n");
+                pthread_mutex_unlock(&(tree_->evictedBufferMutex_));
+                return NULL;
+            }
+            memmove(tree_->evictedBuffer_ + tree_->evictedBufferOffset_, 
+                    data_ + offset, wrtDataSize);
+            tree_->evictedBufferOffset_ += wrtDataSize;
             curOffset_ = offset;
             reduceElements(numElements_ - numElements_/2);
             checkIntegrity();
             tree_->numEvicted_ = numElements_ - numElements_ / 2;
+            pthread_mutex_unlock(&(tree_->evictedBufferMutex_));
 
             return NULL;
         }
@@ -553,13 +554,13 @@ emptyChildren:
 
     bool Node::splitNonLeaf()
     {
-        // Ensure that the node's buffer is empty. This should be the case because we now call
-        // this only from emptyBuffer() when we know that the buffer is empty
-        if (numElements_ > 0) {
-            emptyBuffer();
-            tree_->handleFullLeaves();
+        // ensure node's buffer is empty
+#ifdef ENABLE_ASSERT_CHECKS
+        if (curOffset_ > 0) {
+            fprintf(stderr, "Node %d has non-empty buffer\n", id_);
+            assert(false);
         }
-
+#endif
         // create new node
         Node* newNode = new Node(NON_LEAF, tree_);
         // move the last floor((b+1)/2) children to new node
@@ -657,6 +658,10 @@ emptyChildren:
         if (!compressible_ ) {
             return true;
         }
+#ifdef ENABLE_ASSERT_CHECKS
+        if (isCompressed())
+            assert(false);
+#endif
 
         size_t compressed_length;
         snappy::RawCompress(data_, curOffset_, tree_->compBuffer_,
@@ -683,6 +688,10 @@ emptyChildren:
 #ifdef ENABLE_COMPRESSION
         if (!compressible_)
             return true;
+#ifdef ENABLE_ASSERT_CHECKS
+        if (!isCompressed())
+            assert(false);
+#endif
         pthread_mutex_lock(&gfcMutex_);
         while (givenForComp_) {
             pthread_cond_wait(&gfcCond_, &gfcMutex_);
