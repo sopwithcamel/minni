@@ -49,7 +49,6 @@ namespace compresstree {
         bool asyncSignalWantToEmpty();
         void* callEmpty();
         static void* callEmptyHelper(void* context);
-        bool asyncSignalWantToCompress();
         void* callCompress();
         static void* callCompressHelper(void *context);
         bool createNewRoot(Node* otherChild);
@@ -76,7 +75,7 @@ namespace compresstree {
         /* Compression-related */
         pthread_t compressionThread_;
         pthread_cond_t nodesReadyForCompression_;
-        pthread_mutex_t readyNodesMutex_;
+        pthread_mutex_t nodesReadyForCompressMutex_;
         std::deque<Node*> nodesToCompress_;
 
         /* Eviction-related */

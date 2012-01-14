@@ -8,10 +8,10 @@
 #include "CompressTree.h"
 #include "PartialAgg.h"
 
-#define ENABLE_ASSERT_CHECKS
-#define CT_NODE_DEBUG
+//#define ENABLE_ASSERT_CHECKS
+//#define CT_NODE_DEBUG
 //#define ENABLE_SORT_VERIFICATION
-#define ENABLE_INTEGRITY_CHECK
+//#define ENABLE_INTEGRITY_CHECK
 #define ENABLE_COMPRESSION
 
 #define CALL_MEM_FUNC(object,ptrToMember) ((object).*(ptrToMember))
@@ -29,7 +29,7 @@ namespace compresstree {
         friend class CompressTree;
         typedef bool (Node::*NodeCompFn)();
       public:
-        Node(NodeType typ, CompressTree* tree);
+        Node(NodeType typ, CompressTree* tree, bool alloc);
         ~Node();
         /* copy user data into buffer. Buffer should be decompressed
            before calling. */
@@ -118,6 +118,7 @@ namespace compresstree {
         NodeType typ_;
         /* Buffer pointer */
         char* data_;
+        char* compressed_;
         uint32_t id_;
         Node* parent_;
         size_t numElements_;
@@ -132,6 +133,7 @@ namespace compresstree {
         bool compressible_;
         size_t compLength_;
         bool givenForComp_;
+        bool cancelCompress_;
         pthread_cond_t gfcCond_;
         pthread_mutex_t gfcMutex_;
     };

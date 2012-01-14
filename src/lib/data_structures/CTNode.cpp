@@ -11,7 +11,7 @@
 #include "zlib.h"
 
 namespace compresstree {
-    Node::Node(NodeType typ, CompressTree* tree) :
+    Node::Node(NodeType typ, CompressTree* tree, bool alloc) :
         tree_(tree),
         typ_(typ),
         id_(CompressTree::nodeCtr++),
@@ -20,10 +20,18 @@ namespace compresstree {
         curOffset_(0),
         isCompressed_(false),
         compressible_(true),
-        givenForComp_(false)
+        givenForComp_(false),
+        cancelCompress_(false)
     {
         // Allocate memory for data buffer
-        data_ = (char*)malloc(BUFFER_SIZE);
+//        data_ = (char*)malloc(BUFFER_SIZE);
+        if (alloc) {
+            assert(!posix_memalign((void**)&data_, sizeof(size_t),
+                    BUFFER_SIZE));
+        } else {
+            data_ = NULL;
+        }
+        compressed_ = NULL;
 
         if (tree_->alg_ == SNAPPY) {
             compress = &Node::asyncCompress;
@@ -115,7 +123,8 @@ namespace compresstree {
         if (curOffset_ == 0)
             goto emptyChildren;
 
-        CALL_MEM_FUNC(*this, decompress)();
+        if (compressible_)
+            CALL_MEM_FUNC(*this, decompress)();
         sortBuffer();
         // find the first separator strictly greater than the first element
         curHash = (uint64_t*)(data_ + offset);
@@ -147,7 +156,6 @@ namespace compresstree {
         
                     assert(CALL_MEM_FUNC(*children_[curChild], 
                             children_[curChild]->compress)());
-                    tree_->asyncSignalWantToCompress();
 #ifdef CT_NODE_DEBUG
                     fprintf(stderr, "Copied %lu elements into node %d; child\
                             offset: %ld, sep: %lu/%lu, off:(%ld/%ld)\n", numCopied, 
@@ -193,8 +201,9 @@ namespace compresstree {
                     offset, curOffset_);
 #endif
         }
-        CALL_MEM_FUNC(*this, compress)();
-        tree_->asyncSignalWantToCompress();
+        if (compressible_) {
+            CALL_MEM_FUNC(*this, compress)();
+        }
 
         // reset
         curOffset_ = 0;
@@ -211,7 +220,9 @@ emptyChildren:
             if (children_[curChild]->isFull()) {
                 pthread_mutex_lock(&(tree_->nodesReadyForEmptyMutex_));
                 tree_->nodesToEmpty_.push_back(children_[curChild]);
+#ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Node %d added to to-empty list\n", children_[curChild]->id_);
+#endif
                 pthread_mutex_unlock(&(tree_->nodesReadyForEmptyMutex_));
                 tree_->asyncSignalWantToEmpty();
             }
@@ -435,21 +446,25 @@ emptyChildren:
 
         // select median value
         uint64_t* median_hash;
-        size_t nj = 0;
         size_t nextOffset = offset;
         advance(1, nextOffset);
 
         median_hash = (uint64_t*)(data_ + offset);
+        size_t nj = 1;
+        // TODO; Handle the case where all the elements until the end are same
+        // although that is unlikely
         while (*(uint64_t*)(data_ + nextOffset) == *median_hash) {
             median_hash = (uint64_t*)(data_ + nextOffset);
             advance(1, nextOffset);
             nj++;
         }
+        offset = nextOffset;
+        median_hash = (uint64_t*)(data_ + offset);
 
         // check if we have reached limit of nodes that can be kept in-memory
         if (CompressTree::nodeCtr < tree_->nodesInMemory_) {
             // create new leaf
-            Node* newLeaf = new Node(LEAF, tree_);
+            Node* newLeaf = new Node(LEAF, tree_, true);
             newLeaf->copyIntoBuffer(data_ + offset, curOffset_ - offset);
             newLeaf->addElements(numElements_ - numElements_/2 - nj);
             newLeaf->separator_ = separator_;
@@ -562,7 +577,7 @@ emptyChildren:
         }
 #endif
         // create new node
-        Node* newNode = new Node(NON_LEAF, tree_);
+        Node* newNode = new Node(NON_LEAF, tree_, false);
         // move the last floor((b+1)/2) children to new node
         int newNodeChildIndex = children_.size()-(tree_->b_+1)/2;
         assert(children_[newNodeChildIndex]->separator_ > children_[newNodeChildIndex-1]->separator_);
@@ -598,9 +613,16 @@ emptyChildren:
             fprintf(stderr, "%d, ", newNode->children_[j]->id_);
         fprintf(stderr, "]\n");
 #endif
+        // compress new node
+        CALL_MEM_FUNC(*newNode, newNode->compress)();
 
         if (isRoot()) {
             setCompressible(true);
+            free(data_);
+            data_ = NULL;
+            // actually compress the node that was formerly the root
+            isCompressed_ = false;
+            CALL_MEM_FUNC(*this, compress)();
             return tree_->createNewRoot(newNode);
         } else
             return parent_->addChild(newNode);
@@ -643,12 +665,16 @@ emptyChildren:
 
     bool Node::asyncCompress()
     {
-        pthread_mutex_lock(&(tree_->readyNodesMutex_));
+        pthread_mutex_lock(&(tree_->nodesReadyForCompressMutex_));
         tree_->nodesToCompress_.push_back(this);
-        pthread_mutex_unlock(&(tree_->readyNodesMutex_));
+        pthread_cond_signal(&(tree_->nodesReadyForCompression_));
+        pthread_mutex_unlock(&(tree_->nodesReadyForCompressMutex_));
         pthread_mutex_lock(&gfcMutex_);
         givenForComp_ = true;
         pthread_mutex_unlock(&gfcMutex_);
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "call for compressing node %d\n", id_);
+#endif
         return true;
     }
 
@@ -662,23 +688,34 @@ emptyChildren:
         if (isCompressed())
             assert(false);
 #endif
-
-        size_t compressed_length;
-        snappy::RawCompress(data_, curOffset_, tree_->compBuffer_,
-                &compressed_length);
-        char* compressed = (char*)malloc(compressed_length);
-        memmove(compressed, tree_->compBuffer_, compressed_length);
+        if (data_ != NULL) {
+            size_t compressed_length;
 #ifdef CT_NODE_DEBUG
-/*
-        fprintf(stderr, "len: %ld, max len: %ld, comp len: %ld\n", 
-                curOffset_, snappy::MaxCompressedLength(curOffset_),
-                compressed_length);
-*/
+            fprintf(stderr, "Trying to com %d, inp:%p (%lu), co: %lu, out:%p (%lu)\n", id_, data_, 
+                    *(size_t*)(data_+8), curOffset_, 
+                    tree_->compBuffer_, *(size_t*)(tree_->compBuffer_+8));
 #endif
-        free(data_);
-        data_ = compressed;
-        compLength_ = compressed_length;
+            snappy::RawCompress(data_, curOffset_, tree_->compBuffer_,
+                    &compressed_length);
+            assert(!posix_memalign((void**)&compressed_, sizeof(size_t), compressed_length));
+            memmove(compressed_, tree_->compBuffer_, compressed_length);
+            /* Can be called from multiple places:
+             * + emptyBuffer()-1: on the node whose buffer was emptied - no free
+             * + emptyBuffer()-2: on children of emptied node - free required
+             * + splitNonLeaf(): called on ex-root node which is empty - no free
+             * + handleFullLeaves(): called on split leaves - free required
+             */
+            compLength_ = compressed_length;
+            free(data_);
+            data_ = NULL;
+        } else { // data_ is NULL
+            compressed_ = NULL;
+        }
+
         isCompressed_ = true;
+#endif
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "compressed node %d\n", id_);
 #endif
         return true;
     }
@@ -688,27 +725,38 @@ emptyChildren:
 #ifdef ENABLE_COMPRESSION
         if (!compressible_)
             return true;
-#ifdef ENABLE_ASSERT_CHECKS
-        if (!isCompressed())
-            assert(false);
-#endif
+
+        // check if node is queued up for compression
         pthread_mutex_lock(&gfcMutex_);
-        while (givenForComp_) {
-            pthread_cond_wait(&gfcCond_, &gfcMutex_);
+        // since we've got the lock, the compression can't be in-progress
+        if (givenForComp_) {
+            // this means that this node is still queued up, so we cancel
+            cancelCompress_ = true;
+            if (data_ != NULL) {
+                pthread_mutex_unlock(&gfcMutex_);
+                return true;
+            }
         }
         pthread_mutex_unlock(&gfcMutex_);
-//        fprintf(stderr, "Sync: decompressed node %d\n", id_);
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "decompressed node %d\n", id_);
+#endif
 
-        char* buf = (char*)malloc(BUFFER_SIZE);
-        if (data_ != NULL) {
-            snappy::RawUncompress(data_, compLength_, buf);
-            free(data_);
+        assert(!posix_memalign((void**)&data_, sizeof(size_t), BUFFER_SIZE));
+
+        /* + emptyBuffer()-1: the node to be emptied is not NULL
+         * + emptyBuffer()-2: children may be empty
+         * + handleFullLeaves(): not empty
+         */
+        if (compressed_ != NULL) {
+            snappy::RawUncompress(compressed_, compLength_, data_);
+            free(compressed_);
+            compressed_ = NULL;
         }
-        data_ = buf;
         isCompressed_ = false;
 #else
         if (data_ == NULL)
-            data_ = (char*)malloc(BUFFER_SIZE);
+            assert(!posix_memalign(&data_, sizeof(size_t), BUFFER_SIZE));
 #endif
         return true;
     }
