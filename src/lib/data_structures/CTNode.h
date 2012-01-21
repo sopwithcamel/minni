@@ -8,11 +8,10 @@
 #include "CompressTree.h"
 #include "PartialAgg.h"
 
-//#define ENABLE_ASSERT_CHECKS
+#define ENABLE_ASSERT_CHECKS
 //#define CT_NODE_DEBUG
 //#define ENABLE_SORT_VERIFICATION
 //#define ENABLE_INTEGRITY_CHECK
-#define ENABLE_COMPRESSION
 
 #define CALL_MEM_FUNC(object,ptrToMember) ((object).*(ptrToMember))
 
@@ -28,6 +27,10 @@ namespace compresstree {
     class Node {
         friend class CompressTree;
         typedef bool (Node::*NodeCompFn)();
+        enum EmptyType {
+            SYNC_EMPTY,
+            ASYNC_EMPTY
+        };
       public:
         Node(NodeType typ, CompressTree* tree, bool alloc);
         ~Node();
@@ -41,6 +44,7 @@ namespace compresstree {
         bool isRoot();
 
         bool isFull();
+        size_t getNumSiblings();
       private:
 
         /* Buffer handling functions */
@@ -56,7 +60,7 @@ namespace compresstree {
          *  + an emptyBuffer() invocation should be followed by a
          *    handleFullLeaves() call.
          */
-        bool emptyBuffer();
+        bool emptyBuffer(EmptyType etype);
         /* sort the buffer based on hash value. After sorting perform an
          * aggregation pass.
          * Must be called when buffer is decompressed */

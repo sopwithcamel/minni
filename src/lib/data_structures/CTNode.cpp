@@ -96,7 +96,7 @@ namespace compresstree {
         return false;
     }
 
-    bool Node::emptyBuffer()
+    bool Node::emptyBuffer(EmptyType type)
     {
         uint32_t curChild = 0;
         // offset till which elements have been written
@@ -218,13 +218,10 @@ emptyChildren:
         // check if any children are full
         for (curChild=0; curChild < children_.size(); curChild++) {
             if (children_[curChild]->isFull()) {
-                pthread_mutex_lock(&(tree_->nodesReadyForEmptyMutex_));
-                tree_->nodesToEmpty_.push_back(children_[curChild]);
-#ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Node %d added to to-empty list\n", children_[curChild]->id_);
-#endif
-                pthread_mutex_unlock(&(tree_->nodesReadyForEmptyMutex_));
-                tree_->asyncSignalWantToEmpty();
+                if (type == ASYNC_EMPTY)
+                    tree_->addNodeToEmpty(children_[curChild]);
+                else if (type == SYNC_EMPTY)
+                    children_[curChild]->emptyBuffer(SYNC_EMPTY);
             }
         }
 
@@ -632,6 +629,7 @@ emptyChildren:
     {
         size_t* bufSize;
         if (offset >= curOffset_) {
+            fprintf(stderr, "off: %lu, curoff: %lu\n", offset, curOffset_);
             assert(false);
         }
         for (uint32_t i=0; i<n; i++) {
@@ -663,38 +661,66 @@ emptyChildren:
         return false;
     }
 
+    size_t Node::getNumSiblings()
+    {
+        if (isRoot())
+            return 1;
+        else
+            return parent_->children_.size();
+    }
+    
     bool Node::asyncCompress()
     {
+        pthread_mutex_lock(&gfcMutex_);
+        // check if node already in to-compress list
+        if (givenForComp_) {
+            // check if compression request has been cancelled
+            if (cancelCompress_) {
+                /* reset cancellation request; node need not be added
+                 * again */
+                cancelCompress_ = false;
+                pthread_mutex_unlock(&gfcMutex_);
+                return true;
+            } else { // if not cancelled, we're compressing twice
+                fprintf(stderr, "Trying to compress node %d twice", id_);
+                assert(false);
+            }
+        } else {
+            givenForComp_ = true;
+        }
+        pthread_mutex_unlock(&gfcMutex_);
         pthread_mutex_lock(&(tree_->nodesReadyForCompressMutex_));
         tree_->nodesToCompress_.push_back(this);
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "call for compressing node %d\t", id_);
+        for (int i=0; i<tree_->nodesToCompress_.size(); i++)
+            fprintf(stderr, "%d, ", tree_->nodesToCompress_[i]->id_);
+        fprintf(stderr, "\n");
+#endif
         pthread_cond_signal(&(tree_->nodesReadyForCompression_));
         pthread_mutex_unlock(&(tree_->nodesReadyForCompressMutex_));
-        pthread_mutex_lock(&gfcMutex_);
-        givenForComp_ = true;
-        pthread_mutex_unlock(&gfcMutex_);
-#ifdef CT_NODE_DEBUG
-        fprintf(stderr, "call for compressing node %d\n", id_);
-#endif
         return true;
     }
 
     bool Node::snappyCompress()
     {
-#ifdef ENABLE_COMPRESSION
         if (!compressible_ ) {
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "root not compressible\t");
+            for (int i=0; i<tree_->nodesToCompress_.size(); i++)
+                fprintf(stderr, "%d, ", tree_->nodesToCompress_[i]->id_);
+            fprintf(stderr, "\n");
+#endif
             return true;
         }
 #ifdef ENABLE_ASSERT_CHECKS
-        if (isCompressed())
+        if (isCompressed()) {
+            fprintf(stderr, "Node %d already compressed\n", id_);
             assert(false);
+        }
 #endif
         if (data_ != NULL) {
             size_t compressed_length;
-#ifdef CT_NODE_DEBUG
-            fprintf(stderr, "Trying to com %d, inp:%p (%lu), co: %lu, out:%p (%lu)\n", id_, data_, 
-                    *(size_t*)(data_+8), curOffset_, 
-                    tree_->compBuffer_, *(size_t*)(tree_->compBuffer_+8));
-#endif
             snappy::RawCompress(data_, curOffset_, tree_->compBuffer_,
                     &compressed_length);
             assert(!posix_memalign((void**)&compressed_, sizeof(size_t), compressed_length));
@@ -713,16 +739,17 @@ emptyChildren:
         }
 
         isCompressed_ = true;
-#endif
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "compressed node %d\n", id_);
+        fprintf(stderr, "compressed node %d\t", id_);
+        for (int i=0; i<tree_->nodesToCompress_.size(); i++)
+            fprintf(stderr, "%d, ", tree_->nodesToCompress_[i]->id_);
+        fprintf(stderr, "\n");
 #endif
         return true;
     }
 
     bool Node::snappyDecompress()
     {
-#ifdef ENABLE_COMPRESSION
         if (!compressible_)
             return true;
 
@@ -731,17 +758,24 @@ emptyChildren:
         // since we've got the lock, the compression can't be in-progress
         if (givenForComp_) {
             // this means that this node is still queued up, so we cancel
-            cancelCompress_ = true;
-            if (data_ != NULL) {
-                pthread_mutex_unlock(&gfcMutex_);
-                return true;
-            }
-        }
-        pthread_mutex_unlock(&gfcMutex_);
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "decompressed node %d\n", id_);
+            fprintf(stderr, "Node %d: compression cancelled\n", id_);
 #endif
+            cancelCompress_ = true;
+            if (data_ == NULL) {
+                assert(!posix_memalign((void**)&data_, sizeof(size_t), BUFFER_SIZE));
+            }
+            pthread_mutex_unlock(&gfcMutex_);
+            return true;
+        } else
+            pthread_mutex_unlock(&gfcMutex_);
 
+#ifdef ENABLE_ASSERT_CHECKS
+        if (!isCompressed() && !cancelCompress_) {
+            fprintf(stderr, "Node %d already decompressed\n", id_);
+            assert(false);
+        }
+#endif
         assert(!posix_memalign((void**)&data_, sizeof(size_t), BUFFER_SIZE));
 
         /* + emptyBuffer()-1: the node to be emptied is not NULL
@@ -754,16 +788,14 @@ emptyChildren:
             compressed_ = NULL;
         }
         isCompressed_ = false;
-#else
-        if (data_ == NULL)
-            assert(!posix_memalign(&data_, sizeof(size_t), BUFFER_SIZE));
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "decompressed node %d\n", id_);
 #endif
         return true;
     }
 
     bool Node::zlibCompress()
     {
-#ifdef ENABLE_COMPRESSION
         int ret;
         z_stream strm;
         if (!compressible_)
@@ -796,14 +828,11 @@ emptyChildren:
         fprintf(stderr, "len: %ld, comp len: %ld\n", 
                 curOffset_, compLength_);
 #endif
-
-#endif
         return true;
     }
 
     bool Node::zlibDecompress()
     {
-#ifdef ENABLE_COMPRESSION
         if (!compressible_)
             return true;
 
@@ -842,7 +871,6 @@ emptyChildren:
         }
         data_ = buf;
         isCompressed_ = false;
-#endif
         return true;
     }
 
