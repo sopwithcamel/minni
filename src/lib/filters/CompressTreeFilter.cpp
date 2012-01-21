@@ -38,7 +38,6 @@ CompressTreeInserter::~CompressTreeInserter()
 void* CompressTreeInserter::operator()(void* recv)
 {
 	char *key;
-	char* buf = (char*)malloc(BUF_SIZE);
 	string value;
 	size_t ind = 0;
     uint64_t hashv;
@@ -73,7 +72,6 @@ void* CompressTreeInserter::operator()(void* recv)
         }
         tokens_processed++;
     }
-	free(buf);
     assert(evict_list_ctr < max_keys_per_token);
 	if (flush_on_complete || aggregator_->input_finished && 
                 tokens_processed == aggregator_->tot_input_tokens) {

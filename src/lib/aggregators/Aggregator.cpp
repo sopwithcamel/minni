@@ -10,7 +10,7 @@ Aggregator::Aggregator(const Config &cfg,
 		num_pipelines(num_pipelines),
 		num_partitions(num_part),
 		input_finished(false),
-        sendNextToken(false),
+        sendNextToken(true),
 		tot_input_tokens(0),
 		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc)
@@ -51,6 +51,7 @@ void Aggregator::runPipeline()
 void Aggregator::resetFlags()
 {
 	input_finished = false;
+    sendNextToken = true;
 	tot_input_tokens = 0;
 }
 
