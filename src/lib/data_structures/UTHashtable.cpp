@@ -1,5 +1,5 @@
-#ifdef UTHASH
 #include "UTHashtable.h"
+#ifdef UTHASH
 
 UTHashtable::UTHashtable(size_t capacity) :
     hashtable(NULL)

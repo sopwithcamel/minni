@@ -8,6 +8,8 @@
 #include "uthash.h"
 #include "Tokenizer.h"
 
+#define UTHASH
+
 #define REGISTER_PAO(x) extern "C"\
 	size_t __libminni_pao_create(Token* tok, PartialAgg** p_list)\
 	{\
