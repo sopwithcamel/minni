@@ -27,22 +27,12 @@ Deserializer::Deserializer(Aggregator* agg,
 			max_keys_per_token);
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 	read_buf = malloc(BUF_SIZE + 1);
-    for (uint32_t j=0; j<num_buffers; j++) {
-        for (uint64_t i=0; i<max_keys_per_token; i++) {
-            createPAO(NULL, &((*pao_list)[j][i]));
-        }
-    }
 }
 
 Deserializer::~Deserializer()
 {
 	size_t num_buffers = aggregator->getNumBuffers();
 	free(inputfile_prefix);
-    for (uint32_t j=0; j<num_buffers; j++) {
-        for (uint64_t i=0; i<max_keys_per_token; i++) {
-            destroyPAO((*pao_list)[j][i]);
-        }
-    }
 	delete pao_list;
 	delete send;
 	free(read_buf);
@@ -65,6 +55,7 @@ void* Deserializer::operator()(void*)
         this_send->result = NULL;
         this_send->length = 0;
         this_send->flush_hash = true;
+        this_send->destroy_pao = false;
         return this_send;
     }
 
@@ -81,10 +72,13 @@ void* Deserializer::operator()(void*)
 	}
 
     while (!feof(cur_bucket)) {
-        this_list[pao_list_ctr++]->deserialize(cur_bucket, read_buf,
+        createPAO(NULL, &(this_list[pao_list_ctr]));
+        this_list[pao_list_ctr]->deserialize(cur_bucket, read_buf,
                 BUF_SIZE);
-        if (pao_list_ctr == max_keys_per_token - 1)
+        pao_list_ctr++;
+        if (pao_list_ctr == max_keys_per_token - 1) {
             break;
+        }
     }
 	aggregator->tot_input_tokens++;
 	if (feof(cur_bucket)) {
@@ -101,7 +95,7 @@ void* Deserializer::operator()(void*)
 //	fprintf(stderr, "list size: %d\n", pao_list_ctr);
 	this_send->result = this_list;
 	this_send->length = pao_list_ctr;
-    this_send->destroy_pao = false;
+    this_send->destroy_pao = true;
 	return this_send;
 }
 
