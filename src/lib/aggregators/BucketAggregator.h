@@ -22,7 +22,6 @@
 #include "Hasher.h"
 #include "Hashtable.h"
 #include "Mapper.h"
-#include "Merger.h"
 #include "PAOCreator.h"
 #include "PartialAgg.h"
 #include "Serializer.h"
@@ -64,13 +63,11 @@ class BucketAggregator :
 
     PAOCreator* creator;
     Hasher* hasher;
-    Merger* merger;
     Serializer* bucket_serializer;
     Deserializer* deserializer;
 	AccumulatorInserter* acc_int_inserter_;
 	AccumulatorInserter* bucket_inserter_;
     Hasher* bucket_hasher;
-    Merger* bucket_merger;
     Serializer* final_serializer;
     uint64_t num_buckets;
     const char* outfile;

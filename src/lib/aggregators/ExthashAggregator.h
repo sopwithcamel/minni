@@ -25,7 +25,6 @@
 #include "Hashtable.h"
 #include "UTHashtable.h"
 #include "Hasher.h"
-#include "Merger.h"
 #include "PAOCreator.h"
 #include "Serializer.h"
 #include "SparseHash.h"
@@ -68,7 +67,6 @@ private:
 	PAOCreator* creator_;
 	/* internal and external hashing */
 	Hasher* hasher_;
-	Merger* merger_;
 	AccumulatorInserter* acc_inserter_;
 	AccumulatorReader* acc_reader_;
 	AccumulatorInserter* acc_int_inserter_;

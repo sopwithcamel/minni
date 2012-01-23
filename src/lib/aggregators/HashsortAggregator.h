@@ -22,7 +22,6 @@
 #include "Hasher.h"
 #include "Hashtable.h"
 #include "Mapper.h"
-#include "Merger.h"
 #include "PAOCreator.h"
 #include "PartialAgg.h"
 #include "Serializer.h"
@@ -65,7 +64,6 @@ private:
 	PAOCreator* creator;
 	AccumulatorInserter* acc_int_inserter_;
 	Hasher* hasher;
-	Merger* merger;
 	Serializer* serializer;
 	Sorter* sorter;
 

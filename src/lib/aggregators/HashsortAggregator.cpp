@@ -101,8 +101,6 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
             hasher = new Hasher(this, hashtable_, destroyPAOFunc,
                     max_keys_per_token);
             pipeline_list[0].add_filter(*hasher);
-            merger = new Merger(this, destroyPAOFunc);
-            pipeline_list[0].add_filter(*merger);
         }
 	}
 
@@ -166,7 +164,6 @@ HashsortAggregator::~HashsortAggregator()
 	if (hasher) {
         delete(hashtable_);
 		delete(hasher);
-		delete(merger);
 	}
 	delete(serializer);
 	delete(sorter);

@@ -18,11 +18,6 @@
 /**
  * - Consumes: array of PAOs to be aggregated
  * - Produces: array of PAOs evicted from in-memory HT 
- * 
- * TODO:
- * - overload += operator in user-defined PartialAgg class
- * - pass in partitioning function as a parameter
- * - change to TBB hash_map which is parallel access
  */
 
 class Hasher : public tbb::filter {
@@ -35,8 +30,6 @@ public:
 private:
 	Aggregator* aggregator;
 	MultiBuffer<PartialAgg*>* evicted_list;
-	MultiBuffer<PartialAgg*>* merge_list;
-	MultiBuffer<PartialAgg*>* mergand_list;
 	const size_t max_keys_per_token;
 	size_t next_buffer;
     Hashtable* hashtable;

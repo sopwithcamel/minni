@@ -15,10 +15,6 @@ Hasher::Hasher(Aggregator* agg, Hashtable* ht,
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	evicted_list = new MultiBuffer<PartialAgg*>(num_buffers,
 			max_keys_per_token);
-	merge_list = new MultiBuffer<PartialAgg*>(num_buffers,
-			max_keys_per_token);
-	mergand_list = new MultiBuffer<PartialAgg*>(num_buffers,
-			max_keys_per_token);
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 }
 
@@ -26,8 +22,6 @@ Hasher::~Hasher()
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	delete evicted_list;
-	delete merge_list;
-	delete mergand_list;
 	delete send;
 }
 
@@ -46,8 +40,6 @@ void* Hasher::operator()(void* recv)
 	bool flush_on_complete = recv_list->flush_hash;
 
 	PartialAgg** this_list = (*evicted_list)[next_buffer];
-	PartialAgg** this_merge_list = (*merge_list)[next_buffer];
-	PartialAgg** this_mergand_list = (*mergand_list)[next_buffer];
 	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % aggregator->getNumBuffers();
 
@@ -56,10 +48,10 @@ void* Hasher::operator()(void* recv)
             pao = pao_l[ind];
             PartialAgg* found = NULL;
             hashtable->search(pao->key, found);
-            if (found) { // the insertion didn't occur
-                this_merge_list[merge_list_ctr] = found;
-                this_mergand_list[merge_list_ctr++] = pao;
-            } else { // the PAO was inserted
+            if (found) {
+                found->merge(pao);
+                destroyPAO(pao);
+            } else {
                 size_t num_evicted = hashtable->insert(pao->key,
                         strlen(pao->key), pao, this_list + evict_list_ctr);
                 evict_list_ctr += num_evicted;
@@ -88,8 +80,6 @@ void* Hasher::operator()(void* recv)
 	}
 	this_send->result = this_list;
 	this_send->length = evict_list_ctr;
-	this_send->result1 = this_merge_list;
-	this_send->result2 = this_mergand_list;
-	this_send->result3 = merge_list_ctr;
+    this_send->destroy_pao = recv_list->destroy_pao;
 	return this_send;
 }

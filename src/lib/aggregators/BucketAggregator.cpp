@@ -108,8 +108,6 @@ BucketAggregator::BucketAggregator(const Config &cfg,
             hasher = new Hasher(this, hashtable_, destroyPAOFunc,
                     max_keys_per_token);
             pipeline_list[0].add_filter(*hasher);
-            merger = new Merger(this, destroyPAOFunc);
-            pipeline_list[0].add_filter(*merger);
         }
     }
 
@@ -142,8 +140,6 @@ BucketAggregator::BucketAggregator(const Config &cfg,
         bucket_hasher = new Hasher(this, hashtable_, destroyPAOFunc,
                 max_keys_per_token);
         pipeline_list[1].add_filter(*bucket_hasher);
-        bucket_merger = new Merger(this, destroyPAOFunc);
-        pipeline_list[1].add_filter(*bucket_merger);
     }
 
     char* final_path = (char*)malloc(FILENAME_LENGTH);
@@ -171,12 +167,10 @@ BucketAggregator::~BucketAggregator()
     if (hasher) {
         delete(hashtable_);
         delete(hasher);
-        delete(merger);
     }
     delete(bucket_serializer);
     delete(deserializer);
     delete(bucket_hasher);
-    delete(bucket_merger);
     delete(final_serializer);
     pipeline_list[0].clear();
     pipeline_list[1].clear();

@@ -16,7 +16,6 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			filters/FileTokenizerFilter.cpp \
 			filters/Hasher.cpp \
 			filters/MemCache.cpp \
-			filters/Merger.cpp \
 			filters/PAOCreator.cpp \
 			filters/Serializer.cpp \
 			filters/Sorter.cpp \
@@ -54,7 +53,7 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 					   -I$(srcdir)/apps/
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
-			-lltdl -lpthread -ltbb -lconfig++ -lsnappy
+			-lltdl -lpthread -ltbb -lconfig++ -lsnappy -lssl -ltcmalloc
 
 minni_includedir = $(includedir)/libminni/libminni
 
@@ -75,7 +74,6 @@ minni_include_HEADERS = core/PartialAgg.h \
 			filters/FileTokenizerFilter.h \
 			filters/Hasher.h \
 			filters/MemCache.h \
-			filters/Merger.h \
 			filters/PAOCreator.h \
 			filters/Serializer.h \
 			filters/Sorter.h \

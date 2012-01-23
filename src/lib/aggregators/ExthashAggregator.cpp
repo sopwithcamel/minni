@@ -125,8 +125,6 @@ ExthashAggregator::ExthashAggregator(const Config& cfg,
             hasher_ = new Hasher(this, hashtable_, destroyPAOFunc,
                     max_keys_per_token);
             pipeline_list[0].add_filter(*hasher_);
-            merger_ = new Merger(this, destroyPAOFunc);
-            pipeline_list[0].add_filter(*merger_);
         }
 	}
 
@@ -154,7 +152,6 @@ ExthashAggregator::~ExthashAggregator()
 		delete inp_deserializer_;
 	if (hasher_) {
 		delete hasher_;
-		delete merger_;
 	}
     delete acc_reader_;
     delete hashtable_;
