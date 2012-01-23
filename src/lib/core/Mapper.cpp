@@ -99,10 +99,10 @@ task* MapperWrapperTask::execute() {
 
 	Setting& c_heapprof = readConfigFile(cfg, "minni.debug.heapprofile");
 	int heapprofile = c_heapprof;
-/*
+
     if (heapprofile == 1)
-        HeapProfilerStart("/tmp/minni.hprof");
-*/
+        HeapProfilerStart("/localfs/hamur/minni.hprof");
+
 	if(ParseProperties(soname,npart) == 1)  { //TODO
 		cout<<"Parse properties something wrong. I am leaving!"<<endl;
 		return NULL; 
