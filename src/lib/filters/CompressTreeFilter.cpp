@@ -1,4 +1,5 @@
 #include "CompressTreeFilter.h"
+#include <openssl/evp.h>
 
 #define Hash    HASH_FCN
 #define HASH_FUNCTION   HASH_MUR
@@ -58,10 +59,26 @@ void* CompressTreeInserter::operator()(void* recv)
     size_t evict_list_ctr = 0;
 
 	// Insert PAOs
+    unsigned char md_value[EVP_MAX_MD_SIZE];                                                                      
+    unsigned char md_trunc[64];                                                                                   
+    EVP_MD_CTX mdctx;
+    unsigned int md_len;
+
     if (recv_length > 0) {
         while (ind < recv_length) {
             pao = pao_l[ind];
             Hash(pao->key, strlen(pao->key), NUM_BUCKETS, hashv, bkt); 
+/*
+            EVP_DigestInit(&mdctx, EVP_md5());
+            EVP_DigestUpdate(&mdctx, (const void*)(pao->key), strlen(pao->key));
+            EVP_DigestFinal_ex(&mdctx, md_value, &md_len);
+            EVP_MD_CTX_cleanup(&mdctx);
+            if (md_len > sizeof(uint64_t))
+                strncpy((char*)md_trunc, (char*)md_value, sizeof(uint64_t));
+            else
+                strcpy((char*)md_trunc, (char*)md_value);
+            hashv = *(uint64_t*)md_trunc;
+*/
             ptrToHash = (void*)&hashv;
             PartialAgg** l = this_list + evict_list_ctr;
             ct->insert(ptrToHash, pao, l, numEvicted);
