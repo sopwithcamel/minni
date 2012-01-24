@@ -23,6 +23,9 @@
 class Token;
 class PartialAgg {
   public:
+    static uint64_t createCtr;
+    static uint64_t destCtr;
+  public:
 	PartialAgg() {}
 	~PartialAgg() {}
     virtual void add(void* val) = 0;
