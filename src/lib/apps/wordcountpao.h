@@ -16,4 +16,3 @@ class WordCountPartialAgg : public PartialAgg {
   private:
 	uint64_t count;
 };
-
