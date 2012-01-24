@@ -1,5 +1,8 @@
 #include "Aggregator.h"
 
+uint64_t PartialAgg::createCtr = 0;
+uint64_t PartialAgg::destCtr = 0;
+
 Aggregator::Aggregator(const Config &cfg,
 			AggType where,
 			uint64_t num_pipelines, 
