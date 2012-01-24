@@ -47,8 +47,10 @@ void* SparseHashInserter::operator()(void* recv)
         while (ind < recv_length) {
             pao = pao_l[ind];
             PartialAgg** l = this_list + evict_list_ctr;
-            sh->insert(pao->key, pao, l, numEvicted);
+            bool ret = sh->insert(pao->key, pao, l, numEvicted);
             evict_list_ctr += numEvicted;
+            if (recv_list->destroy_pao && !ret)
+                destroyPAO(pao);
             ind++;
         }
         tokens_processed++;
