@@ -5,7 +5,7 @@ SparseHash::SparseHash(size_t capacity) :
         evictAtTime_(capacity_ >> 7),
         numElements_(0)
 {
-//    accumulator_.set_deleted_key("mamihlapinatapai");
+    accumulator_.set_deleted_key("mamihlapinatapai");
 }
 
 SparseHash::~SparseHash()
@@ -15,12 +15,17 @@ SparseHash::~SparseHash()
 bool SparseHash::insert(void* key, PartialAgg* value, PartialAgg**& evicted,
         size_t& num_evicted)
 {
+    bool ret;
     std::string k = std::string((char*)key);
-    PartialAgg* mg = accumulator_[k];
-    if (mg)
+    PartialAgg* mg = NULL;
+    mg = accumulator_[k];
+    if (mg) {
         mg->merge(value);
-    else
+        ret = false;
+    } else {
         accumulator_[k] = value;
+        ret = true;
+    }
     if (++numElements_ >= capacity_) {
         size_t evictCtr = 0;
         for (Hash::iterator it=accumulator_.begin(); it != accumulator_.end(); 
@@ -36,7 +41,7 @@ bool SparseHash::insert(void* key, PartialAgg* value, PartialAgg**& evicted,
         num_evicted = 0;
     // insert invalidates read iterator
     readIterator_ = accumulator_.end();
-    return true;
+    return ret;
 }
 
 bool SparseHash::nextValue(void*& key, PartialAgg*& value)
