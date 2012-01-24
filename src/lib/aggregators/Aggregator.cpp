@@ -34,11 +34,10 @@ Aggregator::~Aggregator()
 void Aggregator::runPipeline()
 {
 	for (int i=0; i<num_pipelines; i++) {
-		do {
-			fprintf(stderr, "Running pipeline %d\n", i);
-			pipeline_list[i].run(num_buffers);
-			resetFlags();
-		} while (repeatPipeline(i));
+        fprintf(stderr, "Running pipeline %d\n", i);
+        pipeline_list[i].run(num_buffers);
+        resetFlags();
+        pipeline_list[i].clear();
 		TimeLog::addTimeStamp("Pipeline completed");
 	}
 }
