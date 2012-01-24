@@ -55,40 +55,39 @@ void* CompressTreeInserter::operator()(void* recv)
 	FilterInfo* this_send = (*send_)[next_buffer];
 	PartialAgg** this_list = (*evicted_list_)[next_buffer];
 	next_buffer = (next_buffer + 1) % aggregator_->getNumBuffers();
+    tokens_processed++;
+
     size_t numEvicted = 0;
     size_t evict_list_ctr = 0;
 
-	// Insert PAOs
     unsigned char md_value[EVP_MAX_MD_SIZE];                                                                      
     unsigned char md_trunc[64];                                                                                   
     EVP_MD_CTX mdctx;
     unsigned int md_len;
 
-    if (recv_length > 0) {
-        while (ind < recv_length) {
-            pao = pao_l[ind];
-            Hash(pao->key, strlen(pao->key), NUM_BUCKETS, hashv, bkt); 
-/*
-            EVP_DigestInit(&mdctx, EVP_md5());
-            EVP_DigestUpdate(&mdctx, (const void*)(pao->key), strlen(pao->key));
-            EVP_DigestFinal_ex(&mdctx, md_value, &md_len);
-            EVP_MD_CTX_cleanup(&mdctx);
-            if (md_len > sizeof(uint64_t))
-                strncpy((char*)md_trunc, (char*)md_value, sizeof(uint64_t));
-            else
-                strcpy((char*)md_trunc, (char*)md_value);
-            hashv = *(uint64_t*)md_trunc;
-*/
-            ptrToHash = (void*)&hashv;
-            PartialAgg** l = this_list + evict_list_ctr;
-            ct->insert(ptrToHash, pao, l, numEvicted);
-            evict_list_ctr += numEvicted;
-            if (recv_list->destroy_pao)
-                destroyPAO(pao);
-            ind++;
-        }
-        tokens_processed++;
+    while (ind < recv_length) {
+        pao = pao_l[ind];
+        Hash(pao->key, strlen(pao->key), NUM_BUCKETS, hashv, bkt); 
+        /*
+           EVP_DigestInit(&mdctx, EVP_md5());
+           EVP_DigestUpdate(&mdctx, (const void*)(pao->key), strlen(pao->key));
+           EVP_DigestFinal_ex(&mdctx, md_value, &md_len);
+           EVP_MD_CTX_cleanup(&mdctx);
+           if (md_len > sizeof(uint64_t))
+           strncpy((char*)md_trunc, (char*)md_value, sizeof(uint64_t));
+           else
+           strcpy((char*)md_trunc, (char*)md_value);
+           hashv = *(uint64_t*)md_trunc;
+         */
+        ptrToHash = (void*)&hashv;
+        PartialAgg** l = this_list + evict_list_ctr;
+        ct->insert(ptrToHash, pao, l, numEvicted);
+        evict_list_ctr += numEvicted;
+        if (recv_list->destroy_pao)
+            destroyPAO(pao);
+        ind++;
     }
+
     assert(evict_list_ctr < max_keys_per_token);
 	if (flush_on_complete || aggregator_->input_finished && 
                 tokens_processed == aggregator_->tot_input_tokens) {
