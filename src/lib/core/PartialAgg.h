@@ -8,7 +8,7 @@
 #include "uthash.h"
 #include "Tokenizer.h"
 
-#define UTHASH
+//#define UTHASH
 
 #define REGISTER_PAO(x) extern "C"\
 	size_t __libminni_pao_create(Token* tok, PartialAgg** p_list)\
@@ -25,7 +25,7 @@ class PartialAgg {
   public:
 	PartialAgg() {}
 	~PartialAgg() {}
-	virtual void add(void* val) = 0;
+    virtual void add(void* val) = 0;
 	virtual void merge(PartialAgg* add_agg) = 0;
 	/* Serialize into file; use buf if buffer is required */
 	virtual void serialize(FILE *f, void* buf, size_t buf_size) = 0;
