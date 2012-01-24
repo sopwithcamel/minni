@@ -41,6 +41,7 @@ void* DFSReader::operator()(void*)
 	char *this_chunk = chunk[next_chunk];
 	FilterInfo* this_send = send[next_buffer];
 	next_chunk = (next_chunk + 1) % aggregator->getNumBuffers();
+	aggregator->tot_input_tokens++;
 
     if (!aggregator->sendNextToken) {
         aggregator->sendNextToken = true;
@@ -65,7 +66,6 @@ void* DFSReader::operator()(void*)
 	rem_buffer_size -= bytes_to_copy;
 	chunk_ctr++;
 
-	aggregator->tot_input_tokens++;
 	if (id > input->chunk_id_end && rem_buffer_size <= 0) {
 		aggregator->input_finished = true;
         aggregator->sendNextToken = true;

@@ -49,6 +49,7 @@ void* Deserializer::operator()(void*)
 	FilterInfo* this_send = (*send)[next_buffer];
 	this_send->flush_hash = false;
 	next_buffer = (next_buffer + 1) % num_buffers;
+	aggregator->tot_input_tokens++;
 
     if (!aggregator->sendNextToken) {
         aggregator->sendNextToken = true;
@@ -80,7 +81,7 @@ void* Deserializer::operator()(void*)
             break;
         }
     }
-	aggregator->tot_input_tokens++;
+
 	if (feof(cur_bucket)) {
 		fclose(cur_bucket);
 		cur_bucket = NULL;

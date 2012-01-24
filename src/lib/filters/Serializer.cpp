@@ -56,30 +56,28 @@ void* Serializer::operator()(void* pao_list)
 	FilterInfo* recv = (FilterInfo*)pao_list;
 	PartialAgg** pao_l = (PartialAgg**)recv->result;
 	uint64_t recv_length = (uint64_t)recv->length;
+    tokens_processed++;
+
 	uint64_t ind = 0;
-
-	while(ind < recv_length) {
-		pao = pao_l[ind];
-		buc = partition(pao->key);	
+    while(ind < recv_length) {
+        pao = pao_l[ind];
+        buc = partition(pao->key);	
         assert(pao != NULL);
-		pao->serialize(fl[buc], buf, BUF_SIZE);
+        pao->serialize(fl[buc], buf, BUF_SIZE);
         if (recv->destroy_pao)
-    		destroyPAO(pao);
-		ind++;
-	}
-	// reset flags; TODO: why are flags being reset here?
-//	aggregator->resetFlags();
+            destroyPAO(pao);
+        ind++;
+    }
 
-	tokens_processed++;
-	if (aggregator->input_finished && 
-			tokens_processed == aggregator->tot_input_tokens &&
+    if (aggregator->input_finished && 
+            tokens_processed == aggregator->tot_input_tokens &&
             aggregator->sendNextToken == true) {
-		fprintf(stderr, "Closing bucket files\n");
+        fprintf(stderr, "Closing bucket files\n");
 
-		for (int i=0; i<num_buckets; i++) {
+        for (int i=0; i<num_buckets; i++) {
             fprintf(stderr, "Closing file: %d/%d\n", i, num_buckets);
-			fclose(fl[i]);
+            fclose(fl[i]);
         }
 
-	}
+    }
 }

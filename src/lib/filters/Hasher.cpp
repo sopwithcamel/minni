@@ -42,24 +42,22 @@ void* Hasher::operator()(void* recv)
 	PartialAgg** this_list = (*evicted_list)[next_buffer];
 	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % aggregator->getNumBuffers();
+    tokens_processed++;
 
-    if (recv_length > 0) {
-        while (ind < recv_length) {
-            pao = pao_l[ind];
-            PartialAgg* found = NULL;
-            hashtable->search(pao->key, found);
-            if (found) {
-                found->merge(pao);
-                destroyPAO(pao);
-            } else {
-                size_t num_evicted = hashtable->insert(pao->key,
-                        strlen(pao->key), pao, this_list + evict_list_ctr);
-                evict_list_ctr += num_evicted;
-                assert(evict_list_ctr < max_keys_per_token);
-            }
-            ind++;
+    while (ind < recv_length) {
+        pao = pao_l[ind];
+        PartialAgg* found = NULL;
+        hashtable->search(pao->key, found);
+        if (found) {
+            found->merge(pao);
+            destroyPAO(pao);
+        } else {
+            size_t num_evicted = hashtable->insert(pao->key,
+                    strlen(pao->key), pao, this_list + evict_list_ctr);
+            evict_list_ctr += num_evicted;
+            assert(evict_list_ctr < max_keys_per_token);
         }
-        tokens_processed++;
+        ind++;
     }
 
 	/* next bit of code tests whether the input stage has completed. If
