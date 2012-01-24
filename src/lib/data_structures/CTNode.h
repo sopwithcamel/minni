@@ -8,7 +8,7 @@
 #include "CompressTree.h"
 #include "PartialAgg.h"
 
-#define ENABLE_ASSERT_CHECKS
+//#define ENABLE_ASSERT_CHECKS
 //#define CT_NODE_DEBUG
 //#define ENABLE_SORT_VERIFICATION
 //#define ENABLE_INTEGRITY_CHECK

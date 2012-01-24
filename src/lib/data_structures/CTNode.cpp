@@ -24,7 +24,6 @@ namespace compresstree {
         cancelCompress_(false)
     {
         // Allocate memory for data buffer
-//        data_ = (char*)malloc(BUFFER_SIZE);
         if (alloc) {
             assert(!posix_memalign((void**)&data_, sizeof(size_t),
                     BUFFER_SIZE));
@@ -52,6 +51,10 @@ namespace compresstree {
         if (data_) {
             free(data_);
             data_ = NULL;
+        }
+        if (compressed_) {
+            free(compressed_);
+            compressed_ = NULL;
         }
         pthread_mutex_destroy(&gfcMutex_);
         pthread_cond_destroy(&gfcCond_);
@@ -345,6 +348,7 @@ emptyChildren:
                 }
             }
         } 
+        delete[] rstack;
     }
 
     bool Node::sortBuffer()
@@ -380,12 +384,14 @@ emptyChildren:
         tree_->createPAO_(NULL, &thisPAO);
         for (uint64_t i=1; i<numElements_; i++) {
             if (*(tree_->els_[i]) == *(tree_->els_[lastIndex])) {
+                CompressTree::actr++;
                 // aggregate elements
                 if (i == lastIndex + 1)
                     deserializePAO(tree_->els_[lastIndex], lastPAO);
                 deserializePAO(tree_->els_[i], thisPAO);
                 if (!strcmp(thisPAO->key, lastPAO->key)) {
                     lastPAO->merge(thisPAO);
+                    CompressTree::cctr++;
                     continue;
                 }
             }
@@ -402,6 +408,7 @@ emptyChildren:
                 memmove(tree_->auxBuffer_ + auxOffset, 
                         (void*)(tree_->serBuf_), buf_size);
                 auxOffset += buf_size;
+                CompressTree::bctr++;
             } else {
                 buf_size = *(size_t*)(tree_->els_[lastIndex] + 1);
                 el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;

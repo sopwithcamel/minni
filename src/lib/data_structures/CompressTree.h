@@ -28,6 +28,7 @@ namespace compresstree {
             public Accumulator
     {
         static uint32_t nodeCtr;
+        static uint64_t actr, bctr, cctr;
         friend class Node;
       public:
         CompressTree(uint32_t a, uint32_t b, uint32_t nodesInMemory,

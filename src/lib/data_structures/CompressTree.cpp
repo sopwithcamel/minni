@@ -8,6 +8,9 @@
 
 namespace compresstree {
     uint32_t CompressTree::nodeCtr = 0; 
+    uint64_t CompressTree::actr = 0;
+    uint64_t CompressTree::bctr = 0;
+    uint64_t CompressTree::cctr = 0;
 
     CompressTree::CompressTree(uint32_t a, uint32_t b, uint32_t nodesInMemory,
                 size_t (*createPAOFunc)(Token* t, PartialAgg** p),
@@ -186,6 +189,7 @@ namespace compresstree {
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Emptying tree!\n");
 #endif
+                fprintf(stderr, "%lu %lu %lu\n", CompressTree::actr, CompressTree::bctr, CompressTree::cctr);
                 emptyTree();
                 stopThreads();
                 return false;
