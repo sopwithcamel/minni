@@ -13,7 +13,7 @@ namespace compresstree {
 //    const size_t BUFFER_SIZE = 256;
 //    const size_t BUFFER_SIZE = 104857600;
 //    const size_t BUFFER_SIZE = 20971520;
-    const size_t BUFFER_SIZE = 314572800;
+    const size_t BUFFER_SIZE = 31457280;
     const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 2;
     const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
 
@@ -41,8 +41,6 @@ namespace compresstree {
                 size_t& num_evicted);
         /* read values */
         bool nextValue(void*& hash, PartialAgg*& agg);
-        /* get a,b values of(a,b)-tree... */
-        void getAB(uint32_t& a, uint32_t& b);
       private:
         /* Add leaf whose buffer is full to be emptied once all internal node
          * buffers have been emptied */

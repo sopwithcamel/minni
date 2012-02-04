@@ -415,12 +415,6 @@ begin_flush:
         return ((CompressTree*)context)->callEmpty();
     }
 
-    void CompressTree::getAB(uint32_t& a, uint32_t& b)
-    {
-        a = a_;
-        b = b_;
-    }
-
     bool CompressTree::addLeafToEmpty(Node* node)
     {
         leavesToBeEmptied_.push_back(node);
