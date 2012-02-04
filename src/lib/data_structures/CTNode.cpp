@@ -44,6 +44,8 @@ namespace compresstree {
         }
         pthread_mutex_init(&gfcMutex_, NULL);
         pthread_cond_init(&gfcCond_, NULL);
+        tree_->createPAO_(NULL, &lastPAO);
+        tree_->createPAO_(NULL, &thisPAO);
     }
 
     Node::~Node()
@@ -58,6 +60,9 @@ namespace compresstree {
         }
         pthread_mutex_destroy(&gfcMutex_);
         pthread_cond_destroy(&gfcCond_);
+
+        tree_->destroyPAO_(lastPAO);
+        tree_->destroyPAO_(thisPAO);
     }
 
     bool Node::insert(uint64_t hash, void* buf, size_t buf_size)
@@ -212,7 +217,7 @@ namespace compresstree {
         curOffset_ = 0;
         numElements_ = 0;
 
-        if (!isRoot()) {
+        if (!isRoot() && data_) {
             free(data_);
             data_ = NULL;
         }
@@ -379,9 +384,6 @@ emptyChildren:
 
         // aggregate elements in buffer
         uint64_t lastIndex = 0;
-        PartialAgg *lastPAO, *thisPAO;
-        tree_->createPAO_(NULL, &lastPAO);
-        tree_->createPAO_(NULL, &thisPAO);
         for (uint64_t i=1; i<numElements_; i++) {
             if (*(tree_->els_[i]) == *(tree_->els_[lastIndex])) {
                 CompressTree::actr++;
@@ -426,9 +428,6 @@ emptyChildren:
         auxOffset += el_size;
         auxEls++;
 
-        tree_->destroyPAO_(lastPAO);
-        tree_->destroyPAO_(thisPAO);
-
         // swap buffer pointers
         char* tp = data_;
         data_ = tree_->auxBuffer_;
@@ -461,6 +460,9 @@ emptyChildren:
             median_hash = (uint64_t*)(data_ + nextOffset);
             advance(1, nextOffset);
             nj++;
+            if (nextOffset == curOffset_) {
+                assert(false);
+            }                
         }
         offset = nextOffset;
         median_hash = (uint64_t*)(data_ + offset);
@@ -584,7 +586,17 @@ emptyChildren:
         Node* newNode = new Node(NON_LEAF, tree_, false);
         // move the last floor((b+1)/2) children to new node
         int newNodeChildIndex = children_.size()-(tree_->b_+1)/2;
-        assert(children_[newNodeChildIndex]->separator_ > children_[newNodeChildIndex-1]->separator_);
+#ifdef ENABLE_ASSERT_CHECKS
+        if (children_[newNodeChildIndex]->separator_ <= 
+                children_[newNodeChildIndex-1]->separator_) {
+            fprintf(stderr, "%d sep is %lu and %d sep is %lu\n", 
+                    newNodeChildIndex, 
+                    children_[newNodeChildIndex]->separator_, 
+                    newNodeChildIndex-1,
+                    children_[newNodeChildIndex-1]->separator_);
+            assert(false);
+        }
+#endif
         // add children to new node
         for (uint32_t i=newNodeChildIndex; i<children_.size(); i++) {
             newNode->children_.push_back(children_[i]);
@@ -635,18 +647,22 @@ emptyChildren:
     bool Node::advance(size_t n, size_t& offset)
     {
         size_t* bufSize;
+#ifdef ENABLE_ASSERT_CHECKS
         if (offset >= curOffset_) {
             fprintf(stderr, "off: %lu, curoff: %lu\n", offset, curOffset_);
             assert(false);
         }
+#endif
         for (uint32_t i=0; i<n; i++) {
             offset += sizeof(uint64_t);
             bufSize = (size_t*)(data_ + offset);
             offset += sizeof(size_t) + *bufSize;
+#ifdef ENABLE_ASSERT_CHECKS
             if (*bufSize == 0) {
                 fprintf(stderr, "%lu, bufsize: %lu, %ld\n", offset, *bufSize, *(size_t*)(data_ + offset + 16));
                 assert(false);
             }
+#endif
         }
         return true;
     }

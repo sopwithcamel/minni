@@ -8,10 +8,10 @@
 #include "CompressTree.h"
 #include "PartialAgg.h"
 
-//#define ENABLE_ASSERT_CHECKS
+#define ENABLE_ASSERT_CHECKS
 //#define CT_NODE_DEBUG
 //#define ENABLE_SORT_VERIFICATION
-//#define ENABLE_INTEGRITY_CHECK
+#define ENABLE_INTEGRITY_CHECK
 
 #define CALL_MEM_FUNC(object,ptrToMember) ((object).*(ptrToMember))
 
@@ -127,6 +127,7 @@ namespace compresstree {
         Node* parent_;
         size_t numElements_;
         size_t curOffset_;
+        PartialAgg *lastPAO, *thisPAO;
 
         /* Pointers to children */
         std::vector<Node*> children_;
