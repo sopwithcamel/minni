@@ -27,7 +27,7 @@ class PartialAgg {
     static uint64_t destCtr;
   public:
 	PartialAgg() {}
-	~PartialAgg() {}
+	virtual ~PartialAgg() {}
     virtual void add(void* val) = 0;
 	virtual void merge(PartialAgg* add_agg) = 0;
 	/* Serialize into file; use buf if buffer is required */

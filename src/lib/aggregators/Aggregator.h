@@ -27,7 +27,7 @@ class Aggregator
 			uint64_t num_part, 
 			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p));
-	~Aggregator();
+	virtual ~Aggregator();
 	void runPipeline();
 
 	tbb::pipeline* pipeline_list;	
