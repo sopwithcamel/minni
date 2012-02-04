@@ -112,8 +112,11 @@ namespace compresstree {
             size_t offset = 0;
             size_t* bufSize;
             fprintf(stderr, "Evicting %lu elements\n", numEvicted_);
+            PartialAgg* p;
             for (uint32_t i=0; i<numEvicted_; i++) {
-                rootNode_->deserializePAO((uint64_t*)(buf + offset), evicted[i]);
+                createPAO_(NULL, &p);
+                rootNode_->deserializePAO((uint64_t*)(buf + offset), p);
+                evicted[i] = p;
                 offset += sizeof(uint64_t);
                 bufSize = (size_t*)(buf + offset);
                 offset += sizeof(size_t) + *bufSize;
@@ -166,6 +169,7 @@ namespace compresstree {
         }
 
         hash = (uint64_t*)(curLeaf->data_ + lastOffset_);
+        createPAO_(NULL, &agg);
         rootNode_->deserializePAO((uint64_t*)hash, agg);
         lastOffset_ += sizeof(uint64_t);
         size_t buf_size = *(size_t*)(curLeaf->data_ + lastOffset_);
