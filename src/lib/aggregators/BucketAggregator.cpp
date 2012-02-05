@@ -13,8 +13,21 @@ BucketAggregator::BucketAggregator(const Config &cfg,
                 const char* outfile):
         Aggregator(cfg, type, 2, num_part, createPAOFunc, destroyPAOFunc),
         map_input(_map_input),
-        infile(infile),
-        outfile(outfile)
+        chunkreader(NULL),
+        filereader(NULL),
+        filetoker(NULL),
+        toker(NULL),
+        infile_(infile),
+        inp_deserializer_(NULL),
+        creator_(NULL),
+        hasher_(NULL),
+        bucket_serializer_(NULL),
+        deserializer_(NULL),
+        acc_int_inserter_(NULL),
+        bucket_inserter_(NULL),
+        bucket_hasher_(NULL),
+        final_serializer_(NULL),     
+        outfile_(outfile)
 {
     /* Set up configuration options */
     Setting& c_token_size = readConfigFile(cfg, "minni.tbb.token_size");
@@ -88,16 +101,16 @@ BucketAggregator::BucketAggregator(const Config &cfg,
             pipeline_list[0].add_filter(*filetoker);
         }
 
-        creator = new PAOCreator(this, createPAOFunc, max_keys_per_token);
-        pipeline_list[0].add_filter(*creator);
+        creator_ = new PAOCreator(this, createPAOFunc, max_keys_per_token);
+        pipeline_list[0].add_filter(*creator_);
 
     } else if (type == Reduce) {
         char* input_file = (char*)malloc(FILENAME_LENGTH);
         strcpy(input_file, fprefix.c_str());
-        strcat(input_file, infile);
-        inp_deserializer = new Deserializer(this, 1, input_file,
+        strcat(input_file, infile_);
+        inp_deserializer_ = new Deserializer(this, 1, input_file,
             createPAOFunc, destroyPAOFunc, max_keys_per_token);
-        pipeline_list[0].add_filter(*inp_deserializer);
+        pipeline_list[0].add_filter(*inp_deserializer_);
         free(input_file);
     }
 
@@ -105,9 +118,9 @@ BucketAggregator::BucketAggregator(const Config &cfg,
         if (!intagg.compare("comp-bt") || !intagg.compare("sparsehash")) {
             pipeline_list[0].add_filter(*acc_int_inserter_);
         } else {
-            hasher = new Hasher(this, hashtable_, destroyPAOFunc,
+            hasher_ = new Hasher(this, hashtable_, destroyPAOFunc,
                     max_keys_per_token);
-            pipeline_list[0].add_filter(*hasher);
+            pipeline_list[0].add_filter(*hasher_);
         }
     }
 
@@ -119,9 +132,9 @@ BucketAggregator::BucketAggregator(const Config &cfg,
         strcat(bucket_prefix, "reduce-");
     strcat(bucket_prefix, "bucket");
 
-    bucket_serializer = new Serializer(this, num_buckets, 
+    bucket_serializer_ = new Serializer(this, num_buckets, 
             bucket_prefix, destroyPAOFunc);
-    pipeline_list[0].add_filter(*bucket_serializer);
+    pipeline_list[0].add_filter(*bucket_serializer_);
     
     /* Second pipeline: In this pipeline, a token is an entire bucket. In
      * other words, each pipeline stage is called once for each bucket to
@@ -130,24 +143,24 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 
      * In this pipeline, a bucket is read back into memory (converted to 
      * PAOs again), aggregated using a hashtable, and serialized. */
-    deserializer = new Deserializer(this, num_buckets, bucket_prefix,
+    deserializer_ = new Deserializer(this, num_buckets, bucket_prefix,
             createPAOFunc, destroyPAOFunc, max_keys_per_token);
-    pipeline_list[1].add_filter(*deserializer);
+    pipeline_list[1].add_filter(*deserializer_);
 
     if (!intagg.compare("comp-bt") || !intagg.compare("sparsehash")) {
         pipeline_list[1].add_filter(*bucket_inserter_);
     } else {
-        bucket_hasher = new Hasher(this, hashtable_, destroyPAOFunc,
+        bucket_hasher_ = new Hasher(this, hashtable_, destroyPAOFunc,
                 max_keys_per_token);
-        pipeline_list[1].add_filter(*bucket_hasher);
+        pipeline_list[1].add_filter(*bucket_hasher_);
     }
 
     char* final_path = (char*)malloc(FILENAME_LENGTH);
     strcpy(final_path, fprefix.c_str());
-    strcat(final_path, outfile);
-    final_serializer = new Serializer(this, getNumPartitions(), 
+    strcat(final_path, outfile_);
+    final_serializer_ = new Serializer(this, getNumPartitions(), 
             final_path, destroyPAOFunc); 
-    pipeline_list[1].add_filter(*final_serializer);
+    pipeline_list[1].add_filter(*final_serializer_);
 
     free(bucket_prefix);
     free(final_path);
@@ -161,17 +174,17 @@ BucketAggregator::~BucketAggregator()
         delete(filereader);
     if (toker)
         delete(toker);
-    if (inp_deserializer)
-        delete(inp_deserializer);
-    delete creator;
-    if (hasher) {
+    if (inp_deserializer_)
+        delete(inp_deserializer_);
+    delete creator_;
+    if (hasher_) {
         delete(hashtable_);
-        delete(hasher);
+        delete(hasher_);
     }
-    delete(bucket_serializer);
-    delete(deserializer);
-    delete(bucket_hasher);
-    delete(final_serializer);
+    delete(bucket_serializer_);
+    delete(deserializer_);
+    delete(bucket_hasher_);
+    delete(final_serializer_);
     pipeline_list[0].clear();
     pipeline_list[1].clear();
 }

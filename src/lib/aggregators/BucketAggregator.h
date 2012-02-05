@@ -58,19 +58,19 @@ class BucketAggregator :
     TokenizerFilter* toker;
 
     /* for serialized PAOs from local file */
-    const char* infile;
-    Deserializer* inp_deserializer;
+    const char* infile_;
+    Deserializer* inp_deserializer_;
 
-    PAOCreator* creator;
-    Hasher* hasher;
-    Serializer* bucket_serializer;
-    Deserializer* deserializer;
+    PAOCreator* creator_;
+    Hasher* hasher_;
+    Serializer* bucket_serializer_;
+    Deserializer* deserializer_;
 	AccumulatorInserter* acc_int_inserter_;
 	AccumulatorInserter* bucket_inserter_;
-    Hasher* bucket_hasher;
-    Serializer* final_serializer;
+    Hasher* bucket_hasher_;
+    Serializer* final_serializer_;
     uint64_t num_buckets;
-    const char* outfile;
+    const char* outfile_;
 };
 
 #endif // LIB_BUCKETAGGREGATOR_H
