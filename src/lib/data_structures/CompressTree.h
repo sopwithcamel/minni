@@ -45,13 +45,14 @@ namespace compresstree {
         /* Add leaf whose buffer is full to be emptied once all internal node
          * buffers have been emptied */
         bool addLeafToEmpty(Node* node);
-        bool signalClearEmptyList();
+        bool wakeupEmptier();
         /* Add a node to the list of nodes whose buffers have to be emptied */
         void addNodeToEmpty(Node* node);
         void* callEmpty();
         static void* callEmptyHelper(void* context);
         void* callCompress();
         static void* callCompressHelper(void *context);
+        bool wakeupCompressor();
         bool createNewRoot(Node* otherChild);
         void emptyTree();
         /* Write out all buffers to leaves. Do this before reading */
@@ -75,6 +76,8 @@ namespace compresstree {
         size_t lastOffset_;
         char* serBuf_;          // buffer used for serializing PAOs
         bool threadsStarted_;
+        bool inputComplete_;
+        pthread_barrier_t threadsBarrier_;
 
         /* Compression-related */
         pthread_t compressionThread_;

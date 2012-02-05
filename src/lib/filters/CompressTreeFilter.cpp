@@ -17,21 +17,10 @@ CompressTreeInserter::CompressTreeInserter(Aggregator* agg,
 	send_ = new MultiBuffer<FilterInfo>(num_buffers, 1);
 	evicted_list_ = new MultiBuffer<PartialAgg*>(num_buffers,
 			max_keys_per_token);
-    for (uint32_t j=0; j<num_buffers; j++) {
-        for (uint64_t i=0; i<max_keys_per_token; i++) {
-            createPAO_(NULL, &((*evicted_list_)[j][i]));
-        }
-    }
 }
 
 CompressTreeInserter::~CompressTreeInserter()
 {
-	uint64_t num_buffers = aggregator_->getNumBuffers();
-    for (uint32_t j=0; j<num_buffers; j++) {
-        for (uint64_t i=0; i<max_keys_per_token; i++) {
-            destroyPAO((*evicted_list_)[j][i]);
-        }
-    }
 	delete evicted_list_;
 	delete send_;
 }
@@ -104,7 +93,7 @@ void* CompressTreeInserter::operator()(void* recv)
 
     this_send->result = this_list;
     this_send->length = evict_list_ctr;
-    this_send->destroy_pao = false;
+    this_send->destroy_pao = true;
     return this_send;
 }
 

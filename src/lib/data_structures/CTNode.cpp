@@ -166,14 +166,22 @@ namespace compresstree {
                     assert(!children_[curChild]->isFull());
                     assert(CALL_MEM_FUNC(*children_[curChild], 
                             children_[curChild]->decompress)());
+
                     // make sure the buffer has been decompressed
-                    pthread_mutex_lock(&compActMutex_);
-                    while (queuedForCompAct_ && compAct_ == DECOMPRESS)
-                        pthread_cond_wait(&compActCond_, &compActMutex_);
-                    pthread_mutex_unlock(&compActMutex_);
+                    pthread_mutex_lock(&children_[curChild]->compActMutex_);
+                    while (children_[curChild]->queuedForCompAct_ 
+                            && children_[curChild]->compAct_ == DECOMPRESS) {
+                        pthread_cond_wait(&children_[curChild]->compActCond_, 
+                                &children_[curChild]->compActMutex_);
+                    }
+                    pthread_mutex_unlock(&children_[curChild]->compActMutex_);
 
                     // check if the child is empty
                     if (children_[curChild]->data_ == NULL) {
+#ifdef CT_NODE_DEBUG
+                        fprintf(stderr, "Node: %d: alloc'ing fresh buffer\n",
+                                children_[curChild]->id_);
+#endif
                         assert(!posix_memalign(
                                 (void**)&(children_[curChild]->data_), 
                                 sizeof(size_t), BUFFER_SIZE));
@@ -215,10 +223,13 @@ namespace compresstree {
             CALL_MEM_FUNC(*children_[curChild], 
                     children_[curChild]->decompress)();
             // make sure the buffer has been decompressed
-            pthread_mutex_lock(&compActMutex_);
-            while (queuedForCompAct_ && compAct_ == DECOMPRESS)
-                pthread_cond_wait(&compActCond_, &compActMutex_);
-            pthread_mutex_unlock(&compActMutex_);
+            pthread_mutex_lock(&children_[curChild]->compActMutex_);
+            while (children_[curChild]->queuedForCompAct_ 
+                    && children_[curChild]->compAct_ == DECOMPRESS) {
+                pthread_cond_wait(&children_[curChild]->compActCond_, 
+                        &children_[curChild]->compActMutex_);
+            }
+            pthread_mutex_unlock(&children_[curChild]->compActMutex_);
 
             if (children_[curChild]->data_ == NULL) {
                 assert(!posix_memalign(
@@ -684,13 +695,13 @@ emptyChildren:
         for (uint32_t i=0; i<n; i++) {
             offset += sizeof(uint64_t);
             bufSize = (size_t*)(data_ + offset);
-            offset += sizeof(size_t) + *bufSize;
 #ifdef ENABLE_ASSERT_CHECKS
             if (*bufSize == 0) {
-                fprintf(stderr, "%lu, bufsize: %lu, %ld\n", offset, *bufSize, *(size_t*)(data_ + offset + 16));
+                fprintf(stderr, "Node: %d, off: %lu, bufsize: %lu, %ld\n", id_, offset, *bufSize, *(size_t*)(data_ + offset + 16));
                 assert(false);
             }
 #endif
+            offset += sizeof(size_t) + *bufSize;
         }
         return true;
     }
@@ -722,6 +733,8 @@ emptyChildren:
     
     bool Node::asyncCompress()
     {
+        if (!compressible_)
+            return true;
         pthread_mutex_lock(&compActMutex_);
         // check if node already in compression action list
         if (queuedForCompAct_) {
@@ -742,6 +755,7 @@ emptyChildren:
             }
         } else {
             queuedForCompAct_ = true;
+            compAct_ = COMPRESS;
         }
         pthread_mutex_unlock(&compActMutex_);
         pthread_mutex_lock(&(tree_->nodesReadyForCompressMutex_));
@@ -759,6 +773,8 @@ emptyChildren:
     
     bool Node::asyncDecompress()
     {
+        if (!compressible_)
+            return true;
         pthread_mutex_lock(&compActMutex_);
         // check if node already in list
         if (queuedForCompAct_) {
@@ -779,6 +795,7 @@ emptyChildren:
             }
         } else {
             queuedForCompAct_ = true;
+            compAct_ = DECOMPRESS;
         }
         pthread_mutex_unlock(&compActMutex_);
         pthread_mutex_lock(&(tree_->nodesReadyForCompressMutex_));
@@ -796,10 +813,6 @@ emptyChildren:
 
     bool Node::snappyCompress()
     {
-        if (!compressible_ ) {
-            return true;
-        }
-
 #ifdef ENABLE_ASSERT_CHECKS
         if (isCompressed()) {
             fprintf(stderr, "Node %d already compressed\n", id_);
@@ -837,13 +850,8 @@ emptyChildren:
 
     bool Node::snappyDecompress()
     {
-        if (!compressible_) {
-            fprintf(stderr, "Node %d not compressible\n", id_);
-            return true;
-        }
-
 #ifdef ENABLE_ASSERT_CHECKS
-        if (!isCompressed() && !cancelCompress_) {
+        if (!isCompressed()) {
             fprintf(stderr, "Node %d already decompressed\n", id_);
             assert(false);
         }

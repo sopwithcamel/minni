@@ -151,7 +151,6 @@ namespace compresstree {
         bool compressible_;
         size_t compLength_;
         bool queuedForCompAct_;
-        bool cancelCompress_;
         CompressionAction compAct_;
         pthread_cond_t compActCond_;
         pthread_mutex_t compActMutex_;
