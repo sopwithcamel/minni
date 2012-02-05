@@ -152,12 +152,20 @@ namespace compresstree {
         while (offset < curOffset_) {
             curHash = (uint64_t*)(data_ + offset);
 
-            if (offset >= curOffset_ || *curHash >= children_[curChild]->separator_) {
+            if (offset >= curOffset_ || *curHash >= 
+                    children_[curChild]->separator_) {
                 // this separator is the largest separator that is not greater
                 // than *curHash. This invariant needs to be maintained.
                 if (numCopied > 0) { // at least one element for this
+                    assert(!children_[curChild]->isFull());
                     assert(CALL_MEM_FUNC(*children_[curChild], 
                             children_[curChild]->decompress)());
+                    // check if the child is empty
+                    if (children_[curChild]->data_ == NULL) {
+                        assert(!posix_memalign(
+                                (void**)&(children_[curChild]->data_), 
+                                sizeof(size_t), BUFFER_SIZE));
+                    }
                     assert(children_[curChild]->copyIntoBuffer(data_ + 
                                 lastOffset, offset - lastOffset));
                     children_[curChild]->addElements(numCopied);
@@ -194,6 +202,11 @@ namespace compresstree {
         if (offset >= lastOffset) {
             CALL_MEM_FUNC(*children_[curChild], 
                     children_[curChild]->decompress)();
+            if (children_[curChild]->data_ == NULL) {
+                assert(!posix_memalign(
+                            (void**)&(children_[curChild]->data_), 
+                            sizeof(size_t), BUFFER_SIZE));
+            }
             assert(children_[curChild]->copyIntoBuffer(data_ + 
                         lastOffset, offset - lastOffset));
             children_[curChild]->addElements(numCopied);
@@ -209,17 +222,15 @@ namespace compresstree {
                     offset, curOffset_);
 #endif
         }
-        if (compressible_) {
-            CALL_MEM_FUNC(*this, compress)();
-        }
 
         // reset
         curOffset_ = 0;
         numElements_ = 0;
 
-        if (!isRoot() && data_) {
+        if (!isRoot()) {
             free(data_);
             data_ = NULL;
+            CALL_MEM_FUNC(*this, compress)();
         }
 
 emptyChildren:
@@ -629,9 +640,8 @@ emptyChildren:
             fprintf(stderr, "%d, ", newNode->children_[j]->id_);
         fprintf(stderr, "]\n");
 #endif
-        // compress new node
-        CALL_MEM_FUNC(*newNode, newNode->compress)();
 
+        CALL_MEM_FUNC(*newNode, newNode->compress)();
         if (isRoot()) {
             setCompressible(true);
             free(data_);
@@ -728,14 +738,9 @@ emptyChildren:
     bool Node::snappyCompress()
     {
         if (!compressible_ ) {
-#ifdef CT_NODE_DEBUG
-            fprintf(stderr, "root not compressible\t");
-            for (int i=0; i<tree_->nodesToCompress_.size(); i++)
-                fprintf(stderr, "%d, ", tree_->nodesToCompress_[i]->id_);
-            fprintf(stderr, "\n");
-#endif
             return true;
         }
+
 #ifdef ENABLE_ASSERT_CHECKS
         if (isCompressed()) {
             fprintf(stderr, "Node %d already compressed\n", id_);
@@ -773,21 +778,20 @@ emptyChildren:
 
     bool Node::snappyDecompress()
     {
-        if (!compressible_)
+        if (!compressible_) {
+            fprintf(stderr, "Node %d not compressible\n", id_);
             return true;
+        }
 
         // check if node is queued up for compression
         pthread_mutex_lock(&gfcMutex_);
-        // since we've got the lock, the compression can't be in-progress
+        // since we got the lock, the compression can't be in-progress
         if (givenForComp_) {
             // this means that this node is still queued up, so we cancel
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Node %d: compression cancelled\n", id_);
 #endif
             cancelCompress_ = true;
-            if (data_ == NULL) {
-                assert(!posix_memalign((void**)&data_, sizeof(size_t), BUFFER_SIZE));
-            }
             pthread_mutex_unlock(&gfcMutex_);
             return true;
         } else
@@ -799,21 +803,20 @@ emptyChildren:
             assert(false);
         }
 #endif
-        assert(!posix_memalign((void**)&data_, sizeof(size_t), BUFFER_SIZE));
-
         /* + emptyBuffer()-1: the node to be emptied is not NULL
          * + emptyBuffer()-2: children may be empty
          * + handleFullLeaves(): not empty
          */
         if (compressed_ != NULL) {
+            assert(!posix_memalign((void**)&data_, sizeof(size_t), BUFFER_SIZE));
             snappy::RawUncompress(compressed_, compLength_, data_);
             free(compressed_);
             compressed_ = NULL;
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "decompressed node %d\n", id_);
+#endif
         }
         isCompressed_ = false;
-#ifdef CT_NODE_DEBUG
-        fprintf(stderr, "decompressed node %d\n", id_);
-#endif
         return true;
     }
 

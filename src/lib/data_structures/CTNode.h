@@ -107,6 +107,13 @@ namespace compresstree {
 
         /* Compression-related functions */
         NodeCompFn compress;
+        /* Decompress node buffer. Returns true if:
+         * + the buffer was decompressed successfully
+         * + the node is marked as incompressible
+         * + the node buffer is empty. In this case, no memory is allocated.
+         * data_ may, therefore, be NULL or not and this must be checked
+         * before using the node (eg. for copying data)
+         */
         NodeCompFn decompress;
         bool asyncCompress();
         bool snappyCompress();
