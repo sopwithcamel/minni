@@ -31,6 +31,11 @@ namespace compresstree {
             SYNC_EMPTY,
             ASYNC_EMPTY
         };
+        enum CompressionAction {
+            NONE,
+            COMPRESS,
+            DECOMPRESS
+        };
       public:
         Node(NodeType typ, CompressTree* tree, bool alloc);
         ~Node();
@@ -116,6 +121,7 @@ namespace compresstree {
          */
         NodeCompFn decompress;
         bool asyncCompress();
+        bool asyncDecompress();
         bool snappyCompress();
         bool snappyDecompress();
         bool zlibCompress();
@@ -144,10 +150,11 @@ namespace compresstree {
         bool isCompressed_;
         bool compressible_;
         size_t compLength_;
-        bool givenForComp_;
+        bool queuedForCompAct_;
         bool cancelCompress_;
-        pthread_cond_t gfcCond_;
-        pthread_mutex_t gfcMutex_;
+        CompressionAction compAct_;
+        pthread_cond_t compActCond_;
+        pthread_mutex_t compActMutex_;
     };
 }
 

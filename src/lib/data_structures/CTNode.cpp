@@ -20,8 +20,8 @@ namespace compresstree {
         curOffset_(0),
         isCompressed_(false),
         compressible_(true),
-        givenForComp_(false),
-        cancelCompress_(false)
+        queuedForCompAct_(false),
+        compAct_(NONE)
     {
         // Allocate memory for data buffer
         if (alloc) {
@@ -34,7 +34,7 @@ namespace compresstree {
 
         if (tree_->alg_ == SNAPPY) {
             compress = &Node::asyncCompress;
-            decompress = &Node::snappyDecompress;
+            decompress = &Node::asyncDecompress;
         } else if (tree_->alg_ == ZLIB) {
             compress = &Node::zlibCompress;
             decompress = &Node::zlibDecompress;
@@ -42,8 +42,8 @@ namespace compresstree {
             fprintf(stderr, "Compression algorithm\n");
             assert(false);
         }
-        pthread_mutex_init(&gfcMutex_, NULL);
-        pthread_cond_init(&gfcCond_, NULL);
+        pthread_mutex_init(&compActMutex_, NULL);
+        pthread_cond_init(&compActCond_, NULL);
         tree_->createPAO_(NULL, &lastPAO);
         tree_->createPAO_(NULL, &thisPAO);
     }
@@ -58,8 +58,8 @@ namespace compresstree {
             free(compressed_);
             compressed_ = NULL;
         }
-        pthread_mutex_destroy(&gfcMutex_);
-        pthread_cond_destroy(&gfcCond_);
+        pthread_mutex_destroy(&compActMutex_);
+        pthread_cond_destroy(&compActCond_);
 
         tree_->destroyPAO_(lastPAO);
         tree_->destroyPAO_(thisPAO);
@@ -131,8 +131,14 @@ namespace compresstree {
         if (curOffset_ == 0)
             goto emptyChildren;
 
-        if (compressible_)
-            CALL_MEM_FUNC(*this, decompress)();
+        CALL_MEM_FUNC(*this, decompress)();
+
+        // make sure the buffer has been decompressed
+        pthread_mutex_lock(&compActMutex_);
+        while (queuedForCompAct_ && compAct_ == DECOMPRESS)
+            pthread_cond_wait(&compActCond_, &compActMutex_);
+        pthread_mutex_unlock(&compActMutex_);
+
         sortBuffer();
         // find the first separator strictly greater than the first element
         curHash = (uint64_t*)(data_ + offset);
@@ -160,6 +166,12 @@ namespace compresstree {
                     assert(!children_[curChild]->isFull());
                     assert(CALL_MEM_FUNC(*children_[curChild], 
                             children_[curChild]->decompress)());
+                    // make sure the buffer has been decompressed
+                    pthread_mutex_lock(&compActMutex_);
+                    while (queuedForCompAct_ && compAct_ == DECOMPRESS)
+                        pthread_cond_wait(&compActCond_, &compActMutex_);
+                    pthread_mutex_unlock(&compActMutex_);
+
                     // check if the child is empty
                     if (children_[curChild]->data_ == NULL) {
                         assert(!posix_memalign(
@@ -202,6 +214,12 @@ namespace compresstree {
         if (offset >= lastOffset) {
             CALL_MEM_FUNC(*children_[curChild], 
                     children_[curChild]->decompress)();
+            // make sure the buffer has been decompressed
+            pthread_mutex_lock(&compActMutex_);
+            while (queuedForCompAct_ && compAct_ == DECOMPRESS)
+                pthread_cond_wait(&compActCond_, &compActMutex_);
+            pthread_mutex_unlock(&compActMutex_);
+
             if (children_[curChild]->data_ == NULL) {
                 assert(!posix_memalign(
                             (void**)&(children_[curChild]->data_), 
@@ -704,28 +722,69 @@ emptyChildren:
     
     bool Node::asyncCompress()
     {
-        pthread_mutex_lock(&gfcMutex_);
-        // check if node already in to-compress list
-        if (givenForComp_) {
+        pthread_mutex_lock(&compActMutex_);
+        // check if node already in compression action list
+        if (queuedForCompAct_) {
             // check if compression request has been cancelled
-            if (cancelCompress_) {
-                /* reset cancellation request; node need not be added
+            if (compAct_ == DECOMPRESS) {
+                /* reset action request; node need not be added
                  * again */
-                cancelCompress_ = false;
-                pthread_mutex_unlock(&gfcMutex_);
+                compAct_ = NONE;
+                pthread_mutex_unlock(&compActMutex_);
                 return true;
-            } else { // if not cancelled, we're compressing twice
+            } else if (compAct_ == NONE) {
+                compAct_ = COMPRESS;
+                pthread_mutex_unlock(&compActMutex_);
+                return true;
+            } else { // we're compressing twice
                 fprintf(stderr, "Trying to compress node %d twice", id_);
                 assert(false);
             }
         } else {
-            givenForComp_ = true;
+            queuedForCompAct_ = true;
         }
-        pthread_mutex_unlock(&gfcMutex_);
+        pthread_mutex_unlock(&compActMutex_);
         pthread_mutex_lock(&(tree_->nodesReadyForCompressMutex_));
         tree_->nodesToCompress_.push_back(this);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "call for compressing node %d\t", id_);
+        for (int i=0; i<tree_->nodesToCompress_.size(); i++)
+            fprintf(stderr, "%d, ", tree_->nodesToCompress_[i]->id_);
+        fprintf(stderr, "\n");
+#endif
+        pthread_cond_signal(&(tree_->nodesReadyForCompression_));
+        pthread_mutex_unlock(&(tree_->nodesReadyForCompressMutex_));
+        return true;
+    }
+    
+    bool Node::asyncDecompress()
+    {
+        pthread_mutex_lock(&compActMutex_);
+        // check if node already in list
+        if (queuedForCompAct_) {
+            // check if compression request is outstanding
+            if (compAct_ == COMPRESS) {
+                /* reset action request; node need not be added
+                 * again */
+                compAct_ = NONE;
+                pthread_mutex_unlock(&compActMutex_);
+                return true;
+            } else if (compAct_ == NONE) {
+                compAct_ = DECOMPRESS;
+                pthread_mutex_unlock(&compActMutex_);
+                return true;
+            } else { // we're decompressing twice
+                fprintf(stderr, "Trying to decompress node %d twice", id_);
+                assert(false);
+            }
+        } else {
+            queuedForCompAct_ = true;
+        }
+        pthread_mutex_unlock(&compActMutex_);
+        pthread_mutex_lock(&(tree_->nodesReadyForCompressMutex_));
+        tree_->nodesToCompress_.push_back(this);
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "call for decompressing node %d\t", id_);
         for (int i=0; i<tree_->nodesToCompress_.size(); i++)
             fprintf(stderr, "%d, ", tree_->nodesToCompress_[i]->id_);
         fprintf(stderr, "\n");
@@ -782,20 +841,6 @@ emptyChildren:
             fprintf(stderr, "Node %d not compressible\n", id_);
             return true;
         }
-
-        // check if node is queued up for compression
-        pthread_mutex_lock(&gfcMutex_);
-        // since we got the lock, the compression can't be in-progress
-        if (givenForComp_) {
-            // this means that this node is still queued up, so we cancel
-#ifdef CT_NODE_DEBUG
-            fprintf(stderr, "Node %d: compression cancelled\n", id_);
-#endif
-            cancelCompress_ = true;
-            pthread_mutex_unlock(&gfcMutex_);
-            return true;
-        } else
-            pthread_mutex_unlock(&gfcMutex_);
 
 #ifdef ENABLE_ASSERT_CHECKS
         if (!isCompressed() && !cancelCompress_) {
