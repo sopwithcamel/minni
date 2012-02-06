@@ -255,8 +255,10 @@ begin_flush:
             // count number of siblings including itself
             prevNumSibs = curNode->getNumSiblings();
 
+            for (int i=0; i<curNode->children_.size(); i++) {
+                CALL_MEM_FUNC(*curNode->children_[i], curNode->children_[i]->decompress)();
+            }        
             curNode->emptyBuffer(Node::SYNC_EMPTY);
-            handleFullLeaves();
 
             // count number of siblings including itself after flush
             newNumSibs = curNode->getNumSiblings();
@@ -320,9 +322,9 @@ begin_flush:
                 Node* n = nodesToCompress_.front();
                 pthread_mutex_unlock(&nodesReadyForCompressMutex_);
                 pthread_mutex_lock(&(n->compActMutex_));
-                if (n->compAct_ == Node::COMPRESS) {
+                if (n->compAct_ == Node::COMPRESS && !n->isCompressed()) {
                     n->snappyCompress();
-                } else if (n->compAct_ == Node::DECOMPRESS) {
+                } else if (n->compAct_ == Node::DECOMPRESS && n->isCompressed()) {
                     n->snappyDecompress();
                     pthread_cond_signal(&n->compActCond_);
                 }
@@ -379,9 +381,13 @@ begin_flush:
                     fprintf(stderr, "%d, ", nodesToEmpty_[i]->id_);
                 fprintf(stderr, "\n");
 #endif
+                for (int i=0; i<n->children_.size(); i++) {
+                    CALL_MEM_FUNC(*n->children_[i], n->children_[i]->decompress)();
+                }        
                 n->emptyBuffer(Node::ASYNC_EMPTY);
-                handleFullLeaves(); // TODO: do we have to worry about root splitting here?
                 if (rootFlag) {
+                    // do the split and create new root
+                    handleFullLeaves();
                     rootFlag = false;
                     pthread_mutex_lock(&rootNodeAvailableMutex_);
                     pthread_cond_signal(&rootNodeAvailableForWriting_);
@@ -391,6 +397,8 @@ begin_flush:
                 pthread_mutex_lock(&nodesReadyForEmptyMutex_);
                 nodesToEmpty_.pop_front();
             }
+            // handle all the full leaves that were queued up
+            handleFullLeaves();
         }
         pthread_mutex_unlock(&nodesReadyForEmptyMutex_);
 #ifdef CT_NODE_DEBUG
@@ -419,8 +427,11 @@ begin_flush:
             fprintf(stderr, "%d, ", nodesToEmpty_[i]->id_);
         fprintf(stderr, "\n");
 #endif
-        // Decompress the node in advance
-        CALL_MEM_FUNC(*n, n->decompress)();
+
+        // The node is decompressed when called.
+        // decompress the children
+        
+        assert(!n->isCompressed());
     }
 
     void* CompressTree::callCompressHelper(void *context)
@@ -450,7 +461,7 @@ begin_flush:
     /* A full leaf is handled by splitting the leaf into two leaves.*/
     void CompressTree::handleFullLeaves()
     {
-        for (uint32_t i=0; i<leavesToBeEmptied_.size(); i++) {
+        while (!leavesToBeEmptied_.empty()) {
             Node* node = leavesToBeEmptied_.front();
             leavesToBeEmptied_.pop_front();
 
@@ -458,12 +469,12 @@ begin_flush:
             node->sortBuffer();
             // check if sorting and aggregating made the leaf small enough
             if (!node->isFull() && node->compressible_) {
-                CALL_MEM_FUNC(*node, node->compress)();
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Leaf node %d reduced in size, so no split\n",
                         node->id_);
 #endif
-                return;
+                CALL_MEM_FUNC(*node, node->compress)();
+                continue;
             }
             Node* newLeaf = node->splitLeaf();
             Node *l1 = NULL, *l2 = NULL;
@@ -473,8 +484,7 @@ begin_flush:
             if (newLeaf && newLeaf->isFull()) {
                 l2 = newLeaf->splitLeaf();
             }
-            if (node->compressible_)
-                CALL_MEM_FUNC(*node, node->compress)();
+            CALL_MEM_FUNC(*node, node->compress)();
             if (newLeaf)
                 CALL_MEM_FUNC(*newLeaf, newLeaf->compress)();
             if (l1)

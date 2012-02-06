@@ -156,12 +156,14 @@ namespace compresstree {
                 // this separator is the largest separator that is not greater
                 // than *curHash. This invariant needs to be maintained.
                 if (numCopied > 0) { // at least one element for this
-                    assert(!children_[curChild]->isFull());
-                    assert(CALL_MEM_FUNC(*children_[curChild], 
-                            children_[curChild]->decompress)());
                     children_[curChild]->waitForCompressAction();
-
                     // check if the child is empty
+#ifdef ENABLE_ASSERT_CHECKS
+                    if (children_[curChild]->isCompressed()) {
+                        fprintf(stderr, "Node %d should be decompressed\n", children_[curChild]->id_);
+                        assert(false);
+                    }
+#endif
                     if (children_[curChild]->data_ == NULL) {
 #ifdef CT_NODE_DEBUG
                         fprintf(stderr, "Node: %d: alloc'ing fresh buffer\n",
@@ -174,9 +176,6 @@ namespace compresstree {
                     assert(children_[curChild]->copyIntoBuffer(data_ + 
                                 lastOffset, offset - lastOffset));
                     children_[curChild]->addElements(numCopied);
-        
-                    assert(CALL_MEM_FUNC(*children_[curChild], 
-                            children_[curChild]->compress)());
 #ifdef CT_NODE_DEBUG
                     fprintf(stderr, "Copied %lu elements into node %d; child\
                             offset: %ld, sep: %lu/%lu, off:(%ld/%ld)\n", numCopied, 
@@ -205,9 +204,13 @@ namespace compresstree {
 
         // copy remaining elements into child
         if (offset >= lastOffset) {
-            CALL_MEM_FUNC(*children_[curChild], 
-                    children_[curChild]->decompress)();
             children_[curChild]->waitForCompressAction();
+#ifdef ENABLE_ASSERT_CHECKS
+            if (children_[curChild]->isCompressed()) {
+                fprintf(stderr, "Node %d should be decompressed\n", children_[curChild]->id_);
+                assert(false);
+            }
+#endif
 
             if (children_[curChild]->data_ == NULL) {
                 assert(!posix_memalign(
@@ -217,9 +220,6 @@ namespace compresstree {
             assert(children_[curChild]->copyIntoBuffer(data_ + 
                         lastOffset, offset - lastOffset));
             children_[curChild]->addElements(numCopied);
-            CALL_MEM_FUNC(*children_[curChild], 
-                    children_[curChild]->compress)();
-            
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Copied %lu elements into node %d; child\
                     offset: %ld, sep: %lu, off:(%ld/%ld)\n", numCopied, 
@@ -248,6 +248,9 @@ emptyChildren:
                     tree_->addNodeToEmpty(children_[curChild]);
                 else if (type == SYNC_EMPTY)
                     children_[curChild]->emptyBuffer(SYNC_EMPTY);
+            } else {
+                CALL_MEM_FUNC(*children_[curChild], 
+                        children_[curChild]->compress)();
             }
         }
 
@@ -721,11 +724,13 @@ emptyChildren:
                 /* reset action request; node need not be added
                  * again */
                 compAct_ = NONE;
+                fprintf(stderr, "Node %d decompression cancelled\n", id_);
                 pthread_mutex_unlock(&compActMutex_);
                 return true;
             } else if (compAct_ == NONE) {
                 compAct_ = COMPRESS;
                 pthread_mutex_unlock(&compActMutex_);
+                fprintf(stderr, "Node %d reset to compress\n", id_);
                 return true;
             } else { // we're compressing twice
                 fprintf(stderr, "Trying to compress node %d twice", id_);
@@ -762,13 +767,21 @@ emptyChildren:
                  * again */
                 compAct_ = NONE;
                 pthread_mutex_unlock(&compActMutex_);
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "Node %d compression cancelled\n", id_);
+#endif
                 return true;
             } else if (compAct_ == NONE) {
                 compAct_ = DECOMPRESS;
                 pthread_mutex_unlock(&compActMutex_);
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "Node %d reset to decompress\n", id_);
+#endif
                 return true;
             } else { // we're decompressing twice
+#ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Trying to decompress node %d twice", id_);
+#endif
                 assert(false);
             }
         } else {
