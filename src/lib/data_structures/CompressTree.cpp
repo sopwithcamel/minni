@@ -168,14 +168,7 @@ namespace compresstree {
         Node* curLeaf = allLeaves_[lastLeafRead_];
         if (curLeaf->isCompressed()) {
             CALL_MEM_FUNC(*curLeaf, curLeaf->decompress)();
-
-            // make sure the buffer has been decompressed
-            pthread_mutex_lock(&curLeaf->compActMutex_);
-            while (curLeaf->queuedForCompAct_ && 
-                    curLeaf->compAct_ == Node::DECOMPRESS)
-                pthread_cond_wait(&curLeaf->compActCond_, 
-                        &curLeaf->compActMutex_);
-            pthread_mutex_unlock(&curLeaf->compActMutex_);
+            curLeaf->waitForCompressAction();
         }
 
         hash = (uint64_t*)(curLeaf->data_ + lastOffset_);
@@ -210,11 +203,7 @@ namespace compresstree {
             }
             Node *n = allLeaves_[lastLeafRead_];
             CALL_MEM_FUNC(*n, n->decompress)();
-            // make sure the buffer has been decompressed
-            pthread_mutex_lock(&n->compActMutex_);
-            while (n->queuedForCompAct_ && n->compAct_ == Node::DECOMPRESS)
-                pthread_cond_wait(&n->compActCond_, &n->compActMutex_);
-            pthread_mutex_unlock(&n->compActMutex_);
+            n->waitForCompressAction();
             lastOffset_ = 0;
         }
 
@@ -292,15 +281,7 @@ begin_flush:
             visitQueue.pop_front();
             if (curNode->isLeaf()) {
                 CALL_MEM_FUNC(*curNode, curNode->decompress)();
-
-                // make sure the buffer has been decompressed
-                pthread_mutex_lock(&curNode->compActMutex_);
-                while (curNode->queuedForCompAct_ && 
-                        curNode->compAct_ == Node::DECOMPRESS)
-                    pthread_cond_wait(&curNode->compActCond_, 
-                            &curNode->compActMutex_);
-                pthread_mutex_unlock(&curNode->compActMutex_);
-
+                curNode->waitForCompressAction();
                 curNode->sortBuffer();
                 CALL_MEM_FUNC(*curNode, curNode->compress)();
                 allLeaves_.push_back(curNode);
@@ -438,6 +419,8 @@ begin_flush:
             fprintf(stderr, "%d, ", nodesToEmpty_[i]->id_);
         fprintf(stderr, "\n");
 #endif
+        // Decompress the node in advance
+        CALL_MEM_FUNC(*n, n->decompress)();
     }
 
     void* CompressTree::callCompressHelper(void *context)
@@ -470,16 +453,8 @@ begin_flush:
         for (uint32_t i=0; i<leavesToBeEmptied_.size(); i++) {
             Node* node = leavesToBeEmptied_.front();
             leavesToBeEmptied_.pop_front();
-            CALL_MEM_FUNC(*node, node->decompress)();
 
-            // make sure the buffer has been decompressed
-            pthread_mutex_lock(&node->compActMutex_);
-            while (node->queuedForCompAct_ && 
-                    node->compAct_ == Node::DECOMPRESS)
-                pthread_cond_wait(&node->compActCond_, 
-                        &node->compActMutex_);
-            pthread_mutex_unlock(&node->compActMutex_);
-
+            node->waitForCompressAction(); 
             node->sortBuffer();
             // check if sorting and aggregating made the leaf small enough
             if (!node->isFull() && node->compressible_) {

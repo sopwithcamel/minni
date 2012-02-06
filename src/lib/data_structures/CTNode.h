@@ -9,7 +9,7 @@
 #include "PartialAgg.h"
 
 #define ENABLE_ASSERT_CHECKS
-//#define CT_NODE_DEBUG
+#define CT_NODE_DEBUG
 //#define ENABLE_SORT_VERIFICATION
 #define ENABLE_INTEGRITY_CHECK
 
@@ -122,6 +122,8 @@ namespace compresstree {
         NodeCompFn decompress;
         bool asyncCompress();
         bool asyncDecompress();
+        /* wait for completion of compression action on node */
+        void waitForCompressAction();
         bool snappyCompress();
         bool snappyDecompress();
         bool zlibCompress();

@@ -131,14 +131,7 @@ namespace compresstree {
         if (curOffset_ == 0)
             goto emptyChildren;
 
-        CALL_MEM_FUNC(*this, decompress)();
-
-        // make sure the buffer has been decompressed
-        pthread_mutex_lock(&compActMutex_);
-        while (queuedForCompAct_ && compAct_ == DECOMPRESS)
-            pthread_cond_wait(&compActCond_, &compActMutex_);
-        pthread_mutex_unlock(&compActMutex_);
-
+        waitForCompressAction();
         sortBuffer();
         // find the first separator strictly greater than the first element
         curHash = (uint64_t*)(data_ + offset);
@@ -166,15 +159,7 @@ namespace compresstree {
                     assert(!children_[curChild]->isFull());
                     assert(CALL_MEM_FUNC(*children_[curChild], 
                             children_[curChild]->decompress)());
-
-                    // make sure the buffer has been decompressed
-                    pthread_mutex_lock(&children_[curChild]->compActMutex_);
-                    while (children_[curChild]->queuedForCompAct_ 
-                            && children_[curChild]->compAct_ == DECOMPRESS) {
-                        pthread_cond_wait(&children_[curChild]->compActCond_, 
-                                &children_[curChild]->compActMutex_);
-                    }
-                    pthread_mutex_unlock(&children_[curChild]->compActMutex_);
+                    children_[curChild]->waitForCompressAction();
 
                     // check if the child is empty
                     if (children_[curChild]->data_ == NULL) {
@@ -222,14 +207,7 @@ namespace compresstree {
         if (offset >= lastOffset) {
             CALL_MEM_FUNC(*children_[curChild], 
                     children_[curChild]->decompress)();
-            // make sure the buffer has been decompressed
-            pthread_mutex_lock(&children_[curChild]->compActMutex_);
-            while (children_[curChild]->queuedForCompAct_ 
-                    && children_[curChild]->compAct_ == DECOMPRESS) {
-                pthread_cond_wait(&children_[curChild]->compActCond_, 
-                        &children_[curChild]->compActMutex_);
-            }
-            pthread_mutex_unlock(&children_[curChild]->compActMutex_);
+            children_[curChild]->waitForCompressAction();
 
             if (children_[curChild]->data_ == NULL) {
                 assert(!posix_memalign(
@@ -809,6 +787,15 @@ emptyChildren:
         pthread_cond_signal(&(tree_->nodesReadyForCompression_));
         pthread_mutex_unlock(&(tree_->nodesReadyForCompressMutex_));
         return true;
+    }
+
+    void Node::waitForCompressAction()
+    {
+        // make sure the buffer has been decompressed
+        pthread_mutex_lock(&compActMutex_);
+        while (queuedForCompAct_ && compAct_ == DECOMPRESS)
+            pthread_cond_wait(&compActCond_, &compActMutex_);
+        pthread_mutex_unlock(&compActMutex_);
     }
 
     bool Node::snappyCompress()
