@@ -790,8 +790,15 @@ emptyChildren:
                 assert(false);
             }
         } else {
-            queuedForCompAct_ = true;
-            compAct_ = DECOMPRESS;
+            // check if the buffer is empty;
+            if (curOffset_ == 0) {
+                isCompressed_ = false;
+                pthread_mutex_unlock(&compActMutex_);
+                return true;
+            } else {
+                queuedForCompAct_ = true;
+                compAct_ = DECOMPRESS;
+            }
         }
         pthread_mutex_unlock(&compActMutex_);
         pthread_mutex_lock(&(tree_->nodesReadyForCompressMutex_));
