@@ -241,16 +241,15 @@ namespace compresstree {
         }
 
 emptyChildren:
+        if (type == RECURSIVE) {
         // check if any children are full
-        for (curChild=0; curChild < children_.size(); curChild++) {
-            if (children_[curChild]->isFull()) {
-                if (type == ASYNC_EMPTY)
+            for (curChild=0; curChild < children_.size(); curChild++) {
+                if (children_[curChild]->isFull()) {
                     tree_->addNodeToEmpty(children_[curChild]);
-                else if (type == SYNC_EMPTY)
-                    children_[curChild]->emptyBuffer(SYNC_EMPTY);
-            } else {
-                CALL_MEM_FUNC(*children_[curChild], 
-                        children_[curChild]->compress)();
+                } else {
+                    CALL_MEM_FUNC(*children_[curChild], 
+                            children_[curChild]->compress)();
+                }
             }
         }
 
@@ -724,16 +723,22 @@ emptyChildren:
                 /* reset action request; node need not be added
                  * again */
                 compAct_ = NONE;
+#ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Node %d decompression cancelled\n", id_);
+#endif
                 pthread_mutex_unlock(&compActMutex_);
                 return true;
             } else if (compAct_ == NONE) {
                 compAct_ = COMPRESS;
                 pthread_mutex_unlock(&compActMutex_);
+#ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Node %d reset to compress\n", id_);
+#endif
                 return true;
             } else { // we're compressing twice
+#ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Trying to compress node %d twice", id_);
+#endif
                 assert(false);
             }
         } else {

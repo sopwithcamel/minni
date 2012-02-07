@@ -28,8 +28,8 @@ namespace compresstree {
         friend class CompressTree;
         typedef bool (Node::*NodeCompFn)();
         enum EmptyType {
-            SYNC_EMPTY,
-            ASYNC_EMPTY
+            NON_RECURSIVE,
+            RECURSIVE
         };
         enum CompressionAction {
             NONE,

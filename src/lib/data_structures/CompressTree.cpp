@@ -246,6 +246,7 @@ namespace compresstree {
         Node* curNode;
         size_t prevNumSibs, newNumSibs;
         std::deque<Node*> visitQueue;
+        fprintf(stderr, "Starting to flush\n");
 begin_flush:
         visitQueue.push_back(rootNode_);
         while(!visitQueue.empty()) {
@@ -255,10 +256,10 @@ begin_flush:
             // count number of siblings including itself
             prevNumSibs = curNode->getNumSiblings();
 
-            for (int i=0; i<curNode->children_.size(); i++) {
+            for (uint32_t i=0; i<curNode->children_.size(); i++) {
                 CALL_MEM_FUNC(*curNode->children_[i], curNode->children_[i]->decompress)();
-            }        
-            curNode->emptyBuffer(Node::SYNC_EMPTY);
+            }
+            curNode->emptyBuffer(Node::NON_RECURSIVE);
 
             // count number of siblings including itself after flush
             newNumSibs = curNode->getNumSiblings();
@@ -324,8 +325,9 @@ begin_flush:
                 pthread_mutex_lock(&(n->compActMutex_));
                 if (n->compAct_ == Node::COMPRESS && !n->isCompressed()) {
                     n->snappyCompress();
-                } else if (n->compAct_ == Node::DECOMPRESS && n->isCompressed()) {
-                    n->snappyDecompress();
+                } else if (n->compAct_ == Node::DECOMPRESS) {
+                    if (n->isCompressed())
+                        n->snappyDecompress();
                     pthread_cond_signal(&n->compActCond_);
                 }
                 n->queuedForCompAct_ = false;
@@ -384,7 +386,7 @@ begin_flush:
                 for (int i=0; i<n->children_.size(); i++) {
                     CALL_MEM_FUNC(*n->children_[i], n->children_[i]->decompress)();
                 }        
-                n->emptyBuffer(Node::ASYNC_EMPTY);
+                n->emptyBuffer(Node::RECURSIVE);
                 if (rootFlag) {
                     // do the split and create new root
                     handleFullLeaves();
