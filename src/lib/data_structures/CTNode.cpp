@@ -742,8 +742,14 @@ emptyChildren:
                 assert(false);
             }
         } else {
-            queuedForCompAct_ = true;
-            compAct_ = COMPRESS;
+            if (curOffset_ == 0) {
+                isCompressed_ = true;
+                pthread_mutex_unlock(&compActMutex_);
+                return true;
+            } else {
+                queuedForCompAct_ = true;
+                compAct_ = COMPRESS;
+            }
         }
         pthread_mutex_unlock(&compActMutex_);
         pthread_mutex_lock(&(tree_->nodesReadyForCompressMutex_));

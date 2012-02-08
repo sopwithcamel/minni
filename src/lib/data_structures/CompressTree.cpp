@@ -373,6 +373,7 @@ begin_flush:
 #endif
             while (!nodesToEmpty_.empty()) {
                 Node* n = nodesToEmpty_.front();
+                nodesToEmpty_.pop_front();
                 pthread_mutex_unlock(&nodesReadyForEmptyMutex_);
                 if (n->isRoot())
                     rootFlag = true;
@@ -397,7 +398,6 @@ begin_flush:
                 }
 
                 pthread_mutex_lock(&nodesReadyForEmptyMutex_);
-                nodesToEmpty_.pop_front();
             }
             // handle all the full leaves that were queued up
             handleFullLeaves();
@@ -420,8 +420,9 @@ begin_flush:
     void CompressTree::addNodeToEmpty(Node* n)
     {
         pthread_mutex_lock(&nodesReadyForEmptyMutex_);
-        if (n)
-            nodesToEmpty_.push_back(n);
+        if (n) {
+                nodesToEmpty_.push_back(n);
+        }
         pthread_mutex_unlock(&nodesReadyForEmptyMutex_);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node %d added to to-empty list\n", n->id_);
