@@ -1,4 +1,4 @@
-#include "wordcountpao.h"
+#include "wordcount.h"
 
 #define KEY_SIZE        10
 

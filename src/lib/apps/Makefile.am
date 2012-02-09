@@ -1,17 +1,6 @@
-EXTRA_DIST = img.cpp img.h pagerank.cpp pagerank.h wordcountpao.cpp wordcountpao.h
+EXTRA_DIST = wordcount.cpp wordcount.h img.cpp img.h pagerank.cpp pagerank.h
 
-pkglib_LTLIBRARIES = img.la pagerank.la wordcount.la
-
-#knn_la_SOURCES = knn.cpp
-
-#knn_la_LDFLAGS = -module
-
-#knn_la_CPPFLAGS = $(THRIFT_CFLAGS) \
-#			-I$(srcdir)/../ \
-#			-I$(srcdir)/../filters/ \
-#			-I$(srcdir)/../aggregators/ \
-#			-I$(srcdir)/../../worker/gen-cpp \
-#			-I$(srcdir)/../../dfs/
+pkglib_LTLIBRARIES = wordcount.la img.la pagerank.la
 
 ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I$(srcdir)/../ \
@@ -37,7 +26,7 @@ pagerank_la_LDFLAGS = -module
 
 pagerank_la_CPPFLAGS = $(ALL_CPPFLAGS)
 
-wordcount_la_SOURCES = wordcountpao.cpp
+wordcount_la_SOURCES = wordcount.cpp
 
 wordcount_la_LDFLAGS = -module
 
