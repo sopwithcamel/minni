@@ -32,7 +32,6 @@ void* CompressTreeInserter::operator()(void* recv)
 	size_t ind = 0;
     uint64_t hashv;
     void* ptrToHash;
-    uint64_t bkt;
 	PartialAgg* pao;
     compresstree::CompressTree* ct = (compresstree::CompressTree*)accumulator_;
 
@@ -56,18 +55,8 @@ void* CompressTreeInserter::operator()(void* recv)
 
     while (ind < recv_length) {
         pao = pao_l[ind];
-        Hash(pao->key, strlen(pao->key), NUM_BUCKETS, hashv, bkt); 
-        /*
-           EVP_DigestInit(&mdctx, EVP_md5());
-           EVP_DigestUpdate(&mdctx, (const void*)(pao->key), strlen(pao->key));
-           EVP_DigestFinal_ex(&mdctx, md_value, &md_len);
-           EVP_MD_CTX_cleanup(&mdctx);
-           if (md_len > sizeof(uint64_t))
-           strncpy((char*)md_trunc, (char*)md_value, sizeof(uint64_t));
-           else
-           strcpy((char*)md_trunc, (char*)md_value);
-           hashv = *(uint64_t*)md_trunc;
-         */
+        hashv = HashUtil::MurmurHash(pao->key, pao->key.size()); 
+
         ptrToHash = (void*)&hashv;
         PartialAgg** l = this_list + evict_list_ctr;
         ct->insert(ptrToHash, pao, l, numEvicted);

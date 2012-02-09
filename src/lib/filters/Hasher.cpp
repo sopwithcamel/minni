@@ -47,13 +47,13 @@ void* Hasher::operator()(void* recv)
     while (ind < recv_length) {
         pao = pao_l[ind];
         PartialAgg* found = NULL;
-        hashtable->search(pao->key, found);
+        hashtable->search(pao->key.c_str(), found);
         if (found) {
             found->merge(pao);
             destroyPAO(pao);
         } else {
-            size_t num_evicted = hashtable->insert(pao->key,
-                    strlen(pao->key), pao, this_list + evict_list_ctr);
+            size_t num_evicted = hashtable->insert(pao->key.c_str(),
+                    pao->key.size(), pao, this_list + evict_list_ctr);
             evict_list_ctr += num_evicted;
             assert(evict_list_ctr < max_keys_per_token);
         }

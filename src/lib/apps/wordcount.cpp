@@ -5,7 +5,7 @@
 WordCountPartialAgg::WordCountPartialAgg(char* wrd)
 {
 	if (wrd) {
-		key.assign(wrd);
+		key = wrd;
         count = 1;
 	} else
         count = 0;
@@ -80,7 +80,7 @@ bool WordCountPartialAgg::deserialize(void *buf)
 	spl = strtok(read_buf, " \n\r");
 	if (spl == NULL)
 		return false;
-	key.assign(spl);
+	key = spl;
 
 	spl = strtok(NULL, " \n\r");
 	if (spl == NULL)

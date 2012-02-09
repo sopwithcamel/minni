@@ -30,7 +30,8 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			data_structures/CompressTree.cpp \
 			data_structures/SparseHash.cpp \
 			data_structures/UTHashtable.cpp \
-			data_structures/easyzlib.c
+			data_structures/easyzlib.c \
+			utils/HashUtil.cpp
 
 libminni_la_LIBADD = ../dfs/libdfs.la
 
@@ -46,7 +47,8 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 					   -I$(srcdir)/record_creation/ \
 					   -I$(srcdir)/data_structures/ \
 					   -I$(srcdir)/resources/ \
-					   -I$(srcdir)/apps/
+					   -I$(srcdir)/apps/ \
+					   -I$(srcdir)/utils
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
 			-lltdl -lpthread -ltbb -lconfig++ -lsnappy -lssl -ltcmalloc
@@ -87,7 +89,8 @@ minni_include_HEADERS = core/PartialAgg.h \
 			data_structures/SparseHash.cpp \
 			data_structures/UTHashtable.h \
 			data_structures/easyzlib.h \
-			resources/ElasticObject.h
+			resources/ElasticObject.h \
+			utils/HashUtil.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 

@@ -13,6 +13,7 @@
 #include "Accumulator.h"
 #include "AccumulatorFilter.h"
 #include "CompressTree.h"
+#include "HashUtil.h"
 #include "PartialAgg.h"
 #include "Util.h"
 

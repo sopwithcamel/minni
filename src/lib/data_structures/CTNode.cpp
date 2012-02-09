@@ -411,7 +411,7 @@ emptyChildren:
                 if (i == lastIndex + 1)
                     deserializePAO(tree_->els_[lastIndex], lastPAO);
                 deserializePAO(tree_->els_[i], thisPAO);
-                if (!strcmp(thisPAO->key, lastPAO->key)) {
+                if (!thisPAO->key.compare(lastPAO->key)) {
                     lastPAO->merge(thisPAO);
                     CompressTree::cctr++;
                     continue;
@@ -668,7 +668,7 @@ emptyChildren:
         size_t* bufSize;
 #ifdef ENABLE_ASSERT_CHECKS
         if (offset >= curOffset_) {
-            fprintf(stderr, "off: %lu, curoff: %lu\n", offset, curOffset_);
+            fprintf(stderr, "Node: %d; off: %lu, curoff: %lu\n", id_, offset, curOffset_);
             assert(false);
         }
 #endif

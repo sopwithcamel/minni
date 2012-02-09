@@ -38,7 +38,7 @@ private:
 	char* outfile_prefix;
 	size_t tokens_processed;
 	void* operator()(void* pao_list);
-	int partition(const char* key);
+	int partition(const std::string& key);
 };
 
 #endif
