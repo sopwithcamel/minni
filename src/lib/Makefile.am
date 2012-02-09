@@ -8,7 +8,6 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			core/Reducer.cpp \
 			filters/AccumulatorFilter.cpp \
 			filters/Adder.cpp \
-			filters/BufferTreeFilter.cpp \
 			filters/CompressTreeFilter.cpp \
 			filters/Deserializer.cpp \
 			filters/DFSReader.cpp \
@@ -23,13 +22,10 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			filters/TokenizerFilter.cpp \
 			aggregators/Aggregator.cpp \
 			aggregators/BucketAggregator.cpp \
-			aggregators/ExthashAggregator.cpp \
 			aggregators/HashsortAggregator.cpp \
 			record_creation/Tokenizer.cpp \
 			record_creation/FileTokenizer.cpp \
 			record_creation/DelimitedTokenizer.cpp \
-			data_structures/BTNode.cpp \
-			data_structures/BufferTree.cpp \
 			data_structures/CTNode.cpp \
 			data_structures/CompressTree.cpp \
 			data_structures/SparseHash.cpp \
@@ -66,7 +62,6 @@ minni_include_HEADERS = core/PartialAgg.h \
 			core/Util.h \
 			filters/AccumulatorFilter.h \
 			filters/Adder.h \
-			filters/BufferTreeFilter.h \
 			filters/CompressTreeFilter.h \
 			filters/Deserializer.h \
 			filters/DFSReader.h \
@@ -80,7 +75,6 @@ minni_include_HEADERS = core/PartialAgg.h \
 			filters/SparseHashFilter.h \
 			filters/TokenizerFilter.h \
 			aggregators/BucketAggregator.h \
-			aggregators/ExthashAggregator.h \
 			aggregators/HashsortAggregator.h \
 			aggregators/Aggregator.h \
 			record_creation/FileTokenizer.h \
@@ -88,8 +82,6 @@ minni_include_HEADERS = core/PartialAgg.h \
 			record_creation/Tokenizer.h \
 			data_structures/Accumulator.h \
 			data_structures/Hashtable.h \
-			data_structures/BTNode.h \
-			data_structures/BufferTree.h \
 			data_structures/CTNode.h \
 			data_structures/CompressTree.h \
 			data_structures/SparseHash.cpp \

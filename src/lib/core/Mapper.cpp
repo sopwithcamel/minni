@@ -1,7 +1,6 @@
 #include "Mapper.h"
 
 #include "BucketAggregator.h"
-#include "ExthashAggregator.h"
 #include "HashsortAggregator.h"
 #include <dlfcn.h>
 #include <google/heap-profiler.h>
@@ -143,11 +142,6 @@ task* MapperWrapperTask::execute() {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new BucketAggregator(
 						cfg, Map, npart, myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO, 
-						map_out_file.c_str()));
-	} else if (!selected_map_aggregator.compare("exthash")) {
-		mapper->aggregs = dynamic_cast<Aggregator*>(new ExthashAggregator(
-						cfg, Map, npart, myinput, NULL,
-						mapper->createPAO, mapper->destroyPAO,
 						map_out_file.c_str()));
 	} else if (!selected_map_aggregator.compare("hashsort")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new HashsortAggregator(

@@ -12,8 +12,6 @@
 
 #include "Accumulator.h"
 #include "AccumulatorFilter.h"
-#include "BufferTree.h"
-#include "BufferTreeFilter.h"
 #include "CompressTree.h"
 #include "CompressTreeFilter.h"
 #include "Mapper.h"
