@@ -7,7 +7,7 @@ class Hashtable
 {
   public:
     Hashtable() {}
-    ~Hashtable() {}
+    virtual ~Hashtable() {}
     virtual void search(const char* key, PartialAgg*& found) = 0;
     /* Insert the key, value pair. Any evictions due to overflow will cause
      * the evicted entries to be written into evict_list and the number of
