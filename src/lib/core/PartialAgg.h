@@ -40,7 +40,7 @@ class PartialAgg {
 	virtual bool deserialize(void* buf) = 0;
 	static size_t create(Token*& t, PartialAgg** p_list) { return 0; }
 
-	char* key;
+	std::string key;
 #ifdef UTHASH
 	UT_hash_handle hh;
 #endif

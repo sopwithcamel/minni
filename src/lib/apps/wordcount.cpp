@@ -4,9 +4,8 @@
 
 WordCountPartialAgg::WordCountPartialAgg(char* wrd)
 {
-    key = (char*)malloc(KEY_SIZE);
 	if (wrd) {
-		strcpy(key, wrd);
+		key.assign(wrd);
         count = 1;
 	} else
         count = 0;
@@ -15,7 +14,6 @@ WordCountPartialAgg::WordCountPartialAgg(char* wrd)
 WordCountPartialAgg::~WordCountPartialAgg()
 {
     PartialAgg::destCtr++;
-	free(key);
 }
 
 size_t WordCountPartialAgg::create(Token* t, PartialAgg** p)
@@ -57,7 +55,7 @@ void WordCountPartialAgg::serialize(FILE* f, void* buf, size_t buf_size)
 void WordCountPartialAgg::serialize(void* buf)
 {
 	char* wr_buf = (char*)buf;
-	strcpy(wr_buf, key);
+	strcpy(wr_buf, key.c_str());
 	strcat(wr_buf, " ");
 	sprintf(wr_buf + strlen(wr_buf), "%lu", count);
 	strcat(wr_buf, "\n");
@@ -82,7 +80,7 @@ bool WordCountPartialAgg::deserialize(void *buf)
 	spl = strtok(read_buf, " \n\r");
 	if (spl == NULL)
 		return false;
-	strcpy(key, spl);
+	key.assign(spl);
 
 	spl = strtok(NULL, " \n\r");
 	if (spl == NULL)

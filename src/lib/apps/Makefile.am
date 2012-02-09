@@ -1,6 +1,6 @@
-EXTRA_DIST = wordcount.cpp wordcount.h img.cpp img.h pagerank.cpp pagerank.h
+EXTRA_DIST = wordcount.cpp wordcount.h# img.cpp img.h pagerank.cpp pagerank.h
 
-pkglib_LTLIBRARIES = wordcount.la img.la pagerank.la
+pkglib_LTLIBRARIES = wordcount.la# img.la pagerank.la
 
 ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I$(srcdir)/../ \
@@ -14,17 +14,17 @@ ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I$(srcdir)/../../dfs/ \
 			-I/usr/include/CImg/
 
-img_la_SOURCES = img.cpp
+#img_la_SOURCES = img.cpp
 
-img_la_LDFLAGS = -module -lX11 -lpthread -ljpeg
+#img_la_LDFLAGS = -module -lX11 -lpthread -ljpeg
 
-img_la_CPPFLAGS = $(ALL_CPPFLAGS)
+#img_la_CPPFLAGS = $(ALL_CPPFLAGS)
 
-pagerank_la_SOURCES = pagerank.cpp
+#pagerank_la_SOURCES = pagerank.cpp
 
-pagerank_la_LDFLAGS = -module
+#pagerank_la_LDFLAGS = -module
 
-pagerank_la_CPPFLAGS = $(ALL_CPPFLAGS)
+#pagerank_la_CPPFLAGS = $(ALL_CPPFLAGS)
 
 wordcount_la_SOURCES = wordcount.cpp
 
