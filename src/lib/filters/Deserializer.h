@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <iostream>
+#include <fstream>
 #include <tr1/unordered_map>
 
 #include "tbb/pipeline.h"
@@ -46,7 +47,7 @@ private:
 	MultiBuffer<FilterInfo>* send;
 	void* read_buf;
 
-	FILE *cur_bucket;		// file pointer for current bucket
+	std::ifstream *cur_bucket;		// file pointer for current bucket
 	void* operator()(void*);
 	uint64_t appendToList(PartialAgg* p);
 };

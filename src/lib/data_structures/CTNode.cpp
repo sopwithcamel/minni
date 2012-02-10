@@ -65,7 +65,7 @@ namespace compresstree {
         tree_->destroyPAO_(thisPAO);
     }
 
-    bool Node::insert(uint64_t hash, void* buf, size_t buf_size)
+    bool Node::insert(uint64_t hash, const std::string& value)
     {
         // check if buffer is compressed
         if (isCompressed())
@@ -77,12 +77,13 @@ namespace compresstree {
         curOffset_ += sizeof(hash);
 
         // copy buf_size into the buffer
+        size_t buf_size = value.size();
         memmove(data_ + curOffset_, &buf_size, sizeof(buf_size));
 //        fprintf(stderr, ", size at %ld", curOffset_);
         curOffset_ += sizeof(buf_size);
         
         // copy the entire Block into the buffer
-        memmove(data_ + curOffset_, buf, buf_size);
+        memmove(data_ + curOffset_, (void*)value.data(), buf_size);
 //        fprintf(stderr, ", data at %ld\n", curOffset_);
         curOffset_ += buf_size;
 
@@ -411,7 +412,7 @@ emptyChildren:
                 if (i == lastIndex + 1)
                     deserializePAO(tree_->els_[lastIndex], lastPAO);
                 deserializePAO(tree_->els_[i], thisPAO);
-                if (!thisPAO->key.compare(lastPAO->key)) {
+                if (!thisPAO->key().compare(lastPAO->key())) {
                     lastPAO->merge(thisPAO);
                     CompressTree::cctr++;
                     continue;
@@ -419,8 +420,9 @@ emptyChildren:
             }
             // copy hash and size into auxBuffer_
             if (i > lastIndex + 1) {
-                lastPAO->serialize(tree_->serBuf_);
-                buf_size = strlen(tree_->serBuf_);
+                std::string serialized;
+                lastPAO->serialize(&serialized);
+                buf_size = serialized.size();
                 memmove(tree_->auxBuffer_ + auxOffset, 
                         (void*)(tree_->els_[lastIndex]), sizeof(uint64_t));
                 auxOffset += sizeof(uint64_t);
@@ -428,7 +430,7 @@ emptyChildren:
                         (void*)(&buf_size), sizeof(size_t));
                 auxOffset += sizeof(size_t);
                 memmove(tree_->auxBuffer_ + auxOffset, 
-                        (void*)(tree_->serBuf_), buf_size);
+                        (void*)(serialized.data()), buf_size);
                 auxOffset += buf_size;
                 CompressTree::bctr++;
             } else {
@@ -562,8 +564,8 @@ emptyChildren:
     void Node::deserializePAO(uint64_t* hashPtr, PartialAgg*& pao)
     {
         size_t buf_size = *(size_t*)(hashPtr + 1);
-        memmove(tree_->serBuf_, (void*)getValue(hashPtr), buf_size);
-        pao->deserialize(tree_->serBuf_);
+        std::string serialized(getValue(hashPtr), buf_size);
+        pao->deserialize(serialized);
     }
 
     bool Node::addChild(Node* newNode)   

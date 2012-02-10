@@ -41,7 +41,7 @@ namespace compresstree {
         ~Node();
         /* copy user data into buffer. Buffer should be decompressed
            before calling. */
-        bool insert(uint64_t hash, void* buf, size_t buf_size);
+        bool insert(uint64_t hash, const std::string& value);
 
         // identification functions
         bool isLeaf();

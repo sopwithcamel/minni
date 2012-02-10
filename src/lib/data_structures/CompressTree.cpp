@@ -35,9 +35,6 @@ namespace compresstree {
         rootNode_->setSeparator(UINT64_MAX);
         rootNode_->setCompressible(false);
 
-        // buffer for PAO serialization use
-        serBuf_ = (char*)malloc(10240);
-
         // aux buffer for use in sorting
         auxBuffer_ = (char*)malloc(BUFFER_SIZE);
 
@@ -53,7 +50,6 @@ namespace compresstree {
 
     CompressTree::~CompressTree()
     {
-        free(serBuf_);
         free(auxBuffer_);
         free(compBuffer_);
         free(evictedBuffer_);
@@ -98,8 +94,9 @@ namespace compresstree {
 #endif
             }
         }
-        agg->serialize(serBuf_);
-        bool ret = rootNode_->insert(*(uint64_t*)hash, serBuf_, strlen(serBuf_));
+        std::string serialized;
+        agg->serialize(&serialized);
+        bool ret = rootNode_->insert(*(uint64_t*)hash, serialized);
         pthread_mutex_unlock(&rootNodeAvailableMutex_);
 
         // check if any elements were evicted and pick those up

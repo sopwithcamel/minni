@@ -16,25 +16,21 @@ Serializer::Serializer(Aggregator* agg,
 	char num[10];
 	char* fname = (char*)malloc(FILENAME_LENGTH);
 
-	fl = (FILE**)malloc(num_buckets * sizeof(FILE*));
-
 	for (int i=0; i<num_buckets; i++) {
 		sprintf(num, "%d", i);
 		strcpy(fname, outfile_prefix);
 		strcat(fname, num);
 
-		fl[i] = fopen(fname, "w");
+        std::ofstream* of = new std::ofstream(fname, ios::out|ios::binary);
+        fl.push_back(of);
 		assert(NULL != fl[i]);
 	}
 	free(fname);
 	type = aggregator->getType();
-	buf = malloc(BUF_SIZE);	
 }
 
 Serializer::~Serializer()
 {
-	free(fl);
-	free(buf);
 }
 
 int Serializer::partition(const std::string& key)
@@ -61,9 +57,9 @@ void* Serializer::operator()(void* pao_list)
 	uint64_t ind = 0;
     while(ind < recv_length) {
         pao = pao_l[ind];
-        buc = partition(pao->key);	
+        buc = partition(pao->key());	
         assert(pao != NULL);
-        pao->serialize(fl[buc], buf, BUF_SIZE);
+        pao->serialize(fl[buc]);
         if (recv->destroy_pao)
             destroyPAO(pao);
         ind++;
@@ -76,7 +72,7 @@ void* Serializer::operator()(void* pao_list)
 
         for (int i=0; i<num_buckets; i++) {
             fprintf(stderr, "Closing file: %d/%d\n", i, num_buckets);
-            fclose(fl[i]);
+            fl[i]->close();
         }
 
     }

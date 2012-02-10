@@ -38,6 +38,7 @@ class CompressTreeInserter :
 	size_t (*createPAO_)(Token* t, PartialAgg** p);
 };
 
+/*
 class CompressTreeReader :
         public AccumulatorReader
 {
@@ -53,4 +54,5 @@ class CompressTreeReader :
 	~CompressTreeReader();
 	void* operator()(void* pao_list);
 };
+*/
 #endif // LIB_COMPRESSTREEFILTER_H

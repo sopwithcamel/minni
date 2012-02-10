@@ -37,6 +37,7 @@ class SparseHashInserter :
 	size_t (*createPAO_)(Token* t, PartialAgg** p);
 };
 
+/*
 class SparseHashReader :
         public AccumulatorReader
 {
@@ -52,4 +53,5 @@ class SparseHashReader :
 	~SparseHashReader();
 	void* operator()(void* pao_list);
 };
+*/
 #endif // LIB_SPARSEHASHFILTER_H

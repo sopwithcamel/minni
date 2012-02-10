@@ -68,22 +68,21 @@ void* Deserializer::operator()(void*)
 		stringstream ss;
 		ss << buckets_processed++;
 		file_name = file_name + ss.str();
-		cur_bucket = fopen(file_name.c_str(), "rb");
+		cur_bucket = new std::ifstream(file_name.c_str(), ios::in|ios::binary);
 		fprintf(stderr, "opening file %s\n", file_name.c_str());
 	}
 
-    while (!feof(cur_bucket)) {
+    while (!cur_bucket->eof()) {
         createPAO(NULL, &(this_list[pao_list_ctr]));
-        this_list[pao_list_ctr]->deserialize(cur_bucket, read_buf,
-                BUF_SIZE);
+        this_list[pao_list_ctr]->deserialize(cur_bucket);
         pao_list_ctr++;
         if (pao_list_ctr == max_keys_per_token - 1) {
             break;
         }
     }
 
-	if (feof(cur_bucket)) {
-		fclose(cur_bucket);
+	if (cur_bucket->eof()) {
+		cur_bucket->close();
 		cur_bucket = NULL;
 		// ask hashtable to flush itself afterwards
 		this_send->flush_hash = true;

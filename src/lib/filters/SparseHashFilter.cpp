@@ -47,7 +47,7 @@ void* SparseHashInserter::operator()(void* recv)
     while (ind < recv_length) {
         pao = pao_l[ind];
         PartialAgg** l = this_list + evict_list_ctr;
-        bool ret = sh->insert((void*)pao->key.c_str(), pao, l, numEvicted);
+        bool ret = sh->insert((void*)pao->key().c_str(), pao, l, numEvicted);
         evict_list_ctr += numEvicted;
         if (recv_list->destroy_pao && !ret)
             destroyPAO(pao);
@@ -80,6 +80,7 @@ ship_tokens:
     return this_send;
 }
 
+/*
 SparseHashReader::SparseHashReader(Aggregator* agg, 
         Accumulator* acc,
         size_t (*createPAOFunc)(Token* t, PartialAgg** p),
@@ -127,3 +128,4 @@ void* SparseHashReader::operator()(void* recv)
         assert(false);
     }
 }
+*/

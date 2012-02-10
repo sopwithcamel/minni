@@ -41,7 +41,7 @@ void* Adder::operator()(void* recv)
 		pao = merge_list[ind];
 		if (!merge_pao) // first pao
 			merge_pao = pao;
-		else if (!merge_pao->key.compare(pao->key)) { // same key
+		else if (!merge_pao->key().compare(pao->key())) { // same key
 			merge_pao->merge(pao);
 			destroyPAO(pao);
 		} else { // different pao

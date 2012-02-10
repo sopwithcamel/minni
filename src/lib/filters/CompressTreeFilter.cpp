@@ -55,7 +55,7 @@ void* CompressTreeInserter::operator()(void* recv)
 
     while (ind < recv_length) {
         pao = pao_l[ind];
-        hashv = HashUtil::MurmurHash(pao->key, pao->key.size()); 
+        hashv = HashUtil::MurmurHash(pao->key(), pao->key().size()); 
 
         ptrToHash = (void*)&hashv;
         PartialAgg** l = this_list + evict_list_ctr;
@@ -86,6 +86,7 @@ void* CompressTreeInserter::operator()(void* recv)
     return this_send;
 }
 
+/*
 CompressTreeReader::CompressTreeReader(Aggregator* agg, 
         Accumulator* acc,
         size_t (*createPAOFunc)(Token* t, PartialAgg** p),
@@ -133,3 +134,4 @@ void* CompressTreeReader::operator()(void* recv)
         assert(false);
     }
 }
+*/

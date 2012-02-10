@@ -28,7 +28,7 @@ void* Sorter::operator()(void*)
 	char* nsort_command = (char*)malloc(512);
 
 	for (int i=0; i<num_part; i++) {
-		sprintf(bnum, "%llu", i);
+		sprintf(bnum, "%d", i);
 
 		strcpy(input_file, inputfile_prefix);
 		strcat(input_file, bnum);
@@ -49,7 +49,7 @@ void* Sorter::operator()(void*)
 		strcat(nsort_command, " -o ");
 		strcat(nsort_command, out_file);
 		
-		system(nsort_command);
+		int ret = system(nsort_command);
 	}
 	free(nsort_command);
 	free(input_file);
