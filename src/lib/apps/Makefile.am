@@ -1,4 +1,4 @@
-EXTRA_DIST = wordcount.cpp wordcount.h# img.cpp img.h pagerank.cpp pagerank.h
+EXTRA_DIST = wordcount.cpp wordcount.h wordcountpao.pb.cc wordcountpao.pb.h # img.cpp img.h pagerank.cpp pagerank.h
 
 pkglib_LTLIBRARIES = wordcount.la# img.la pagerank.la
 
@@ -26,8 +26,8 @@ ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 
 #pagerank_la_CPPFLAGS = $(ALL_CPPFLAGS)
 
-wordcount_la_SOURCES = wordcount.cpp
+wordcount_la_SOURCES = wordcount.cpp wordcountpao.pb.cc
 
-wordcount_la_LDFLAGS = -module
+wordcount_la_LDFLAGS = -module -lprotobuf
 
 wordcount_la_CPPFLAGS = $(ALL_CPPFLAGS)

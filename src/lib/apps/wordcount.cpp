@@ -5,16 +5,17 @@
 WordCountPartialAgg::WordCountPartialAgg(char* wrd)
 {
 	if (wrd) {
-		key = wrd;
-        count = 1;
+		pb.set_key(wrd);
+        pb.set_count(1);
 	} else
-        count = 0;
+        pb.set_count(0);
 }
 
 WordCountPartialAgg::~WordCountPartialAgg()
 {
     PartialAgg::destCtr++;
 }
+
 
 size_t WordCountPartialAgg::create(Token* t, PartialAgg** p)
 {
@@ -28,65 +29,38 @@ size_t WordCountPartialAgg::create(Token* t, PartialAgg** p)
 	return 1;
 }
 
+/*
 void WordCountPartialAgg::add(void* v)
 {
 	int val = atoi((char*)v);
 	count += val;
 }
+*/
 
 void WordCountPartialAgg::merge(PartialAgg* add_agg)
 {
 	WordCountPartialAgg* wp = (WordCountPartialAgg*)add_agg;
-	count += wp->count;
+	pb.set_count(count() + wp->count());
 }
 
-void WordCountPartialAgg::serialize(FILE* f, void* buf, size_t buf_size)
+inline void WordCountPartialAgg::serialize(std::ostream* output) const
 {
-	serialize(buf);
-	char* wr_buf = (char*)buf;
-	assert(NULL != f);
-	size_t l = strlen(wr_buf);
-	size_t w = fwrite(wr_buf, sizeof(char), l, f);
-	if (w != l) {
-        fprintf(stderr, "buf size: %d, written: %d\n", l, w);
-    }
+    pb.SerializeToOstream(output);
 }
 
-void WordCountPartialAgg::serialize(void* buf)
+inline void WordCountPartialAgg::serialize(std::string* output) const
 {
-	char* wr_buf = (char*)buf;
-	strcpy(wr_buf, key.c_str());
-	strcat(wr_buf, " ");
-	sprintf(wr_buf + strlen(wr_buf), "%lu", count);
-	strcat(wr_buf, "\n");
+    pb.SerializeToString(output);
 }
 
-bool WordCountPartialAgg::deserialize(FILE* f, void *buf, size_t buf_size)
+inline bool WordCountPartialAgg::deserialize(std::istream* input)
 {
-	char *spl;
-	char *read_buf = (char*)buf;
-	if (feof(f)) {
-		return false;
-	}
-	if (fgets(read_buf, buf_size, f) == NULL)
-		return false;
-	return deserialize(read_buf);
+	return pb.ParseFromIstream(input);
 }
 
-bool WordCountPartialAgg::deserialize(void *buf)
+inline bool WordCountPartialAgg::deserialize(const std::string& input)
 {
-	char* spl;
-	char *read_buf = (char*)buf;
-	spl = strtok(read_buf, " \n\r");
-	if (spl == NULL)
-		return false;
-	key = spl;
-
-	spl = strtok(NULL, " \n\r");
-	if (spl == NULL)
-		return false;
-	count = atoi(spl);
-	return true;
+	return pb.ParseFromString(input);
 }
 
 REGISTER_PAO(WordCountPartialAgg);
