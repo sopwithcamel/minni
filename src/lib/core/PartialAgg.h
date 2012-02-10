@@ -28,19 +28,19 @@ class PartialAgg {
   public:
 	PartialAgg() {}
 	virtual ~PartialAgg() {}
-    virtual void add(void* val) = 0;
+    /* Get key */
+    virtual const std::string& key() const = 0;
+//    virtual void add(void* val) = 0;
 	virtual void merge(PartialAgg* add_agg) = 0;
-	/* Serialize into file; use buf if buffer is required */
-	virtual void serialize(FILE *f, void* buf, size_t buf_size) = 0;
-	/* Serialize into buffer */
-	virtual void serialize(void* buf) = 0;
-	/* Deserialize from file; use buf if buffer is required */
-	virtual bool deserialize(FILE* f, void* buf, size_t buf_size) = 0;
+	/* Serialize into file */
+	virtual void serialize(std::ostream* output) const = 0;
+	/* Serialize into string */
+	virtual void serialize(std::string* output) const = 0;
+	/* Deserialize from file */
+	virtual bool deserialize(std::istream* input) = 0;
 	/* Deserialize from buffer */
-	virtual bool deserialize(void* buf) = 0;
+	virtual bool deserialize(const std::string& input) = 0;
 	static size_t create(Token*& t, PartialAgg** p_list) { return 0; }
-
-	std::string key;
 #ifdef UTHASH
 	UT_hash_handle hh;
 #endif
