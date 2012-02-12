@@ -49,6 +49,7 @@ class BucketAggregator :
     /* data structures */
     Hashtable* hashtable_;
     Accumulator* acc_internal_;
+    Accumulator* acc_bucket_;
 
     /* for chunk input from DFS */
     MapInput* map_input; 

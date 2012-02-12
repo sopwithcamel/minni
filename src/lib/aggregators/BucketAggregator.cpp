@@ -62,16 +62,20 @@ BucketAggregator::BucketAggregator(const Config &cfg,
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
+        acc_bucket_ = dynamic_cast<Accumulator*>(new 
+                compresstree::CompressTree(2, 8, 1000, createPAOFunc, 
+                destroyPAOFunc));
         bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                CompressTreeInserter(this, acc_internal_, createPAOFunc,
+                CompressTreeInserter(this, acc_bucket_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
     } else if (!intagg.compare("sparsehash")) {
         acc_internal_ = dynamic_cast<Accumulator*>(new SparseHash(capacity));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 SparseHashInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
+        acc_bucket_ = dynamic_cast<Accumulator*>(new SparseHash(capacity));
         bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                SparseHashInserter(this, acc_internal_, createPAOFunc,
+                SparseHashInserter(this, acc_bucket_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
     } 
 #ifdef UTHASH
@@ -178,13 +182,23 @@ BucketAggregator::~BucketAggregator()
         delete(inp_deserializer_);
     delete creator_;
     if (hasher_) {
-        delete(hashtable_);
-        delete(hasher_);
+        delete hashtable_;
+        delete hasher_;
     }
-    delete(bucket_serializer_);
-    delete(deserializer_);
-    delete(bucket_hasher_);
-    delete(final_serializer_);
-    pipeline_list[0].clear();
-    pipeline_list[1].clear();
+    if (acc_int_inserter_) {
+        delete acc_internal_;
+        delete acc_int_inserter_;
+    }
+    if (bucket_serializer_)
+        delete bucket_serializer_;
+    if (deserializer_)
+        delete deserializer_;
+    if (bucket_hasher_)
+        delete bucket_hasher_;
+    if (bucket_inserter_) {
+        delete acc_bucket_;
+        delete bucket_inserter_;
+    }
+    if (final_serializer_)
+        delete final_serializer_;
 }
