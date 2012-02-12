@@ -15,12 +15,6 @@ AccumulatorInserter::AccumulatorInserter(Aggregator* agg,
 {
 }
 
-
-AccumulatorInserter::~AccumulatorInserter()
-{
-}
-
-
 AccumulatorReader::AccumulatorReader(Aggregator* agg,
         Accumulator* acc,
         size_t (*createPAOFunc)(Token* t, PartialAgg** p),

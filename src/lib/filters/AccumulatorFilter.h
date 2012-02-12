@@ -22,7 +22,7 @@ class AccumulatorInserter :
 			Accumulator* acc,
 			void (*destroyPAOFunc)(PartialAgg* p),
 			size_t max_keys);
-	~AccumulatorInserter();
+	virtual ~AccumulatorInserter() {}
 	void* operator()(void* pao_list) {}
   protected:
 	Aggregator* aggregator_;
