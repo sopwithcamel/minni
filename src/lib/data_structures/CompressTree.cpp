@@ -233,6 +233,9 @@ namespace compresstree {
         lastOffset_ = 0;
     
         nodeCtr = 0;
+        CompressTree::actr = 0;
+        CompressTree::bctr = 0;
+        CompressTree::cctr = 0;
         rootNode_ = new Node(LEAF, this, true);
         rootNode_->setSeparator(UINT64_MAX);
         rootNode_->setCompressible(false);
