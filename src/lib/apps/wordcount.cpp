@@ -71,4 +71,9 @@ inline bool WordCountPartialAgg::deserialize(const std::string& input)
 	return pb.ParseFromString(input);
 }
 
+inline bool WordCountPartialAgg::deserialize(const char* input, size_t size)
+{
+	return pb.ParseFromArray(input, size);
+}
+
 REGISTER_PAO(WordCountPartialAgg);

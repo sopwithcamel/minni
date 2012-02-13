@@ -43,6 +43,7 @@ class PartialAgg {
             google::protobuf::io::CodedInputStream* input) = 0;
 	/* Deserialize from buffer */
 	virtual bool deserialize(const std::string& input) = 0;
+	virtual bool deserialize(const char* input, size_t size) = 0;
 	static size_t create(Token*& t, PartialAgg** p_list) { return 0; }
 #ifdef UTHASH
 	UT_hash_handle hh;

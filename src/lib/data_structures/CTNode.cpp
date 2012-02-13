@@ -564,8 +564,7 @@ emptyChildren:
     void Node::deserializePAO(uint64_t* hashPtr, PartialAgg*& pao)
     {
         size_t buf_size = *(size_t*)(hashPtr + 1);
-        std::string serialized(getValue(hashPtr), buf_size);
-        pao->deserialize(serialized);
+        pao->deserialize(getValue(hashPtr), buf_size);
     }
 
     bool Node::addChild(Node* newNode)   

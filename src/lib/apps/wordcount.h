@@ -20,6 +20,7 @@ class WordCountPartialAgg : public PartialAgg {
 	inline bool deserialize(
             google::protobuf::io::CodedInputStream* input);
 	inline bool deserialize(const std::string& input);
+	inline bool deserialize(const char* input, size_t size);
   private:
     wordcount::pao pb;
 };
