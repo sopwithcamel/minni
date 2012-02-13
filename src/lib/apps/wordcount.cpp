@@ -1,5 +1,7 @@
 #include "wordcount.h"
 
+using namespace google::protobuf::io;
+
 #define KEY_SIZE        10
 
 WordCountPartialAgg::WordCountPartialAgg(char* wrd)
@@ -43,9 +45,11 @@ void WordCountPartialAgg::merge(PartialAgg* add_agg)
 	pb.set_count(count() + wp->count());
 }
 
-inline void WordCountPartialAgg::serialize(std::ostream* output) const
+inline void WordCountPartialAgg::serialize(
+        CodedOutputStream* output) const
 {
-    pb.SerializeToOstream(output);
+    output->WriteVarint32(pb.ByteSize());
+    assert(pb.SerializeToCodedStream(output));
 }
 
 inline void WordCountPartialAgg::serialize(std::string* output) const
@@ -53,9 +57,13 @@ inline void WordCountPartialAgg::serialize(std::string* output) const
     pb.SerializeToString(output);
 }
 
-inline bool WordCountPartialAgg::deserialize(std::istream* input)
+inline bool WordCountPartialAgg::deserialize(CodedInputStream* input)
 {
-	return pb.ParseFromIstream(input);
+    uint32_t bytes;
+    input->ReadVarint32(&bytes);
+    CodedInputStream::Limit msgLimit = input->PushLimit(bytes);
+    assert(pb.ParseFromCodedStream(input));
+    input->PopLimit(msgLimit);
 }
 
 inline bool WordCountPartialAgg::deserialize(const std::string& input)

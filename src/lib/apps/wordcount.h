@@ -1,3 +1,5 @@
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include "Mapper.h"
 #include "PartialAgg.h"
 #include "Tokenizer.h"
@@ -12,9 +14,11 @@ class WordCountPartialAgg : public PartialAgg {
 	static size_t create(Token* t, PartialAgg** p);
 //	void add(void* value);
 	void merge(PartialAgg* add_agg);
-	inline void serialize(std::ostream* output) const;
+	inline void serialize(
+            google::protobuf::io::CodedOutputStream* output) const;
 	inline void serialize(std::string* output) const;
-	inline bool deserialize(std::istream* input);
+	inline bool deserialize(
+            google::protobuf::io::CodedInputStream* input);
 	inline bool deserialize(const std::string& input);
   private:
     wordcount::pao pb;
