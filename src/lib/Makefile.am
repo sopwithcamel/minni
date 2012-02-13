@@ -51,7 +51,7 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 					   -I$(srcdir)/utils
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
-			-lltdl -lpthread -ltbb -lconfig++ -lsnappy -lssl -ltcmalloc
+			-lltdl -lpthread -ltbb -lconfig++ -lsnappy -lssl -ltcmalloc -lprotobuf
 
 minni_includedir = $(includedir)/libminni/libminni
 
