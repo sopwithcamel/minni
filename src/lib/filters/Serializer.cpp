@@ -1,5 +1,7 @@
 #include "Serializer.h"
 
+using namespace google::protobuf::io;
+
 #define BUF_SIZE	65535
 
 Serializer::Serializer(Aggregator* agg,
@@ -22,8 +24,10 @@ Serializer::Serializer(Aggregator* agg,
 		strcat(fname, num);
 
         std::ofstream* of = new std::ofstream(fname, ios::out|ios::binary);
-        fl.push_back(of);
-		assert(NULL != fl[i]);
+        fl_.push_back(of);
+        raw_output_.push_back(new OstreamOutputStream(fl_[i]));
+        coded_output_.push_back(new CodedOutputStream(raw_output_[i]));
+		assert(NULL != fl_[i]);
 	}
 	free(fname);
 	type = aggregator->getType();
@@ -59,7 +63,7 @@ void* Serializer::operator()(void* pao_list)
         pao = pao_l[ind];
         buc = partition(pao->key());	
         assert(pao != NULL);
-        pao->serialize(fl[buc]);
+        pao->serialize(coded_output_[buc]);
         if (recv->destroy_pao)
             destroyPAO(pao);
         ind++;
@@ -72,7 +76,10 @@ void* Serializer::operator()(void* pao_list)
 
         for (int i=0; i<num_buckets; i++) {
             fprintf(stderr, "Closing file: %d/%d\n", i, num_buckets);
-            fl[i]->close();
+            delete coded_output_[i];
+            delete raw_output_[i];
+            fl_[i]->close();
+            delete fl_[i];
         }
 
     }

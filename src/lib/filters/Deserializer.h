@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <tr1/unordered_map>
 
 #include "tbb/pipeline.h"
@@ -48,6 +50,9 @@ private:
 	void* read_buf;
 
 	std::ifstream *cur_bucket;		// file pointer for current bucket
+    google::protobuf::io::ZeroCopyInputStream *raw_input;
+    google::protobuf::io::CodedInputStream* coded_input;
+    
 	void* operator()(void*);
 	uint64_t appendToList(PartialAgg* p);
 };

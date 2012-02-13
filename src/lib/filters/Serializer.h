@@ -2,6 +2,8 @@
 #define LIB_SERIALIZER_H
 
 #include <stdlib.h>
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <iostream>
 #include <tr1/unordered_map>
 
@@ -33,7 +35,9 @@ private:
 	void (*destroyPAO)(PartialAgg* p);
 	bool already_partitioned;
 	int num_buckets;
-	std::vector<std::ofstream*> fl;
+	std::vector<std::ofstream*> fl_;
+    std::vector<google::protobuf::io::ZeroCopyOutputStream*> raw_output_;
+    std::vector<google::protobuf::io::CodedOutputStream*> coded_output_;
 	char* outfile_prefix;
 	size_t tokens_processed;
 	void* operator()(void* pao_list);
