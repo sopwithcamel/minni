@@ -390,7 +390,8 @@ begin_flush:
                 n->emptyBuffer(Node::RECURSIVE);
                 if (rootFlag) {
                     // do the split and create new root
-                    handleFullLeaves();
+                    if (n->isLeaf())
+                        handleFullLeaves();
                     rootFlag = false;
                     pthread_mutex_lock(&rootNodeAvailableMutex_);
                     pthread_cond_signal(&rootNodeAvailableForWriting_);
