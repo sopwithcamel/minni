@@ -193,7 +193,9 @@ namespace compresstree {
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Emptying tree!\n");
 #endif
+#ifdef ENABLE_COUNTERS
                 fprintf(stderr, "%lu %lu %lu\n", CompressTree::actr, CompressTree::bctr, CompressTree::cctr);
+#endif
                 emptyTree();
                 stopThreads();
                 return false;

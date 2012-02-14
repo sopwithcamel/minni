@@ -407,14 +407,18 @@ emptyChildren:
         uint64_t lastIndex = 0;
         for (uint64_t i=1; i<numElements_; i++) {
             if (*(tree_->els_[i]) == *(tree_->els_[lastIndex])) {
+#ifdef ENABLE_COUNTERS
                 CompressTree::actr++;
+#endif
                 // aggregate elements
                 if (i == lastIndex + 1)
                     deserializePAO(tree_->els_[lastIndex], lastPAO);
                 deserializePAO(tree_->els_[i], thisPAO);
                 if (!thisPAO->key().compare(lastPAO->key())) {
                     lastPAO->merge(thisPAO);
+#ifdef ENABLE_COUNTERS
                     CompressTree::cctr++;
+#endif
                     continue;
                 }
             }
@@ -438,7 +442,9 @@ emptyChildren:
                 memmove(tree_->auxBuffer_ + auxOffset, 
                         (void*)(serialized.data()), buf_size);
                 auxOffset += buf_size;
+#ifdef ENABLE_COUNTERS
                 CompressTree::bctr++;
+#endif
             }
             auxEls++;
             lastIndex = i;
