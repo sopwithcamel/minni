@@ -419,7 +419,13 @@ emptyChildren:
                 }
             }
             // copy hash and size into auxBuffer_
-            if (i > lastIndex + 1) {
+            if (i == lastIndex + 1) {
+                buf_size = *(size_t*)(tree_->els_[lastIndex] + 1);
+                el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
+                memmove(tree_->auxBuffer_ + auxOffset, 
+                        (void*)(tree_->els_[lastIndex]), el_size);
+                auxOffset += el_size;
+            } else {
                 std::string serialized;
                 lastPAO->serialize(&serialized);
                 buf_size = serialized.size();
@@ -433,12 +439,6 @@ emptyChildren:
                         (void*)(serialized.data()), buf_size);
                 auxOffset += buf_size;
                 CompressTree::bctr++;
-            } else {
-                buf_size = *(size_t*)(tree_->els_[lastIndex] + 1);
-                el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
-                memmove(tree_->auxBuffer_ + auxOffset, 
-                        (void*)(tree_->els_[lastIndex]), el_size);
-                auxOffset += el_size;
             }
             auxEls++;
             lastIndex = i;
@@ -556,7 +556,7 @@ emptyChildren:
         return true;
     }
 
-    char* Node::getValue(uint64_t* hashPtr)
+    inline char* Node::getValue(uint64_t* hashPtr) const
     {
         return (char*)((char*)hashPtr + sizeof(uint64_t) + sizeof(size_t));
     }
