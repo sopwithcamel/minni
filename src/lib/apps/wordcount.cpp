@@ -15,7 +15,6 @@ WordCountPartialAgg::WordCountPartialAgg(char* wrd)
 
 WordCountPartialAgg::~WordCountPartialAgg()
 {
-    PartialAgg::destCtr++;
 }
 
 
@@ -27,7 +26,6 @@ size_t WordCountPartialAgg::create(Token* t, PartialAgg** p)
 	else	
 		new_pao = new WordCountPartialAgg((char*)t->tokens[0]);
 	p[0] = new_pao;	
-    PartialAgg::createCtr++;
 	return 1;
 }
 
