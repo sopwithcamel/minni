@@ -38,9 +38,6 @@ namespace compresstree {
         // aux buffer for use in sorting
         auxBuffer_ = (char*)malloc(BUFFER_SIZE);
 
-        // allocate space for element pointers
-        els_ = (uint64_t**)malloc(sizeof(uint64_t*) * MAX_ELS_PER_BUFFER);
-
         // buffer for use in compression
         compBuffer_ = (char*)malloc(BUFFER_SIZE * 2);
 
@@ -53,7 +50,6 @@ namespace compresstree {
         free(auxBuffer_);
         free(compBuffer_);
         free(evictedBuffer_);
-        free(els_);
         pthread_cond_destroy(&nodesReadyForCompression_);
         pthread_mutex_destroy(&nodesReadyForCompressMutex_);
         pthread_cond_destroy(&compressionDone_);
@@ -80,8 +76,8 @@ namespace compresstree {
         pthread_mutex_lock(&rootNodeAvailableMutex_);
         if (rootNode_->isFull()) {
             pthread_mutex_unlock(&rootNodeAvailableMutex_);
-            addNodeToEmpty(rootNode_);
-            wakeupEmptier();
+            addNodeToSort(rootNode_);
+            wakeupSorter();
             pthread_mutex_lock(&rootNodeAvailableMutex_);
             while (rootNode_->isFull()) {
 #ifdef CT_NODE_DEBUG
@@ -130,6 +126,16 @@ namespace compresstree {
     bool CompressTree::nextValue(void*& hash, PartialAgg*& agg)
     {
         if (!allFlush_) {
+            /* wait for all nodes in the to-sort list to be sorted
+               before proceeding */
+            pthread_mutex_lock(&nodesToSortMutex_);
+            while (!nodesToSort_.empty()) {
+                pthread_mutex_unlock(&nodesToSortMutex_);
+                usleep(10000);
+                pthread_mutex_lock(&nodesToSortMutex_);
+            }
+            pthread_mutex_unlock(&nodesToSortMutex_);
+            
             /* wait for all nodes in the to-empty list to be emptied
                before proceeding */
             pthread_mutex_lock(&nodesReadyForEmptyMutex_);
@@ -261,6 +267,8 @@ begin_flush:
             for (uint32_t i=0; i<curNode->children_.size(); i++) {
                 CALL_MEM_FUNC(*curNode->children_[i], curNode->children_[i]->decompress)();
             }
+            curNode->sortBuffer();
+            curNode->aggregateBuffer();
             curNode->emptyBuffer(Node::NON_RECURSIVE);
 
             // count number of siblings including itself after flush
@@ -288,6 +296,7 @@ begin_flush:
                 CALL_MEM_FUNC(*curNode, curNode->decompress)();
                 curNode->waitForCompressAction();
                 curNode->sortBuffer();
+                curNode->aggregateBuffer();
                 CALL_MEM_FUNC(*curNode, curNode->compress)();
                 allLeaves_.push_back(curNode);
             }
@@ -307,6 +316,70 @@ begin_flush:
         fprintf(stderr, "Tree has %ld elements\n", numit);
 #endif
         return true;
+    }
+
+    void CompressTree::addNodeToSort(Node* node)
+    {
+        pthread_mutex_lock(&nodesToSortMutex_);
+        if (node) {
+                nodesToSort_.push_back(node);
+        }
+        pthread_mutex_unlock(&nodesToSortMutex_);
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "Node %d added to to-sort list\n", node->id_);
+        for (int i=0; i<nodesToSort_.size(); i++)
+            fprintf(stderr, "%d, ", nodesToSort_[i]->id_);
+        fprintf(stderr, "\n");
+#endif
+        // The node is decompressed when called.
+        assert(!node->isCompressed());
+    }
+
+    bool CompressTree::wakeupSorter()
+    {
+        pthread_mutex_lock(&nodesToSortMutex_);
+        pthread_cond_signal(&nodesReadyForSorting_);
+        pthread_mutex_unlock(&nodesToSortMutex_);
+        return true;
+    }
+
+    void* CompressTree::callSort()
+    {
+        bool rootFlag = false;
+        pthread_mutex_lock(&nodesToSortMutex_);
+        pthread_barrier_wait(&threadsBarrier_);
+        while (nodesToSort_.empty() && !inputComplete_) {
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "sorter sleeping\n");
+#endif
+            pthread_cond_wait(&nodesReadyForSorting_, 
+                    &nodesToSortMutex_);
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "sorter fingered\n");
+#endif
+            while (!nodesToSort_.empty()) {
+                Node* n = nodesToSort_.front();
+                nodesToSort_.pop_front();
+                pthread_mutex_unlock(&nodesToSortMutex_);
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "sorter: sorting node: %d\t", n->id_);
+                fprintf(stderr, "remaining: ");
+                for (int i=0; i<nodesToSort_.size(); i++)
+                    fprintf(stderr, "%d, ", nodesToSort_[i]->id_);
+                fprintf(stderr, "\n");
+#endif
+                n->sortBuffer();
+                addNodeToEmpty(n);
+                wakeupEmptier();
+                pthread_mutex_lock(&nodesToSortMutex_);
+            }
+        }
+        pthread_mutex_unlock(&nodesToSortMutex_);
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "Sorter quitting: %d\n", nodesToSort_.size());
+#endif
+        pthread_exit(NULL);
+        
     }
 
     void* CompressTree::callCompress()
@@ -398,18 +471,24 @@ begin_flush:
                     pthread_mutex_lock(&rootNodeAvailableMutex_);
                     pthread_cond_signal(&rootNodeAvailableForWriting_);
                     pthread_mutex_unlock(&rootNodeAvailableMutex_);
+                } else {
+                    // handle all the full leaves that were queued up
+                    handleFullLeaves();
                 }
 
                 pthread_mutex_lock(&nodesReadyForEmptyMutex_);
             }
-            // handle all the full leaves that were queued up
-            handleFullLeaves();
         }
         pthread_mutex_unlock(&nodesReadyForEmptyMutex_);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Emptier quitting: %d\n", nodesToEmpty_.size());
 #endif
         pthread_exit(NULL);
+    }
+
+    void* CompressTree::callSortHelper(void *context)
+    {
+        return ((CompressTree*)context)->callSort();
     }
 
     bool CompressTree::wakeupEmptier()
@@ -471,8 +550,7 @@ begin_flush:
             Node* node = leavesToBeEmptied_.front();
             leavesToBeEmptied_.pop_front();
 
-            node->waitForCompressAction(); 
-            node->sortBuffer();
+            node->aggregateBuffer();
             // check if sorting and aggregating made the leaf small enough
             if (!node->isFull() && node->compressible_) {
 #ifdef CT_NODE_DEBUG
@@ -507,6 +585,9 @@ begin_flush:
     {
         pthread_attr_t attr;
 
+        pthread_mutex_init(&nodesToSortMutex_, NULL);
+        pthread_cond_init(&nodesReadyForSorting_, NULL);
+
         pthread_mutex_init(&nodesReadyForCompressMutex_, NULL);
         pthread_cond_init(&nodesReadyForCompression_, NULL);
         pthread_mutex_init(&compressionDoneMutex_, NULL);
@@ -523,16 +604,21 @@ begin_flush:
 
         pthread_mutex_init(&evictedBufferMutex_, NULL);
 
-        pthread_barrier_init(&threadsBarrier_, NULL, 3);
+        pthread_barrier_init(&threadsBarrier_, NULL, 4);
 
-        pthread_attr_init(&attr);
         inputComplete_ = false;
 
+        pthread_attr_init(&attr);
         pthread_create(&compressionThread_, &attr, 
                 &CompressTree::callCompressHelper, (void*)this);
+
         pthread_attr_init(&attr);
         pthread_create(&emptierThread_, &attr,
                 &CompressTree::callEmptyHelper, (void*)this);
+
+        pthread_attr_init(&attr);
+        pthread_create(&sorterThread_, &attr,
+                &CompressTree::callSortHelper, (void*)this);
 
         pthread_barrier_wait(&threadsBarrier_);
         threadsStarted_ = true;
@@ -540,10 +626,10 @@ begin_flush:
 
     void CompressTree::stopThreads()
     {
-//        pthread_cancel(compressionThread_);
-//        pthread_cancel(emptierThread_);
         void* status;
         inputComplete_ = true;
+        wakeupSorter();
+        pthread_join(sorterThread_, &status);
         wakeupEmptier();
         pthread_join(emptierThread_, &status);
         wakeupCompressor();

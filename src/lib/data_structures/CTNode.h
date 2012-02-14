@@ -67,10 +67,12 @@ namespace compresstree {
          *    handleFullLeaves() call.
          */
         bool emptyBuffer(EmptyType etype);
-        /* sort the buffer based on hash value. After sorting perform an
-         * aggregation pass.
+        /* sort the buffer based on hash value. 
          * Must be called when buffer is decompressed */
         bool sortBuffer();
+        /* Aggregate the sorted buffer
+         * Must be called when buffer is decompressed */
+        bool aggregateBuffer();
         /* advance n elements in the buffer; the starting offset must be
          * passed, which is updated; returns false if past end */
         bool advance(size_t n, size_t& offset);
@@ -110,6 +112,7 @@ namespace compresstree {
         void swapPointers(uint64_t*& el1, uint64_t*& el2);
         void verifySort();
         void setSeparator(uint64_t sep);
+        void waitForSort();
 
         /* Compression-related functions */
         NodeCompFn compress;
@@ -144,6 +147,7 @@ namespace compresstree {
         size_t numElements_;
         size_t curOffset_;
         PartialAgg *lastPAO, *thisPAO;
+        uint64_t** els_;         // pointers to elements in buffer
 
         /* Pointers to children */
         std::vector<Node*> children_;

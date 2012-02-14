@@ -132,8 +132,7 @@ namespace compresstree {
         if (curOffset_ == 0)
             goto emptyChildren;
 
-        waitForCompressAction();
-        sortBuffer();
+        aggregateBuffer();
         // find the first separator strictly greater than the first element
         curHash = (uint64_t*)(data_ + offset);
         while (*curHash >= children_[curChild]->separator_) {
@@ -170,9 +169,7 @@ namespace compresstree {
                         fprintf(stderr, "Node: %d: alloc'ing fresh buffer\n",
                                 children_[curChild]->id_);
 #endif
-                        assert(!posix_memalign(
-                                (void**)&(children_[curChild]->data_), 
-                                sizeof(size_t), BUFFER_SIZE));
+                        children_[curChild]->data_ = (char*)malloc(BUFFER_SIZE);
                     }
                     assert(children_[curChild]->copyIntoBuffer(data_ + 
                                 lastOffset, offset - lastOffset));
@@ -246,7 +243,8 @@ emptyChildren:
         // check if any children are full
             for (curChild=0; curChild < children_.size(); curChild++) {
                 if (children_[curChild]->isFull()) {
-                    tree_->addNodeToEmpty(children_[curChild]);
+                    tree_->addNodeToSort(children_[curChild]);
+                    tree_->wakeupSorter();
                 } else {
                     CALL_MEM_FUNC(*children_[curChild], 
                             children_[curChild]->compress)();
@@ -380,10 +378,6 @@ emptyChildren:
     bool Node::sortBuffer()
     {
         size_t offset = 0;
-        size_t el_size;
-        size_t auxOffset = 0;
-        size_t auxEls = 0;
-        size_t buf_size;
 
         if (numElements_ == 0)
             return true;
@@ -393,27 +387,37 @@ emptyChildren:
             assert(false);
         }
 #endif
+        // allocate space for element pointers
+        els_ = (uint64_t**)malloc(sizeof(uint64_t*) * MAX_ELS_PER_BUFFER);
 
         for (uint64_t i=0; i<numElements_; i++) {
-            tree_->els_[i] = (uint64_t*)(data_ + offset);
+            els_[i] = (uint64_t*)(data_ + offset);
             if (!advance(1, offset))
                 return false;
         }
 
         // quicksort elements
-        quicksort(tree_->els_, 0, numElements_ - 1);
+        quicksort(els_, 0, numElements_ - 1);
+    }
+
+    bool Node::aggregateBuffer()
+    {
+        size_t el_size;
+        size_t auxOffset = 0;
+        size_t auxEls = 0;
+        size_t buf_size;
 
         // aggregate elements in buffer
         uint64_t lastIndex = 0;
         for (uint64_t i=1; i<numElements_; i++) {
-            if (*(tree_->els_[i]) == *(tree_->els_[lastIndex])) {
+            if (*(els_[i]) == *(els_[lastIndex])) {
 #ifdef ENABLE_COUNTERS
                 CompressTree::actr++;
 #endif
                 // aggregate elements
                 if (i == lastIndex + 1)
-                    deserializePAO(tree_->els_[lastIndex], lastPAO);
-                deserializePAO(tree_->els_[i], thisPAO);
+                    deserializePAO(els_[lastIndex], lastPAO);
+                deserializePAO(els_[i], thisPAO);
                 if (!thisPAO->key().compare(lastPAO->key())) {
                     lastPAO->merge(thisPAO);
 #ifdef ENABLE_COUNTERS
@@ -424,17 +428,17 @@ emptyChildren:
             }
             // copy hash and size into auxBuffer_
             if (i == lastIndex + 1) {
-                buf_size = *(size_t*)(tree_->els_[lastIndex] + 1);
+                buf_size = *(size_t*)(els_[lastIndex] + 1);
                 el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
                 memmove(tree_->auxBuffer_ + auxOffset, 
-                        (void*)(tree_->els_[lastIndex]), el_size);
+                        (void*)(els_[lastIndex]), el_size);
                 auxOffset += el_size;
             } else {
                 std::string serialized;
                 lastPAO->serialize(&serialized);
                 buf_size = serialized.size();
                 memmove(tree_->auxBuffer_ + auxOffset, 
-                        (void*)(tree_->els_[lastIndex]), sizeof(uint64_t));
+                        (void*)(els_[lastIndex]), sizeof(uint64_t));
                 auxOffset += sizeof(uint64_t);
                 memmove(tree_->auxBuffer_ + auxOffset, 
                         (void*)(&buf_size), sizeof(size_t));
@@ -449,12 +453,15 @@ emptyChildren:
             auxEls++;
             lastIndex = i;
         }
-        buf_size = *(size_t*)(tree_->els_[lastIndex] + 1);
+        buf_size = *(size_t*)(els_[lastIndex] + 1);
         el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
         memmove(tree_->auxBuffer_ + auxOffset, 
-                (void*)(tree_->els_[lastIndex]), el_size);
+                (void*)(els_[lastIndex]), el_size);
         auxOffset += el_size;
         auxEls++;
+
+        // free pointer memory
+        free(els_);
 
         // swap buffer pointers
         char* tp = data_;
@@ -848,7 +855,8 @@ emptyChildren:
             size_t compressed_length;
             snappy::RawCompress(data_, curOffset_, tree_->compBuffer_,
                     &compressed_length);
-            assert(!posix_memalign((void**)&compressed_, sizeof(size_t), compressed_length));
+            assert(!posix_memalign((void**)&compressed_, sizeof(size_t),
+                    compressed_length));
             memmove(compressed_, tree_->compBuffer_, compressed_length);
             /* Can be called from multiple places:
              * + emptyBuffer()-1: on the node whose buffer was emptied - no free

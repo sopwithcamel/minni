@@ -15,7 +15,7 @@ namespace compresstree {
 //    const size_t BUFFER_SIZE = 20971520;
     const size_t BUFFER_SIZE = 31457280;
     const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 2;
-    const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
+    const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 24;
 
     enum CompressAlgorithm {
         SNAPPY,
@@ -44,6 +44,10 @@ namespace compresstree {
       private:
         /* Add leaf whose buffer is full to be emptied once all internal node
          * buffers have been emptied */
+        void addNodeToSort(Node* node);
+        bool wakeupSorter();
+        void* callSort();
+        static void* callSortHelper(void* context);
         bool addLeafToEmpty(Node* node);
         bool wakeupEmptier();
         /* Add a node to the list of nodes whose buffers have to be emptied */
@@ -96,7 +100,6 @@ namespace compresstree {
         pthread_mutex_t evictedBufferMutex_;
 
         /* Node related */
-        uint64_t** els_;         // pointers to elements in buffer
         char* auxBuffer_;       // used in sorting
         char* compBuffer_;
 
@@ -110,6 +113,12 @@ namespace compresstree {
         pthread_mutex_t emptyingDoneMutex_;
         bool askForEmptyingDoneNotice_;
         std::deque<Node*> nodesToEmpty_;
+
+        /* Members for async-sorting */
+        pthread_t sorterThread_;
+        pthread_cond_t nodesReadyForSorting_;
+        pthread_mutex_t nodesToSortMutex_;
+        std::deque<Node*> nodesToSort_;
     };
 }
 
