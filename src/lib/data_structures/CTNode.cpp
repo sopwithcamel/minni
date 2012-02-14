@@ -809,7 +809,7 @@ emptyChildren:
         }
         pthread_mutex_unlock(&compActMutex_);
         pthread_mutex_lock(&(tree_->nodesReadyForCompressMutex_));
-        tree_->nodesToCompress_.push_back(this);
+        tree_->nodesToCompress_.push_front(this);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "call for decompressing node %d\t", id_);
         for (int i=0; i<tree_->nodesToCompress_.size(); i++)

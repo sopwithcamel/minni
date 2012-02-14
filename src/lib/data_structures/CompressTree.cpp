@@ -321,6 +321,7 @@ begin_flush:
 #endif
             while (!nodesToCompress_.empty()) {
                 Node* n = nodesToCompress_.front();
+                nodesToCompress_.pop_front();
                 pthread_mutex_unlock(&nodesReadyForCompressMutex_);
                 pthread_mutex_lock(&(n->compActMutex_));
                 if (n->compAct_ == Node::COMPRESS && !n->isCompressed()) {
@@ -334,7 +335,6 @@ begin_flush:
                 n->compAct_ = Node::NONE;
                 pthread_mutex_unlock(&(n->compActMutex_));
                 pthread_mutex_lock(&nodesReadyForCompressMutex_);
-                nodesToCompress_.pop_front();
             }
             pthread_mutex_lock(&compressionDoneMutex_);
             if (askForCompressionDoneNotice_) {
@@ -384,7 +384,7 @@ begin_flush:
                     fprintf(stderr, "%d, ", nodesToEmpty_[i]->id_);
                 fprintf(stderr, "\n");
 #endif
-                for (int i=0; i<n->children_.size(); i++) {
+                for (int i=n->children_.size()-1; i>=0; i--) {
                     CALL_MEM_FUNC(*n->children_[i], n->children_[i]->decompress)();
                 }        
                 n->emptyBuffer(Node::RECURSIVE);
