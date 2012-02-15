@@ -1,9 +1,6 @@
 #include "CompressTreeFilter.h"
 #include <openssl/evp.h>
 
-#define Hash    HASH_FCN
-#define HASH_FUNCTION   HASH_MUR
-
 CompressTreeInserter::CompressTreeInserter(Aggregator* agg,
         Accumulator* acc,
         size_t (*createPAOFunc)(Token* t, PartialAgg** p),
