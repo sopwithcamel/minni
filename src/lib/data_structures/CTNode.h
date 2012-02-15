@@ -7,6 +7,7 @@
 
 #include "CompressTree.h"
 #include "PartialAgg.h"
+#include "Slaves.h"
 
 //#define ENABLE_ASSERT_CHECKS
 //#define CT_NODE_DEBUG
@@ -19,6 +20,9 @@
 namespace compresstree {
 
     class CompressTree;
+    class Emptier;
+    class Compressor;
+    class Sorter;
 
     enum NodeType {
         NON_LEAF,       // any node that is not a leaf or the root
@@ -27,10 +31,13 @@ namespace compresstree {
 
     class Node {
         friend class CompressTree;
+        friend class Compressor;
+        friend class Emptier;
+        friend class Sorter;
         typedef bool (Node::*NodeCompFn)();
         enum EmptyType {
-            NON_RECURSIVE,
-            RECURSIVE
+            ALWAYS,
+            IF_FULL
         };
         enum CompressionAction {
             NONE,
@@ -66,7 +73,7 @@ namespace compresstree {
          *  + an emptyBuffer() invocation should be followed by a
          *    handleFullLeaves() call.
          */
-        bool emptyBuffer(EmptyType etype);
+        bool emptyBuffer();
         /* sort the buffer based on hash value. 
          * Must be called when buffer is decompressed */
         bool sortBuffer();
@@ -136,6 +143,7 @@ namespace compresstree {
         void setCompressible(bool flag);
 
       private:
+        static EmptyType emptyType_;
         /* pointer to the tree */
         CompressTree* tree_;
         NodeType typ_;

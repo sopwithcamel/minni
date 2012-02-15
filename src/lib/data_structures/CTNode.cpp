@@ -11,10 +11,11 @@
 #include "zlib.h"
 
 namespace compresstree {
+    Node::EmptyType Node::emptyType_ = IF_FULL;
+
     Node::Node(NodeType typ, CompressTree* tree, bool alloc) :
         tree_(tree),
         typ_(typ),
-        id_(CompressTree::nodeCtr++),
         parent_(NULL),
         numElements_(0),
         curOffset_(0),
@@ -23,6 +24,7 @@ namespace compresstree {
         queuedForCompAct_(false),
         compAct_(NONE)
     {
+        id_ = tree_->nodeCtr++;
         // Allocate memory for data buffer
         if (alloc) {
             assert(!posix_memalign((void**)&data_, sizeof(size_t),
@@ -105,7 +107,7 @@ namespace compresstree {
         return false;
     }
 
-    bool Node::emptyBuffer(EmptyType type)
+    bool Node::emptyBuffer()
     {
         uint32_t curChild = 0;
         // offset till which elements have been written
@@ -125,6 +127,9 @@ namespace compresstree {
                 fprintf(stderr, "Leaf node %d added to full-leaf-list\
                         %lu/%lu\n", id_, curOffset_, EMPTY_THRESHOLD);
 #endif
+            } else { // we aggregate and compress
+                aggregateBuffer();
+                CALL_MEM_FUNC(*this, compress)();
             }
             return true;
         }
@@ -239,16 +244,14 @@ namespace compresstree {
         }
 
 emptyChildren:
-        if (type == RECURSIVE) {
         // check if any children are full
-            for (curChild=0; curChild < children_.size(); curChild++) {
-                if (children_[curChild]->isFull()) {
-                    tree_->addNodeToSort(children_[curChild]);
-                    tree_->wakeupSorter();
-                } else {
-                    CALL_MEM_FUNC(*children_[curChild], 
-                            children_[curChild]->compress)();
-                }
+        for (curChild=0; curChild < children_.size(); curChild++) {
+            if (emptyType_ == ALWAYS || children_[curChild]->isFull()) {
+                tree_->sorter_->addNode(children_[curChild]);
+                tree_->sorter_->wakeup();
+            } else {
+                CALL_MEM_FUNC(*children_[curChild], 
+                        children_[curChild]->compress)();
             }
         }
 
@@ -503,7 +506,7 @@ emptyChildren:
         median_hash = (uint64_t*)(data_ + offset);
 
         // check if we have reached limit of nodes that can be kept in-memory
-        if (CompressTree::nodeCtr < tree_->nodesInMemory_) {
+        if (tree_->nodeCtr < tree_->nodesInMemory_) {
             // create new leaf
             Node* newLeaf = new Node(LEAF, tree_, true);
             newLeaf->copyIntoBuffer(data_ + offset, curOffset_ - offset);
@@ -753,11 +756,12 @@ emptyChildren:
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Trying to compress node %d twice", id_);
 #endif
-                assert(false);
+//                assert(false);
             }
         } else {
             if (curOffset_ == 0) {
                 isCompressed_ = true;
+                queuedForCompAct_ = false;
                 pthread_mutex_unlock(&compActMutex_);
                 return true;
             } else {
@@ -766,16 +770,8 @@ emptyChildren:
             }
         }
         pthread_mutex_unlock(&compActMutex_);
-        pthread_mutex_lock(&(tree_->nodesReadyForCompressMutex_));
-        tree_->nodesToCompress_.push_back(this);
-#ifdef CT_NODE_DEBUG
-        fprintf(stderr, "call for compressing node %d\t", id_);
-        for (int i=0; i<tree_->nodesToCompress_.size(); i++)
-            fprintf(stderr, "%d, ", tree_->nodesToCompress_[i]->id_);
-        fprintf(stderr, "\n");
-#endif
-        pthread_cond_signal(&(tree_->nodesReadyForCompression_));
-        pthread_mutex_unlock(&(tree_->nodesReadyForCompressMutex_));
+        tree_->compressor_->addNode(this);
+        tree_->compressor_->wakeup();
         return true;
     }
     
@@ -813,6 +809,7 @@ emptyChildren:
             // check if the buffer is empty;
             if (curOffset_ == 0) {
                 isCompressed_ = false;
+                queuedForCompAct_ = false;
                 pthread_mutex_unlock(&compActMutex_);
                 return true;
             } else {
@@ -821,16 +818,8 @@ emptyChildren:
             }
         }
         pthread_mutex_unlock(&compActMutex_);
-        pthread_mutex_lock(&(tree_->nodesReadyForCompressMutex_));
-        tree_->nodesToCompress_.push_front(this);
-#ifdef CT_NODE_DEBUG
-        fprintf(stderr, "call for decompressing node %d\t", id_);
-        for (int i=0; i<tree_->nodesToCompress_.size(); i++)
-            fprintf(stderr, "%d, ", tree_->nodesToCompress_[i]->id_);
-        fprintf(stderr, "\n");
-#endif
-        pthread_cond_signal(&(tree_->nodesReadyForCompression_));
-        pthread_mutex_unlock(&(tree_->nodesReadyForCompressMutex_));
+        tree_->compressor_->addNode(this);
+        tree_->compressor_->wakeup();
         return true;
     }
 
@@ -873,10 +862,7 @@ emptyChildren:
 
         isCompressed_ = true;
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "compressed node %d\t", id_);
-        for (int i=0; i<tree_->nodesToCompress_.size(); i++)
-            fprintf(stderr, "%d, ", tree_->nodesToCompress_[i]->id_);
-        fprintf(stderr, "\n");
+        fprintf(stderr, "compressed node %d\n", id_);
 #endif
         return true;
     }
