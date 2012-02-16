@@ -27,11 +27,13 @@ namespace compresstree {
     class Emptier;
     class Compressor;
     class Sorter;
+    class Pager;
 
     class CompressTree :
             public Accumulator
     {
         static uint64_t actr, bctr, cctr;
+        static bool enablePaging;
         friend class Node;
         friend class Compressor;
         friend class Emptier;
@@ -52,6 +54,7 @@ namespace compresstree {
         static void* callSortHelper(void* context);
         static void* callEmptyHelper(void* context);
         static void* callCompressHelper(void *context);
+        static void* callPageHelper(void *context);
         
         bool addLeafToEmpty(Node* node);
         bool createNewRoot(Node* otherChild);
@@ -100,6 +103,9 @@ namespace compresstree {
         /* Compression-related */
         Compressor* compressor_;
         char* compBuffer_;
+
+        /* Paging */
+        Pager* pager_;
     };
 }
 

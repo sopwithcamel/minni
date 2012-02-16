@@ -11,6 +11,8 @@ namespace compresstree {
     uint64_t CompressTree::bctr = 0;
     uint64_t CompressTree::cctr = 0;
 
+    bool CompressTree::enablePaging = false;
+
     CompressTree::CompressTree(uint32_t a, uint32_t b, uint32_t nodesInMemory,
                 size_t (*createPAOFunc)(Token* t, PartialAgg** p),
                 void (*destroyPAOFunc)(PartialAgg* p)) :
@@ -119,29 +121,46 @@ namespace compresstree {
             /* wait for all nodes to be sorted and emptied
                before proceeding */
             do {
+#ifdef ENABLE_PAGING
+                pager_->waitUntilCompletionNoticeReceived();
+#endif
                 sorter_->waitUntilCompletionNoticeReceived();
                 emptier_->waitUntilCompletionNoticeReceived();
+#ifdef ENABLE_PAGING
+            } while (!sorter_->empty() || !emptier_->empty() || 
+                    !pager_->empty());
+#else
             } while (!sorter_->empty() || !emptier_->empty());
+#endif
 
             flushBuffers();
 
             /* Wait for all outstanding compression work to finish */
             compressor_->waitUntilCompletionNoticeReceived();
             allFlush_ = true;
+
+            // page in and decompress first leaf
+            Node* curLeaf = allLeaves_[0];
+#ifdef ENABLE_PAGING
+            if (curLeaf->isPagedOut()) {
+                curLeaf->pageIn();
+                curLeaf->waitForPageIn();
+            }
+#endif
+            if (curLeaf->isCompressed()) {
+                CALL_MEM_FUNC(*curLeaf, curLeaf->decompress)();
+                curLeaf->waitForCompressAction();
+            }
         }
 
         Node* curLeaf = allLeaves_[lastLeafRead_];
-        if (curLeaf->isCompressed()) {
-            CALL_MEM_FUNC(*curLeaf, curLeaf->decompress)();
-            curLeaf->waitForCompressAction();
-        }
-
         hash = (uint64_t*)(curLeaf->data_ + lastOffset_);
         createPAO_(NULL, &agg);
         rootNode_->deserializePAO((uint64_t*)hash, agg);
         lastOffset_ += sizeof(uint64_t);
         size_t buf_size = *(size_t*)(curLeaf->data_ + lastOffset_);
         lastOffset_ += sizeof(size_t) + buf_size;
+
         if (lastOffset_ >= curLeaf->curOffset_) {
             CALL_MEM_FUNC(*curLeaf, curLeaf->compress)();
             if (++lastLeafRead_ == allLeaves_.size()) {
@@ -158,6 +177,10 @@ namespace compresstree {
                 return false;
             }
             Node *n = allLeaves_[lastLeafRead_];
+#ifdef ENABLE_PAGING
+            n->pageIn();
+            n->waitForPageIn();
+#endif
             CALL_MEM_FUNC(*n, n->decompress)();
             n->waitForCompressAction();
             lastOffset_ = 0;
@@ -214,9 +237,16 @@ namespace compresstree {
         /* wait for all nodes to be sorted and emptied
            before proceeding */
         do {
+#ifdef ENABLE_PAGING
+            pager_->waitUntilCompletionNoticeReceived();
+#endif
             sorter_->waitUntilCompletionNoticeReceived();
             emptier_->waitUntilCompletionNoticeReceived();
+#ifdef ENABLE_PAGING
+        } while (!sorter_->empty() || !emptier_->empty() || !pager_->empty());
+#else
         } while (!sorter_->empty() || !emptier_->empty());
+#endif
 
         // add all leaves; 
         visitQueue.push_back(rootNode_);
@@ -254,6 +284,11 @@ namespace compresstree {
     void* CompressTree::callEmptyHelper(void *context)
     {
         return ((CompressTree*)context)->emptier_->work();
+    }
+
+    void* CompressTree::callPageHelper(void *context)
+    {
+        return ((CompressTree*)context)->pager_->work();
     }
 
     bool CompressTree::addLeafToEmpty(Node* node)
@@ -306,8 +341,11 @@ namespace compresstree {
         pthread_cond_init(&rootNodeAvailableForWriting_, NULL);
 
         pthread_mutex_init(&evictedBufferMutex_, NULL);
-
+#ifdef ENABLE_PAGING
         pthread_barrier_init(&threadsBarrier_, NULL, 5);
+#else
+        pthread_barrier_init(&threadsBarrier_, NULL, 4);
+#endif
 
         pthread_attr_t attr;
 
@@ -321,10 +359,17 @@ namespace compresstree {
         pthread_create(&compressor_->thread_, &attr, 
                 &CompressTree::callCompressHelper, (void*)this);
 
-        pthread_attr_init(&attr);
         emptier_ = new Emptier(this);
+        pthread_attr_init(&attr);
         pthread_create(&emptier_->thread_, &attr,
                 &CompressTree::callEmptyHelper, (void*)this);
+
+#ifdef ENABLE_PAGING
+        pager_ = new Pager(this);
+        pthread_attr_init(&attr);
+        pthread_create(&pager_->thread_, &attr,
+                &CompressTree::callPageHelper, (void*)this);
+#endif
 
         pthread_barrier_wait(&threadsBarrier_);
         threadsStarted_ = true;
@@ -342,6 +387,11 @@ namespace compresstree {
         compressor_->setInputComplete(true);
         compressor_->wakeup();
         pthread_join(compressor_->thread_, &status);
+#ifdef ENABLE_PAGING
+        pager_->setInputComplete(true);
+        pager_->wakeup();
+        pthread_join(pager_->thread_, &status);
+#endif
         threadsStarted_ = false;
     }
 

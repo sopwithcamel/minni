@@ -10,10 +10,11 @@
 #include "Slaves.h"
 
 //#define ENABLE_ASSERT_CHECKS
-//#define CT_NODE_DEBUG
+#define CT_NODE_DEBUG
 //#define ENABLE_SORT_VERIFICATION
 //#define ENABLE_INTEGRITY_CHECK
 //#define ENABLE_COUNTERS
+//#define ENABLE_PAGING
 
 #define CALL_MEM_FUNC(object,ptrToMember) ((object).*(ptrToMember))
 
@@ -61,7 +62,7 @@ namespace compresstree {
         // identification functions
         bool isLeaf();
         bool isInternal();
-        bool isRoot();
+        bool isRoot() const;
 
         bool isFull();
         size_t getNumSiblings();
@@ -150,6 +151,7 @@ namespace compresstree {
         void setCompressible(bool flag);
 
         /* Paging-related functions */
+        bool waitForPageIn();
         bool pageOut();
         bool pageIn();
         bool isPagedOut() const;
@@ -184,6 +186,7 @@ namespace compresstree {
         pthread_mutex_t compActMutex_;
 
         /* Paging related */
+        int fd_;
         bool isPagedOut_;
         bool pageable_;
         bool queuedForPaging_;

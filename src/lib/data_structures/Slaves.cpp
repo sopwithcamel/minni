@@ -127,6 +127,12 @@ namespace compresstree {
         if (node) {
                 nodes_.push_back(node);
                 queueEmpty_ = false;
+                // schedule pre-fetching of children of node into memory
+#ifdef ENABLE_PAGING
+                for (int i=node->children_.size()-1; i>=0; i--) {
+                    tree_->pager_->pageIn(node->children_[i]);
+                }
+#endif
         }
         pthread_mutex_unlock(&queueMutex_);
 #ifdef CT_NODE_DEBUG
@@ -168,8 +174,12 @@ namespace compresstree {
                 pthread_mutex_lock(&(n->compActMutex_));
                 if (n->compAct_ == Node::COMPRESS && !n->isCompressed()) {
                     n->snappyCompress();
+#ifdef ENABLE_PAGING
+                    tree_->pager_->pageOut(n);
+#endif
                 } else if (n->compAct_ == Node::DECOMPRESS) {
                     if (n->isCompressed())
+                        n->waitForPageIn();
                         n->snappyDecompress();
                     pthread_cond_signal(&n->compActCond_);
                 }
@@ -296,15 +306,38 @@ namespace compresstree {
                 nodes_.pop_front();
                 pthread_mutex_unlock(&queueMutex_);
                 pthread_mutex_lock(&(n->pageMutex_));
-                if (n->pageAct_ == Node::PAGE_OUT && !n->isPagedOut()) {
-                    n->pageOut();
+                if (n->pageAct_ == Node::PAGE_OUT) {
+                    if (!n->isPagedOut()) {
+                        n->pageOut();
+#ifdef CT_NODE_DEBUG
+                        fprintf(stderr, "pager: paged out node: %d\n", n->id_);
+#endif
+                        n->queuedForPaging_ = false;
+                        n->pageAct_ = Node::NO_PAGE;
+                    } else {
+                        // re-insert node at tail
+                        pthread_mutex_lock(&queueMutex_);
+                        nodes_.push_back(n);
+                        pthread_mutex_unlock(&queueMutex_);
+                    }
                 } else if (n->pageAct_ == Node::PAGE_IN) {
-                    if (n->isPagedOut())
+                    if (n->isPagedOut()) {
                         n->pageIn();
+#ifdef CT_NODE_DEBUG
+                        fprintf(stderr, "pager: paged in node: %d\n", n->id_);
+#endif
+                        n->queuedForPaging_ = false;
+                        n->pageAct_ = Node::NO_PAGE;
+                    } else {
+                        // re-insert node at tail
+                        pthread_mutex_lock(&queueMutex_);
+                        nodes_.push_back(n);
+                        pthread_mutex_unlock(&queueMutex_);
+                    }
                     pthread_cond_signal(&n->pageCond_);
+                } else { // Node::NO_PAGE
+                    n->queuedForPaging_ = false;
                 }
-                n->queuedForPaging_ = false;
-                n->pageAct_ = Node::NO_PAGE;
                 pthread_mutex_unlock(&(n->pageMutex_));
                 pthread_mutex_lock(&queueMutex_);
             }
@@ -331,25 +364,25 @@ namespace compresstree {
                 node->pageAct_ = Node::NO_PAGE;
                 pthread_mutex_unlock(&node->pageMutex_);
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Node %d page-out cancelled\n", id_);
+                fprintf(stderr, "Node %d page-out cancelled\n", node->id_);
 #endif
                 return;
             } else if (node->pageAct_ == Node::NO_PAGE) {
                 node->pageAct_ = Node::PAGE_IN;
                 pthread_mutex_unlock(&node->pageMutex_);
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Node %d reset to page-in\n", id_);
+                fprintf(stderr, "Node %d reset to page-in\n", node->id_);
 #endif
                 return;
             } else { // we're paging-in twice
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Trying to page-in node %d twice", id_);
+                fprintf(stderr, "Trying to page-in node %d twice", node->id_);
 #endif
                 assert(false);
             }
         } else {
             // check if the buffer is empty;
-            if (node->curOffset_ == 0) {
+            if (node->compLength_ == 0) {
                 node->isPagedOut_ = false;
                 node->queuedForPaging_ = false;
                 pthread_mutex_unlock(&node->pageMutex_);
@@ -362,6 +395,7 @@ namespace compresstree {
         pthread_mutex_unlock(&node->pageMutex_);
         // add the node to the page-in queue
         addNode(node);
+        wakeup();
     }
 
     void Pager::pageOut(Node* node)
@@ -377,25 +411,25 @@ namespace compresstree {
                 node->pageAct_ = Node::NO_PAGE;
                 pthread_mutex_unlock(&node->pageMutex_);
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Node %d page-in cancelled\n", id_);
+                fprintf(stderr, "Node %d page-in cancelled\n", node->id_);
 #endif
                 return;
             } else if (node->pageAct_ == Node::NO_PAGE) {
                 node->pageAct_ = Node::PAGE_OUT;
                 pthread_mutex_unlock(&node->pageMutex_);
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Node %d reset to page-out\n", id_);
+                fprintf(stderr, "Node %d reset to page-out\n", node->id_);
 #endif
                 return;
             } else { // we're paging-out twice
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Trying to page-out node %d twice", id_);
+                fprintf(stderr, "Trying to page-out node %d twice", node->id_);
 #endif
                 assert(false);
             }
         } else {
             // check if the buffer is empty;
-            if (node->curOffset_ == 0) {
+            if (node->compLength_ == 0) {
                 node->isPagedOut_ = true;
                 node->queuedForPaging_ = false;
                 pthread_mutex_unlock(&node->pageMutex_);
@@ -406,8 +440,9 @@ namespace compresstree {
             }
         }
         pthread_mutex_unlock(&node->pageMutex_);
-        // add the node to the page-out queue
+        // add the node to the page queue
         addNode(node);
+        wakeup();
     }
 
     void Pager::addNode(Node* node)
@@ -424,5 +459,11 @@ namespace compresstree {
         }
         queueEmpty_ = false;
         pthread_mutex_unlock(&queueMutex_);
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "Node %d added to page list\n", node->id_);
+        for (int i=0; i<nodes_.size(); i++)
+            fprintf(stderr, "%d, ", nodes_[i]->id_);
+        fprintf(stderr, "\n");
+#endif
     }
 }

@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,6 +56,16 @@ namespace compresstree {
 
         pthread_mutex_init(&pageMutex_, NULL);
         pthread_cond_init(&pageCond_, NULL);
+
+        char* fileName = (char*)malloc(100);
+        char* nodeNum = (char*)malloc(10);
+        strcpy(fileName, "/localfs/hamur/");
+        sprintf(nodeNum, "%d", id_);
+        strcat(fileName, nodeNum);
+        strcat(fileName, ".buf");
+        fd_ = open(fileName, O_CREAT|O_RDWR|O_TRUNC, 0755);
+        free(fileName);
+        free(nodeNum);
     }
 
     Node::~Node()
@@ -75,6 +86,8 @@ namespace compresstree {
 
         tree_->destroyPAO_(lastPAO);
         tree_->destroyPAO_(thisPAO);
+
+        close(fd_);
     }
 
     bool Node::insert(uint64_t hash, const std::string& value)
@@ -110,7 +123,7 @@ namespace compresstree {
         return false;
     }
 
-    bool Node::isRoot()
+    bool Node::isRoot() const
     {
         if (parent_ == NULL)
             return true;
@@ -992,6 +1005,15 @@ emptyChildren:
         compressible_ = flag;
     }
 
+    bool Node::waitForPageIn()
+    {
+        // make sure the buffer has been page in
+        pthread_mutex_lock(&pageMutex_);
+        while (queuedForPaging_ && pageAct_ == PAGE_IN)
+            pthread_cond_wait(&pageCond_, &pageMutex_);
+        pthread_mutex_unlock(&pageMutex_);
+    }
+
     bool Node::isPagedOut() const
     {
         return isPagedOut_;
@@ -999,11 +1021,30 @@ emptyChildren:
 
     bool Node::pageOut()
     {
+        size_t ret;
+        ret = pwrite(fd_, compressed_, compLength_, 0);
+#ifdef ENABLE_ASSERT_CHECKS
+        assert(ret == compLength_);
+#endif
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "Node: %d: Flushed %ld bytes\n", id_, ret); 
+#endif
+        free(compressed_);
+        compressed_ = NULL;
+        isPagedOut_ = true;
         return true;
     }
 
     bool Node::pageIn()
     {
+        compressed_ = (char*)malloc(BUFFER_SIZE);
+        size_t ret = pread(fd_, compressed_, compLength_, 0);
+#ifdef ENABLE_ASSERT_CHECKS
+        assert(ret == compLength_);
+#endif
+        isPagedOut_ = false;
+        // set file pointer to beginning of file again
+        lseek(fd_, 0, SEEK_SET);
         return true;
     }
 
