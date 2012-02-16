@@ -66,12 +66,14 @@ inline bool WordCountPartialAgg::deserialize(CodedInputStream* input)
 
 inline bool WordCountPartialAgg::deserialize(const std::string& input)
 {
-	return pb.ParseFromString(input);
+	assert(pb.ParseFromString(input));
+    return true;
 }
 
 inline bool WordCountPartialAgg::deserialize(const char* input, size_t size)
 {
-	return pb.ParseFromArray(input, size);
+	assert(pb.ParseFromArray(input, size));
+    return true;
 }
 
 REGISTER_PAO(WordCountPartialAgg);
