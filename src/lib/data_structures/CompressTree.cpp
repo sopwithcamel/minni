@@ -307,7 +307,7 @@ namespace compresstree {
 
         pthread_mutex_init(&evictedBufferMutex_, NULL);
 
-        pthread_barrier_init(&threadsBarrier_, NULL, 4);
+        pthread_barrier_init(&threadsBarrier_, NULL, 5);
 
         pthread_attr_t attr;
 

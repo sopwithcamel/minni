@@ -202,12 +202,6 @@ namespace compresstree {
         }
         queueEmpty_ = false;
         pthread_mutex_unlock(&queueMutex_);
-#ifdef CT_NODE_DEBUG
-        fprintf(stderr, "call for compressing node %d\t", node->id_);
-        for (int i=0; i<nodes_.size(); i++)
-            fprintf(stderr, "%d, ", nodes_[i]->id_);
-        fprintf(stderr, "\n");
-#endif
     }
 
     Sorter::Sorter(CompressTree* tree) :
@@ -273,5 +267,162 @@ namespace compresstree {
             fprintf(stderr, "%d, ", nodes_[i]->id_);
         fprintf(stderr, "\n");
 #endif
+    }
+
+    Pager::Pager(CompressTree* tree) :
+            Slave(tree)
+    {
+    }
+
+    Pager::~Pager()
+    {
+    }
+
+    void* Pager::work()
+    {
+        pthread_mutex_lock(&queueMutex_);
+        pthread_barrier_wait(&tree_->threadsBarrier_);
+        while (nodes_.empty() && !inputComplete_) {
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "pager sleeping\n");
+#endif
+            queueEmpty_ = true;
+            pthread_cond_wait(&queueHasWork_, &queueMutex_);
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "pager fingered\n");
+#endif
+            while (!nodes_.empty()) {
+                Node* n = nodes_.front();
+                nodes_.pop_front();
+                pthread_mutex_unlock(&queueMutex_);
+                pthread_mutex_lock(&(n->pageMutex_));
+                if (n->pageAct_ == Node::PAGE_OUT && !n->isPagedOut()) {
+                    n->pageOut();
+                } else if (n->pageAct_ == Node::PAGE_IN) {
+                    if (n->isPagedOut())
+                        n->pageIn();
+                    pthread_cond_signal(&n->pageCond_);
+                }
+                n->queuedForPaging_ = false;
+                n->pageAct_ = Node::NO_PAGE;
+                pthread_mutex_unlock(&(n->pageMutex_));
+                pthread_mutex_lock(&queueMutex_);
+            }
+            /* check if anybody wants a notification when list is empty */
+            sendCompletionNotice();
+        }
+        pthread_mutex_unlock(&queueMutex_);
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "Pager quitting: %d\n", nodes_.size());
+#endif
+        pthread_exit(NULL);
+    }
+
+    void Pager::pageIn(Node* node)
+    {
+        if (node->isPinned())
+            return;
+        pthread_mutex_lock(&node->pageMutex_);
+        // check if node already in list
+        if (node->queuedForPaging_) {
+            // check if page-out request is outstanding
+            if (node->pageAct_ == Node::PAGE_OUT) {
+                // reset action request; node need not be added again
+                node->pageAct_ = Node::NO_PAGE;
+                pthread_mutex_unlock(&node->pageMutex_);
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "Node %d page-out cancelled\n", id_);
+#endif
+                return;
+            } else if (node->pageAct_ == Node::NO_PAGE) {
+                node->pageAct_ = Node::PAGE_IN;
+                pthread_mutex_unlock(&node->pageMutex_);
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "Node %d reset to page-in\n", id_);
+#endif
+                return;
+            } else { // we're paging-in twice
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "Trying to page-in node %d twice", id_);
+#endif
+                assert(false);
+            }
+        } else {
+            // check if the buffer is empty;
+            if (node->curOffset_ == 0) {
+                node->isPagedOut_ = false;
+                node->queuedForPaging_ = false;
+                pthread_mutex_unlock(&node->pageMutex_);
+                return;
+            } else {
+                node->queuedForPaging_ = true;
+                node->pageAct_ = Node::PAGE_IN;
+            }
+        }
+        pthread_mutex_unlock(&node->pageMutex_);
+        // add the node to the page-in queue
+        addNode(node);
+    }
+
+    void Pager::pageOut(Node* node)
+    {
+        if (node->isPinned())
+            return;
+        pthread_mutex_lock(&node->pageMutex_);
+        // check if node already in list
+        if (node->queuedForPaging_) {
+            // check if page-in request is outstanding
+            if (node->pageAct_ == Node::PAGE_IN) {
+                // reset action request; node need not be added again
+                node->pageAct_ = Node::NO_PAGE;
+                pthread_mutex_unlock(&node->pageMutex_);
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "Node %d page-in cancelled\n", id_);
+#endif
+                return;
+            } else if (node->pageAct_ == Node::NO_PAGE) {
+                node->pageAct_ = Node::PAGE_OUT;
+                pthread_mutex_unlock(&node->pageMutex_);
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "Node %d reset to page-out\n", id_);
+#endif
+                return;
+            } else { // we're paging-out twice
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "Trying to page-out node %d twice", id_);
+#endif
+                assert(false);
+            }
+        } else {
+            // check if the buffer is empty;
+            if (node->curOffset_ == 0) {
+                node->isPagedOut_ = true;
+                node->queuedForPaging_ = false;
+                pthread_mutex_unlock(&node->pageMutex_);
+                return;
+            } else {
+                node->queuedForPaging_ = true;
+                node->pageAct_ = Node::PAGE_OUT;
+            }
+        }
+        pthread_mutex_unlock(&node->pageMutex_);
+        // add the node to the page-out queue
+        addNode(node);
+    }
+
+    void Pager::addNode(Node* node)
+    {
+        pthread_mutex_lock(&node->pageMutex_);
+        if (node->pageAct_ == Node::PAGE_OUT) {
+            pthread_mutex_unlock(&node->pageMutex_);
+            pthread_mutex_lock(&queueMutex_);
+            nodes_.push_back(node);
+        } else {
+            pthread_mutex_unlock(&node->pageMutex_);
+            pthread_mutex_lock(&queueMutex_);
+            nodes_.push_front(node);
+        }
+        queueEmpty_ = false;
+        pthread_mutex_unlock(&queueMutex_);
     }
 }

@@ -22,7 +22,11 @@ namespace compresstree {
         isCompressed_(false),
         compressible_(true),
         queuedForCompAct_(false),
-        compAct_(NONE)
+        compAct_(NONE),
+        isPagedOut_(false),
+        pageable_(true),
+        queuedForPaging_(false),
+        pageAct_(NO_PAGE)
     {
         id_ = tree_->nodeCtr++;
         // Allocate memory for data buffer
@@ -48,6 +52,9 @@ namespace compresstree {
         pthread_cond_init(&compActCond_, NULL);
         tree_->createPAO_(NULL, &lastPAO);
         tree_->createPAO_(NULL, &thisPAO);
+
+        pthread_mutex_init(&pageMutex_, NULL);
+        pthread_cond_init(&pageCond_, NULL);
     }
 
     Node::~Node()
@@ -62,6 +69,9 @@ namespace compresstree {
         }
         pthread_mutex_destroy(&compActMutex_);
         pthread_cond_destroy(&compActCond_);
+
+        pthread_mutex_destroy(&pageMutex_);
+        pthread_cond_destroy(&pageCond_);
 
         tree_->destroyPAO_(lastPAO);
         tree_->destroyPAO_(thisPAO);
@@ -972,7 +982,7 @@ emptyChildren:
         return true;
     }
 
-    bool Node::isCompressed()
+    bool Node::isCompressed() const
     {
         return isCompressed_;
     }
@@ -980,6 +990,28 @@ emptyChildren:
     void Node::setCompressible(bool flag)
     {
         compressible_ = flag;
+    }
+
+    bool Node::isPagedOut() const
+    {
+        return isPagedOut_;
+    }
+
+    bool Node::pageOut()
+    {
+        return true;
+    }
+
+    bool Node::pageIn()
+    {
+        return true;
+    }
+
+    bool Node::isPinned() const
+    {
+        if (isRoot() || parent_->isRoot())
+            return true;
+        return false;
     }
 
     bool Node::checkIntegrity()

@@ -36,6 +36,7 @@ namespace compresstree {
         friend class Compressor;
         friend class Emptier;
         friend class Sorter;
+        friend class Pager;
       public:
         CompressTree(uint32_t a, uint32_t b, uint32_t nodesInMemory,
                 size_t (*createPAOFunc)(Token* t, PartialAgg** p),

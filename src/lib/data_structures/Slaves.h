@@ -70,6 +70,18 @@ namespace compresstree {
         void* work();
         void addNode(Node* node);
     };
+
+    class Pager : public Slave {
+        friend class CompressTree;
+        friend class Node;
+      public:
+        Pager(CompressTree* tree);
+        ~Pager();
+        void pageOut(Node* node);
+        void pageIn(Node* node);
+        void* work();
+        void addNode(Node* node);
+    };
 }
 
 #endif

@@ -34,6 +34,7 @@ namespace compresstree {
         friend class Compressor;
         friend class Emptier;
         friend class Sorter;
+        friend class Pager;
         typedef bool (Node::*NodeCompFn)();
         enum EmptyType {
             ALWAYS,
@@ -43,6 +44,12 @@ namespace compresstree {
             NONE,
             COMPRESS,
             DECOMPRESS
+        };
+
+        enum PageAction {
+            NO_PAGE,
+            PAGE_OUT,
+            PAGE_IN
         };
       public:
         Node(NodeType typ, CompressTree* tree, bool alloc);
@@ -139,8 +146,14 @@ namespace compresstree {
         bool snappyDecompress();
         bool zlibCompress();
         bool zlibDecompress();
-        bool isCompressed();
+        bool isCompressed() const;
         void setCompressible(bool flag);
+
+        /* Paging-related functions */
+        bool pageOut();
+        bool pageIn();
+        bool isPagedOut() const;
+        bool isPinned() const;
 
       private:
         static EmptyType emptyType_;
@@ -169,6 +182,14 @@ namespace compresstree {
         CompressionAction compAct_;
         pthread_cond_t compActCond_;
         pthread_mutex_t compActMutex_;
+
+        /* Paging related */
+        bool isPagedOut_;
+        bool pageable_;
+        bool queuedForPaging_;
+        PageAction pageAct_;
+        pthread_cond_t pageCond_;
+        pthread_mutex_t pageMutex_;
     };
 }
 
