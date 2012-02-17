@@ -47,7 +47,7 @@ inline void WordCountPartialAgg::serialize(
         CodedOutputStream* output) const
 {
     output->WriteVarint32(pb.ByteSize());
-    assert(pb.SerializeToCodedStream(output));
+    pb.SerializeToCodedStream(output);
 }
 
 inline void WordCountPartialAgg::serialize(std::string* output) const
@@ -60,20 +60,19 @@ inline bool WordCountPartialAgg::deserialize(CodedInputStream* input)
     uint32_t bytes;
     input->ReadVarint32(&bytes);
     CodedInputStream::Limit msgLimit = input->PushLimit(bytes);
-    assert(pb.ParseFromCodedStream(input));
+    bool ret = pb.ParseFromCodedStream(input);
     input->PopLimit(msgLimit);
+    return ret;
 }
 
 inline bool WordCountPartialAgg::deserialize(const std::string& input)
 {
-	assert(pb.ParseFromString(input));
-    return true;
+	return pb.ParseFromString(input);
 }
 
 inline bool WordCountPartialAgg::deserialize(const char* input, size_t size)
 {
-	assert(pb.ParseFromArray(input, size));
-    return true;
+	return pb.ParseFromArray(input, size);
 }
 
 REGISTER_PAO(WordCountPartialAgg);
