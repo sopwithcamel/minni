@@ -14,9 +14,8 @@
 namespace compresstree {
     Node::EmptyType Node::emptyType_ = IF_FULL;
 
-    Node::Node(NodeType typ, CompressTree* tree, bool alloc) :
+    Node::Node(CompressTree* tree, bool alloc) :
         tree_(tree),
-        typ_(typ),
         parent_(NULL),
         numElements_(0),
         curOffset_(0),
@@ -118,7 +117,7 @@ namespace compresstree {
 
     bool Node::isLeaf()
     {
-        if (typ_ == LEAF)
+        if (children_.size() == 0)
             return true;
         return false;
     }
@@ -531,7 +530,7 @@ emptyChildren:
         // check if we have reached limit of nodes that can be kept in-memory
         if (tree_->nodeCtr < tree_->nodesInMemory_) {
             // create new leaf
-            Node* newLeaf = new Node(LEAF, tree_, true);
+            Node* newLeaf = new Node(tree_, true);
             newLeaf->copyIntoBuffer(data_ + offset, curOffset_ - offset);
             newLeaf->addElements(numElements_ - numElements_/2 - nj);
             newLeaf->separator_ = separator_;
@@ -603,7 +602,11 @@ emptyChildren:
     void Node::deserializePAO(uint64_t* hashPtr, PartialAgg*& pao)
     {
         size_t buf_size = *(size_t*)(hashPtr + 1);
-        pao->deserialize(getValue(hashPtr), buf_size);
+        if (!pao->deserialize(getValue(hashPtr), buf_size)) {
+            fprintf(stderr, "Node %d has a problem deserializing\n", id_);
+            fprintf(stderr, "hash %p, origin: %p\n", hashPtr, data_);
+            assert(false);
+        }
     }
 
     bool Node::addChild(Node* newNode)   
@@ -643,7 +646,7 @@ emptyChildren:
         }
 #endif
         // create new node
-        Node* newNode = new Node(NON_LEAF, tree_, false);
+        Node* newNode = new Node(tree_, false);
         // move the last floor((b+1)/2) children to new node
         int newNodeChildIndex = children_.size()-(tree_->b_+1)/2;
 #ifdef ENABLE_ASSERT_CHECKS

@@ -10,11 +10,11 @@
 #include "Slaves.h"
 
 //#define ENABLE_ASSERT_CHECKS
-#define CT_NODE_DEBUG
+//#define CT_NODE_DEBUG
 //#define ENABLE_SORT_VERIFICATION
 //#define ENABLE_INTEGRITY_CHECK
 //#define ENABLE_COUNTERS
-//#define ENABLE_PAGING
+#define ENABLE_PAGING
 
 #define CALL_MEM_FUNC(object,ptrToMember) ((object).*(ptrToMember))
 
@@ -24,11 +24,6 @@ namespace compresstree {
     class Emptier;
     class Compressor;
     class Sorter;
-
-    enum NodeType {
-        NON_LEAF,       // any node that is not a leaf or the root
-        LEAF            // a leaf node is an actual leaf
-    };
 
     class Node {
         friend class CompressTree;
@@ -53,7 +48,7 @@ namespace compresstree {
             PAGE_IN
         };
       public:
-        Node(NodeType typ, CompressTree* tree, bool alloc);
+        Node(CompressTree* tree, bool alloc);
         ~Node();
         /* copy user data into buffer. Buffer should be decompressed
            before calling. */
@@ -161,7 +156,6 @@ namespace compresstree {
         static EmptyType emptyType_;
         /* pointer to the tree */
         CompressTree* tree_;
-        NodeType typ_;
         /* Buffer pointer */
         char* data_;
         char* compressed_;

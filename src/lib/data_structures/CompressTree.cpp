@@ -30,7 +30,7 @@ namespace compresstree {
         numEvicted_(0)
     {
         // create root node; initially a leaf
-        rootNode_ = new Node(LEAF, this, true);
+        rootNode_ = new Node(this, true);
         rootNode_->setSeparator(UINT64_MAX);
         rootNode_->setCompressible(false);
 
@@ -143,7 +143,7 @@ namespace compresstree {
             Node* curLeaf = allLeaves_[0];
 #ifdef ENABLE_PAGING
             if (curLeaf->isPagedOut()) {
-                curLeaf->pageIn();
+                pager_->pageIn(curLeaf);
                 curLeaf->waitForPageIn();
             }
 #endif
@@ -156,7 +156,7 @@ namespace compresstree {
         Node* curLeaf = allLeaves_[lastLeafRead_];
         hash = (uint64_t*)(curLeaf->data_ + lastOffset_);
         createPAO_(NULL, &agg);
-        rootNode_->deserializePAO((uint64_t*)hash, agg);
+        curLeaf->deserializePAO((uint64_t*)hash, agg);
         lastOffset_ += sizeof(uint64_t);
         size_t buf_size = *(size_t*)(curLeaf->data_ + lastOffset_);
         lastOffset_ += sizeof(size_t) + buf_size;
@@ -178,7 +178,7 @@ namespace compresstree {
             }
             Node *n = allLeaves_[lastLeafRead_];
 #ifdef ENABLE_PAGING
-            n->pageIn();
+            pager_->pageIn(n);
             n->waitForPageIn();
 #endif
             CALL_MEM_FUNC(*n, n->decompress)();
@@ -218,7 +218,7 @@ namespace compresstree {
         CompressTree::bctr = 0;
         CompressTree::cctr = 0;
         Node::emptyType_ = Node::IF_FULL;
-        rootNode_ = new Node(LEAF, this, true);
+        rootNode_ = new Node(this, true);
         rootNode_->setSeparator(UINT64_MAX);
         rootNode_->setCompressible(false);
     }
@@ -255,6 +255,14 @@ namespace compresstree {
             visitQueue.pop_front();
             if (curNode->isLeaf()) {
                 allLeaves_.push_back(curNode);
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "Pushing node %d to all-leaves\t", curNode->id_);
+                fprintf(stderr, "Now has: ");
+                for (int i=0; i<allLeaves_.size(); i++) {
+                    fprintf(stderr, "%d ", allLeaves_[i]->id_);
+                }
+                fprintf(stderr, "\n");
+#endif
                 continue;
             }
             for (uint32_t i=0; i<curNode->children_.size(); i++) {
@@ -397,7 +405,7 @@ namespace compresstree {
 
     bool CompressTree::createNewRoot(Node* otherChild)
     {
-        Node* newRoot = new Node(NON_LEAF, this, true);
+        Node* newRoot = new Node(this, true);
         newRoot->setSeparator(UINT64_MAX);
         newRoot->setCompressible(false);
 #ifdef CT_NODE_DEBUG
