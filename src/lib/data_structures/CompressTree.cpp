@@ -149,7 +149,7 @@ namespace compresstree {
 #endif
             if (curLeaf->isCompressed()) {
                 CALL_MEM_FUNC(*curLeaf, curLeaf->decompress)();
-                curLeaf->waitForCompressAction();
+                curLeaf->waitForCompressAction(Node::DECOMPRESS);
             }
         }
 
@@ -182,7 +182,7 @@ namespace compresstree {
             n->waitForPageIn();
 #endif
             CALL_MEM_FUNC(*n, n->decompress)();
-            n->waitForCompressAction();
+            n->waitForCompressAction(Node::DECOMPRESS);
             lastOffset_ = 0;
         }
 

@@ -137,7 +137,7 @@ namespace compresstree {
         bool asyncCompress();
         bool asyncDecompress();
         /* wait for completion of compression action on node */
-        void waitForCompressAction();
+        void waitForCompressAction(const CompressionAction& act);
         bool snappyCompress();
         bool snappyDecompress();
         bool zlibCompress();

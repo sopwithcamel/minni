@@ -59,7 +59,7 @@ namespace compresstree {
 
         char* fileName = (char*)malloc(100);
         char* nodeNum = (char*)malloc(10);
-        strcpy(fileName, "/localfs/hamur/");
+        strcpy(fileName, "/mnt/hamur/minni_data/");
         sprintf(nodeNum, "%d", id_);
         strcat(fileName, nodeNum);
         strcat(fileName, ".buf");
@@ -184,7 +184,7 @@ namespace compresstree {
                 // this separator is the largest separator that is not greater
                 // than *curHash. This invariant needs to be maintained.
                 if (numCopied > 0) { // at least one element for this
-                    children_[curChild]->waitForCompressAction();
+                    children_[curChild]->waitForCompressAction(DECOMPRESS);
                     // check if the child is empty
 #ifdef ENABLE_ASSERT_CHECKS
                     if (children_[curChild]->isCompressed()) {
@@ -230,7 +230,7 @@ namespace compresstree {
 
         // copy remaining elements into child
         if (offset >= lastOffset) {
-            children_[curChild]->waitForCompressAction();
+            children_[curChild]->waitForCompressAction(DECOMPRESS);
 #ifdef ENABLE_ASSERT_CHECKS
             if (children_[curChild]->isCompressed()) {
                 fprintf(stderr, "Node %d should be decompressed\n", children_[curChild]->id_);
@@ -505,6 +505,9 @@ emptyChildren:
     Node* Node::splitLeaf()
     {
         size_t offset = 0;
+
+        checkIntegrity();
+
         if (!advance(numElements_/2, offset))
             return false;
 
@@ -713,6 +716,7 @@ emptyChildren:
 #ifdef ENABLE_ASSERT_CHECKS
         if (offset >= curOffset_) {
             fprintf(stderr, "Node: %d; off: %lu, curoff: %lu\n", id_, offset, curOffset_);
+            fprintf(stderr, "Number of elements: %lu\n", numElements_);
             assert(false);
         }
 #endif
@@ -720,12 +724,19 @@ emptyChildren:
             offset += sizeof(uint64_t);
             bufSize = (size_t*)(data_ + offset);
 #ifdef ENABLE_ASSERT_CHECKS
-            if (*bufSize == 0) {
+            if (*bufSize == 0 || *bufSize > 100) {
                 fprintf(stderr, "Node: %d, off: %lu, bufsize: %lu, %ld\n", id_, offset, *bufSize, *(size_t*)(data_ + offset + 16));
                 assert(false);
             }
 #endif
             offset += sizeof(size_t) + *bufSize;
+#ifdef ENABLE_ASSERT_CHECKS
+            if (offset > curOffset_) {
+                fprintf(stderr, "Node: %d; off: %lu, curoff: %lu\n", id_, offset, curOffset_);
+                fprintf(stderr, "Number of elements: %lu\n", numElements_);
+                assert(false);
+            }
+#endif
         }
         return true;
     }
@@ -850,11 +861,11 @@ emptyChildren:
         return true;
     }
 
-    void Node::waitForCompressAction()
+    void Node::waitForCompressAction(const CompressionAction& act)
     {
         // make sure the buffer has been decompressed
         pthread_mutex_lock(&compActMutex_);
-        while (queuedForCompAct_ && compAct_ != NONE)
+        while (queuedForCompAct_ && compAct_ == act)
             pthread_cond_wait(&compActCond_, &compActMutex_);
         pthread_mutex_unlock(&compActMutex_);
     }

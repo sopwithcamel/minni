@@ -260,7 +260,7 @@ namespace compresstree {
                     fprintf(stderr, "%d, ", nodes_[i]->id_);
                 fprintf(stderr, "\n");
 #endif
-                n->waitForCompressAction();
+                n->waitForCompressAction(Node::DECOMPRESS);
                 n->sortBuffer();
                 tree_->emptier_->addNode(n);
                 tree_->emptier_->wakeup();
