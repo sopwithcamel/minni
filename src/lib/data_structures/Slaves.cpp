@@ -174,13 +174,15 @@ namespace compresstree {
                 pthread_mutex_lock(&(n->compActMutex_));
                 if (n->compAct_ == Node::COMPRESS && !n->isCompressed()) {
                     n->snappyCompress();
-#ifdef ENABLE_PAGING
-                    tree_->pager_->pageOut(n);
-#endif
+                    // signal to agent waiting for completion.
+                    pthread_cond_signal(&n->compActCond_);
                 } else if (n->compAct_ == Node::DECOMPRESS) {
-                    if (n->isCompressed())
+                    if (n->isCompressed()) {
+                        pthread_mutex_unlock(&(n->compActMutex_));
                         n->waitForPageIn();
+                        pthread_mutex_lock(&(n->compActMutex_));
                         n->snappyDecompress();
+                    }
                     pthread_cond_signal(&n->compActCond_);
                 }
                 n->queuedForCompAct_ = false;
@@ -205,6 +207,16 @@ namespace compresstree {
             pthread_mutex_unlock(&node->compActMutex_);
             pthread_mutex_lock(&queueMutex_);
             nodes_.push_back(node);
+#ifdef ENABLE_PAGING
+            /* Put in a request for paging out. This is necessary to do
+             * right away because of the following case: if a page-in request
+             * arrives when the node is on the compression queue waiting to
+             * be compressed, the page-in request could simply get discarded
+             * since there is no page-out request (yet). This leads to a case
+             * where a decompression later assumes that the page-in has
+             * completed */
+            tree_->pager_->pageOut(node);
+#endif
         } else {
             pthread_mutex_unlock(&node->compActMutex_);
             pthread_mutex_lock(&queueMutex_);
@@ -308,17 +320,18 @@ namespace compresstree {
                 pthread_mutex_lock(&(n->pageMutex_));
                 if (n->pageAct_ == Node::PAGE_OUT) {
                     if (!n->isPagedOut()) {
-                        n->pageOut();
+                        if (n->isCompressed()) {
+                            n->pageOut();
+                            n->queuedForPaging_ = false;
+                            n->pageAct_ = Node::NO_PAGE;
 #ifdef CT_NODE_DEBUG
-                        fprintf(stderr, "pager: paged out node: %d\n", n->id_);
+                            fprintf(stderr, "pager: paged out node: %d\n", n->id_);
 #endif
-                        n->queuedForPaging_ = false;
-                        n->pageAct_ = Node::NO_PAGE;
-                    } else {
-                        // re-insert node at tail
-                        pthread_mutex_lock(&queueMutex_);
-                        nodes_.push_back(n);
-                        pthread_mutex_unlock(&queueMutex_);
+                        } else {
+                            pthread_mutex_lock(&queueMutex_);
+                            nodes_.push_back(n);
+                            pthread_mutex_unlock(&queueMutex_);
+                        }
                     }
                 } else if (n->pageAct_ == Node::PAGE_IN) {
                     if (n->isPagedOut()) {
@@ -326,14 +339,9 @@ namespace compresstree {
 #ifdef CT_NODE_DEBUG
                         fprintf(stderr, "pager: paged in node: %d\n", n->id_);
 #endif
-                        n->queuedForPaging_ = false;
-                        n->pageAct_ = Node::NO_PAGE;
-                    } else {
-                        // re-insert node at tail
-                        pthread_mutex_lock(&queueMutex_);
-                        nodes_.push_back(n);
-                        pthread_mutex_unlock(&queueMutex_);
-                    }
+                     }    
+                    n->queuedForPaging_ = false;
+                    n->pageAct_ = Node::NO_PAGE;
                     pthread_cond_signal(&n->pageCond_);
                 } else { // Node::NO_PAGE
                     n->queuedForPaging_ = false;
@@ -381,16 +389,8 @@ namespace compresstree {
                 assert(false);
             }
         } else {
-            // check if the buffer is empty;
-            if (node->compLength_ == 0) {
-                node->isPagedOut_ = false;
-                node->queuedForPaging_ = false;
-                pthread_mutex_unlock(&node->pageMutex_);
-                return;
-            } else {
-                node->queuedForPaging_ = true;
-                node->pageAct_ = Node::PAGE_IN;
-            }
+            node->queuedForPaging_ = true;
+            node->pageAct_ = Node::PAGE_IN;
         }
         pthread_mutex_unlock(&node->pageMutex_);
         // add the node to the page-in queue
@@ -428,16 +428,8 @@ namespace compresstree {
                 assert(false);
             }
         } else {
-            // check if the buffer is empty;
-            if (node->compLength_ == 0) {
-                node->isPagedOut_ = true;
-                node->queuedForPaging_ = false;
-                pthread_mutex_unlock(&node->pageMutex_);
-                return;
-            } else {
-                node->queuedForPaging_ = true;
-                node->pageAct_ = Node::PAGE_OUT;
-            }
+            node->queuedForPaging_ = true;
+            node->pageAct_ = Node::PAGE_OUT;
         }
         pthread_mutex_unlock(&node->pageMutex_);
         // add the node to the page queue
@@ -457,13 +449,13 @@ namespace compresstree {
             pthread_mutex_lock(&queueMutex_);
             nodes_.push_front(node);
         }
-        queueEmpty_ = false;
-        pthread_mutex_unlock(&queueMutex_);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node %d added to page list\n", node->id_);
         for (int i=0; i<nodes_.size(); i++)
             fprintf(stderr, "%d, ", nodes_[i]->id_);
         fprintf(stderr, "\n");
 #endif
+        queueEmpty_ = false;
+        pthread_mutex_unlock(&queueMutex_);
     }
 }

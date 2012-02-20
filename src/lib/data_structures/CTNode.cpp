@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -853,7 +854,7 @@ emptyChildren:
     {
         // make sure the buffer has been decompressed
         pthread_mutex_lock(&compActMutex_);
-        while (queuedForCompAct_ && compAct_ == DECOMPRESS)
+        while (queuedForCompAct_ && compAct_ != NONE)
             pthread_cond_wait(&compActCond_, &compActMutex_);
         pthread_mutex_unlock(&compActMutex_);
     }
@@ -1024,27 +1025,41 @@ emptyChildren:
 
     bool Node::pageOut()
     {
-        size_t ret;
-        ret = pwrite(fd_, compressed_, compLength_, 0);
+        if (compLength_ > 0) {
+            size_t ret;
+            ret = pwrite(fd_, compressed_, compLength_, 0);
 #ifdef ENABLE_ASSERT_CHECKS
-        assert(ret == compLength_);
+            if (ret != compLength_) {
+                fprintf(stderr, "Node %d page-out fail! Error: %d\n", id_, errno);
+                fprintf(stderr, "written: %ld actual: %ld\n", ret, compLength_);
+                assert(false);
+            }
 #endif
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node: %d: Flushed %ld bytes\n", id_, ret); 
+            fprintf(stderr, "Node: %d: Flushed %ld bytes\n", id_, ret); 
 #endif
-        free(compressed_);
+            free(compressed_);
+        }
         compressed_ = NULL;
+
         isPagedOut_ = true;
         return true;
     }
 
     bool Node::pageIn()
     {
-        compressed_ = (char*)malloc(BUFFER_SIZE);
-        size_t ret = pread(fd_, compressed_, compLength_, 0);
+        if (compLength_ > 0) {
+            compressed_ = (char*)malloc(BUFFER_SIZE);
+            size_t ret = pread(fd_, compressed_, compLength_, 0);
 #ifdef ENABLE_ASSERT_CHECKS
-        assert(ret == compLength_);
+            if (ret != compLength_) {
+                fprintf(stderr, "Node %d page-in fail! Error: %d\n", id_, errno);
+                fprintf(stderr, "written: %ld actual: %ld\n", ret, compLength_);
+                assert(false);
+            }
 #endif
+        }
+
         isPagedOut_ = false;
         // set file pointer to beginning of file again
         lseek(fd_, 0, SEEK_SET);
