@@ -197,7 +197,7 @@ namespace compresstree {
         while (!delList1.empty()) {
             Node* n = delList1.front();
             delList1.pop_front();
-            for (int i=0; i<n->children_.size(); i++) {
+            for (uint32_t i=0; i<n->children_.size(); i++) {
                 delList1.push_back(n->children_[i]);
             }            
             delList2.push_back(n);
@@ -226,7 +226,6 @@ namespace compresstree {
     bool CompressTree::flushBuffers()
     {
         Node* curNode;
-        size_t prevNumSibs, newNumSibs;
         std::deque<Node*> visitQueue;
         fprintf(stderr, "Starting to flush\n");
         Node::emptyType_ = Node::ALWAYS;
