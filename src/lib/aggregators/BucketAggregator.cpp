@@ -62,21 +62,27 @@ BucketAggregator::BucketAggregator(const Config &cfg,
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
+/*
         acc_bucket_ = dynamic_cast<Accumulator*>(new 
                 compresstree::CompressTree(2, 8, 1000, createPAOFunc, 
                 destroyPAOFunc));
+*/
         bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                CompressTreeInserter(this, acc_bucket_, createPAOFunc,
+                CompressTreeInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
+
     } else if (!intagg.compare("sparsehash")) {
         acc_internal_ = dynamic_cast<Accumulator*>(new SparseHash(capacity));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 SparseHashInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
+/*
         acc_bucket_ = dynamic_cast<Accumulator*>(new SparseHash(capacity));
+*/
         bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                SparseHashInserter(this, acc_bucket_, createPAOFunc,
+                SparseHashInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
+
     } 
 #ifdef UTHASH
     else if (!intagg.compare("uthash")) {
@@ -196,7 +202,7 @@ BucketAggregator::~BucketAggregator()
     if (bucket_hasher_)
         delete bucket_hasher_;
     if (bucket_inserter_) {
-        delete acc_bucket_;
+//        delete acc_bucket_;
         delete bucket_inserter_;
     }
     if (final_serializer_)
