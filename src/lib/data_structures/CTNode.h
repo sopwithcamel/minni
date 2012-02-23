@@ -36,6 +36,13 @@ namespace compresstree {
             ALWAYS,
             IF_FULL
         };
+
+        enum NodeState {
+            DECOMPRESSED,
+            COMPRESSED,
+            PAGED_OUT
+        };
+
         enum CompressionAction {
             NONE,
             COMPRESS,
@@ -158,6 +165,7 @@ namespace compresstree {
         CompressTree* tree_;
         /* Buffer pointer */
         char* data_;
+        NodeState state_;
         char* compressed_;
         uint32_t id_;
         Node* parent_;
@@ -171,7 +179,6 @@ namespace compresstree {
         uint64_t separator_;
 
         /* Compression related */
-        bool isCompressed_;
         bool compressible_;
         size_t compLength_;
         bool queuedForCompAct_;
@@ -181,7 +188,6 @@ namespace compresstree {
 
         /* Paging related */
         int fd_;
-        bool isPagedOut_;
         bool pageable_;
         bool queuedForPaging_;
         PageAction pageAct_;
