@@ -15,8 +15,9 @@
 namespace compresstree {
     Node::EmptyType Node::emptyType_ = IF_FULL;
 
-    Node::Node(CompressTree* tree, bool alloc) :
+    Node::Node(CompressTree* tree, bool alloc, uint32_t level) :
         tree_(tree),
+        level_(level),
         parent_(NULL),
         numElements_(0),
         curOffset_(0),
@@ -118,7 +119,7 @@ namespace compresstree {
         return true;
     }
 
-    bool Node::isLeaf()
+    bool Node::isLeaf() const
     {
         if (children_.size() == 0)
             return true;
@@ -536,7 +537,7 @@ emptyChildren:
         // check if we have reached limit of nodes that can be kept in-memory
         if (tree_->nodeCtr < tree_->nodesInMemory_) {
             // create new leaf
-            Node* newLeaf = new Node(tree_, true);
+            Node* newLeaf = new Node(tree_, true, 0);
             newLeaf->copyIntoBuffer(data_ + offset, curOffset_ - offset);
             newLeaf->addElements(numElements_ - numElements_/2 - nj);
             newLeaf->separator_ = separator_;
@@ -652,7 +653,7 @@ emptyChildren:
         }
 #endif
         // create new node
-        Node* newNode = new Node(tree_, false);
+        Node* newNode = new Node(tree_, false, level_);
         // move the last floor((b+1)/2) children to new node
         int newNodeChildIndex = children_.size()-(tree_->b_+1)/2;
 #ifdef ENABLE_ASSERT_CHECKS
@@ -753,19 +754,16 @@ emptyChildren:
         numElements_ -= numElements;
     }
 
-    bool Node::isFull()
+    bool Node::isFull() const
     {
         if (curOffset_ > EMPTY_THRESHOLD)
             return true;
         return false;
     }
 
-    size_t Node::getNumSiblings()
+    uint32_t Node::level() const
     {
-        if (isRoot())
-            return 1;
-        else
-            return parent_->children_.size();
+        return level_;
     }
     
     bool Node::asyncCompress()

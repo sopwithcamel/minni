@@ -55,19 +55,18 @@ namespace compresstree {
             PAGE_IN
         };
       public:
-        Node(CompressTree* tree, bool alloc);
+        Node(CompressTree* tree, bool alloc, uint32_t level);
         ~Node();
         /* copy user data into buffer. Buffer should be decompressed
            before calling. */
         bool insert(uint64_t hash, const std::string& value);
 
         // identification functions
-        bool isLeaf();
-        bool isInternal();
+        bool isLeaf() const;
         bool isRoot() const;
 
-        bool isFull();
-        size_t getNumSiblings();
+        bool isFull() const;
+        uint32_t level() const;
       private:
 
         /* Buffer handling functions */
@@ -168,6 +167,8 @@ namespace compresstree {
         NodeState state_;
         char* compressed_;
         uint32_t id_;
+        /* level in the tree; 0 at leaves and increases upwards */
+        uint32_t level_;
         Node* parent_;
         size_t numElements_;
         size_t curOffset_;

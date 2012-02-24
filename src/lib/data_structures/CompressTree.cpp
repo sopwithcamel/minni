@@ -30,11 +30,11 @@ namespace compresstree {
         numEvicted_(0)
     {
         // create root node; initially a leaf
-        rootNode_ = new Node(this, true);
+        rootNode_ = new Node(this, true, 0);
         rootNode_->setSeparator(UINT64_MAX);
         rootNode_->setCompressible(false);
 
-        inputNode_ = new Node(this, true);
+        inputNode_ = new Node(this, true, 0);
         inputNode_->setSeparator(UINT64_MAX);
         inputNode_->setCompressible(false);
         
@@ -233,7 +233,7 @@ namespace compresstree {
         CompressTree::bctr = 0;
         CompressTree::cctr = 0;
         Node::emptyType_ = Node::IF_FULL;
-        rootNode_ = new Node(this, true);
+        rootNode_ = new Node(this, true, 0);
         rootNode_->setSeparator(UINT64_MAX);
         rootNode_->setCompressible(false);
     }
@@ -440,7 +440,7 @@ namespace compresstree {
 
     bool CompressTree::createNewRoot(Node* otherChild)
     {
-        Node* newRoot = new Node(this, true);
+        Node* newRoot = new Node(this, true, rootNode_->level() + 1);
         newRoot->setSeparator(UINT64_MAX);
         newRoot->setCompressible(false);
 #ifdef CT_NODE_DEBUG
