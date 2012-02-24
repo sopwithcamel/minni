@@ -178,6 +178,10 @@ namespace compresstree {
         std::vector<Node*> children_;
         uint64_t separator_;
 
+        /* Emptying related */
+        bool queuedForEmptying_;
+        pthread_mutex_t queuedForEmptyMutex_;
+
         /* Compression related */
         bool compressible_;
         size_t compLength_;

@@ -22,6 +22,7 @@ namespace compresstree {
         curOffset_(0),
         state_(DECOMPRESSED),
         compressible_(true),
+        queuedForEmptying_(false),
         queuedForCompAct_(false),
         compAct_(NONE),
         pageable_(true),
@@ -48,6 +49,7 @@ namespace compresstree {
             fprintf(stderr, "Compression algorithm\n");
             assert(false);
         }
+        pthread_mutex_init(&queuedForEmptyMutex_, NULL);
         pthread_mutex_init(&compActMutex_, NULL);
         pthread_cond_init(&compActCond_, NULL);
         tree_->createPAO_(NULL, &lastPAO);
@@ -77,6 +79,7 @@ namespace compresstree {
             free(compressed_);
             compressed_ = NULL;
         }
+        pthread_mutex_destroy(&queuedForEmptyMutex_);
         pthread_mutex_destroy(&compActMutex_);
         pthread_cond_destroy(&compActCond_);
 

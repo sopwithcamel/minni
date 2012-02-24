@@ -74,6 +74,7 @@ namespace compresstree {
         void (*destroyPAO_)(PartialAgg* p);
         CompressAlgorithm alg_;
         Node* rootNode_;
+        Node* inputNode_;
         bool allFlush_;
         std::deque<Node*> leavesToBeEmptied_;
         std::vector<Node*> allLeaves_;

@@ -34,6 +34,10 @@ namespace compresstree {
         rootNode_->setSeparator(UINT64_MAX);
         rootNode_->setCompressible(false);
 
+        inputNode_ = new Node(this, true);
+        inputNode_->setSeparator(UINT64_MAX);
+        inputNode_->setCompressible(false);
+        
         // aux buffer for use in sorting
         auxBuffer_ = (char*)malloc(BUFFER_SIZE);
 
@@ -47,6 +51,7 @@ namespace compresstree {
 
     CompressTree::~CompressTree()
     {
+        delete inputNode_;
         free(auxBuffer_);
         free(compBuffer_);
         free(evictedBuffer_);
@@ -65,13 +70,11 @@ namespace compresstree {
         if (!threadsStarted_) {
             startThreads();
         }
-        pthread_mutex_lock(&rootNodeAvailableMutex_);
-        if (rootNode_->isFull()) {
-            pthread_mutex_unlock(&rootNodeAvailableMutex_);
-            sorter_->addNode(rootNode_);
-            sorter_->wakeup();
+        if (inputNode_->isFull()) {
+            // check if rootNode_ is available
             pthread_mutex_lock(&rootNodeAvailableMutex_);
-            while (rootNode_->isFull()) {
+            while (rootNode_->numElements_ != 0 || 
+                    rootNode_->queuedForEmptying_) {
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "inserter sleeping\n");
 #endif
@@ -81,11 +84,23 @@ namespace compresstree {
                 fprintf(stderr, "inserter fingered\n");
 #endif
             }
+            // switch buffers
+            char* temp = inputNode_->data_;
+            inputNode_->data_ = rootNode_->data_;
+            rootNode_->data_ = temp;
+            rootNode_->numElements_ = inputNode_->numElements_;
+            rootNode_->curOffset_ = inputNode_->curOffset_;
+            inputNode_->numElements_ = 0;
+            inputNode_->curOffset_ = 0;
+            pthread_mutex_unlock(&rootNodeAvailableMutex_);
+
+            // schedule the root node for emptying
+            sorter_->addNode(rootNode_);
+            sorter_->wakeup();
         }
         std::string serialized;
         agg->serialize(&serialized);
-        bool ret = rootNode_->insert(*(uint64_t*)hash, serialized);
-        pthread_mutex_unlock(&rootNodeAvailableMutex_);
+        bool ret = inputNode_->insert(*(uint64_t*)hash, serialized);
 
         // check if any elements were evicted and pick those up
         // returns non-zero if unsucc.
@@ -230,6 +245,24 @@ namespace compresstree {
         fprintf(stderr, "Starting to flush\n");
         Node::emptyType_ = Node::ALWAYS;
 
+        // check if rootNode_ is available
+        pthread_mutex_lock(&rootNodeAvailableMutex_);
+        while (rootNode_->isFull()) {
+            pthread_cond_wait(&rootNodeAvailableForWriting_,
+                    &rootNodeAvailableMutex_);
+        }
+        pthread_mutex_unlock(&rootNodeAvailableMutex_);
+        // root node is now empty
+
+        // switch buffers
+        char* temp = inputNode_->data_;
+        inputNode_->data_ = rootNode_->data_;
+        rootNode_->data_ = temp;
+        rootNode_->numElements_ = inputNode_->numElements_;
+        rootNode_->curOffset_ = inputNode_->curOffset_;
+        inputNode_->numElements_ = 0;
+        inputNode_->curOffset_ = 0;
+
         sorter_->addNode(rootNode_);
         sorter_->wakeup();
 
@@ -339,6 +372,9 @@ namespace compresstree {
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Leaf node %d removed from full-leaf-list\n", node->id_);
 #endif
+            pthread_mutex_lock(&node->queuedForEmptyMutex_);
+            node->queuedForEmptying_ = false;
+            pthread_mutex_unlock(&node->queuedForEmptyMutex_);
         }
     }
 

@@ -103,6 +103,10 @@ namespace compresstree {
                     if (n->isLeaf())
                         tree_->handleFullLeaves();
                     rootFlag = false;
+                    pthread_mutex_lock(&n->queuedForEmptyMutex_);
+                    n->queuedForEmptying_ = false;
+                    pthread_mutex_unlock(&n->queuedForEmptyMutex_);
+
                     pthread_mutex_lock(&tree_->rootNodeAvailableMutex_);
                     pthread_cond_signal(&tree_->rootNodeAvailableForWriting_);
                     pthread_mutex_unlock(&tree_->rootNodeAvailableMutex_);
@@ -125,6 +129,9 @@ namespace compresstree {
     {
         pthread_mutex_lock(&queueMutex_);
         if (node) {
+                pthread_mutex_lock(&node->queuedForEmptyMutex_);
+                node->queuedForEmptying_ = true;
+                pthread_mutex_unlock(&node->queuedForEmptyMutex_);
                 nodes_.push_back(node);
                 queueEmpty_ = false;
                 // schedule pre-fetching of children of node into memory
