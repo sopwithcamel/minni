@@ -7,7 +7,6 @@
 #include "CTNode.h"
 #include "Accumulator.h"
 #include "PartialAgg.h"
-#include "Slaves.h"
 
 namespace compresstree {
 

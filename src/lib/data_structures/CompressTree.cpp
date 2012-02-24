@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "CompressTree.h"
+#include "Slaves.h"
 
 namespace compresstree {
     uint64_t CompressTree::actr = 0;

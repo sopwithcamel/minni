@@ -70,7 +70,7 @@ namespace compresstree {
         bool rootFlag = false;
         pthread_mutex_lock(&queueMutex_);
         pthread_barrier_wait(&tree_->threadsBarrier_);
-        while (nodes_.empty() && !inputComplete_) {
+        while (queue_.empty() && !inputComplete_) {
             /* check if anybody wants a notification when list is empty */
             sendCompletionNotice();
 #ifdef CT_NODE_DEBUG
@@ -81,18 +81,18 @@ namespace compresstree {
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "emptier fingered\n");
 #endif
-            while (!nodes_.empty()) {
-                Node* n = nodes_.front();
-                nodes_.pop_front();
+            while (!queue_.empty()) {
+                Node* n = queue_.pop();
                 pthread_mutex_unlock(&queueMutex_);
+                pthread_mutex_lock(&n->queuedForEmptyMutex_);
+                n->queuedForEmptying_ = false;
+                pthread_mutex_unlock(&n->queuedForEmptyMutex_);
                 if (n->isRoot())
                     rootFlag = true;
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "emptier: emptying node: %d\t", n->id_);
-                fprintf(stderr, "remaining: ");
-                for (int i=0; i<nodes_.size(); i++)
-                    fprintf(stderr, "%d, ", nodes_[i]->id_);
-                fprintf(stderr, "\n");
+            fprintf(stderr, "emptier: emptying node: %d\t", n->id_);
+            fprintf(stderr, "remaining: ");
+            queue_.printElements();
 #endif
                 for (int i=n->children_.size()-1; i>=0; i--) {
                     CALL_MEM_FUNC(*n->children_[i], n->children_[i]->decompress)();
@@ -103,9 +103,6 @@ namespace compresstree {
                     if (n->isLeaf())
                         tree_->handleFullLeaves();
                     rootFlag = false;
-                    pthread_mutex_lock(&n->queuedForEmptyMutex_);
-                    n->queuedForEmptying_ = false;
-                    pthread_mutex_unlock(&n->queuedForEmptyMutex_);
 
                     pthread_mutex_lock(&tree_->rootNodeAvailableMutex_);
                     pthread_cond_signal(&tree_->rootNodeAvailableForWriting_);
@@ -120,7 +117,7 @@ namespace compresstree {
         }
         pthread_mutex_unlock(&queueMutex_);
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Emptier quitting: %d\n", nodes_.size());
+        fprintf(stderr, "Emptier quitting: %d\n", queue_.size());
 #endif
         pthread_exit(NULL);
     }
@@ -129,24 +126,34 @@ namespace compresstree {
     {
         pthread_mutex_lock(&queueMutex_);
         if (node) {
-                pthread_mutex_lock(&node->queuedForEmptyMutex_);
-                node->queuedForEmptying_ = true;
-                pthread_mutex_unlock(&node->queuedForEmptyMutex_);
-                nodes_.push_back(node);
-                queueEmpty_ = false;
-                // schedule pre-fetching of children of node into memory
-#ifdef ENABLE_PAGING
-                for (int i=node->children_.size()-1; i>=0; i--) {
-                    tree_->pager_->pageIn(node->children_[i]);
+            queue_.insert(node, node->level());
+            queueEmpty_ = false;
+
+            std::deque<Node*> depNodes;
+            uint32_t prio = node->level();
+            depNodes.push_back(node);
+            while (!depNodes.empty()) {
+                Node* t = depNodes.front();
+                for (int i=0; i<t->children_.size(); i++) {
+                    if (t->children_[i]->queuedForEmptying_) {
+                        queue_.insert(t->children_[i], ++prio); 
+                        depNodes.push_back(t->children_[i]);
+                    }
                 }
+                depNodes.pop_front();
+            }
+
+            // schedule pre-fetching of children of node into memory
+#ifdef ENABLE_PAGING
+            for (int i=node->children_.size()-1; i>=0; i--) {
+                tree_->pager_->pageIn(node->children_[i]);
+            }
 #endif
         }
         pthread_mutex_unlock(&queueMutex_);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node %d added to to-empty list\n", node->id_);
-        for (int i=0; i<nodes_.size(); i++)
-            fprintf(stderr, "%d, ", nodes_[i]->id_);
-        fprintf(stderr, "\n");
+        queue_.printElements();
 #endif
         // The node is decompressed when called.
         assert(!node->isCompressed());
@@ -286,6 +293,10 @@ namespace compresstree {
     {
         pthread_mutex_lock(&queueMutex_);
         if (node) {
+            // Set node as queued for emptying
+            pthread_mutex_lock(&node->queuedForEmptyMutex_);
+            node->queuedForEmptying_ = true;
+            pthread_mutex_unlock(&node->queuedForEmptyMutex_);
             nodes_.push_back(node);
             queueEmpty_ = false;
         }

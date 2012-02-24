@@ -7,6 +7,7 @@
 
 #include "CompressTree.h"
 #include "CTNode.h"
+#include "EmptyQueue.h"
 
 namespace compresstree {
     class CompressTree;
@@ -44,11 +45,19 @@ namespace compresstree {
     class Emptier : public Slave {
         friend class CompressTree;
         friend class Node;
+        struct PrioComp {
+            bool operator()(uint32_t lhs, uint32_t rhs)
+            {
+                return (lhs > rhs);
+            }
+        };
       public:
         Emptier(CompressTree* tree);
         ~Emptier();
         void* work();
         void addNode(Node* node);
+      private:
+        EmptyQueue queue_;
     };
 
     class Compressor : public Slave {

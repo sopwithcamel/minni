@@ -9,6 +9,7 @@
 
 #include "CompressTree.h"
 #include "CTNode.h"
+#include "Slaves.h"
 #include "snappy.h"
 #include "zlib.h"
 
@@ -764,6 +765,11 @@ emptyChildren:
     uint32_t Node::level() const
     {
         return level_;
+    }
+
+    uint32_t Node::id() const
+    {
+        return id_;
     }
     
     bool Node::asyncCompress()

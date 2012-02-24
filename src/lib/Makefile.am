@@ -84,6 +84,7 @@ minni_include_HEADERS = core/PartialAgg.h \
 			record_creation/DelimitedTokenizer.h \
 			record_creation/Tokenizer.h \
 			data_structures/Accumulator.h \
+			data_structures/EmptyQueue.h \
 			data_structures/Hashtable.h \
 			data_structures/CTNode.h \
 			data_structures/CompressTree.h \

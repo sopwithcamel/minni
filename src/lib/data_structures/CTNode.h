@@ -7,7 +7,7 @@
 
 #include "CompressTree.h"
 #include "PartialAgg.h"
-#include "Slaves.h"
+//#include "Slaves.h"
 
 //#define ENABLE_ASSERT_CHECKS
 //#define CT_NODE_DEBUG
@@ -31,7 +31,7 @@ namespace compresstree {
         friend class Emptier;
         friend class Sorter;
         friend class Pager;
-        typedef bool (Node::*NodeCompFn)();
+        typedef bool (Node::*NodeCompressionFn)();
         enum EmptyType {
             ALWAYS,
             IF_FULL
@@ -67,6 +67,7 @@ namespace compresstree {
 
         bool isFull() const;
         uint32_t level() const;
+        uint32_t id() const;
       private:
 
         /* Buffer handling functions */
@@ -131,7 +132,7 @@ namespace compresstree {
         void waitForSort();
 
         /* Compression-related functions */
-        NodeCompFn compress;
+        NodeCompressionFn compress;
         /* Decompress node buffer. Returns true if:
          * + the buffer was decompressed successfully
          * + the node is marked as incompressible
@@ -139,7 +140,7 @@ namespace compresstree {
          * data_ may, therefore, be NULL or not and this must be checked
          * before using the node (eg. for copying data)
          */
-        NodeCompFn decompress;
+        NodeCompressionFn decompress;
         bool asyncCompress();
         bool asyncDecompress();
         /* wait for completion of compression action on node */
