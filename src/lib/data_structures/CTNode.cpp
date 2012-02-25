@@ -418,7 +418,7 @@ emptyChildren:
         }
 #endif
         // allocate space for element pointers
-        els_ = (uint64_t**)malloc(sizeof(uint64_t*) * MAX_ELS_PER_BUFFER);
+        els_ = (uint64_t**)malloc(sizeof(uint64_t*) * numElements_);
 
         for (uint64_t i=0; i<numElements_; i++) {
             els_[i] = (uint64_t*)(data_ + offset);
