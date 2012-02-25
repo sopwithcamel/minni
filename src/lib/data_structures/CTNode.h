@@ -7,14 +7,6 @@
 
 #include "CompressTree.h"
 #include "PartialAgg.h"
-//#include "Slaves.h"
-
-//#define ENABLE_ASSERT_CHECKS
-//#define CT_NODE_DEBUG
-//#define ENABLE_SORT_VERIFICATION
-//#define ENABLE_INTEGRITY_CHECK
-//#define ENABLE_COUNTERS
-//#define ENABLE_PAGING
 
 #define CALL_MEM_FUNC(object,ptrToMember) ((object).*(ptrToMember))
 
