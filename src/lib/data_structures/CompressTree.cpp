@@ -136,6 +136,7 @@ namespace compresstree {
         if (!allFlush_) {
             /* wait for all nodes to be sorted and emptied
                before proceeding */
+/*
             do {
 #ifdef ENABLE_PAGING
                 pager_->waitUntilCompletionNoticeReceived();
@@ -148,7 +149,7 @@ namespace compresstree {
 #else
             } while (!sorter_->empty() || !emptier_->empty());
 #endif
-
+*/
             flushBuffers();
 
             /* Wait for all outstanding compression work to finish */
