@@ -43,10 +43,12 @@ namespace compresstree {
         auxBuffer_ = (char*)malloc(BUFFER_SIZE);
 
         // buffer for use in compression
-        compBuffer_ = (char*)malloc(BUFFER_SIZE * 2);
+        compBuffer_ = (char*)malloc(BUFFER_SIZE);
 
+#ifdef ENABLE_EVICTION
         // buffer for holding evicted values
         evictedBuffer_ = (char*)malloc(BUFFER_SIZE);
+#endif
         Node::emptyType_ = Node::IF_FULL;
     }
 
@@ -103,6 +105,7 @@ namespace compresstree {
         agg->serialize(&serialized);
         bool ret = inputNode_->insert(*(uint64_t*)hash, serialized);
 
+#ifdef ENABLE_EVICTION
         // check if any elements were evicted and pick those up
         // returns non-zero if unsucc.
         if (pthread_mutex_trylock(&evictedBufferMutex_)) {
@@ -128,6 +131,7 @@ namespace compresstree {
             evictedBufferOffset_ = 0;
         }
         pthread_mutex_unlock(&evictedBufferMutex_);
+#endif
         return ret;
     }
 
