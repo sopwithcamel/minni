@@ -30,34 +30,19 @@ namespace compresstree {
         nodesInMemory_(nodesInMemory),
         numEvicted_(0)
     {
-        // create root node; initially a leaf
-        rootNode_ = new Node(this, true, 0);
-        rootNode_->setSeparator(UINT64_MAX);
-        rootNode_->setCompressible(false);
+        pthread_mutex_init(&rootNodeAvailableMutex_, NULL);
+        pthread_cond_init(&rootNodeAvailableForWriting_, NULL);
 
-        inputNode_ = new Node(this, true, 0);
-        inputNode_->setSeparator(UINT64_MAX);
-        inputNode_->setCompressible(false);
-        
-        // aux buffer for use in sorting
-        auxBuffer_ = (char*)malloc(BUFFER_SIZE);
-
-        // buffer for use in compression
-        compBuffer_ = (char*)malloc(BUFFER_SIZE);
-
-#ifdef ENABLE_EVICTION
-        // buffer for holding evicted values
-        evictedBuffer_ = (char*)malloc(BUFFER_SIZE);
+        pthread_mutex_init(&evictedBufferMutex_, NULL);
+#ifdef ENABLE_PAGING
+        pthread_barrier_init(&threadsBarrier_, NULL, 5);
+#else
+        pthread_barrier_init(&threadsBarrier_, NULL, 4);
 #endif
-        Node::emptyType_ = Node::IF_FULL;
     }
 
     CompressTree::~CompressTree()
     {
-        delete inputNode_;
-        free(auxBuffer_);
-        free(compBuffer_);
-        free(evictedBuffer_);
         pthread_cond_destroy(&rootNodeAvailableForWriting_);
         pthread_mutex_destroy(&rootNodeAvailableMutex_);
         pthread_mutex_destroy(&evictedBufferMutex_);
@@ -386,15 +371,26 @@ namespace compresstree {
 
     void CompressTree::startThreads()
     {
-        pthread_mutex_init(&rootNodeAvailableMutex_, NULL);
-        pthread_cond_init(&rootNodeAvailableForWriting_, NULL);
+        // create root node; initially a leaf
+        rootNode_ = new Node(this, true, 0);
+        rootNode_->setSeparator(UINT64_MAX);
+        rootNode_->setCompressible(false);
 
-        pthread_mutex_init(&evictedBufferMutex_, NULL);
-#ifdef ENABLE_PAGING
-        pthread_barrier_init(&threadsBarrier_, NULL, 5);
-#else
-        pthread_barrier_init(&threadsBarrier_, NULL, 4);
+        inputNode_ = new Node(this, true, 0);
+        inputNode_->setSeparator(UINT64_MAX);
+        inputNode_->setCompressible(false);
+        
+        // aux buffer for use in sorting
+        auxBuffer_ = (char*)malloc(BUFFER_SIZE);
+
+        // buffer for use in compression
+        compBuffer_ = (char*)malloc(BUFFER_SIZE);
+
+#ifdef ENABLE_EVICTION
+        // buffer for holding evicted values
+        evictedBuffer_ = (char*)malloc(BUFFER_SIZE);
 #endif
+        Node::emptyType_ = Node::IF_FULL;
 
         pthread_attr_t attr;
 
@@ -427,6 +423,11 @@ namespace compresstree {
     void CompressTree::stopThreads()
     {
         void* status;
+        delete inputNode_;
+        free(auxBuffer_);
+        free(compBuffer_);
+        free(evictedBuffer_);
+
         sorter_->setInputComplete(true);
         sorter_->wakeup();
         pthread_join(sorter_->thread_, &status);
