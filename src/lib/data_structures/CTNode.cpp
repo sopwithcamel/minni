@@ -102,17 +102,19 @@ namespace compresstree {
         if (isCompressed())
             return false;
 
+        uint32_t hashv = (uint32_t)hash;
         // copy the hash value into the buffer
-        memmove(data_ + curOffset_, &hash, sizeof(hash));
+        memmove(data_ + curOffset_, &hashv, sizeof(uint32_t));
 //        fprintf(stderr, "value at %ld", curOffset_);
-        curOffset_ += sizeof(hash);
-
-        // copy buf_size into the buffer
-        size_t buf_size = value.size();
-        memmove(data_ + curOffset_, &buf_size, sizeof(buf_size));
-//        fprintf(stderr, ", size at %ld", curOffset_);
-        curOffset_ += sizeof(buf_size);
+        curOffset_ += sizeof(uint32_t);
         
+        // copy buf_size into the buffer
+        uint32_t buf_size = value.size();
+
+        memmove(data_ + curOffset_, &buf_size, sizeof(uint32_t));
+//        fprintf(stderr, ", size at %ld", curOffset_);
+        curOffset_ += sizeof(uint32_t);
+
         // copy the entire Block into the buffer
         memmove(data_ + curOffset_, (void*)value.data(), buf_size);
 //        fprintf(stderr, ", data at %ld\n", curOffset_);
@@ -142,7 +144,7 @@ namespace compresstree {
         // offset till which elements have been written
         size_t lastOffset = 0; 
         size_t offset = 0;
-        volatile uint64_t* curHash;
+        volatile uint32_t* curHash;
         size_t numCopied = 0;
 
         /* if i am a leaf node, queue up for action later after all the
@@ -168,7 +170,7 @@ namespace compresstree {
 
         aggregateBuffer();
         // find the first separator strictly greater than the first element
-        curHash = (uint64_t*)(data_ + offset);
+        curHash = (uint32_t*)(data_ + offset);
         while (*curHash >= children_[curChild]->separator_) {
             curChild++;
             if (curChild >= children_.size()) {
@@ -183,7 +185,7 @@ namespace compresstree {
             children_[curChild]->separator_, curChild, *curHash);
 #endif
         while (offset < curOffset_) {
-            curHash = (uint64_t*)(data_ + offset);
+            curHash = (uint32_t*)(data_ + offset);
 
             if (offset >= curOffset_ || *curHash >= 
                     children_[curChild]->separator_) {
@@ -291,24 +293,17 @@ emptyChildren:
         return true;
     }
 
-    void Node::swapPointers(uint64_t*& el1, uint64_t*& el2)
-    {
-        uint64_t* temp = el1;   
-        el1 = el2;
-        el2 = temp;
-    }
-
     void Node::verifySort()
     {
 #ifdef ENABLE_SORT_VERIFICATION
         size_t offset = 0;
-        uint64_t* curHash, *nextHash;
-        curHash = (uint64_t*)(data_ + offset);
+        uint32_t* curHash, *nextHash;
+        curHash = (uint32_t*)(data_ + offset);
         while (offset < curOffset_) {
             advance(1, offset);
             if (offset >= curOffset_)
                 break;
-            nextHash = (uint64_t*)(data_ + offset);
+            nextHash = (uint32_t*)(data_ + offset);
             if (*curHash > *nextHash) {
                 fprintf(stderr, "Node %d not sorted\n", id_);
                 fprintf(stderr, "%ld before %ld\n", *curHash, *nextHash);
@@ -319,36 +314,18 @@ emptyChildren:
 #endif
     }
 
-    void Node::setSeparator(uint64_t sep)
+    void Node::setSeparator(uint32_t sep)
     {
         separator_ = sep;
     }
 
-    size_t Node::partition(uint64_t** arr, size_t left, size_t right,
-            size_t pivIndex)
+    void Node::quicksort(uint32_t** arr, size_t uleft, size_t uright)
     {
-        size_t storeIndex = left;
-        uint64_t pivotValue = *arr[pivIndex];
-        // swap pivot element and right-most element
-        swapPointers(arr[pivIndex], arr[right]);
-        for (size_t i=left; i<right; i++) {
-            if (*arr[i] < pivotValue) {
-                swapPointers(arr[i], arr[storeIndex]);
-                storeIndex++;
-            }
-        }
-        // move pivot to final place
-        swapPointers(arr[storeIndex], arr[right]);
-        return storeIndex;
-    }
-
-    void Node::quicksort(uint64_t** arr, size_t uleft, size_t uright)
-    {
-        int64_t i, j, stack_pointer = -1;
-        int64_t left = uleft;
-        int64_t right = uright;
-        int64_t* rstack = new int64_t[128];
-        uint64_t *swap, *temp;
+        int32_t i, j, stack_pointer = -1;
+        int32_t left = uleft;
+        int32_t right = uright;
+        int32_t* rstack = new int32_t[128];
+        uint32_t *swap, *temp;
         while (true) {
             if (right - left <= 7) {
                 for (j = left + 1; j <= right; j++) {
@@ -420,10 +397,10 @@ emptyChildren:
         }
 #endif
         // allocate space for element pointers
-        els_ = (uint64_t**)malloc(sizeof(uint64_t*) * numElements_);
+        els_ = (uint32_t**)malloc(sizeof(uint32_t*) * numElements_);
 
-        for (uint64_t i=0; i<numElements_; i++) {
-            els_[i] = (uint64_t*)(data_ + offset);
+        for (uint32_t i=0; i<numElements_; i++) {
+            els_[i] = (uint32_t*)(data_ + offset);
             if (!advance(1, offset))
                 return false;
         }
@@ -434,14 +411,14 @@ emptyChildren:
 
     bool Node::aggregateBuffer()
     {
-        size_t el_size;
+        uint32_t el_size;
         size_t auxOffset = 0;
         size_t auxEls = 0;
-        size_t buf_size;
+        uint32_t buf_size;
 
         // aggregate elements in buffer
-        uint64_t lastIndex = 0;
-        for (uint64_t i=1; i<numElements_; i++) {
+        uint32_t lastIndex = 0;
+        for (uint32_t i=1; i<numElements_; i++) {
             if (*(els_[i]) == *(els_[lastIndex])) {
 #ifdef ENABLE_COUNTERS
                 CompressTree::actr++;
@@ -460,8 +437,8 @@ emptyChildren:
             }
             // copy hash and size into auxBuffer_
             if (i == lastIndex + 1) {
-                buf_size = *(size_t*)(els_[lastIndex] + 1);
-                el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
+                buf_size = *(uint32_t*)(els_[lastIndex] + 1);
+                el_size = sizeof(uint32_t) + sizeof(uint32_t) + buf_size;
                 memmove(tree_->auxBuffer_ + auxOffset, 
                         (void*)(els_[lastIndex]), el_size);
                 auxOffset += el_size;
@@ -470,11 +447,11 @@ emptyChildren:
                 lastPAO->serialize(&serialized);
                 buf_size = serialized.size();
                 memmove(tree_->auxBuffer_ + auxOffset, 
-                        (void*)(els_[lastIndex]), sizeof(uint64_t));
-                auxOffset += sizeof(uint64_t);
+                        (void*)(els_[lastIndex]), sizeof(uint32_t));
+                auxOffset += sizeof(uint32_t);
                 memmove(tree_->auxBuffer_ + auxOffset, 
-                        (void*)(&buf_size), sizeof(size_t));
-                auxOffset += sizeof(size_t);
+                        (void*)(&buf_size), sizeof(uint32_t));
+                auxOffset += sizeof(uint32_t);
                 memmove(tree_->auxBuffer_ + auxOffset, 
                         (void*)(serialized.data()), buf_size);
                 auxOffset += buf_size;
@@ -485,8 +462,8 @@ emptyChildren:
             auxEls++;
             lastIndex = i;
         }
-        buf_size = *(size_t*)(els_[lastIndex] + 1);
-        el_size = sizeof(uint64_t) + sizeof(size_t) + buf_size;
+        buf_size = *(uint32_t*)(els_[lastIndex] + 1);
+        el_size = sizeof(uint32_t) + sizeof(uint32_t) + buf_size;
         memmove(tree_->auxBuffer_ + auxOffset, 
                 (void*)(els_[lastIndex]), el_size);
         auxOffset += el_size;
@@ -518,16 +495,16 @@ emptyChildren:
             return false;
 
         // select median value
-        uint64_t* median_hash;
+        uint32_t* median_hash;
         size_t nextOffset = offset;
         advance(1, nextOffset);
 
-        median_hash = (uint64_t*)(data_ + offset);
+        median_hash = (uint32_t*)(data_ + offset);
         size_t nj = 1;
         // TODO; Handle the case where all the elements until the end are same
         // although that is unlikely
-        while (*(uint64_t*)(data_ + nextOffset) == *median_hash) {
-            median_hash = (uint64_t*)(data_ + nextOffset);
+        while (*(uint32_t*)(data_ + nextOffset) == *median_hash) {
+            median_hash = (uint32_t*)(data_ + nextOffset);
             advance(1, nextOffset);
             nj++;
             if (nextOffset == curOffset_) {
@@ -535,7 +512,7 @@ emptyChildren:
             }                
         }
         offset = nextOffset;
-        median_hash = (uint64_t*)(data_ + offset);
+        median_hash = (uint32_t*)(data_ + offset);
 
         // check if we have reached limit of nodes that can be kept in-memory
         if (tree_->nodeCtr < tree_->nodesInMemory_) {
@@ -604,14 +581,14 @@ emptyChildren:
         return true;
     }
 
-    inline char* Node::getValue(uint64_t* hashPtr) const
+    inline char* Node::getValue(uint32_t* hashPtr) const
     {
-        return (char*)((char*)hashPtr + sizeof(uint64_t) + sizeof(size_t));
+        return (char*)((char*)hashPtr + sizeof(uint32_t) + sizeof(uint32_t));
     }
 
-    void Node::deserializePAO(uint64_t* hashPtr, PartialAgg*& pao)
+    void Node::deserializePAO(uint32_t* hashPtr, PartialAgg*& pao)
     {
-        size_t buf_size = *(size_t*)(hashPtr + 1);
+        uint32_t buf_size = *(uint32_t*)(hashPtr + 1);
         if (!pao->deserialize(getValue(hashPtr), buf_size)) {
             fprintf(stderr, "Node %d has a problem deserializing\n", id_);
             fprintf(stderr, "hash %p, origin: %p\n", hashPtr, data_);
@@ -716,9 +693,9 @@ emptyChildren:
             return parent_->addChild(newNode);
     }
 
-    bool Node::advance(size_t n, size_t& offset)
+    bool Node::advance(uint32_t n, size_t& offset)
     {
-        size_t* bufSize;
+        uint32_t* bufSize;
 #ifdef ENABLE_ASSERT_CHECKS
         if (offset >= curOffset_) {
             fprintf(stderr, "Node: %d; off: %lu, curoff: %lu\n", id_, offset, curOffset_);
@@ -727,15 +704,15 @@ emptyChildren:
         }
 #endif
         for (uint32_t i=0; i<n; i++) {
-            offset += sizeof(uint64_t);
-            bufSize = (size_t*)(data_ + offset);
+            offset += sizeof(uint32_t);
+            bufSize = (uint32_t*)(data_ + offset);
 #ifdef ENABLE_ASSERT_CHECKS
             if (*bufSize == 0 || *bufSize > 100) {
-                fprintf(stderr, "Node: %d, off: %lu, bufsize: %lu, %ld\n", id_, offset, *bufSize, *(size_t*)(data_ + offset + 16));
+                fprintf(stderr, "Node: %d, off: %lu, bufsize: %lu, %ld\n", id_, offset, *bufSize, *(uint32_t*)(data_ + offset + 16));
                 assert(false);
             }
 #endif
-            offset += sizeof(size_t) + *bufSize;
+            offset += sizeof(uint32_t) + *bufSize;
 #ifdef ENABLE_ASSERT_CHECKS
             if (offset > curOffset_) {
                 fprintf(stderr, "Node: %d; off: %lu, curoff: %lu\n", id_, offset, curOffset_);
@@ -1115,10 +1092,10 @@ emptyChildren:
     {
 #ifdef ENABLE_INTEGRITY_CHECK
         size_t offset;
-        uint64_t* curHash;
+        uint32_t* curHash;
         offset = 0;
         while (offset < curOffset_) {
-            curHash = (uint64_t*)(data_ + offset);
+            curHash = (uint32_t*)(data_ + offset);
             if (*curHash >= separator_) {
                 fprintf(stderr, "Node: %d: Value %lu at offset %ld/%ld\
                         greater than %lu\n", id_, *curHash, offset, 
@@ -1128,7 +1105,7 @@ emptyChildren:
             advance(1, offset);
         }
         Node* parentNode = parent_;
-        uint64_t lastHash = *curHash;
+        uint32_t lastHash = *curHash;
         while (parentNode != NULL) {
             for (uint32_t i=0; i<parentNode->children_.size(); i++) {
                 if (parentNode->children_[i] == this) {
@@ -1157,14 +1134,14 @@ emptyChildren:
     bool Node::parseNode()
     {
 #ifdef ENABLE_INTEGRITY_CHECK
-        size_t* bufSize;
+        uint32_t* bufSize;
         size_t offset;
         for (uint32_t i=0; i<numElements_; i++) {
-            offset += sizeof(uint64_t);
-            bufSize = (size_t*)(data_ + offset);
-            offset += sizeof(size_t) + *bufSize;
+            offset += sizeof(uint32_t);
+            bufSize = (uint32_t*)(data_ + offset);
+            offset += sizeof(uint32_t) + *bufSize;
             if (*bufSize == 0) {
-                fprintf(stderr, "%lu, bufsize: %lu, %ld\n", offset, *bufSize, *(size_t*)(data_ + offset + 16));
+                fprintf(stderr, "%lu, bufsize: %lu, %ld\n", offset, *bufSize, *(uint32_t*)(data_ + offset + 16));
                 assert(false);
             }
         }

@@ -101,16 +101,16 @@ namespace compresstree {
         if (numEvicted_ > 0) {
             char* buf = evictedBuffer_;
             size_t offset = 0;
-            size_t* bufSize;
+            uint32_t* bufSize;
             fprintf(stderr, "Evicting %lu elements\n", numEvicted_);
             PartialAgg* p;
             for (uint32_t i=0; i<numEvicted_; i++) {
                 createPAO_(NULL, &p);
-                rootNode_->deserializePAO((uint64_t*)(buf + offset), p);
+                rootNode_->deserializePAO((uint32_t*)(buf + offset), p);
                 evicted[i] = p;
-                offset += sizeof(uint64_t);
-                bufSize = (size_t*)(buf + offset);
-                offset += sizeof(size_t) + *bufSize;
+                offset += sizeof(uint32_t);
+                bufSize = (uint32_t*)(buf + offset);
+                offset += sizeof(uint32_t) + *bufSize;
             }
             numEvicted_ = 0;
             evictedBufferOffset_ = 0;
@@ -160,12 +160,12 @@ namespace compresstree {
         }
 
         Node* curLeaf = allLeaves_[lastLeafRead_];
-        hash = (uint64_t*)(curLeaf->data_ + lastOffset_);
+        hash = (uint32_t*)(curLeaf->data_ + lastOffset_);
         createPAO_(NULL, &agg);
-        curLeaf->deserializePAO((uint64_t*)hash, agg);
-        lastOffset_ += sizeof(uint64_t);
-        size_t buf_size = *(size_t*)(curLeaf->data_ + lastOffset_);
-        lastOffset_ += sizeof(size_t) + buf_size;
+        curLeaf->deserializePAO((uint32_t*)hash, agg);
+        lastOffset_ += sizeof(uint32_t);
+        uint32_t buf_size = *(uint32_t*)(curLeaf->data_ + lastOffset_);
+        lastOffset_ += sizeof(uint32_t) + buf_size;
 
         if (lastOffset_ >= curLeaf->curOffset_) {
             CALL_MEM_FUNC(*curLeaf, curLeaf->compress)();

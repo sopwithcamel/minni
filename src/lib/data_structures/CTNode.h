@@ -85,7 +85,7 @@ namespace compresstree {
         bool aggregateBuffer();
         /* advance n elements in the buffer; the starting offset must be
          * passed, which is updated; returns false if past end */
-        bool advance(size_t n, size_t& offset);
+        bool advance(uint32_t n, size_t& offset);
         void addElements(size_t numElements);
         void reduceElements(size_t numElements);
         /* copy entire buffer into the this node's buffer. This can be used
@@ -94,9 +94,9 @@ namespace compresstree {
          */
         bool copyIntoBuffer(void* buf, size_t buf_size);
         /* get pointer to the value stored given the pointer to the hash */
-        inline char* getValue(uint64_t* hashPtr) const;
+        inline char* getValue(uint32_t* hashPtr) const;
         /* converts a pointer to a hash-value to a deserialized pao */
-        void deserializePAO(uint64_t* hashPtr, PartialAgg*& pao);
+        void deserializePAO(uint32_t* hashPtr, PartialAgg*& pao);
 
         /* Tree-related functions */
 
@@ -116,12 +116,9 @@ namespace compresstree {
         bool parseNode();
 
         /* Sorting-related functions */
-        void quicksort(uint64_t** arr, size_t left, size_t right);
-        size_t partition(uint64_t** arr, size_t left, size_t right,
-                size_t pivIndex);
-        void swapPointers(uint64_t*& el1, uint64_t*& el2);
+        void quicksort(uint32_t** arr, size_t left, size_t right);
         void verifySort();
-        void setSeparator(uint64_t sep);
+        void setSeparator(uint32_t sep);
         void waitForSort();
 
         /* Compression-related functions */
@@ -170,11 +167,11 @@ namespace compresstree {
         size_t numElements_;
         size_t curOffset_;
         PartialAgg *lastPAO, *thisPAO;
-        uint64_t** els_;         // pointers to elements in buffer
+        uint32_t** els_;         // pointers to elements in buffer
 
         /* Pointers to children */
         std::vector<Node*> children_;
-        uint64_t separator_;
+        uint32_t separator_;
 
         /* Emptying related */
         bool queuedForEmptying_;
