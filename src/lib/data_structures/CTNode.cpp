@@ -51,6 +51,7 @@ namespace compresstree {
             fprintf(stderr, "Compression algorithm\n");
             assert(false);
         }
+        pthread_mutex_init(&stateMutex_, NULL);
         pthread_mutex_init(&queuedForEmptyMutex_, NULL);
         pthread_mutex_init(&compActMutex_, NULL);
         pthread_cond_init(&compActCond_, NULL);
@@ -81,6 +82,7 @@ namespace compresstree {
             free(compressed_);
             compressed_ = NULL;
         }
+        pthread_mutex_destroy(&stateMutex_);
         pthread_mutex_destroy(&queuedForEmptyMutex_);
         pthread_mutex_destroy(&compActMutex_);
         pthread_cond_destroy(&compActCond_);
@@ -413,7 +415,7 @@ emptyChildren:
             return true;
 #ifdef ENABLE_ASSERT_CHECKS
         if (isCompressed()) {
-            fprintf(stderr, "Node %d is compressed still!\n", id_);
+            fprintf(stderr, "Node %d is not decompressed still!\n", id_);
             assert(false);
         }
 #endif
@@ -707,7 +709,7 @@ emptyChildren:
             free(data_);
             data_ = NULL;
             // actually compress the node that was formerly the root
-            state_ = DECOMPRESSED;
+            setState(DECOMPRESSED);
             CALL_MEM_FUNC(*this, compress)();
             return tree_->createNewRoot(newNode);
         } else
@@ -771,6 +773,13 @@ emptyChildren:
     {
         return id_;
     }
+
+    inline void Node::setState(NodeState state)
+    {
+        pthread_mutex_lock(&stateMutex_);
+        state_ = state;
+        pthread_mutex_unlock(&stateMutex_);
+    }
     
     bool Node::asyncCompress()
     {
@@ -804,7 +813,7 @@ emptyChildren:
             }
         } else {
             if (curOffset_ == 0) {
-                state_ = COMPRESSED;
+                setState(COMPRESSED);
                 queuedForCompAct_ = false;
                 pthread_mutex_unlock(&compActMutex_);
                 return true;
@@ -852,7 +861,7 @@ emptyChildren:
         } else {
             // check if the buffer is empty;
             if (curOffset_ == 0) {
-                state_ = DECOMPRESSED;
+                setState(DECOMPRESSED);
                 queuedForCompAct_ = false;
                 pthread_mutex_unlock(&compActMutex_);
                 return true;
@@ -904,7 +913,7 @@ emptyChildren:
             compressed_ = NULL;
         }
 
-        state_ = COMPRESSED;
+        setState(COMPRESSED);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "compressed node %d\n", id_);
 #endif
@@ -932,7 +941,7 @@ emptyChildren:
             fprintf(stderr, "decompressed node %d\n", id_);
 #endif
         }
-        state_ = DECOMPRESSED;
+        setState(DECOMPRESSED);
         return true;
     }
 
@@ -965,7 +974,7 @@ emptyChildren:
         char* compressed = (char*)malloc(compLength_);
         memmove(compressed, tree_->compBuffer_, compLength_);
         data_ = compressed;
-        state_ = COMPRESSED;
+        setState(COMPRESSED);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "len: %ld, comp len: %ld\n", 
                 curOffset_, compLength_);
@@ -1012,13 +1021,19 @@ emptyChildren:
             free(data_);
         }
         data_ = buf;
-        state_ = DECOMPRESSED;
+        setState(DECOMPRESSED);
         return true;
     }
 
-    bool Node::isCompressed() const
+    bool Node::isCompressed()
     {
-        return (state_ == COMPRESSED);
+        pthread_mutex_lock(&stateMutex_);
+        if (state_ == COMPRESSED || state_ == PAGED_OUT) {
+            pthread_mutex_unlock(&stateMutex_);
+            return true;
+        }
+        pthread_mutex_unlock(&stateMutex_);
+        return false;
     }
 
     void Node::setCompressible(bool flag)
@@ -1035,9 +1050,15 @@ emptyChildren:
         pthread_mutex_unlock(&pageMutex_);
     }
 
-    bool Node::isPagedOut() const
+    bool Node::isPagedOut()
     {
-        return (state_ == PAGED_OUT);
+        pthread_mutex_lock(&stateMutex_);
+        if (state_ == PAGED_OUT) {
+            pthread_mutex_unlock(&stateMutex_);
+            return true;
+        }
+        pthread_mutex_unlock(&stateMutex_);
+        return false;
     }
 
     bool Node::pageOut()
@@ -1059,7 +1080,7 @@ emptyChildren:
         }
         compressed_ = NULL;
 
-        state_ = PAGED_OUT;
+        setState(PAGED_OUT);
         return true;
     }
 
@@ -1077,7 +1098,7 @@ emptyChildren:
 #endif
         }
 
-        state_ = COMPRESSED;
+        setState(COMPRESSED);
         // set file pointer to beginning of file again
         lseek(fd_, 0, SEEK_SET);
         return true;

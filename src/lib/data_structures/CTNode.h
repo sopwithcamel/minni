@@ -61,6 +61,7 @@ namespace compresstree {
         uint32_t level() const;
         uint32_t id() const;
       private:
+        inline void setState(NodeState state);
 
         /* Buffer handling functions */
 
@@ -141,14 +142,16 @@ namespace compresstree {
         bool snappyDecompress();
         bool zlibCompress();
         bool zlibDecompress();
-        bool isCompressed() const;
+        /* Returns true if node is compressed; also true if node still hasn't
+         * been paged in */
+        bool isCompressed();
         void setCompressible(bool flag);
 
         /* Paging-related functions */
         bool waitForPageIn();
         bool pageOut();
         bool pageIn();
-        bool isPagedOut() const;
+        bool isPagedOut();
         bool isPinned() const;
 
       private:
@@ -158,6 +161,7 @@ namespace compresstree {
         /* Buffer pointer */
         char* data_;
         NodeState state_;
+        pthread_mutex_t stateMutex_;
         char* compressed_;
         uint32_t id_;
         /* level in the tree; 0 at leaves and increases upwards */
