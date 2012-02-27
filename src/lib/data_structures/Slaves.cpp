@@ -98,11 +98,16 @@ namespace compresstree {
                 if (n->isRoot())
                     rootFlag = true;
 #ifdef CT_NODE_DEBUG
-            fprintf(stderr, "emptier: emptying node: %d\t", n->id_);
-            fprintf(stderr, "remaining: ");
-            queue_.printElements();
+                fprintf(stderr, "emptier: emptying node: %d\t", n->id_);
+                fprintf(stderr, "remaining: ");
+                queue_.printElements();
 #endif
+
                 for (int i=n->children_.size()-1; i>=0; i--) {
+#ifdef ENABLE_PAGING
+                    // schedule pre-fetching of children of node into memory
+                    tree_->pager_->pageIn(n->children_[i]);
+#endif
                     CALL_MEM_FUNC(*n->children_[i], n->children_[i]->decompress)();
                 }        
                 n->emptyBuffer();
@@ -150,13 +155,6 @@ namespace compresstree {
                 }
                 depNodes.pop_front();
             }
-
-            // schedule pre-fetching of children of node into memory
-#ifdef ENABLE_PAGING
-            for (int i=node->children_.size()-1; i>=0; i--) {
-                tree_->pager_->pageIn(node->children_[i]);
-            }
-#endif
         }
         pthread_mutex_unlock(&queueMutex_);
 #ifdef CT_NODE_DEBUG
