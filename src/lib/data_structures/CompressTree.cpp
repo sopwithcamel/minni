@@ -225,7 +225,7 @@ namespace compresstree {
         CompressTree::cctr = 0;
         Node::emptyType_ = Node::IF_FULL;
         rootNode_ = new Node(this, true, 0);
-        rootNode_->setSeparator(UINT64_MAX);
+        rootNode_->setSeparator(UINT32_MAX);
         rootNode_->setCompressible(false);
     }
 
@@ -373,11 +373,11 @@ namespace compresstree {
     {
         // create root node; initially a leaf
         rootNode_ = new Node(this, true, 0);
-        rootNode_->setSeparator(UINT64_MAX);
+        rootNode_->setSeparator(UINT32_MAX);
         rootNode_->setCompressible(false);
 
         inputNode_ = new Node(this, true, 0);
-        inputNode_->setSeparator(UINT64_MAX);
+        inputNode_->setSeparator(UINT32_MAX);
         inputNode_->setCompressible(false);
         
         // aux buffer for use in sorting
@@ -448,7 +448,7 @@ namespace compresstree {
     bool CompressTree::createNewRoot(Node* otherChild)
     {
         Node* newRoot = new Node(this, true, rootNode_->level() + 1);
-        newRoot->setSeparator(UINT64_MAX);
+        newRoot->setSeparator(UINT32_MAX);
         newRoot->setCompressible(false);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node %d is new root; children are %d and %d\n", 

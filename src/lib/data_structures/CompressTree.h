@@ -20,11 +20,10 @@
 namespace compresstree {
 
 //    const size_t BUFFER_SIZE = 256;
-//    const size_t BUFFER_SIZE = 104857600;
+//    const size_t BUFFER_SIZE = 10485760;
 //    const size_t BUFFER_SIZE = 20971520;
     const size_t BUFFER_SIZE = 31457280;
     const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 2;
-    const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 24;
 
     enum CompressAlgorithm {
         SNAPPY,
