@@ -26,6 +26,8 @@ namespace compresstree {
         virtual void setInputComplete(bool value) { inputComplete_ = value; }
         virtual void sendCompletionNotice();
         virtual void waitUntilCompletionNoticeReceived();
+
+        virtual void printElements() const;
       protected:
         CompressTree* tree_;
         bool inputComplete_;

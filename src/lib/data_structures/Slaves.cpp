@@ -56,6 +56,14 @@ namespace compresstree {
         }
     }
 
+    void Slave::printElements() const
+    {
+        for (uint32_t i=0; i<nodes_.size(); i++) {
+            fprintf(stderr, "%d, ", nodes_[i]->id());
+        }
+        fprintf(stderr, "\n");
+    }
+
     Emptier::Emptier(CompressTree* tree) :
             Slave(tree)
     {
@@ -117,7 +125,7 @@ namespace compresstree {
         }
         pthread_mutex_unlock(&queueMutex_);
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Emptier quitting: %d\n", queue_.size());
+        fprintf(stderr, "Emptier quitting: %ld\n", queue_.size());
 #endif
         pthread_exit(NULL);
     }
@@ -152,7 +160,7 @@ namespace compresstree {
         }
         pthread_mutex_unlock(&queueMutex_);
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node %d added to to-empty list\n", node->id_);
+        fprintf(stderr, "Node %d added to to-empty list: ", node->id_);
         queue_.printElements();
 #endif
         // The node is decompressed when called.
@@ -209,7 +217,7 @@ namespace compresstree {
         }
         pthread_mutex_unlock(&queueMutex_);
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Compressor quitting: %d\n", nodes_.size());
+        fprintf(stderr, "Compressor quitting: %ld\n", nodes_.size());
 #endif
         pthread_exit(NULL);
     }
@@ -221,6 +229,10 @@ namespace compresstree {
             pthread_mutex_unlock(&node->compActMutex_);
             pthread_mutex_lock(&queueMutex_);
             nodes_.push_back(node);
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "adding node %d to compress: ", node->id_);
+            printElements();
+#endif
 #ifdef ENABLE_PAGING
             /* Put in a request for paging out. This is necessary to do
              * right away because of the following case: if a page-in request
@@ -235,6 +247,10 @@ namespace compresstree {
             pthread_mutex_unlock(&node->compActMutex_);
             pthread_mutex_lock(&queueMutex_);
             nodes_.push_front(node);
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "adding node %d to decompress: ", node->id_);
+            printElements();
+#endif
         }
         queueEmpty_ = false;
         pthread_mutex_unlock(&queueMutex_);
@@ -284,7 +300,7 @@ namespace compresstree {
         }
         pthread_mutex_unlock(&queueMutex_);
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Sorter quitting: %d\n", nodes_.size());
+        fprintf(stderr, "Sorter quitting: %ld\n", nodes_.size());
 #endif
         pthread_exit(NULL);
     }
@@ -372,7 +388,7 @@ namespace compresstree {
         }
         pthread_mutex_unlock(&queueMutex_);
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Pager quitting: %d\n", nodes_.size());
+        fprintf(stderr, "Pager quitting: %ld\n", nodes_.size());
 #endif
         pthread_exit(NULL);
     }
@@ -468,10 +484,8 @@ namespace compresstree {
             nodes_.push_front(node);
         }
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node %d added to page list\n", node->id_);
-        for (int i=0; i<nodes_.size(); i++)
-            fprintf(stderr, "%d, ", nodes_[i]->id_);
-        fprintf(stderr, "\n");
+        fprintf(stderr, "Node %d added to page list: ", node->id_);
+        printElements();
 #endif
         queueEmpty_ = false;
         pthread_mutex_unlock(&queueMutex_);
