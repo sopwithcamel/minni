@@ -116,20 +116,16 @@ namespace compresstree {
                     CALL_MEM_FUNC(*n->children_[i], n->children_[i]->decompress)();
                 }        
                 n->emptyBuffer();
+                if (n->isLeaf())
+                    tree_->handleFullLeaves();
                 if (rootFlag) {
                     // do the split and create new root
-                    if (n->isLeaf())
-                        tree_->handleFullLeaves();
                     rootFlag = false;
 
                     pthread_mutex_lock(&tree_->rootNodeAvailableMutex_);
                     pthread_cond_signal(&tree_->rootNodeAvailableForWriting_);
                     pthread_mutex_unlock(&tree_->rootNodeAvailableMutex_);
-                } else {
-                    // handle all the full leaves that were queued up
-                    tree_->handleFullLeaves();
                 }
-
                 pthread_mutex_lock(&queueMutex_);
             }
         }
