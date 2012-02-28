@@ -138,6 +138,16 @@ namespace compresstree {
         return false;
     }
 
+    bool Node::emptyOrCompress()
+    {
+        if (emptyType_ == ALWAYS || isFull()) {
+            tree_->sorter_->addNode(this);
+            tree_->sorter_->wakeup();
+        } else {
+            CALL_MEM_FUNC(*this, compress)();
+        }
+    }
+
     bool Node::emptyBuffer()
     {
         uint32_t curChild = 0;
@@ -165,13 +175,19 @@ namespace compresstree {
             return true;
         }
 
-        if (curOffset_ == 0)
-            goto emptyChildren;
+        if (curOffset_ == 0) {
+            for (curChild=0; curChild < children_.size(); curChild++) {
+                children_[curChild]->emptyOrCompress();
+            }
+            goto checkSplitNonLeaf;
+        }
+            
 
         aggregateBuffer();
         // find the first separator strictly greater than the first element
         curHash = (uint32_t*)(data_ + offset);
         while (*curHash >= children_[curChild]->separator_) {
+            children_[curChild]->emptyOrCompress();
             curChild++;
 #ifdef ENABLE_ASSERT_CHECKS
             if (curChild >= children_.size()) {
@@ -226,6 +242,7 @@ namespace compresstree {
                 }
                 // skip past all separators not greater than *curHash
                 while (*curHash >= children_[curChild]->separator_) {
+                    children_[curChild]->emptyOrCompress();
                     curChild++;
 #ifdef ENABLE_ASSERT_CHECKS
                     if (curChild >= children_.size()) {
@@ -258,6 +275,7 @@ namespace compresstree {
             assert(children_[curChild]->copyIntoBuffer(data_ + 
                         lastOffset, offset - lastOffset));
             children_[curChild]->addElements(numCopied);
+            children_[curChild]->emptyOrCompress();
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Copied %lu elements into node %d; child\
                     offset: %ld, sep: %lu, off:(%ld/%ld)\n", numCopied, 
@@ -278,18 +296,7 @@ namespace compresstree {
             CALL_MEM_FUNC(*this, compress)();
         }
 
-emptyChildren:
-        // check if any children are full
-        for (curChild=0; curChild < children_.size(); curChild++) {
-            if (emptyType_ == ALWAYS || children_[curChild]->isFull()) {
-                tree_->sorter_->addNode(children_[curChild]);
-                tree_->sorter_->wakeup();
-            } else {
-                CALL_MEM_FUNC(*children_[curChild], 
-                        children_[curChild]->compress)();
-            }
-        }
-
+checkSplitNonLeaf:
         // Split leaves can cause the number of children to increase. Check.
         if (children_.size() > tree_->b_) {
             splitNonLeaf();

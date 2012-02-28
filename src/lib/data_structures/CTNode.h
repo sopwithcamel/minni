@@ -65,6 +65,7 @@ namespace compresstree {
 
         /* Buffer handling functions */
 
+        bool emptyOrCompress();
         /* Function: empty the buffer into the buffers in the next level. 
          *  + Must be called with buffer decompressed.
          *  + Buffer will be freed after invocation.
