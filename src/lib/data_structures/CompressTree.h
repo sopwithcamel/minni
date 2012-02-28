@@ -12,7 +12,7 @@
 //#define CT_NODE_DEBUG
 //#define ENABLE_SORT_VERIFICATION
 //#define ENABLE_INTEGRITY_CHECK
-//#define ENABLE_COUNTERS
+#define ENABLE_COUNTERS
 //#define ENABLE_PAGING
 /* TODO: Eviction is broken */
 //#define ENABLE_EVICTION
@@ -35,17 +35,21 @@ namespace compresstree {
     class Compressor;
     class Sorter;
     class Pager;
+#ifdef ENABLE_COUNTERS
+    class Monitor;
+#endif
 
     class CompressTree :
             public Accumulator
     {
-        static uint64_t actr, bctr, cctr;
-        static bool enablePaging;
         friend class Node;
         friend class Compressor;
         friend class Emptier;
         friend class Sorter;
         friend class Pager;
+#ifdef ENABLE_COUNTERS
+        friend class Monitor;
+#endif
       public:
         CompressTree(uint32_t a, uint32_t b, uint32_t nodesInMemory,
                 size_t (*createPAOFunc)(Token* t, PartialAgg** p),
@@ -58,11 +62,12 @@ namespace compresstree {
         /* read values */
         bool nextValue(void*& hash, PartialAgg*& agg);
       private:
+/*
         static void* callSortHelper(void* context);
         static void* callEmptyHelper(void* context);
         static void* callCompressHelper(void *context);
         static void* callPageHelper(void *context);
-        
+*/        
         bool addLeafToEmpty(Node* node);
         bool createNewRoot(Node* otherChild);
         void emptyTree();
@@ -114,6 +119,11 @@ namespace compresstree {
 
         /* Paging */
         Pager* pager_;
+
+#ifdef ENABLE_COUNTERS
+        /* Monitor */
+        Monitor* monitor_;
+#endif
     };
 }
 

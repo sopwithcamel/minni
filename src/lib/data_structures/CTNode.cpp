@@ -174,14 +174,14 @@ namespace compresstree {
         while (*curHash >= children_[curChild]->separator_) {
             curChild++;
             if (curChild >= children_.size()) {
-                fprintf(stderr, "Node: %d: Can't place %lu among children\n", id_, *curHash);
+                fprintf(stderr, "Node: %d: Can't place %u among children\n", id_, *curHash);
                 checkIntegrity();
                 assert(false);
             }
         }
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node: %d: first node chosen: %d (sep: %lu,\
-            child: %d); first element: %lu\n", id_, children_[curChild]->id_,
+        fprintf(stderr, "Node: %d: first node chosen: %d (sep: %u,\
+            child: %d); first element: %u\n", id_, children_[curChild]->id_,
             children_[curChild]->separator_, curChild, *curHash);
 #endif
         while (offset < curOffset_) {
@@ -226,7 +226,7 @@ namespace compresstree {
                 while (*curHash >= children_[curChild]->separator_) {
                     curChild++;
                     if (curChild >= children_.size()) {
-                        fprintf(stderr, "Can't place %lu among children\n", *curHash);
+                        fprintf(stderr, "Can't place %u among children\n", *curHash);
                         assert(false);
                     }
                 }
@@ -421,7 +421,7 @@ emptyChildren:
         for (uint32_t i=1; i<numElements_; i++) {
             if (*(els_[i]) == *(els_[lastIndex])) {
 #ifdef ENABLE_COUNTERS
-                CompressTree::actr++;
+                tree_->monitor_->actr++;
 #endif
                 // aggregate elements
                 if (i == lastIndex + 1)
@@ -430,7 +430,7 @@ emptyChildren:
                 if (!thisPAO->key().compare(lastPAO->key())) {
                     lastPAO->merge(thisPAO);
 #ifdef ENABLE_COUNTERS
-                    CompressTree::cctr++;
+                    tree_->monitor_->cctr++;
 #endif
                     continue;
                 }
@@ -456,7 +456,7 @@ emptyChildren:
                         (void*)(serialized.data()), buf_size);
                 auxOffset += buf_size;
 #ifdef ENABLE_COUNTERS
-                CompressTree::bctr++;
+                tree_->monitor_->bctr++;
 #endif
             }
             auxEls++;

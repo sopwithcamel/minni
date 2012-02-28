@@ -8,11 +8,6 @@
 #include "Slaves.h"
 
 namespace compresstree {
-    uint64_t CompressTree::actr = 0;
-    uint64_t CompressTree::bctr = 0;
-    uint64_t CompressTree::cctr = 0;
-
-    bool CompressTree::enablePaging = false;
 
     CompressTree::CompressTree(uint32_t a, uint32_t b, uint32_t nodesInMemory,
                 size_t (*createPAOFunc)(Token* t, PartialAgg** p),
@@ -34,11 +29,14 @@ namespace compresstree {
         pthread_cond_init(&rootNodeAvailableForWriting_, NULL);
 
         pthread_mutex_init(&evictedBufferMutex_, NULL);
+        uint32_t threadCount = 4;
 #ifdef ENABLE_PAGING
-        pthread_barrier_init(&threadsBarrier_, NULL, 5);
-#else
-        pthread_barrier_init(&threadsBarrier_, NULL, 4);
+        threadCount++;
 #endif
+#ifdef ENABLE_COUNTERS
+        threadCount++;
+#endif
+        pthread_barrier_init(&threadsBarrier_, NULL, threadCount);
     }
 
     CompressTree::~CompressTree()
@@ -175,9 +173,6 @@ namespace compresstree {
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Emptying tree!\n");
 #endif
-#ifdef ENABLE_COUNTERS
-                fprintf(stderr, "%lu %lu %lu\n", CompressTree::actr, CompressTree::bctr, CompressTree::cctr);
-#endif
                 emptyTree();
                 stopThreads();
                 return false;
@@ -220,9 +215,6 @@ namespace compresstree {
         lastOffset_ = 0;
     
         nodeCtr = 0;
-        CompressTree::actr = 0;
-        CompressTree::bctr = 0;
-        CompressTree::cctr = 0;
         Node::emptyType_ = Node::IF_FULL;
         rootNode_ = new Node(this, true, 0);
         rootNode_->setSeparator(UINT32_MAX);
@@ -302,26 +294,6 @@ namespace compresstree {
         return true;
     }
 
-    void* CompressTree::callSortHelper(void *context)
-    {
-        return ((CompressTree*)context)->sorter_->work();
-    }
-
-    void* CompressTree::callCompressHelper(void *context)
-    {
-        return ((CompressTree*)context)->compressor_->work();
-    }
-
-    void* CompressTree::callEmptyHelper(void *context)
-    {
-        return ((CompressTree*)context)->emptier_->work();
-    }
-
-    void* CompressTree::callPageHelper(void *context)
-    {
-        return ((CompressTree*)context)->pager_->work();
-    }
-
     bool CompressTree::addLeafToEmpty(Node* node)
     {
         leavesToBeEmptied_.push_back(node);
@@ -397,23 +369,30 @@ namespace compresstree {
         sorter_ = new Sorter(this);
         pthread_attr_init(&attr);
         pthread_create(&sorter_->thread_, &attr,
-                &CompressTree::callSortHelper, (void*)this);
+                &Sorter::callHelper, (void*)sorter_);
 
         compressor_ = new Compressor(this);
         pthread_attr_init(&attr);
         pthread_create(&compressor_->thread_, &attr, 
-                &CompressTree::callCompressHelper, (void*)this);
+                &Compressor::callHelper, (void*)compressor_);
 
         emptier_ = new Emptier(this);
         pthread_attr_init(&attr);
         pthread_create(&emptier_->thread_, &attr,
-                &CompressTree::callEmptyHelper, (void*)this);
+                &Emptier::callHelper, (void*)emptier_);
 
 #ifdef ENABLE_PAGING
         pager_ = new Pager(this);
         pthread_attr_init(&attr);
         pthread_create(&pager_->thread_, &attr,
-                &CompressTree::callPageHelper, (void*)this);
+                &Pager::callHelper, (void*)pager_);
+#endif
+
+#ifdef ENABLE_COUNTERS
+        monitor_ = new Monitor(this);
+        pthread_attr_init(&attr);
+        pthread_create(&monitor_->thread_, &attr,
+                &Monitor::callHelper, (void*)monitor_);
 #endif
 
         pthread_barrier_wait(&threadsBarrier_);
@@ -441,6 +420,10 @@ namespace compresstree {
         pager_->setInputComplete(true);
         pager_->wakeup();
         pthread_join(pager_->thread_, &status);
+#endif
+#ifdef ENABLE_COUNTERS
+        pager_->setInputComplete(true);
+        pthread_join(monitor_->thread_, &status);
 #endif
         threadsStarted_ = false;
     }

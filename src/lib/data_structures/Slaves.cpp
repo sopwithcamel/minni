@@ -73,6 +73,11 @@ namespace compresstree {
     {
     }
 
+    void* Emptier::callHelper(void *context)
+    {
+        return ((Emptier*)context)->work();
+    }
+
     void* Emptier::work()
     {
         bool rootFlag = false;
@@ -174,6 +179,11 @@ namespace compresstree {
     {
     }
 
+    void* Compressor::callHelper(void *context)
+    {
+        return ((Compressor*)context)->work();
+    }
+
     void* Compressor::work()
     {
         pthread_mutex_lock(&queueMutex_);
@@ -194,6 +204,9 @@ namespace compresstree {
                 pthread_mutex_lock(&(n->compActMutex_));
                 if (n->compAct_ == Node::COMPRESS && !n->isCompressed()) {
                     n->snappyCompress();
+#ifdef ENABLE_COUNTERS
+                    tree_->monitor_->decompCtr--;
+#endif
                     // signal to agent waiting for completion.
                     pthread_cond_signal(&n->compActCond_);
                 } else if (n->compAct_ == Node::DECOMPRESS) {
@@ -202,6 +215,9 @@ namespace compresstree {
                         n->waitForPageIn();
                         pthread_mutex_lock(&(n->compActMutex_));
                         n->snappyDecompress();
+#ifdef ENABLE_COUNTERS
+                        tree_->monitor_->decompCtr++;
+#endif
                     }
                     pthread_cond_signal(&n->compActCond_);
                 }
@@ -261,6 +277,11 @@ namespace compresstree {
 
     Sorter::~Sorter()
     {
+    }
+
+    void* Sorter::callHelper(void *context)
+    {
+        return ((Sorter*)context)->work();
     }
 
     void* Sorter::work()
@@ -330,6 +351,11 @@ namespace compresstree {
 
     Pager::~Pager()
     {
+    }
+
+    void* Pager::callHelper(void *context)
+    {
+        return ((Pager*)context)->work();
     }
 
     void* Pager::work()
@@ -488,4 +514,44 @@ namespace compresstree {
         queueEmpty_ = false;
         pthread_mutex_unlock(&queueMutex_);
     }
+
+#ifdef ENABLE_COUNTERS
+    Monitor::Monitor(CompressTree* tree) :
+            Slave(tree),
+            actr(0),
+            bctr(0),
+            cctr(0),
+            decompCtr(0)
+    {
+    }
+
+    Monitor::~Monitor()
+    {
+    }
+
+    void* Monitor::callHelper(void *context)
+    {
+        return ((Monitor*)context)->work();
+    }
+
+    void* Monitor::work()
+    {
+        pthread_barrier_wait(&tree_->threadsBarrier_);
+        while (!inputComplete_) {
+            sleep(1);
+            decompressCtr.push_back(decompCtr);
+        }
+        uint32_t decompSum = 0;
+        for (uint32_t i=0; i<compressCtr.size(); i++) {
+            decompSum += decompressCtr[i];
+        }
+        decompSum /= decompressCtr.size();
+        fprintf(stderr, "Avg decomp nodes: %d\n", decompSum);
+    }
+
+    void Monitor::addNode(Node* n)
+    {
+        return;
+    }
+#endif
 }

@@ -54,6 +54,7 @@ namespace compresstree {
             }
         };
       public:
+        static void* callHelper(void* context);
         Emptier(CompressTree* tree);
         ~Emptier();
         void* work();
@@ -66,6 +67,7 @@ namespace compresstree {
         friend class CompressTree;
         friend class Node;
       public:
+        static void* callHelper(void* context);
         Compressor(CompressTree* tree);
         ~Compressor();
         void* work();
@@ -76,6 +78,7 @@ namespace compresstree {
         friend class CompressTree;
         friend class Node;
       public:
+        static void* callHelper(void* context);
         Sorter(CompressTree* tree);
         ~Sorter();
         void* work();
@@ -86,6 +89,7 @@ namespace compresstree {
         friend class CompressTree;
         friend class Node;
       public:
+        static void* callHelper(void* context);
         Pager(CompressTree* tree);
         ~Pager();
         void pageOut(Node* node);
@@ -93,6 +97,27 @@ namespace compresstree {
         void* work();
         void addNode(Node* node);
     };
+
+#ifdef ENABLE_COUNTERS
+    class Monitor : public Slave {
+        friend class CompressTree;
+        friend class Node;
+        friend class Compressor;
+      public:
+        static void* callHelper(void* context);
+        Monitor(CompressTree* tree);
+        ~Monitor();
+        void* work();
+        void addNode(Node* n);
+      private:
+        uint64_t decompCtr;
+        std::vector<uint32_t> compressCtr;
+        std::vector<uint32_t> decompressCtr;
+        uint64_t actr;
+        uint64_t bctr;
+        uint64_t cctr;
+    };
+#endif
 }
 
 #endif
