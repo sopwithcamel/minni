@@ -422,7 +422,7 @@ namespace compresstree {
         pthread_join(pager_->thread_, &status);
 #endif
 #ifdef ENABLE_COUNTERS
-        pager_->setInputComplete(true);
+        monitor_->setInputComplete(true);
         pthread_join(monitor_->thread_, &status);
 #endif
         threadsStarted_ = false;

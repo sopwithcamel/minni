@@ -205,7 +205,7 @@ namespace compresstree {
                 if (n->compAct_ == Node::COMPRESS && !n->isCompressed()) {
                     n->snappyCompress();
 #ifdef ENABLE_COUNTERS
-                    tree_->monitor_->decompCtr--;
+                    tree_->monitor_->decompCtr++;
 #endif
                     // signal to agent waiting for completion.
                     pthread_cond_signal(&n->compActCond_);
@@ -216,7 +216,7 @@ namespace compresstree {
                         pthread_mutex_lock(&(n->compActMutex_));
                         n->snappyDecompress();
 #ifdef ENABLE_COUNTERS
-                        tree_->monitor_->decompCtr++;
+                        tree_->monitor_->decompCtr--;
 #endif
                     }
                     pthread_cond_signal(&n->compActCond_);
@@ -539,14 +539,19 @@ namespace compresstree {
         pthread_barrier_wait(&tree_->threadsBarrier_);
         while (!inputComplete_) {
             sleep(1);
-            decompressCtr.push_back(decompCtr);
+            decompressCtr.push_back((float)decompCtr / tree_->nodeCtr);
+            nodeCtr.push_back(decompCtr);
         }
-        uint32_t decompSum = 0;
-        for (uint32_t i=0; i<compressCtr.size(); i++) {
+        float decompSum = 0;
+        int32_t totNodes = 0;
+        for (uint32_t i=0; i<decompressCtr.size(); i++) {
             decompSum += decompressCtr[i];
+            totNodes += nodeCtr[i];
         }
-        decompSum /= decompressCtr.size();
-        fprintf(stderr, "Avg decomp nodes: %d\n", decompSum);
+        fprintf(stderr, "Avg percent of decomp nodes: %f\n", (float)decompSum / 
+                decompressCtr.size());
+        fprintf(stderr, "Avg. number of decomp nodes: %f\n", (float)totNodes / 
+                nodeCtr.size());
     }
 
     void Monitor::addNode(Node* n)

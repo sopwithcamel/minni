@@ -12,7 +12,7 @@
 //#define CT_NODE_DEBUG
 //#define ENABLE_SORT_VERIFICATION
 //#define ENABLE_INTEGRITY_CHECK
-#define ENABLE_COUNTERS
+//#define ENABLE_COUNTERS
 //#define ENABLE_PAGING
 /* TODO: Eviction is broken */
 //#define ENABLE_EVICTION
