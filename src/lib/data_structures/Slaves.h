@@ -113,6 +113,7 @@ namespace compresstree {
         uint64_t decompCtr;
         std::vector<float> decompressCtr;
         std::vector<int32_t> nodeCtr;
+        std::vector<int32_t> totNodeCtr;
         uint64_t actr;
         uint64_t bctr;
         uint64_t cctr;

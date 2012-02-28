@@ -541,6 +541,7 @@ namespace compresstree {
             sleep(1);
             decompressCtr.push_back((float)decompCtr / tree_->nodeCtr);
             nodeCtr.push_back(decompCtr);
+            totNodeCtr.push_back(tree_->nodeCtr);
         }
         float decompSum = 0;
         int32_t totNodes = 0;
@@ -550,8 +551,17 @@ namespace compresstree {
         }
         fprintf(stderr, "Avg percent of decomp nodes: %f\n", (float)decompSum / 
                 decompressCtr.size());
+        for (uint32_t i=0; i<nodeCtr.size(); i++)
+            fprintf(stderr, "%d, ", nodeCtr[i]);
+        fprintf(stderr, "\n");
         fprintf(stderr, "Avg. number of decomp nodes: %f\n", (float)totNodes / 
                 nodeCtr.size());
+        for (uint32_t i=0; i<totNodeCtr.size(); i++)
+            fprintf(stderr, "%d, ", totNodeCtr[i]);
+        fprintf(stderr, "\n");
+        decompressCtr.clear();
+        nodeCtr.clear();
+        totNodeCtr.clear();
     }
 
     void Monitor::addNode(Node* n)
