@@ -72,10 +72,8 @@ void* Serializer::operator()(void* pao_list)
     if (aggregator->input_finished && 
             tokens_processed == aggregator->tot_input_tokens &&
             aggregator->sendNextToken == true) {
-        fprintf(stderr, "Closing bucket files\n");
 
         for (int i=0; i<num_buckets; i++) {
-            fprintf(stderr, "Closing file: %d/%d\n", i, num_buckets);
             delete coded_output_[i];
             delete raw_output_[i];
             fl_[i]->close();
