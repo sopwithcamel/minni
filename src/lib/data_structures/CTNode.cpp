@@ -173,11 +173,13 @@ namespace compresstree {
         curHash = (uint32_t*)(data_ + offset);
         while (*curHash >= children_[curChild]->separator_) {
             curChild++;
+#ifdef ENABLE_ASSERT_CHECKS
             if (curChild >= children_.size()) {
                 fprintf(stderr, "Node: %d: Can't place %u among children\n", id_, *curHash);
                 checkIntegrity();
                 assert(false);
             }
+#endif
         }
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node: %d: first node chosen: %d (sep: %u,\
@@ -225,10 +227,12 @@ namespace compresstree {
                 // skip past all separators not greater than *curHash
                 while (*curHash >= children_[curChild]->separator_) {
                     curChild++;
+#ifdef ENABLE_ASSERT_CHECKS
                     if (curChild >= children_.size()) {
                         fprintf(stderr, "Can't place %u among children\n", *curHash);
                         assert(false);
                     }
+#endif
                 }
             }
             // proceed to next element
