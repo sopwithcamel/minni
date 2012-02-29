@@ -35,6 +35,7 @@ namespace compresstree {
 #endif
 #ifdef ENABLE_COUNTERS
         threadCount++;
+        monitor_ = NULL;
 #endif
         pthread_barrier_init(&threadsBarrier_, NULL, threadCount);
     }

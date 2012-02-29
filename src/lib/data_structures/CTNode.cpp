@@ -70,6 +70,10 @@ namespace compresstree {
         fd_ = open(fileName, O_CREAT|O_RDWR|O_TRUNC, 0755);
         free(fileName);
         free(nodeNum);
+#ifdef ENABLE_COUNTERS
+        if (tree_->monitor_)
+            tree_->monitor_->decompCtr++;
+#endif
     }
 
     Node::~Node()

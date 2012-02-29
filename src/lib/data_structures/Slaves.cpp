@@ -201,7 +201,7 @@ namespace compresstree {
                 if (n->compAct_ == Node::COMPRESS && !n->isCompressed()) {
                     n->snappyCompress();
 #ifdef ENABLE_COUNTERS
-                    tree_->monitor_->decompCtr++;
+                    tree_->monitor_->decompCtr--;
 #endif
                     // signal to agent waiting for completion.
                     pthread_cond_signal(&n->compActCond_);
@@ -212,7 +212,7 @@ namespace compresstree {
                         pthread_mutex_lock(&(n->compActMutex_));
                         n->snappyDecompress();
 #ifdef ENABLE_COUNTERS
-                        tree_->monitor_->decompCtr--;
+                        tree_->monitor_->decompCtr++;
 #endif
                     }
                     pthread_cond_signal(&n->compActCond_);
@@ -517,7 +517,7 @@ namespace compresstree {
             actr(0),
             bctr(0),
             cctr(0),
-            decompCtr(0)
+            decompCtr(1)
     {
     }
 
@@ -535,27 +535,21 @@ namespace compresstree {
         pthread_barrier_wait(&tree_->threadsBarrier_);
         while (!inputComplete_) {
             sleep(1);
-            decompressCtr.push_back((float)decompCtr / tree_->nodeCtr);
             nodeCtr.push_back(decompCtr);
             totNodeCtr.push_back(tree_->nodeCtr);
         }
-        float decompSum = 0;
         int32_t totNodes = 0;
-        for (uint32_t i=0; i<decompressCtr.size(); i++) {
-            decompSum += decompressCtr[i];
+        for (uint32_t i=0; i<nodeCtr.size(); i++) {
             totNodes += nodeCtr[i];
         }
-        fprintf(stderr, "Avg percent of decomp nodes: %f\n", (float)decompSum / 
-                decompressCtr.size());
+        fprintf(stderr, "Avg. number of decomp nodes: %f\n", (float)totNodes / 
+                nodeCtr.size());
         for (uint32_t i=0; i<nodeCtr.size(); i++)
             fprintf(stderr, "%d, ", nodeCtr[i]);
         fprintf(stderr, "\n");
-        fprintf(stderr, "Avg. number of decomp nodes: %f\n", (float)totNodes / 
-                nodeCtr.size());
         for (uint32_t i=0; i<totNodeCtr.size(); i++)
             fprintf(stderr, "%d, ", totNodeCtr[i]);
         fprintf(stderr, "\n");
-        decompressCtr.clear();
         nodeCtr.clear();
         totNodeCtr.clear();
     }
