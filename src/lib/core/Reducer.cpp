@@ -150,10 +150,10 @@ task* ReducerWrapperTask::execute() {
 
 	Setting& c_heapprof = readConfigFile(cfg, "minni.debug.heapprofile");
 	int heapprofile = c_heapprof;
-
+/*
     if (heapprofile == 1)
         HeapProfilerStop();
-
+*/
 	delete reducer->aggreg;
 	delete reducer;
 	free(s_name);

@@ -43,5 +43,5 @@ workdaemon_LDFLAGS = $(TBB_LIBS) \
 		     -lboost_regex \
 		     -lpthread \
 		     -lconfig++ \
-			 -ltcmalloc \
+			 -lhoard \
 			 -lprotobuf
