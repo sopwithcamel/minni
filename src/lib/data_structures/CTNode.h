@@ -46,8 +46,27 @@ namespace compresstree {
             PAGE_OUT,
             PAGE_IN
         };
+
+        class Buffer {
+          public:
+            Buffer();
+            ~Buffer();
+            void allocate();
+            void deallocate();
+            inline bool empty();
+
+            uint32_t* hashes_;
+            uint32_t* sizes_;
+            char* data_;
+        };
+
+        struct CompressedBufferLength {
+            uint32_t hashLen;
+            uint32_t sizeLen;
+            uint32_t dataLen;
+        };
       public:
-        Node(CompressTree* tree, bool alloc, uint32_t level);
+        Node(CompressTree* tree, uint32_t level);
         ~Node();
         /* copy user data into buffer. Buffer should be decompressed
            before calling. */
@@ -84,20 +103,10 @@ namespace compresstree {
         /* Aggregate the sorted buffer
          * Must be called when buffer is decompressed */
         bool aggregateBuffer();
-        /* advance n elements in the buffer; the starting offset must be
-         * passed, which is updated; returns false if past end */
-        bool advance(uint32_t n, size_t& offset);
-        void addElements(size_t numElements);
-        void reduceElements(size_t numElements);
-        /* copy entire buffer into the this node's buffer. This can be used
-         * by the parent to write a set of sorted elements directly into the
-         * child.
+        /* copy contents from node's buffer into this buffer. Starting from
+         * index = index, copy num elements' data.
          */
-        bool copyIntoBuffer(void* buf, size_t buf_size);
-        /* get pointer to the value stored given the pointer to the hash */
-        inline char* getValue(uint32_t* hashPtr) const;
-        /* converts a pointer to a hash-value to a deserialized pao */
-        void deserializePAO(uint32_t* hashPtr, PartialAgg*& pao);
+        bool copyIntoBuffer(const Node& node, size_t index, size_t num);
 
         /* Tree-related functions */
 
@@ -117,9 +126,7 @@ namespace compresstree {
         bool parseNode();
 
         /* Sorting-related functions */
-        void quicksort(uint32_t** arr, size_t left, size_t right);
-        void verifySort();
-        void setSeparator(uint32_t sep);
+        void quicksort(size_t left, size_t right);
         void waitForSort();
 
         /* Compression-related functions */
@@ -138,29 +145,29 @@ namespace compresstree {
         void waitForCompressAction(const CompressionAction& act);
         bool snappyCompress();
         bool snappyDecompress();
-        bool zlibCompress();
-        bool zlibDecompress();
         /* Returns true if node is compressed; also true if node still hasn't
          * been paged in */
         bool isCompressed();
         void setCompressible(bool flag);
 
+#ifdef ENABLE_PAGING
         /* Paging-related functions */
         bool waitForPageIn();
         bool pageOut();
         bool pageIn();
         bool isPagedOut();
         bool isPinned() const;
+#endif
 
       private:
         static EmptyType emptyType_;
         /* pointer to the tree */
         CompressTree* tree_;
-        /* Buffer pointer */
-        char* data_;
+        /* Buffer */
+        Buffer buffer_;
         NodeState state_;
         pthread_mutex_t stateMutex_;
-        char* compressed_;
+        Buffer compressed_;
         uint32_t id_;
         /* level in the tree; 0 at leaves and increases upwards */
         uint32_t level_;
@@ -168,7 +175,6 @@ namespace compresstree {
         size_t numElements_;
         size_t curOffset_;
         PartialAgg *lastPAO, *thisPAO;
-        uint32_t** els_;         // pointers to elements in buffer
 
         /* Pointers to children */
         std::vector<Node*> children_;
@@ -177,15 +183,17 @@ namespace compresstree {
         /* Emptying related */
         bool queuedForEmptying_;
         pthread_mutex_t queuedForEmptyMutex_;
+        char** perm_;
 
         /* Compression related */
         bool compressible_;
-        size_t compLength_;
+        CompressedBufferLength compLength_;
         bool queuedForCompAct_;
         CompressionAction compAct_;
         pthread_cond_t compActCond_;
         pthread_mutex_t compActMutex_;
 
+#ifdef ENABLE_PAGING
         /* Paging related */
         int fd_;
         bool pageable_;
@@ -193,6 +201,7 @@ namespace compresstree {
         PageAction pageAct_;
         pthread_cond_t pageCond_;
         pthread_mutex_t pageMutex_;
+#endif
     };
 }
 

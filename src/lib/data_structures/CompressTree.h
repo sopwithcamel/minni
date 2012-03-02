@@ -10,9 +10,12 @@
 
 //#define ENABLE_ASSERT_CHECKS
 //#define CT_NODE_DEBUG
+/* broken */
 //#define ENABLE_SORT_VERIFICATION
+/* broken */
 //#define ENABLE_INTEGRITY_CHECK
 //#define ENABLE_COUNTERS
+/* broken */
 //#define ENABLE_PAGING
 /* TODO: Eviction is broken */
 //#define ENABLE_EVICTION
@@ -24,6 +27,7 @@ namespace compresstree {
 //    const size_t BUFFER_SIZE = 20971520;
     const size_t BUFFER_SIZE = 31457280;
     const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 2;
+    const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
 
     enum CompressAlgorithm {
         SNAPPY,
@@ -92,6 +96,7 @@ namespace compresstree {
         std::vector<Node*> allLeaves_;
         size_t lastLeafRead_;
         size_t lastOffset_;
+        uint32_t lastElement_;
 
         /* Slave-threads */
         bool threadsStarted_;
@@ -111,14 +116,16 @@ namespace compresstree {
 
         /* Members for async-sorting */
         Sorter* sorter_;
-        char* auxBuffer_;       // used in sorting
+        Node::Buffer auxBuffer_;       // used in aggregation
         
         /* Compression-related */
         Compressor* compressor_;
-        char* compBuffer_;
+        Node::Buffer compBuffer_;
 
+#ifdef ENABLE_PAGING
         /* Paging */
         Pager* pager_;
+#endif
 
 #ifdef ENABLE_COUNTERS
         /* Monitor */

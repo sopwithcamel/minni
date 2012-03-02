@@ -208,7 +208,9 @@ namespace compresstree {
                 } else if (n->compAct_ == Node::DECOMPRESS) {
                     if (n->isCompressed()) {
                         pthread_mutex_unlock(&(n->compActMutex_));
+#ifdef ENABLE_PAGING
                         n->waitForPageIn();
+#endif
                         pthread_mutex_lock(&(n->compActMutex_));
                         n->snappyDecompress();
 #ifdef ENABLE_COUNTERS
@@ -340,6 +342,7 @@ namespace compresstree {
 #endif
     }
 
+#ifdef ENABLE_PAGING
     Pager::Pager(CompressTree* tree) :
             Slave(tree)
     {
@@ -510,6 +513,7 @@ namespace compresstree {
         queueEmpty_ = false;
         pthread_mutex_unlock(&queueMutex_);
     }
+#endif //ENABLE_PAGING
 
 #ifdef ENABLE_COUNTERS
     Monitor::Monitor(CompressTree* tree) :

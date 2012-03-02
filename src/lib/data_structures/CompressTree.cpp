@@ -21,6 +21,7 @@ namespace compresstree {
         allFlush_(false),
         lastLeafRead_(0),
         lastOffset_(0),
+        lastElement_(0),
         threadsStarted_(false),
         nodesInMemory_(nodesInMemory),
         numEvicted_(0)
@@ -28,7 +29,9 @@ namespace compresstree {
         pthread_mutex_init(&rootNodeAvailableMutex_, NULL);
         pthread_cond_init(&rootNodeAvailableForWriting_, NULL);
 
+#ifdef ENABLE_EVICTION
         pthread_mutex_init(&evictedBufferMutex_, NULL);
+#endif
         uint32_t threadCount = 4;
 #ifdef ENABLE_PAGING
         threadCount++;
@@ -44,7 +47,9 @@ namespace compresstree {
     {
         pthread_cond_destroy(&rootNodeAvailableForWriting_);
         pthread_mutex_destroy(&rootNodeAvailableMutex_);
+#ifdef ENABLE_EVICTION
         pthread_mutex_destroy(&evictedBufferMutex_);
+#endif
         pthread_barrier_destroy(&threadsBarrier_);
     }
 
@@ -72,9 +77,18 @@ namespace compresstree {
 #endif
             }
             // switch buffers
-            char* temp = inputNode_->data_;
-            inputNode_->data_ = rootNode_->data_;
-            rootNode_->data_ = temp;
+            uint32_t* temp_hashes = inputNode_->buffer_.hashes_;
+            inputNode_->buffer_.hashes_ = rootNode_->buffer_.hashes_;
+            rootNode_->buffer_.hashes_ = temp_hashes;
+
+            uint32_t* temp_sizes = inputNode_->buffer_.sizes_;
+            inputNode_->buffer_.sizes_ = rootNode_->buffer_.sizes_;
+            rootNode_->buffer_.sizes_ = temp_sizes;
+
+            char* temp_data = inputNode_->buffer_.data_;
+            inputNode_->buffer_.data_ = rootNode_->buffer_.data_;
+            rootNode_->buffer_.data_ = temp_data;
+
             rootNode_->numElements_ = inputNode_->numElements_;
             rootNode_->curOffset_ = inputNode_->curOffset_;
             inputNode_->numElements_ = 0;
@@ -159,14 +173,14 @@ namespace compresstree {
         }
 
         Node* curLeaf = allLeaves_[lastLeafRead_];
-        hash = (uint32_t*)(curLeaf->data_ + lastOffset_);
+        hash = (void*)&curLeaf->buffer_.hashes_[lastElement_];
         createPAO_(NULL, &agg);
-        curLeaf->deserializePAO((uint32_t*)hash, agg);
-        lastOffset_ += sizeof(uint32_t);
-        uint32_t buf_size = *(uint32_t*)(curLeaf->data_ + lastOffset_);
-        lastOffset_ += sizeof(uint32_t) + buf_size;
+        agg->deserialize(curLeaf->buffer_.data_ + lastOffset_,
+                curLeaf->buffer_.sizes_[lastElement_]);
+        lastOffset_ += curLeaf->buffer_.sizes_[lastElement_];
+        lastElement_++;
 
-        if (lastOffset_ >= curLeaf->curOffset_) {
+        if (lastElement_ >= curLeaf->numElements_) {
             CALL_MEM_FUNC(*curLeaf, curLeaf->compress)();
             if (++lastLeafRead_ == allLeaves_.size()) {
                 /* Wait for all outstanding compression work to finish */
@@ -186,6 +200,7 @@ namespace compresstree {
             CALL_MEM_FUNC(*n, n->decompress)();
             n->waitForCompressAction(Node::DECOMPRESS);
             lastOffset_ = 0;
+            lastElement_ = 0;
         }
 
         return true;
@@ -217,8 +232,8 @@ namespace compresstree {
     
         nodeCtr = 0;
         Node::emptyType_ = Node::IF_FULL;
-        rootNode_ = new Node(this, true, 0);
-        rootNode_->setSeparator(UINT32_MAX);
+        rootNode_ = new Node(this, 0);
+        rootNode_->separator_ = UINT32_MAX;
         rootNode_->setCompressible(false);
     }
 
@@ -239,9 +254,18 @@ namespace compresstree {
         // root node is now empty
 
         // switch buffers
-        char* temp = inputNode_->data_;
-        inputNode_->data_ = rootNode_->data_;
-        rootNode_->data_ = temp;
+        uint32_t* temp_hashes = inputNode_->buffer_.hashes_;
+        inputNode_->buffer_.hashes_ = rootNode_->buffer_.hashes_;
+        rootNode_->buffer_.hashes_ = temp_hashes;
+
+        uint32_t* temp_sizes = inputNode_->buffer_.sizes_;
+        inputNode_->buffer_.sizes_ = rootNode_->buffer_.sizes_;
+        rootNode_->buffer_.sizes_ = temp_sizes;
+
+        char* temp_data = inputNode_->buffer_.data_;
+        inputNode_->buffer_.data_ = rootNode_->buffer_.data_;
+        rootNode_->buffer_.data_ = temp_data;
+
         rootNode_->numElements_ = inputNode_->numElements_;
         rootNode_->curOffset_ = inputNode_->curOffset_;
         inputNode_->numElements_ = 0;
@@ -345,20 +369,14 @@ namespace compresstree {
     void CompressTree::startThreads()
     {
         // create root node; initially a leaf
-        rootNode_ = new Node(this, true, 0);
-        rootNode_->setSeparator(UINT32_MAX);
+        rootNode_ = new Node(this, 0);
+        rootNode_->separator_ = UINT32_MAX;
         rootNode_->setCompressible(false);
 
-        inputNode_ = new Node(this, true, 0);
-        inputNode_->setSeparator(UINT32_MAX);
+        inputNode_ = new Node(this, 0);
+        inputNode_->separator_ = UINT32_MAX;
         inputNode_->setCompressible(false);
         
-        // aux buffer for use in sorting
-        auxBuffer_ = (char*)malloc(BUFFER_SIZE);
-
-        // buffer for use in compression
-        compBuffer_ = (char*)malloc(BUFFER_SIZE);
-
 #ifdef ENABLE_EVICTION
         // buffer for holding evicted values
         evictedBuffer_ = (char*)malloc(BUFFER_SIZE);
@@ -404,9 +422,8 @@ namespace compresstree {
     {
         void* status;
         delete inputNode_;
-        free(auxBuffer_);
-        free(compBuffer_);
-        free(evictedBuffer_);
+        auxBuffer_.deallocate();
+        compBuffer_.deallocate();
 
         sorter_->setInputComplete(true);
         sorter_->wakeup();
@@ -431,8 +448,8 @@ namespace compresstree {
 
     bool CompressTree::createNewRoot(Node* otherChild)
     {
-        Node* newRoot = new Node(this, true, rootNode_->level() + 1);
-        newRoot->setSeparator(UINT32_MAX);
+        Node* newRoot = new Node(this, rootNode_->level() + 1);
+        newRoot->separator_ = UINT32_MAX;
         newRoot->setCompressible(false);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node %d is new root; children are %d and %d\n", 
