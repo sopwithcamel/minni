@@ -113,7 +113,7 @@ namespace compresstree {
         num_evicted = numEvicted_;
         if (numEvicted_ > 0) {
             char* buf = evictedBuffer_;
-            size_t offset = 0;
+            uint32_t offset = 0;
             uint32_t* bufSize;
             fprintf(stderr, "Evicting %lu elements\n", numEvicted_);
             PartialAgg* p;
@@ -311,7 +311,7 @@ namespace compresstree {
         }
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Tree has %ld leaves\n", allLeaves_.size());
-        size_t numit = 0;
+        uint32_t numit = 0;
         for (int i=0; i<allLeaves_.size(); i++)
             numit += allLeaves_[i]->numElements_;
         fprintf(stderr, "Tree has %ld elements\n", numit);

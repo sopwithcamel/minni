@@ -177,7 +177,7 @@ namespace compresstree {
                 tree_->addLeafToEmpty(this);
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Leaf node %d added to full-leaf-list\
-                        %lu/%lu\n", id_, curOffset_, EMPTY_THRESHOLD);
+                        %u/%u\n", id_, curOffset_, EMPTY_THRESHOLD);
 #endif
             } else { // we aggregate and compress
                 aggregateBuffer();
@@ -202,7 +202,8 @@ namespace compresstree {
             curChild++;
 #ifdef ENABLE_ASSERT_CHECKS
             if (curChild >= children_.size()) {
-                fprintf(stderr, "Node: %d: Can't place %u among children\n", id_, *curHash);
+                fprintf(stderr, "Node: %d: Can't place %u among children\n", id_, 
+                        buffer_.hashes_[curElement]);
                 checkIntegrity();
                 assert(false);
             }
@@ -240,8 +241,8 @@ namespace compresstree {
                     children_[curChild]->copyIntoBuffer(*this, lastElement,
                                 curElement - lastElement);
 #ifdef CT_NODE_DEBUG
-                    fprintf(stderr, "Copied %lu elements into node %d; child\
-                            offset: %ld, sep: %lu/%lu\n",
+                    fprintf(stderr, "Copied %u elements into node %d; child\
+                            offset: %d, sep: %u\n",
                             curElement - lastElement,
                             children_[curChild]->id_,
                             children_[curChild]->curOffset_,
@@ -256,7 +257,8 @@ namespace compresstree {
                     curChild++;
 #ifdef ENABLE_ASSERT_CHECKS
                     if (curChild >= children_.size()) {
-                        fprintf(stderr, "Can't place %u among children\n", *curHash);
+                        fprintf(stderr, "Can't place %u among children\n", 
+                                buffer_.hashes_[curElement]);
                         assert(false);
                     }
 #endif
@@ -286,8 +288,8 @@ namespace compresstree {
                         curElement - lastElement);
             children_[curChild]->emptyOrCompress();
 #ifdef CT_NODE_DEBUG
-            fprintf(stderr, "Copied %lu elements into node %d; child\
-                    offset: %ld, sep: %lu\n",
+            fprintf(stderr, "Copied %u elements into node %d; child\
+                    offset: %d, sep: %u\n",
                     curElement - lastElement,
                     children_[curChild]->id_,
                     children_[curChild]->curOffset_,
@@ -312,7 +314,7 @@ checkSplitNonLeaf:
         return true;
     }
 
-    void Node::quicksort(size_t uleft, size_t uright)
+    void Node::quicksort(uint32_t uleft, uint32_t uright)
     {
         int32_t i, j, stack_pointer = -1;
         int32_t left = uleft;
@@ -429,7 +431,7 @@ checkSplitNonLeaf:
 #endif
         // initialize pointers to serialized PAOs
         perm_ = (char**)malloc(sizeof(char*) * numElements_);
-        size_t offset = 0;
+        uint32_t offset = 0;
         for (uint32_t i=0; i<numElements_; i++) {
             perm_[i] = buffer_.data_ + offset;
             offset += buffer_.sizes_[i];
@@ -442,8 +444,8 @@ checkSplitNonLeaf:
     bool Node::aggregateBuffer()
     {
         uint32_t el_size;
-        size_t auxOffset = 0;
-        size_t auxEls = 0;
+        uint32_t auxOffset = 0;
+        uint32_t auxEls = 0;
         uint32_t buf_size;
 
         // aggregate elements in buffer
@@ -540,7 +542,7 @@ checkSplitNonLeaf:
                 buffer_.hashes_[splitIndex-1]) {
             splitIndex++;
 #ifdef ENABLE_ASSERT_CHECKS
-            if (splitIndex == numElements_)
+            if (splitIndex == numElements_) {
                 assert(false);
             }                
 #endif
@@ -551,7 +553,7 @@ checkSplitNonLeaf:
         newLeaf->copyIntoBuffer(*this, splitIndex, numElements_ - splitIndex);
 
         // modify this leaf properties
-        size_t offset = 0;
+        uint32_t offset = 0;
         for (uint32_t i=0; i<splitIndex; i++) {
             offset += buffer_.sizes_[i];
         }
@@ -563,8 +565,8 @@ checkSplitNonLeaf:
         newLeaf->checkIntegrity();
         checkIntegrity();
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node %d splits to Node %d: new offsets: %lu and\
-                %lu; new separators: %lu and %lu\n", id_, newLeaf->id_, 
+        fprintf(stderr, "Node %d splits to Node %d: new offsets: %u and\
+                %u; new separators: %u and %u\n", id_, newLeaf->id_, 
                 curOffset_, newLeaf->curOffset_, separator_, newLeaf->separator_);
 #endif
 
@@ -578,11 +580,11 @@ checkSplitNonLeaf:
         return newLeaf;
     }
 
-    bool Node::copyIntoBuffer(const Node& node, size_t index, size_t num)
+    bool Node::copyIntoBuffer(const Node& node, uint32_t index, uint32_t num)
     {
         // calculate offset
-        size_t offset = 0;
-        size_t num_bytes = 0;
+        uint32_t offset = 0;
+        uint32_t num_bytes = 0;
         for (uint32_t i=0; i<index; i++) {
             offset += buffer_.sizes_[i];
         }
@@ -591,8 +593,8 @@ checkSplitNonLeaf:
         }
 #ifdef ENABLE_ASSERT_CHECKS
         if (curOffset_ + num_bytes >= BUFFER_SIZE) {
-            fprintf(stderr, "Node: %d, cOffset: %ld, buf: %ld\n", id_, 
-                    curOffset_, buf_size); 
+            fprintf(stderr, "Node: %d, cOffset: %d, buf: %d\n", id_, 
+                    curOffset_, num_bytes); 
             assert(false);
         }
         if (buffer_.data_ == NULL) {
@@ -657,7 +659,7 @@ checkSplitNonLeaf:
 #ifdef ENABLE_ASSERT_CHECKS
         if (children_[newNodeChildIndex]->separator_ <= 
                 children_[newNodeChildIndex-1]->separator_) {
-            fprintf(stderr, "%d sep is %lu and %d sep is %lu\n", 
+            fprintf(stderr, "%d sep is %u and %d sep is %u\n", 
                     newNodeChildIndex, 
                     children_[newNodeChildIndex]->separator_, 
                     newNodeChildIndex-1,
@@ -683,10 +685,10 @@ checkSplitNonLeaf:
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "After split, %d: [", id_);
         for (uint32_t j=0; j<children_.size(); j++)
-            fprintf(stderr, "%lu, ", children_[j]->separator_);
+            fprintf(stderr, "%u, ", children_[j]->separator_);
         fprintf(stderr, "] and %d: [", newNode->id_);
         for (uint32_t j=0; j<newNode->children_.size(); j++)
-            fprintf(stderr, "%lu, ", newNode->children_[j]->separator_);
+            fprintf(stderr, "%u, ", newNode->children_[j]->separator_);
         fprintf(stderr, "]\n");
 
         fprintf(stderr, "Children, %d: [", id_);
@@ -854,20 +856,20 @@ checkSplitNonLeaf:
             snappy::RawCompress((const char*)buffer_.hashes_, 
                     numElements_ * sizeof(uint32_t), 
                     (char*)tree_->compBuffer_.hashes_,
-                    (size_t*)&compLength_.hashLen);
+                    &compLength_.hashLen);
             memmove(compressed_.hashes_, tree_->compBuffer_.hashes_, 
                     compLength_.hashLen);
 
             snappy::RawCompress((const char*)buffer_.sizes_, 
                     numElements_ * sizeof(uint32_t), 
                     (char*)tree_->compBuffer_.sizes_,
-                    (size_t*)&compLength_.sizeLen);
+                    &compLength_.sizeLen);
             memmove(compressed_.sizes_, tree_->compBuffer_.sizes_, 
                     compLength_.sizeLen);
 
             snappy::RawCompress(buffer_.data_, curOffset_, 
                     tree_->compBuffer_.data_, 
-                    (size_t*)&compLength_.dataLen);
+                    &compLength_.dataLen);
             memmove(compressed_.data_, tree_->compBuffer_.data_, 
                     compLength_.dataLen);
             /* Can be called from multiple places:
@@ -1011,10 +1013,10 @@ checkSplitNonLeaf:
     bool Node::checkIntegrity()
     {
 #ifdef ENABLE_INTEGRITY_CHECK
-        size_t offset;
+        uint32_t offset;
         uint32_t* curHash;
         offset = 0;
-        for (size_t i=0; i<numElements_-1; i++) {
+        for (uint32_t i=0; i<numElements_-1; i++) {
             if (buffer_.hashes_[i] > buffer_.hashes_[i+1])
                 fprintf(stderr, "Node: %d: Hash %u at index %ld\
                         greater than hash %u at %ld\n", id_, 
@@ -1038,7 +1040,7 @@ checkSplitNonLeaf:
     {
 #ifdef ENABLE_INTEGRITY_CHECK
         uint32_t* bufSize;
-        size_t offset;
+        uint32_t offset;
         for (uint32_t i=0; i<numElements_; i++) {
             offset += sizeof(uint32_t);
             bufSize = (uint32_t*)(data_ + offset);

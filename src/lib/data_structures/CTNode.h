@@ -61,9 +61,9 @@ namespace compresstree {
         };
 
         struct CompressedBufferLength {
-            uint32_t hashLen;
-            uint32_t sizeLen;
-            uint32_t dataLen;
+            size_t hashLen;
+            size_t sizeLen;
+            size_t dataLen;
         };
       public:
         Node(CompressTree* tree, uint32_t level);
@@ -106,7 +106,7 @@ namespace compresstree {
         /* copy contents from node's buffer into this buffer. Starting from
          * index = index, copy num elements' data.
          */
-        bool copyIntoBuffer(const Node& node, size_t index, size_t num);
+        bool copyIntoBuffer(const Node& node, uint32_t index, uint32_t num);
 
         /* Tree-related functions */
 
@@ -126,7 +126,7 @@ namespace compresstree {
         bool parseNode();
 
         /* Sorting-related functions */
-        void quicksort(size_t left, size_t right);
+        void quicksort(uint32_t left, uint32_t right);
         void waitForSort();
 
         /* Compression-related functions */
@@ -172,8 +172,8 @@ namespace compresstree {
         /* level in the tree; 0 at leaves and increases upwards */
         uint32_t level_;
         Node* parent_;
-        size_t numElements_;
-        size_t curOffset_;
+        uint32_t numElements_;
+        uint32_t curOffset_;
         PartialAgg *lastPAO, *thisPAO;
 
         /* Pointers to children */

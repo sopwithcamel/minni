@@ -8,8 +8,8 @@
 #include "Accumulator.h"
 #include "PartialAgg.h"
 
-//#define ENABLE_ASSERT_CHECKS
-//#define CT_NODE_DEBUG
+#define ENABLE_ASSERT_CHECKS
+#define CT_NODE_DEBUG
 /* broken */
 //#define ENABLE_SORT_VERIFICATION
 /* broken */
@@ -25,9 +25,9 @@ namespace compresstree {
 //    const size_t BUFFER_SIZE = 256;
 //    const size_t BUFFER_SIZE = 10485760;
 //    const size_t BUFFER_SIZE = 20971520;
-    const size_t BUFFER_SIZE = 31457280;
-    const size_t EMPTY_THRESHOLD = BUFFER_SIZE / 2;
-    const size_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
+    const uint32_t BUFFER_SIZE = 31457280;
+    const uint32_t EMPTY_THRESHOLD = BUFFER_SIZE / 2;
+    const uint32_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
 
     enum CompressAlgorithm {
         SNAPPY,
@@ -94,8 +94,8 @@ namespace compresstree {
         bool allFlush_;
         std::deque<Node*> leavesToBeEmptied_;
         std::vector<Node*> allLeaves_;
-        size_t lastLeafRead_;
-        size_t lastOffset_;
+        uint32_t lastLeafRead_;
+        uint32_t lastOffset_;
         uint32_t lastElement_;
 
         /* Slave-threads */
@@ -104,9 +104,9 @@ namespace compresstree {
 
         /* Eviction-related */
         uint32_t nodesInMemory_;
-        size_t numEvicted_;
+        uint32_t numEvicted_;
         char* evictedBuffer_;
-        size_t evictedBufferOffset_;
+        uint32_t evictedBufferOffset_;
         pthread_mutex_t evictedBufferMutex_;
 
         /* Members for async-emptying */
