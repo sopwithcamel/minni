@@ -229,12 +229,15 @@ namespace compresstree {
         allFlush_ = false;
         lastLeafRead_ = 0;
         lastOffset_ = 0;
+        lastElement_ = 0;
     
         nodeCtr = 0;
         Node::emptyType_ = Node::IF_FULL;
+/*
         rootNode_ = new Node(this, 0);
         rootNode_->separator_ = UINT32_MAX;
         rootNode_->setCompressible(false);
+*/
     }
 
     bool CompressTree::flushBuffers()
@@ -377,6 +380,8 @@ namespace compresstree {
         inputNode_->separator_ = UINT32_MAX;
         inputNode_->setCompressible(false);
         
+        auxBuffer_.allocate();
+        compBuffer_.allocate();
 #ifdef ENABLE_EVICTION
         // buffer for holding evicted values
         evictedBuffer_ = (char*)malloc(BUFFER_SIZE);

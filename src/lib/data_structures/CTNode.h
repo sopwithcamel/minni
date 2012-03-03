@@ -123,7 +123,6 @@ namespace compresstree {
          * and sorted. If called on the root, then a new root is created */
         bool splitNonLeaf();
         bool checkIntegrity();
-        bool parseNode();
 
         /* Sorting-related functions */
         void quicksort(uint32_t left, uint32_t right);

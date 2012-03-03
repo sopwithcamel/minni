@@ -166,7 +166,6 @@ namespace compresstree {
         uint32_t offset = 0;
         uint32_t curElement = 0;
         uint32_t lastElement = 0; 
-        uint32_t numCopied = 0;
 
         /* if i am a leaf node, queue up for action later after all the
          * internal nodes have been processed */
@@ -195,6 +194,7 @@ namespace compresstree {
             
 
         aggregateBuffer();
+        checkIntegrity();
         // find the first separator strictly greater than the first element
         while (buffer_.hashes_[curElement] >= 
                 children_[curChild]->separator_) {
@@ -242,11 +242,12 @@ namespace compresstree {
                                 curElement - lastElement);
 #ifdef CT_NODE_DEBUG
                     fprintf(stderr, "Copied %u elements into node %d; child\
-                            offset: %d, sep: %u\n",
+                            offset: %d, sep: %u, next: %u\n",
                             curElement - lastElement,
                             children_[curChild]->id_,
                             children_[curChild]->curOffset_,
-                            children_[curChild]->separator_);
+                            children_[curChild]->separator_,
+                            buffer_.hashes_[curElement]);
 #endif
                     lastElement = curElement;
                 }
@@ -321,18 +322,16 @@ checkSplitNonLeaf:
         int32_t right = uright;
         int32_t* rstack = new int32_t[128];
         uint32_t swap, temp;
-        char *swap_perm, *temp_perm;
-        uint32_t swap_size, temp_size;
-
+        uint32_t sizs, sizt;
+        char *pers, *pert;
         uint32_t* arr = buffer_.hashes_;
         uint32_t* siz = buffer_.sizes_;
         while (true) {
             if (right - left <= 7) {
                 for (j = left + 1; j <= right; j++) {
                     swap = arr[j];
-                    swap_size = siz[j];
-                    swap_perm = perm_[j];
-
+                    sizs = siz[j];
+                    pers = perm_[j];
                     i = j - 1;
                     if (i < 0) {
                         fprintf(stderr, "Noo");
@@ -345,48 +344,39 @@ checkSplitNonLeaf:
                         i--;
                     }
                     arr[i + 1] = swap;
-                    siz[i + 1] = swap_size;
-                    perm_[i + 1] = swap_perm;
+                    siz[i + 1] = sizs;
+                    perm_[i + 1] = pers;
                 }
                 if (stack_pointer == -1) {
                     break;
                 }
-                right = rstack[stack_pointer];
-                left = rstack[stack_pointer];
-                stack_pointer--;
+                right = rstack[stack_pointer--];
+                left = rstack[stack_pointer--];
             } else {
                 int median = (left + right) >> 1;
                 i = left + 1;
                 j = right;
                 swap = arr[median]; arr[median] = arr[i]; arr[i] = swap;
-                swap_size = siz[median]; siz[median] = siz[i]; 
-                        siz[i] = swap_size;
-                swap_perm = perm_[median]; perm_[median] = perm_[i]; 
-                        perm_[i] = swap_perm;
+                sizs = siz[median]; siz[median] = siz[i]; siz[i] = sizs;
+                pers = perm_[median]; perm_[median] = perm_[i]; perm_[i] = pers;
                 if (arr[left] > arr[right]) {
                     swap = arr[left]; arr[left] = arr[right]; arr[right] = swap;
-                    swap_size = siz[left]; siz[left] = siz[right]; 
-                            siz[right] = swap_size;
-                    swap_perm = perm_[left]; perm_[left] = perm_[right]; 
-                            perm_[right] = swap_perm;
+                    sizs = siz[left]; siz[left] = siz[right]; siz[right] = sizs;
+                    pers = perm_[left]; perm_[left] = perm_[right]; perm_[right] = pers;
                 }
                 if (arr[i] > arr[right]) {
                     swap = arr[i]; arr[i] = arr[right]; arr[right] = swap;
-                    swap_size = siz[i]; siz[i] = siz[right]; 
-                            siz[right] = swap_size;
-                    swap_perm = perm_[i]; perm_[i] = perm_[right]; 
-                            perm_[right] = swap_perm;
+                    sizs = siz[i]; siz[i] = siz[right]; siz[right] = sizs;
+                    pers = perm_[i]; perm_[i] = perm_[right]; perm_[right] = pers;
                 }
                 if (arr[left] > arr[i]) {
                     swap = arr[left]; arr[left] = arr[i]; arr[i] = swap;
-                    swap_size = siz[left]; siz[left] = siz[i];
-                            siz[i] = swap_size;
-                    swap_perm = perm_[left]; perm_[left] = perm_[i]; 
-                            perm_[i] = swap_perm;
+                    sizs = siz[left]; siz[left] = siz[i]; siz[i] = sizs;
+                    pers = perm_[left]; perm_[left] = perm_[i]; perm_[i] = pers;
                 }
                 temp = arr[i];
-                temp_size = siz[i];
-                temp_perm = perm_[i];
+                sizt = siz[i];
+                pert = perm_[i];
                 while (true) {
                     while (arr[++i] < temp);
                     while (arr[--j] > temp);
@@ -394,17 +384,15 @@ checkSplitNonLeaf:
                         break;
                     }
                     swap = arr[i]; arr[i] = arr[j]; arr[j] = swap;
-                    swap_size = siz[i]; siz[i] = siz[j];
-                            siz[j] = swap_size;
-                    swap_perm = perm_[i]; perm_[i] = perm_[j];
-                            perm_[j] = swap_perm;
+                    sizs = siz[i]; siz[i] = siz[j]; siz[j] = sizs;
+                    pers = perm_[i]; perm_[i] = perm_[j]; perm_[j] = pers;
                 }
                 arr[left + 1] = arr[j];
                 siz[left + 1] = siz[j];
                 perm_[left + 1] = perm_[j];
                 arr[j] = temp;
-                siz[j] = temp_size;
-                perm_[j] = temp_perm;
+                siz[j] = sizt;
+                perm_[j] = pert;
                 if (right - i + 1 >= j - left) {
                     rstack[++stack_pointer] = i;
                     rstack[++stack_pointer] = right;
@@ -439,11 +427,11 @@ checkSplitNonLeaf:
 
         // quicksort elements
         quicksort(0, numElements_ - 1);
+        checkIntegrity();
     }
 
     bool Node::aggregateBuffer()
     {
-        uint32_t el_size;
         uint32_t auxOffset = 0;
         uint32_t auxEls = 0;
         uint32_t buf_size;
@@ -477,7 +465,7 @@ checkSplitNonLeaf:
                 memmove(tree_->auxBuffer_.data_ + auxOffset,
                         (void*)(perm_[lastIndex]),
                         buffer_.sizes_[lastIndex]);
-                auxOffset += el_size;
+                auxOffset += buffer_.sizes_[lastIndex];
             } else {
                 std::string serialized;
                 lastPAO->serialize(&serialized);
@@ -551,6 +539,7 @@ checkSplitNonLeaf:
         // create new leaf
         Node* newLeaf = new Node(tree_, 0);
         newLeaf->copyIntoBuffer(*this, splitIndex, numElements_ - splitIndex);
+        newLeaf->separator_ = separator_;
 
         // modify this leaf properties
         uint32_t offset = 0;
@@ -586,10 +575,10 @@ checkSplitNonLeaf:
         uint32_t offset = 0;
         uint32_t num_bytes = 0;
         for (uint32_t i=0; i<index; i++) {
-            offset += buffer_.sizes_[i];
+            offset += node.buffer_.sizes_[i];
         }
-        for (uint32_t i=index; i<num; i++) {
-            num_bytes += buffer_.sizes_[i];
+        for (uint32_t i=0; i<num; i++) {
+            num_bytes += node.buffer_.sizes_[index + i];
         }
 #ifdef ENABLE_ASSERT_CHECKS
         if (curOffset_ + num_bytes >= BUFFER_SIZE) {
@@ -597,7 +586,7 @@ checkSplitNonLeaf:
                     curOffset_, num_bytes); 
             assert(false);
         }
-        if (buffer_.data_ == NULL) {
+        if (buffer_.empty()) {
             fprintf(stderr, "data buffer is null\n");
             assert(false);
         }
@@ -606,13 +595,11 @@ checkSplitNonLeaf:
                 num * sizeof(uint32_t));
         memmove(buffer_.sizes_ + numElements_, node.buffer_.sizes_ + index,
                 num * sizeof(uint32_t));
-        offset = 0;
         memmove(buffer_.data_ + curOffset_, node.buffer_.data_ + offset, 
                 num_bytes);
 
         curOffset_ += num_bytes;
         numElements_ += num;
-        separator_ = node.separator_;
         return true;
     }
 
@@ -1017,9 +1004,9 @@ checkSplitNonLeaf:
         uint32_t* curHash;
         offset = 0;
         for (uint32_t i=0; i<numElements_-1; i++) {
-            if (buffer_.hashes_[i] > buffer_.hashes_[i+1])
-                fprintf(stderr, "Node: %d: Hash %u at index %ld\
-                        greater than hash %u at %ld\n", id_, 
+            if (buffer_.hashes_[i] > buffer_.hashes_[i+1]) {
+                fprintf(stderr, "Node: %d: Hash %u at index %u\
+                        greater than hash %u at %u\n", id_, 
                         buffer_.hashes_[i], i, buffer_.hashes_[i+1],
                         i+1);
                 assert(false);
@@ -1031,24 +1018,6 @@ checkSplitNonLeaf:
                 buffer_.hashes_[numElements_-1], numElements_-1,
                 separator_);
             assert(false);
-        }
-#endif
-        return true;
-    }
-
-    bool Node::parseNode()
-    {
-#ifdef ENABLE_INTEGRITY_CHECK
-        uint32_t* bufSize;
-        uint32_t offset;
-        for (uint32_t i=0; i<numElements_; i++) {
-            offset += sizeof(uint32_t);
-            bufSize = (uint32_t*)(data_ + offset);
-            offset += sizeof(uint32_t) + *bufSize;
-            if (*bufSize == 0) {
-                fprintf(stderr, "%lu, bufsize: %lu, %ld\n", offset, *bufSize, *(uint32_t*)(data_ + offset + 16));
-                assert(false);
-            }
         }
 #endif
         return true;
