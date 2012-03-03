@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "Buffer.h"
 #include "CompressTree.h"
 #include "PartialAgg.h"
 
@@ -12,6 +13,7 @@
 
 namespace compresstree {
 
+    class Buffer;
     class CompressTree;
     class Emptier;
     class Compressor;
@@ -47,23 +49,12 @@ namespace compresstree {
             PAGE_IN
         };
 
-        class Buffer {
+        class MergeComparator {
           public:
-            Buffer();
-            ~Buffer();
-            void allocate();
-            void deallocate();
-            inline bool empty();
-
-            uint32_t* hashes_;
-            uint32_t* sizes_;
-            char* data_;
-        };
-
-        struct CompressedBufferLength {
-            size_t hashLen;
-            size_t sizeLen;
-            size_t dataLen;
+            bool operator()(uint32_t* lhs, uint32_t* rhs) const
+            {
+                return (*lhs < *rhs);
+            } 
         };
       public:
         Node(CompressTree* tree, uint32_t level);
@@ -97,16 +88,17 @@ namespace compresstree {
          *    handleFullLeaves() call.
          */
         bool emptyBuffer();
-        /* sort the buffer based on hash value. 
-         * Must be called when buffer is decompressed */
+        /* Sort the root buffer based on hash value. All other nodes can
+         * aggregating by merging. */
         bool sortBuffer();
-        /* Aggregate the sorted buffer
-         * Must be called when buffer is decompressed */
+        /* Aggregate the sorted root buffer */
         bool aggregateBuffer();
+        /* Merge the sorted sub-lists of the buffer */
+        bool mergeBuffer();
         /* copy contents from node's buffer into this buffer. Starting from
          * index = index, copy num elements' data.
          */
-        bool copyIntoBuffer(const Node& node, uint32_t index, uint32_t num);
+        bool copyIntoBuffer(Buffer::List* l, uint32_t index, uint32_t num);
 
         /* Tree-related functions */
 
@@ -172,7 +164,6 @@ namespace compresstree {
         uint32_t level_;
         Node* parent_;
         uint32_t numElements_;
-        uint32_t curOffset_;
         PartialAgg *lastPAO, *thisPAO;
 
         /* Pointers to children */
@@ -186,7 +177,6 @@ namespace compresstree {
 
         /* Compression related */
         bool compressible_;
-        CompressedBufferLength compLength_;
         bool queuedForCompAct_;
         CompressionAction compAct_;
         pthread_cond_t compActCond_;

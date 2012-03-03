@@ -16,44 +16,11 @@
 namespace compresstree {
     Node::EmptyType Node::emptyType_ = IF_FULL;
 
-
-    Node::Buffer::Buffer()
-    {
-        allocate();
-    }
-
-    Node::Buffer::~Buffer()
-    {
-        deallocate();
-    }
-
-    void Node::Buffer::allocate()
-    {
-        hashes_ = (uint32_t*)malloc(sizeof(uint32_t) * 
-                compresstree::MAX_ELS_PER_BUFFER);
-        sizes_ = (uint32_t*)malloc(sizeof(uint32_t) *
-                compresstree::MAX_ELS_PER_BUFFER);
-        data_ = (char*)malloc(BUFFER_SIZE);
-    }
-
-    void Node::Buffer::deallocate()
-    {
-        if (hashes_) { free(hashes_); hashes_ = NULL;}
-        if (sizes_) { free(sizes_); sizes_ = NULL;}
-        if (data_) { free(data_); data_ = NULL;}
-    }
-
-    inline bool Node::Buffer::empty()
-    {
-        return (data_ == NULL);
-    }
-
     Node::Node(CompressTree* tree, uint32_t level) :
         tree_(tree),
         level_(level),
         parent_(NULL),
         numElements_(0),
-        curOffset_(0),
         state_(DECOMPRESSED),
         compressible_(true),
         queuedForEmptying_(false),
@@ -126,12 +93,18 @@ namespace compresstree {
         uint32_t buf_size = value.size();
 
         // copy into Buffer fields
-        buffer_.hashes_[numElements_] = hashv;
-        buffer_.sizes_[numElements_] = buf_size;
-        memmove(buffer_.data_ + curOffset_, (void*)value.data(), buf_size);
-        curOffset_ += buf_size;
-
+        Buffer::List* l = buffer_.lists_[0];
+        l->hashes_[l->num_] = hashv;
+        l->sizes_[l->num_] = buf_size;
+        memmove(l->data_ + l->size_, (void*)value.data(), buf_size);
+        l->size_ += buf_size;
+        l->num_++;
         numElements_++;
+        if (l->num_ != numElements_) {
+            fprintf(stderr, "list count: %u, numE: %u\n", l->num_, numElements_);
+            assert(false);
+        }
+
         return true;
     }
 
@@ -176,7 +149,7 @@ namespace compresstree {
                 tree_->addLeafToEmpty(this);
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Leaf node %d added to full-leaf-list\
-                        %u/%u\n", id_, curOffset_, EMPTY_THRESHOLD);
+                        %u/%u\n", id_, numElements_, EMPTY_THRESHOLD);
 #endif
             } else { // we aggregate and compress
                 aggregateBuffer();
@@ -185,129 +158,112 @@ namespace compresstree {
             return true;
         }
 
-        if (curOffset_ == 0) {
+        if (numElements_ == 0) {
             for (curChild=0; curChild < children_.size(); curChild++) {
                 children_[curChild]->emptyOrCompress();
             }
-            goto checkSplitNonLeaf;
-        }
-            
+        } else {
 
-        aggregateBuffer();
-        checkIntegrity();
-        // find the first separator strictly greater than the first element
-        while (buffer_.hashes_[curElement] >= 
-                children_[curChild]->separator_) {
-            children_[curChild]->emptyOrCompress();
-            curChild++;
-#ifdef ENABLE_ASSERT_CHECKS
-            if (curChild >= children_.size()) {
-                fprintf(stderr, "Node: %d: Can't place %u among children\n", id_, 
-                        buffer_.hashes_[curElement]);
-                checkIntegrity();
-                assert(false);
-            }
-#endif
-        }
-#ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node: %d: first node chosen: %d (sep: %u,\
-            child: %d); first element: %u\n", id_, children_[curChild]->id_,
-            children_[curChild]->separator_, curChild, buffer_.hashes_[0]);
-#endif
-        while (curElement < numElements_) {
-            if (buffer_.hashes_[curElement] >= 
+            aggregateBuffer();
+            checkIntegrity();
+
+            Buffer::List* l = buffer_.lists_[0];
+            // find the first separator strictly greater than the first element
+            while (l->hashes_[curElement] >= 
                     children_[curChild]->separator_) {
-                /* this separator is the largest separator that is not greater
-                 * than *curHash. This invariant needs to be maintained.
-                 */
-                if (curElement > lastElement) {
-                    children_[curChild]->waitForCompressAction(DECOMPRESS);
+                children_[curChild]->emptyOrCompress();
+                curChild++;
 #ifdef ENABLE_ASSERT_CHECKS
-                    if (children_[curChild]->isCompressed()) {
-                        fprintf(stderr, "Node %d should be decompressed\n", children_[curChild]->id_);
-                        assert(false);
-                    }
+                if (curChild >= children_.size()) {
+                    fprintf(stderr, "Node: %d: Can't place %u among children\n", id_, 
+                            l->hashes_[curElement]);
+                    checkIntegrity();
+                    assert(false);
+                }
 #endif
-                    // if child is empty, allocate buffers
-                    if (children_[curChild]->buffer_.empty()) {
+            }
 #ifdef CT_NODE_DEBUG
-                        fprintf(stderr, "Node: %d: alloc'ing fresh buffers\n",
-                                children_[curChild]->id_);
+            fprintf(stderr, "Node: %d: first node chosen: %d (sep: %u,\
+                child: %d); first element: %u\n", id_, children_[curChild]->id_,
+                    children_[curChild]->separator_, curChild, l->hashes_[0]);
 #endif
-                        children_[curChild]->buffer_.allocate();
-                    }
-
-                    // copy elements into child
-                    children_[curChild]->copyIntoBuffer(*this, lastElement,
+            while (curElement < numElements_) {
+                if (l->hashes_[curElement] >= 
+                        children_[curChild]->separator_) {
+                    /* this separator is the largest separator that is not greater
+                     * than *curHash. This invariant needs to be maintained.
+                     */
+                    if (curElement > lastElement) {
+                        children_[curChild]->waitForCompressAction(DECOMPRESS);
+#ifdef ENABLE_ASSERT_CHECKS
+                        if (children_[curChild]->isCompressed()) {
+                            fprintf(stderr, "Node %d should be decompressed\n", children_[curChild]->id_);
+                            assert(false);
+                        }
+#endif
+                        // copy elements into child
+                        children_[curChild]->copyIntoBuffer(l, lastElement,
                                 curElement - lastElement);
 #ifdef CT_NODE_DEBUG
-                    fprintf(stderr, "Copied %u elements into node %d; child\
-                            offset: %d, sep: %u, next: %u\n",
-                            curElement - lastElement,
-                            children_[curChild]->id_,
-                            children_[curChild]->curOffset_,
-                            children_[curChild]->separator_,
-                            buffer_.hashes_[curElement]);
+                        fprintf(stderr, "Copied %u elements into node %d;\
+                                sep: %u, next: %u\n",
+                                curElement - lastElement,
+                                children_[curChild]->id_,
+                                children_[curChild]->separator_,
+                                buffer_.lists_[0]->hashes_[curElement]);
 #endif
-                    lastElement = curElement;
-                }
-                // skip past all separators not greater than the current hash
-                while (buffer_.hashes_[curElement] 
-                        >= children_[curChild]->separator_) {
-                    children_[curChild]->emptyOrCompress();
-                    curChild++;
-#ifdef ENABLE_ASSERT_CHECKS
-                    if (curChild >= children_.size()) {
-                        fprintf(stderr, "Can't place %u among children\n", 
-                                buffer_.hashes_[curElement]);
-                        assert(false);
+                        lastElement = curElement;
                     }
-#endif
-                }
-            }
-            // proceed to next element
-            curElement++;
-        }
-
-        // copy remaining elements into child
-        if (curElement >= lastElement) {
-            children_[curChild]->waitForCompressAction(DECOMPRESS);
+                    // skip past all separators not greater than the current hash
+                    while (l->hashes_[curElement] 
+                            >= children_[curChild]->separator_) {
+                        children_[curChild]->emptyOrCompress();
+                        curChild++;
 #ifdef ENABLE_ASSERT_CHECKS
-            if (children_[curChild]->isCompressed()) {
-                fprintf(stderr, "Node %d should be decompressed\n", children_[curChild]->id_);
-                assert(false);
+                        if (curChild >= children_.size()) {
+                            fprintf(stderr, "Can't place %u among children\n", 
+                                    l->hashes_[curElement]);
+                            assert(false);
+                        }
+#endif
+                    }
+                }
+                // proceed to next element
+                curElement++;
             }
+
+            // copy remaining elements into child
+            if (curElement >= lastElement) {
+                children_[curChild]->waitForCompressAction(DECOMPRESS);
+#ifdef ENABLE_ASSERT_CHECKS
+                if (children_[curChild]->isCompressed()) {
+                    fprintf(stderr, "Node %d should be decompressed\n", children_[curChild]->id_);
+                    assert(false);
+                }
 #endif
 
-            // if child is empty, allocate buffers
-            if (children_[curChild]->buffer_.empty()) {
-                children_[curChild]->buffer_.allocate();
-            }
-
-            // copy elements into child
-            children_[curChild]->copyIntoBuffer(*this, lastElement,
+                // copy elements into child
+                children_[curChild]->copyIntoBuffer(l, lastElement,
                         curElement - lastElement);
-            children_[curChild]->emptyOrCompress();
+                children_[curChild]->emptyOrCompress();
 #ifdef CT_NODE_DEBUG
-            fprintf(stderr, "Copied %u elements into node %d; child\
-                    offset: %d, sep: %u\n",
-                    curElement - lastElement,
-                    children_[curChild]->id_,
-                    children_[curChild]->curOffset_,
-                    children_[curChild]->separator_);
+                fprintf(stderr, "Copied %u elements into node %d; \
+                        sep: %u\n",
+                        curElement - lastElement,
+                        children_[curChild]->id_,
+                        children_[curChild]->separator_);
 #endif
+            }
+
+            // reset
+            l->num_ = 0;
+            numElements_ = 0;
+
+            if (!isRoot()) {
+                buffer_.deallocate();
+                CALL_MEM_FUNC(*this, compress)();
+            }
         }
-
-        // reset
-        curOffset_ = 0;
-        numElements_ = 0;
-
-        if (!isRoot()) {
-            buffer_.deallocate();
-            CALL_MEM_FUNC(*this, compress)();
-        }
-
-checkSplitNonLeaf:
         // Split leaves can cause the number of children to increase. Check.
         if (children_.size() > tree_->b_) {
             splitNonLeaf();
@@ -324,8 +280,8 @@ checkSplitNonLeaf:
         uint32_t swap, temp;
         uint32_t sizs, sizt;
         char *pers, *pert;
-        uint32_t* arr = buffer_.hashes_;
-        uint32_t* siz = buffer_.sizes_;
+        uint32_t* arr = buffer_.lists_[0]->hashes_;
+        uint32_t* siz = buffer_.lists_[0]->sizes_;
         while (true) {
             if (right - left <= 7) {
                 for (j = left + 1; j <= right; j++) {
@@ -421,8 +377,8 @@ checkSplitNonLeaf:
         perm_ = (char**)malloc(sizeof(char*) * numElements_);
         uint32_t offset = 0;
         for (uint32_t i=0; i<numElements_; i++) {
-            perm_[i] = buffer_.data_ + offset;
-            offset += buffer_.sizes_[i];
+            perm_[i] = buffer_.lists_[0]->data_ + offset;
+            offset += buffer_.lists_[0]->sizes_[i];
         }
 
         // quicksort elements
@@ -432,23 +388,23 @@ checkSplitNonLeaf:
 
     bool Node::aggregateBuffer()
     {
-        uint32_t auxOffset = 0;
-        uint32_t auxEls = 0;
         uint32_t buf_size;
+
+        // initialize auxiliary buffer
+        Buffer aux;
+        Buffer::List* a = aux.addList();
 
         // aggregate elements in buffer
         uint32_t lastIndex = 0;
-        for (uint32_t i=1; i<numElements_; i++) {
-            if (buffer_.hashes_[i] == buffer_.hashes_[lastIndex]) {
-#ifdef ENABLE_COUNTERS
-                tree_->monitor_->actr++;
-#endif
+        Buffer::List* l = buffer_.lists_[0];
+        for (uint32_t i=1; i<l->num_; i++) {
+            if (l->hashes_[i] == l->hashes_[lastIndex]) {
                 // aggregate elements
                 if (i == lastIndex + 1) {
                     assert(lastPAO->deserialize(perm_[lastIndex], 
-                            buffer_.sizes_[i]));
+                            l->sizes_[i]));
                 }
-                assert(thisPAO->deserialize(perm_[i], buffer_.sizes_[i]));
+                assert(thisPAO->deserialize(perm_[i], l->sizes_[i]));
                 if (!thisPAO->key().compare(lastPAO->key())) {
                     lastPAO->merge(thisPAO);
 #ifdef ENABLE_COUNTERS
@@ -459,28 +415,28 @@ checkSplitNonLeaf:
             }
             // copy hash and size into auxBuffer_
             if (i == lastIndex + 1) {
-                tree_->auxBuffer_.hashes_[auxEls] = buffer_.hashes_[lastIndex];
+                a->hashes_[a->num_] = l->hashes_[lastIndex];
                 // the size wouldn't have changed
-                tree_->auxBuffer_.sizes_[auxEls] = buffer_.sizes_[lastIndex];
-                memmove(tree_->auxBuffer_.data_ + auxOffset,
+                a->sizes_[a->num_] = l->sizes_[lastIndex];
+                memmove(a->data_ + a->size_,
                         (void*)(perm_[lastIndex]),
-                        buffer_.sizes_[lastIndex]);
-                auxOffset += buffer_.sizes_[lastIndex];
+                        l->sizes_[lastIndex]);
+                a->size_ += l->sizes_[lastIndex];
             } else {
                 std::string serialized;
                 lastPAO->serialize(&serialized);
                 uint32_t buf_size = serialized.size();
 
-                tree_->auxBuffer_.hashes_[auxEls] = buffer_.hashes_[lastIndex];
-                tree_->auxBuffer_.sizes_[auxEls] = buf_size;
-                memmove(tree_->auxBuffer_.data_ + auxOffset,
+                a->hashes_[a->num_] = l->hashes_[lastIndex];
+                a->sizes_[a->num_] = buf_size;
+                memmove(a->data_ + a->size_,
                         (void*)(perm_[lastIndex]), buf_size);                        
-                auxOffset += buf_size;
+                a->size_ += buf_size;
 #ifdef ENABLE_COUNTERS
                 tree_->monitor_->bctr++;
 #endif
             }
-            auxEls++;
+            a->num_++;
             lastIndex = i;
         }
         // copy the last PAO
@@ -488,33 +444,41 @@ checkSplitNonLeaf:
         lastPAO->serialize(&serialized);
         buf_size = serialized.size();
 
-        tree_->auxBuffer_.hashes_[auxEls] = buffer_.hashes_[lastIndex];
-        tree_->auxBuffer_.sizes_[auxEls] = buf_size;
-        memmove(tree_->auxBuffer_.data_ + auxOffset,
+        a->hashes_[a->num_] = l->hashes_[lastIndex];
+        a->sizes_[a->num_] = buf_size;
+        memmove(a->data_ + a->size_,
                 (void*)(perm_[lastIndex]), buf_size);                        
-        auxOffset += buf_size;
-        auxEls++;
+        a->size_ += buf_size;
+        a->num_++;
 
         // free pointer memory
         free(perm_);
 
         // swap buffer pointers
-        uint32_t* temp_hashes = buffer_.hashes_;
-        uint32_t* temp_sizes = buffer_.sizes_;
-        char* temp_data = buffer_.data_;
+        uint32_t* temp_hashes = l->hashes_;
+        uint32_t* temp_sizes = l->sizes_;
+        char* temp_data = l->data_;
 
-        buffer_.hashes_ = tree_->auxBuffer_.hashes_;
-        buffer_.sizes_ = tree_->auxBuffer_.sizes_;
-        buffer_.data_ = tree_->auxBuffer_.data_;
+        l->hashes_ = a->hashes_;
+        l->sizes_ = a->sizes_;
+        l->data_ = a->data_;
 
-        tree_->auxBuffer_.hashes_ = temp_hashes;
-        tree_->auxBuffer_.sizes_ = temp_sizes;
-        tree_->auxBuffer_.data_ = temp_data;
+        a->hashes_ = temp_hashes;
+        a->sizes_ = temp_sizes;
+        a->data_ = temp_data;
 
-        curOffset_ = auxOffset;
-        numElements_ = auxEls;
+        l->size_ = a->size_;
+        l->num_ = a->num_;
+        numElements_ = l->num_;
 
         return true;
+    }
+
+    bool Node::mergeBuffer()
+    {
+        std::priority_queue<uint32_t*, std::vector<uint32_t*>,
+                MergeComparator> queue;
+        
     }
 
     /* A leaf is split by moving half the elements of the buffer into a
@@ -526,8 +490,8 @@ checkSplitNonLeaf:
 
         // select splitting index
         uint32_t splitIndex = numElements_/2;
-        while (buffer_.hashes_[splitIndex] == 
-                buffer_.hashes_[splitIndex-1]) {
+        Buffer::List* l = buffer_.lists_[0];
+        while (l->hashes_[splitIndex] == l->hashes_[splitIndex-1]) {
             splitIndex++;
 #ifdef ENABLE_ASSERT_CHECKS
             if (splitIndex == numElements_) {
@@ -538,17 +502,17 @@ checkSplitNonLeaf:
 
         // create new leaf
         Node* newLeaf = new Node(tree_, 0);
-        newLeaf->copyIntoBuffer(*this, splitIndex, numElements_ - splitIndex);
+        newLeaf->copyIntoBuffer(l, splitIndex, numElements_ - splitIndex);
         newLeaf->separator_ = separator_;
 
         // modify this leaf properties
         uint32_t offset = 0;
         for (uint32_t i=0; i<splitIndex; i++) {
-            offset += buffer_.sizes_[i];
+            offset += l->sizes_[i];
         }
-        curOffset_ = offset;
-        numElements_ = splitIndex;
-        separator_ = buffer_.hashes_[splitIndex];
+        l->size_ = offset;
+        l->num_ = numElements_ = splitIndex;
+        separator_ = l->hashes_[splitIndex];
 
         // check integrity of both leaves
         newLeaf->checkIntegrity();
@@ -556,7 +520,8 @@ checkSplitNonLeaf:
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node %d splits to Node %d: new offsets: %u and\
                 %u; new separators: %u and %u\n", id_, newLeaf->id_, 
-                curOffset_, newLeaf->curOffset_, separator_, newLeaf->separator_);
+                l->size_, newLeaf->buffer_.lists_[0]->size_, separator_, 
+                newLeaf->separator_);
 #endif
 
         // if leaf is also the root, create new root
@@ -569,36 +534,37 @@ checkSplitNonLeaf:
         return newLeaf;
     }
 
-    bool Node::copyIntoBuffer(const Node& node, uint32_t index, uint32_t num)
+    bool Node::copyIntoBuffer(Buffer::List* parent_list, uint32_t index, 
+            uint32_t num)
     {
         // calculate offset
         uint32_t offset = 0;
         uint32_t num_bytes = 0;
         for (uint32_t i=0; i<index; i++) {
-            offset += node.buffer_.sizes_[i];
+            offset += parent_list->sizes_[i];
         }
         for (uint32_t i=0; i<num; i++) {
-            num_bytes += node.buffer_.sizes_[index + i];
+            num_bytes += parent_list->sizes_[index + i];
         }
 #ifdef ENABLE_ASSERT_CHECKS
-        if (curOffset_ + num_bytes >= BUFFER_SIZE) {
-            fprintf(stderr, "Node: %d, cOffset: %d, buf: %d\n", id_, 
-                    curOffset_, num_bytes); 
-            assert(false);
-        }
-        if (buffer_.empty()) {
-            fprintf(stderr, "data buffer is null\n");
+        if (num_bytes >= BUFFER_SIZE) {
+            fprintf(stderr, "Node: %d, buf: %d\n", id_, 
+                    num_bytes); 
             assert(false);
         }
 #endif
-        memmove(buffer_.hashes_ + numElements_, node.buffer_.hashes_ + index,
+        // allocate a new List in the buffer and copy data into it
+        Buffer::List* l = buffer_.addList();
+        memmove(l->hashes_, parent_list->hashes_ + index,
                 num * sizeof(uint32_t));
-        memmove(buffer_.sizes_ + numElements_, node.buffer_.sizes_ + index,
+        memmove(l->sizes_, parent_list->sizes_ + index,
                 num * sizeof(uint32_t));
-        memmove(buffer_.data_ + curOffset_, node.buffer_.data_ + offset, 
+        memmove(l->data_, parent_list->data_ + offset, 
                 num_bytes);
+        l->num_ = num;
+        l->size_ = num_bytes;
 
-        curOffset_ += num_bytes;
+        // update buffer information
         numElements_ += num;
         return true;
     }
@@ -634,7 +600,7 @@ checkSplitNonLeaf:
     {
         // ensure node's buffer is empty
 #ifdef ENABLE_ASSERT_CHECKS
-        if (curOffset_ > 0) {
+        if (numElements_ > 0) {
             fprintf(stderr, "Node %d has non-empty buffer\n", id_);
             assert(false);
         }
@@ -701,7 +667,7 @@ checkSplitNonLeaf:
 
     bool Node::isFull() const
     {
-        if (curOffset_ > EMPTY_THRESHOLD)
+        if (numElements_ > EMPTY_THRESHOLD)
             return true;
         return false;
     }
@@ -754,7 +720,7 @@ checkSplitNonLeaf:
 //                assert(false);
             }
         } else {
-            if (curOffset_ == 0) {
+            if (numElements_ == 0) {
                 setState(COMPRESSED);
                 queuedForCompAct_ = false;
                 pthread_mutex_unlock(&compActMutex_);
@@ -802,7 +768,7 @@ checkSplitNonLeaf:
             }
         } else {
             // check if the buffer is empty;
-            if (curOffset_ == 0) {
+            if (numElements_ == 0) {
                 setState(DECOMPRESSED);
                 queuedForCompAct_ = false;
                 pthread_mutex_unlock(&compActMutex_);
@@ -837,28 +803,25 @@ checkSplitNonLeaf:
 #endif
         if (!buffer_.empty()) {
             // allocate memory for compressed buffers
-            if (compressed_.empty())
-                compressed_.allocate();
+            while (compressed_.lists_.size() < buffer_.lists_.size())
+                compressed_.addList();
+            for (uint32_t i=0; i<buffer_.lists_.size(); i++) {
+                Buffer::List* l = buffer_.lists_[i];
+                Buffer::List* cl = compressed_.lists_[i];
+                snappy::RawCompress((const char*)l->hashes_, 
+                        numElements_ * sizeof(uint32_t), 
+                        (char*)cl->hashes_,
+                        &cl->c_hashlen_);
 
-            snappy::RawCompress((const char*)buffer_.hashes_, 
-                    numElements_ * sizeof(uint32_t), 
-                    (char*)tree_->compBuffer_.hashes_,
-                    &compLength_.hashLen);
-            memmove(compressed_.hashes_, tree_->compBuffer_.hashes_, 
-                    compLength_.hashLen);
+                snappy::RawCompress((const char*)l->sizes_, 
+                        numElements_ * sizeof(uint32_t), 
+                        (char*)cl->sizes_,
+                        &cl->c_sizelen_);
 
-            snappy::RawCompress((const char*)buffer_.sizes_, 
-                    numElements_ * sizeof(uint32_t), 
-                    (char*)tree_->compBuffer_.sizes_,
-                    &compLength_.sizeLen);
-            memmove(compressed_.sizes_, tree_->compBuffer_.sizes_, 
-                    compLength_.sizeLen);
-
-            snappy::RawCompress(buffer_.data_, curOffset_, 
-                    tree_->compBuffer_.data_, 
-                    &compLength_.dataLen);
-            memmove(compressed_.data_, tree_->compBuffer_.data_, 
-                    compLength_.dataLen);
+                snappy::RawCompress(l->data_, l->size_, 
+                        cl->data_, 
+                        &cl->c_datalen_);
+            }
             /* Can be called from multiple places:
              * + emptyBuffer()-1: on the node whose buffer was emptied - no free
              * + emptyBuffer()-2: on children of emptied node - free required
@@ -891,15 +854,20 @@ checkSplitNonLeaf:
          * + handleFullLeaves(): not empty
          */
         if (!compressed_.empty()) {
-            buffer_.allocate();
-            snappy::RawUncompress((const char*)compressed_.hashes_, 
-                    compLength_.hashLen,
-                    (char*)buffer_.hashes_);
-            snappy::RawUncompress((const char*)compressed_.sizes_, 
-                    compLength_.sizeLen,
-                    (char*)buffer_.sizes_);
-            snappy::RawUncompress(compressed_.data_, compLength_.dataLen,
-                    buffer_.data_);
+            // allocate memory for decompressed buffers
+            while (buffer_.lists_.size() < compressed_.lists_.size())
+                buffer_.addList();
+
+            for (uint32_t i=0; i<compressed_.lists_.size(); i++) {
+                Buffer::List* l = buffer_.lists_[i];
+                Buffer::List* cl = compressed_.lists_[i];
+                snappy::RawUncompress((const char*)cl->hashes_, 
+                        cl->c_hashlen_, (char*)l->hashes_);
+                snappy::RawUncompress((const char*)cl->sizes_, 
+                        cl->c_sizelen_, (char*)l->sizes_);
+                snappy::RawUncompress(cl->data_, cl->c_datalen_,
+                        l->data_);
+            }
             compressed_.deallocate();
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "decompressed node %d\n", id_);
@@ -1003,21 +971,23 @@ checkSplitNonLeaf:
         uint32_t offset;
         uint32_t* curHash;
         offset = 0;
-        for (uint32_t i=0; i<numElements_-1; i++) {
-            if (buffer_.hashes_[i] > buffer_.hashes_[i+1]) {
+        for (uint32_t j=0; j<buffer_.lists_.size(); j++) {
+            Buffer::List* l = buffer_.lists_[j];
+            for (uint32_t i=0; i<l->num_-1; i++) {
+                if (l->hashes_[i] > l->hashes_[i+1]) {
+                    fprintf(stderr, "Node: %d, List: %d: Hash %u at index %u\
+                            greater than hash %u at %u\n", id_, j,
+                            l->hashes_[i], i, l->hashes_[i+1],
+                            i+1);
+                    assert(false);
+                }
+            }
+            if (l->hashes_[l->num_-1] >= separator_) {
                 fprintf(stderr, "Node: %d: Hash %u at index %u\
-                        greater than hash %u at %u\n", id_, 
-                        buffer_.hashes_[i], i, buffer_.hashes_[i+1],
-                        i+1);
+                        greater than separator %u\n", id_, 
+                        l->hashes_[l->num_-1], l->num_-1, separator_);
                 assert(false);
             }
-        }
-        if (buffer_.hashes_[numElements_-1] >= separator_) {
-            fprintf(stderr, "Node: %d: Hash %u at index %ld\
-                greater than separator %u\n", id_, 
-                buffer_.hashes_[numElements_-1], numElements_-1,
-                separator_);
-            assert(false);
         }
 #endif
         return true;

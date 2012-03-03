@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "Buffer.h"
 #include "CompressTree.h"
 #include "Slaves.h"
 
@@ -77,22 +78,13 @@ namespace compresstree {
 #endif
             }
             // switch buffers
-            uint32_t* temp_hashes = inputNode_->buffer_.hashes_;
-            inputNode_->buffer_.hashes_ = rootNode_->buffer_.hashes_;
-            rootNode_->buffer_.hashes_ = temp_hashes;
-
-            uint32_t* temp_sizes = inputNode_->buffer_.sizes_;
-            inputNode_->buffer_.sizes_ = rootNode_->buffer_.sizes_;
-            rootNode_->buffer_.sizes_ = temp_sizes;
-
-            char* temp_data = inputNode_->buffer_.data_;
-            inputNode_->buffer_.data_ = rootNode_->buffer_.data_;
-            rootNode_->buffer_.data_ = temp_data;
-
+            Buffer::List* temp = rootNode_->buffer_.lists_[0];
+            rootNode_->buffer_.lists_ = inputNode_->buffer_.lists_;
             rootNode_->numElements_ = inputNode_->numElements_;
-            rootNode_->curOffset_ = inputNode_->curOffset_;
+
+            inputNode_->buffer_.clear();
+            inputNode_->buffer_.addList(temp);
             inputNode_->numElements_ = 0;
-            inputNode_->curOffset_ = 0;
             pthread_mutex_unlock(&rootNodeAvailableMutex_);
 
             // schedule the root node for emptying
@@ -173,11 +165,12 @@ namespace compresstree {
         }
 
         Node* curLeaf = allLeaves_[lastLeafRead_];
-        hash = (void*)&curLeaf->buffer_.hashes_[lastElement_];
+        Buffer::List* l = curLeaf->buffer_.lists_[0];
+        hash = (void*)&l->hashes_[lastElement_];
         createPAO_(NULL, &agg);
-        agg->deserialize(curLeaf->buffer_.data_ + lastOffset_,
-                curLeaf->buffer_.sizes_[lastElement_]);
-        lastOffset_ += curLeaf->buffer_.sizes_[lastElement_];
+        agg->deserialize(l->data_ + lastOffset_,
+                l->sizes_[lastElement_]);
+        lastOffset_ += l->sizes_[lastElement_];
         lastElement_++;
 
         if (lastElement_ >= curLeaf->numElements_) {
@@ -233,11 +226,6 @@ namespace compresstree {
     
         nodeCtr = 0;
         Node::emptyType_ = Node::IF_FULL;
-/*
-        rootNode_ = new Node(this, 0);
-        rootNode_->separator_ = UINT32_MAX;
-        rootNode_->setCompressible(false);
-*/
     }
 
     bool CompressTree::flushBuffers()
@@ -257,22 +245,13 @@ namespace compresstree {
         // root node is now empty
 
         // switch buffers
-        uint32_t* temp_hashes = inputNode_->buffer_.hashes_;
-        inputNode_->buffer_.hashes_ = rootNode_->buffer_.hashes_;
-        rootNode_->buffer_.hashes_ = temp_hashes;
-
-        uint32_t* temp_sizes = inputNode_->buffer_.sizes_;
-        inputNode_->buffer_.sizes_ = rootNode_->buffer_.sizes_;
-        rootNode_->buffer_.sizes_ = temp_sizes;
-
-        char* temp_data = inputNode_->buffer_.data_;
-        inputNode_->buffer_.data_ = rootNode_->buffer_.data_;
-        rootNode_->buffer_.data_ = temp_data;
-
+        Buffer::List* temp = rootNode_->buffer_.lists_[0];
+        rootNode_->buffer_.lists_ = inputNode_->buffer_.lists_;
         rootNode_->numElements_ = inputNode_->numElements_;
-        rootNode_->curOffset_ = inputNode_->curOffset_;
+
+        inputNode_->buffer_.clear();
+        inputNode_->buffer_.addList(temp);
         inputNode_->numElements_ = 0;
-        inputNode_->curOffset_ = 0;
 
         sorter_->addNode(rootNode_);
         sorter_->wakeup();
@@ -373,15 +352,15 @@ namespace compresstree {
     {
         // create root node; initially a leaf
         rootNode_ = new Node(this, 0);
+        rootNode_->buffer_.addList();
         rootNode_->separator_ = UINT32_MAX;
         rootNode_->setCompressible(false);
 
         inputNode_ = new Node(this, 0);
+        inputNode_->buffer_.addList();
         inputNode_->separator_ = UINT32_MAX;
         inputNode_->setCompressible(false);
         
-        auxBuffer_.allocate();
-        compBuffer_.allocate();
 #ifdef ENABLE_EVICTION
         // buffer for holding evicted values
         evictedBuffer_ = (char*)malloc(BUFFER_SIZE);
@@ -427,8 +406,6 @@ namespace compresstree {
     {
         void* status;
         delete inputNode_;
-        auxBuffer_.deallocate();
-        compBuffer_.deallocate();
 
         sorter_->setInputComplete(true);
         sorter_->wakeup();
@@ -454,6 +431,7 @@ namespace compresstree {
     bool CompressTree::createNewRoot(Node* otherChild)
     {
         Node* newRoot = new Node(this, rootNode_->level() + 1);
+        newRoot->buffer_.addList();
         newRoot->separator_ = UINT32_MAX;
         newRoot->setCompressible(false);
 #ifdef CT_NODE_DEBUG

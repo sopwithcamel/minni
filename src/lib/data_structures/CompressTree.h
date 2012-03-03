@@ -8,8 +8,8 @@
 #include "Accumulator.h"
 #include "PartialAgg.h"
 
-//#define ENABLE_ASSERT_CHECKS
-//#define CT_NODE_DEBUG
+#define ENABLE_ASSERT_CHECKS
+#define CT_NODE_DEBUG
 #define ENABLE_INTEGRITY_CHECK
 //#define ENABLE_COUNTERS
 /* broken */
@@ -23,8 +23,8 @@ namespace compresstree {
 //    const size_t BUFFER_SIZE = 10485760;
 //    const size_t BUFFER_SIZE = 20971520;
     const uint32_t BUFFER_SIZE = 31457280;
-    const uint32_t EMPTY_THRESHOLD = BUFFER_SIZE / 2;
     const uint32_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 8;
+    const uint32_t EMPTY_THRESHOLD = MAX_ELS_PER_BUFFER / 2;
 
     enum CompressAlgorithm {
         SNAPPY,
@@ -113,11 +113,9 @@ namespace compresstree {
 
         /* Members for async-sorting */
         Sorter* sorter_;
-        Node::Buffer auxBuffer_;       // used in aggregation
         
         /* Compression-related */
         Compressor* compressor_;
-        Node::Buffer compBuffer_;
 
 #ifdef ENABLE_PAGING
         /* Paging */
