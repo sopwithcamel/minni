@@ -163,7 +163,6 @@ namespace compresstree {
         /* level in the tree; 0 at leaves and increases upwards */
         uint32_t level_;
         Node* parent_;
-        uint32_t numElements_;
         PartialAgg *lastPAO, *thisPAO;
 
         /* Pointers to children */

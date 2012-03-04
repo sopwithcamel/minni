@@ -24,6 +24,12 @@ namespace compresstree {
         if (data_) { free(data_); data_ = NULL;}
     }
 
+    void Buffer::List::setEmpty()
+    {
+        num_ = 0;
+        size_ = 0;
+    }
+
     Buffer::Buffer()
     {
     }
@@ -59,7 +65,15 @@ namespace compresstree {
 
     bool Buffer::empty() const
     {
-        return (lists_.empty());
+        return (lists_.empty() || numElements() == 0);
+    }
+
+    uint32_t Buffer::numElements() const
+    {
+        uint32_t num = 0;
+        for (uint32_t i=0; i<lists_.size(); i++)
+            num += lists_[i]->num_;
+        return num;
     }
 
 }

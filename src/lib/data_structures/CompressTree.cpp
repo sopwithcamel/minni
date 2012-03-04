@@ -66,7 +66,7 @@ namespace compresstree {
         if (inputNode_->isFull()) {
             // check if rootNode_ is available
             pthread_mutex_lock(&rootNodeAvailableMutex_);
-            while (rootNode_->numElements_ != 0 || 
+            while (!rootNode_->buffer_.empty() || 
                     rootNode_->queuedForEmptying_) {
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "inserter sleeping\n");
@@ -80,11 +80,9 @@ namespace compresstree {
             // switch buffers
             Buffer::List* temp = rootNode_->buffer_.lists_[0];
             rootNode_->buffer_.lists_ = inputNode_->buffer_.lists_;
-            rootNode_->numElements_ = inputNode_->numElements_;
 
             inputNode_->buffer_.clear();
             inputNode_->buffer_.addList(temp);
-            inputNode_->numElements_ = 0;
             pthread_mutex_unlock(&rootNodeAvailableMutex_);
 
             // schedule the root node for emptying
@@ -173,7 +171,7 @@ namespace compresstree {
         lastOffset_ += l->sizes_[lastElement_];
         lastElement_++;
 
-        if (lastElement_ >= curLeaf->numElements_) {
+        if (lastElement_ >= curLeaf->buffer_.numElements()) {
             CALL_MEM_FUNC(*curLeaf, curLeaf->compress)();
             if (++lastLeafRead_ == allLeaves_.size()) {
                 /* Wait for all outstanding compression work to finish */
@@ -247,11 +245,9 @@ namespace compresstree {
         // switch buffers
         Buffer::List* temp = rootNode_->buffer_.lists_[0];
         rootNode_->buffer_.lists_ = inputNode_->buffer_.lists_;
-        rootNode_->numElements_ = inputNode_->numElements_;
 
         inputNode_->buffer_.clear();
         inputNode_->buffer_.addList(temp);
-        inputNode_->numElements_ = 0;
 
         sorter_->addNode(rootNode_);
         sorter_->wakeup();
@@ -295,7 +291,7 @@ namespace compresstree {
         fprintf(stderr, "Tree has %ld leaves\n", allLeaves_.size());
         uint32_t numit = 0;
         for (int i=0; i<allLeaves_.size(); i++)
-            numit += allLeaves_[i]->numElements_;
+            numit += allLeaves_[i]->buffer_.numElements();
         fprintf(stderr, "Tree has %ld elements\n", numit);
 #endif
         return true;

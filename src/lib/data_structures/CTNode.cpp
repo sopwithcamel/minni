@@ -20,7 +20,6 @@ namespace compresstree {
         tree_(tree),
         level_(level),
         parent_(NULL),
-        numElements_(0),
         state_(DECOMPRESSED),
         compressible_(true),
         queuedForEmptying_(false),
@@ -99,11 +98,6 @@ namespace compresstree {
         memmove(l->data_ + l->size_, (void*)value.data(), buf_size);
         l->size_ += buf_size;
         l->num_++;
-        numElements_++;
-        if (l->num_ != numElements_) {
-            fprintf(stderr, "list count: %u, numE: %u\n", l->num_, numElements_);
-            assert(false);
-        }
 
         return true;
     }
@@ -149,7 +143,7 @@ namespace compresstree {
                 tree_->addLeafToEmpty(this);
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Leaf node %d added to full-leaf-list\
-                        %u/%u\n", id_, numElements_, EMPTY_THRESHOLD);
+                        %u/%u\n", id_, buffer_.numElements(), EMPTY_THRESHOLD);
 #endif
             } else { // we aggregate and compress
                 aggregateBuffer();
@@ -158,7 +152,7 @@ namespace compresstree {
             return true;
         }
 
-        if (numElements_ == 0) {
+        if (buffer_.empty()) {
             for (curChild=0; curChild < children_.size(); curChild++) {
                 children_[curChild]->emptyOrCompress();
             }
@@ -187,7 +181,8 @@ namespace compresstree {
                 child: %d); first element: %u\n", id_, children_[curChild]->id_,
                     children_[curChild]->separator_, curChild, l->hashes_[0]);
 #endif
-            while (curElement < numElements_) {
+            uint32_t num = buffer_.numElements();
+            while (curElement < num) {
                 if (l->hashes_[curElement] >= 
                         children_[curChild]->separator_) {
                     /* this separator is the largest separator that is not greater
@@ -256,8 +251,7 @@ namespace compresstree {
             }
 
             // reset
-            l->num_ = 0;
-            numElements_ = 0;
+            l->setEmpty();
 
             if (!isRoot()) {
                 buffer_.deallocate();
@@ -365,7 +359,7 @@ namespace compresstree {
 
     bool Node::sortBuffer()
     {
-        if (numElements_ == 0)
+        if (buffer_.empty())
             return true;
 #ifdef ENABLE_ASSERT_CHECKS
         if (isCompressed()) {
@@ -374,15 +368,16 @@ namespace compresstree {
         }
 #endif
         // initialize pointers to serialized PAOs
-        perm_ = (char**)malloc(sizeof(char*) * numElements_);
+        uint32_t num = buffer_.numElements();
+        perm_ = (char**)malloc(sizeof(char*) * num);
         uint32_t offset = 0;
-        for (uint32_t i=0; i<numElements_; i++) {
+        for (uint32_t i=0; i<num; i++) {
             perm_[i] = buffer_.lists_[0]->data_ + offset;
             offset += buffer_.lists_[0]->sizes_[i];
         }
 
         // quicksort elements
-        quicksort(0, numElements_ - 1);
+        quicksort(0, num - 1);
         checkIntegrity();
     }
 
@@ -469,7 +464,6 @@ namespace compresstree {
 
         l->size_ = a->size_;
         l->num_ = a->num_;
-        numElements_ = l->num_;
 
         return true;
     }
@@ -489,12 +483,13 @@ namespace compresstree {
         checkIntegrity();
 
         // select splitting index
-        uint32_t splitIndex = numElements_/2;
+        uint32_t num = buffer_.numElements();
+        uint32_t splitIndex = num/2;
         Buffer::List* l = buffer_.lists_[0];
         while (l->hashes_[splitIndex] == l->hashes_[splitIndex-1]) {
             splitIndex++;
 #ifdef ENABLE_ASSERT_CHECKS
-            if (splitIndex == numElements_) {
+            if (splitIndex == num) {
                 assert(false);
             }                
 #endif
@@ -502,7 +497,7 @@ namespace compresstree {
 
         // create new leaf
         Node* newLeaf = new Node(tree_, 0);
-        newLeaf->copyIntoBuffer(l, splitIndex, numElements_ - splitIndex);
+        newLeaf->copyIntoBuffer(l, splitIndex, num - splitIndex);
         newLeaf->separator_ = separator_;
 
         // modify this leaf properties
@@ -511,7 +506,7 @@ namespace compresstree {
             offset += l->sizes_[i];
         }
         l->size_ = offset;
-        l->num_ = numElements_ = splitIndex;
+        l->num_ = splitIndex;
         separator_ = l->hashes_[splitIndex];
 
         // check integrity of both leaves
@@ -563,9 +558,6 @@ namespace compresstree {
                 num_bytes);
         l->num_ = num;
         l->size_ = num_bytes;
-
-        // update buffer information
-        numElements_ += num;
         return true;
     }
 
@@ -600,7 +592,7 @@ namespace compresstree {
     {
         // ensure node's buffer is empty
 #ifdef ENABLE_ASSERT_CHECKS
-        if (numElements_ > 0) {
+        if (!buffer_.empty()) {
             fprintf(stderr, "Node %d has non-empty buffer\n", id_);
             assert(false);
         }
@@ -667,7 +659,7 @@ namespace compresstree {
 
     bool Node::isFull() const
     {
-        if (numElements_ > EMPTY_THRESHOLD)
+        if (buffer_.numElements() > EMPTY_THRESHOLD)
             return true;
         return false;
     }
@@ -720,7 +712,7 @@ namespace compresstree {
 //                assert(false);
             }
         } else {
-            if (numElements_ == 0) {
+            if (buffer_.empty()) {
                 setState(COMPRESSED);
                 queuedForCompAct_ = false;
                 pthread_mutex_unlock(&compActMutex_);
@@ -768,7 +760,7 @@ namespace compresstree {
             }
         } else {
             // check if the buffer is empty;
-            if (numElements_ == 0) {
+            if (buffer_.empty()) {
                 setState(DECOMPRESSED);
                 queuedForCompAct_ = false;
                 pthread_mutex_unlock(&compActMutex_);
@@ -809,12 +801,12 @@ namespace compresstree {
                 Buffer::List* l = buffer_.lists_[i];
                 Buffer::List* cl = compressed_.lists_[i];
                 snappy::RawCompress((const char*)l->hashes_, 
-                        numElements_ * sizeof(uint32_t), 
+                        l->num_ * sizeof(uint32_t), 
                         (char*)cl->hashes_,
                         &cl->c_hashlen_);
 
                 snappy::RawCompress((const char*)l->sizes_, 
-                        numElements_ * sizeof(uint32_t), 
+                        l->num_ * sizeof(uint32_t), 
                         (char*)cl->sizes_,
                         &cl->c_sizelen_);
 

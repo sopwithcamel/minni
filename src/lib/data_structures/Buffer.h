@@ -10,6 +10,7 @@ namespace compresstree {
             public:
               List();
               ~List();
+              void setEmpty();
 
               uint32_t* hashes_;
               uint32_t* sizes_;
@@ -31,6 +32,7 @@ namespace compresstree {
           // deallocate buffers
           void deallocate();
           bool empty() const;
+          uint32_t numElements() const;
           std::vector<List*> lists_;
     };
 }
