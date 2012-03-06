@@ -231,8 +231,6 @@ namespace compresstree {
         Node* curNode;
         std::deque<Node*> visitQueue;
         fprintf(stderr, "Starting to flush\n");
-        Node::emptyType_ = Node::ALWAYS;
-
         // check if rootNode_ is available
         pthread_mutex_lock(&rootNodeAvailableMutex_);
         while (rootNode_->isFull()) {
@@ -241,6 +239,7 @@ namespace compresstree {
         }
         pthread_mutex_unlock(&rootNodeAvailableMutex_);
         // root node is now empty
+        Node::emptyType_ = Node::ALWAYS;
 
         // switch buffers
         Buffer::List* temp = rootNode_->buffer_.lists_[0];
@@ -310,7 +309,8 @@ namespace compresstree {
             Node* node = leavesToBeEmptied_.front();
             leavesToBeEmptied_.pop_front();
 
-            node->aggregateBuffer();
+            if (node->isRoot())
+                node->aggregateBuffer();
             // check if sorting and aggregating made the leaf small enough
             if (!node->isFull() && node->compressible_) {
 #ifdef CT_NODE_DEBUG

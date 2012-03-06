@@ -9,7 +9,7 @@
 #include "PartialAgg.h"
 
 #define ENABLE_ASSERT_CHECKS
-#define CT_NODE_DEBUG
+//#define CT_NODE_DEBUG
 #define ENABLE_INTEGRITY_CHECK
 //#define ENABLE_COUNTERS
 /* broken */
@@ -24,7 +24,7 @@ namespace compresstree {
 //    const size_t BUFFER_SIZE = 20971520;
     const uint32_t BUFFER_SIZE = 31457280;
     const uint32_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 8;
-    const uint32_t EMPTY_THRESHOLD = MAX_ELS_PER_BUFFER / 2;
+    const uint32_t EMPTY_THRESHOLD = MAX_ELS_PER_BUFFER / 16;
 
     enum CompressAlgorithm {
         SNAPPY,

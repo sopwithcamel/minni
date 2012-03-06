@@ -308,7 +308,12 @@ namespace compresstree {
                 fprintf(stderr, "\n");
 #endif
                 n->waitForCompressAction(Node::DECOMPRESS);
-                n->sortBuffer();
+                if (n->isRoot())
+                    n->sortBuffer();
+                else {
+                    n->mergeBuffer();
+                    n->checkIntegrity();
+                }
                 tree_->emptier_->addNode(n);
                 tree_->emptier_->wakeup();
                 pthread_mutex_lock(&queueMutex_);

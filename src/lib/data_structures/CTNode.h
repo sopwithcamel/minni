@@ -49,11 +49,44 @@ namespace compresstree {
             PAGE_IN
         };
 
+        class MergeElement {
+          public:
+            MergeElement(Buffer::List* l)
+            {
+                ind = off = 0;
+                list = l;
+            }
+            uint32_t hash()
+            {
+                return list->hashes_[ind];
+            }
+            uint32_t size()
+            {
+                return list->sizes_[ind];
+            }
+            char* data()
+            {
+                return list->data_ + off;
+            }
+            bool next()
+            {
+                if (ind >= list->num_-1)
+                    return false;
+                off += list->sizes_[ind++];
+                return true;
+            }                
+            uint32_t ind;           // index of hash being compared
+            uint32_t off;           // offset of serialized PAO
+            Buffer::List* list;     // list containing element
+        };
+
         class MergeComparator {
           public:
-            bool operator()(uint32_t* lhs, uint32_t* rhs) const
+            bool operator()(const MergeElement& lhs,
+                    const MergeElement& rhs) const
             {
-                return (*lhs < *rhs);
+                return (lhs.list->hashes_[lhs.off] < 
+                        rhs.list->hashes_[rhs.ind]);
             } 
         };
       public:

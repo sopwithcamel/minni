@@ -146,7 +146,8 @@ namespace compresstree {
                         %u/%u\n", id_, buffer_.numElements(), EMPTY_THRESHOLD);
 #endif
             } else { // we aggregate and compress
-                aggregateBuffer();
+                if (isRoot())
+                    aggregateBuffer();
                 CALL_MEM_FUNC(*this, compress)();
             }
             return true;
@@ -157,9 +158,10 @@ namespace compresstree {
                 children_[curChild]->emptyOrCompress();
             }
         } else {
-
-            aggregateBuffer();
-            checkIntegrity();
+            if (isRoot()) {
+                aggregateBuffer();
+                checkIntegrity();
+            }
 
             Buffer::List* l = buffer_.lists_[0];
             // find the first separator strictly greater than the first element
@@ -389,6 +391,9 @@ namespace compresstree {
         Buffer aux;
         Buffer::List* a = aux.addList();
 
+        // exit condition
+        bool last_serialized = false;
+
         // aggregate elements in buffer
         uint32_t lastIndex = 0;
         Buffer::List* l = buffer_.lists_[0];
@@ -409,8 +414,8 @@ namespace compresstree {
                 }
             }
             // copy hash and size into auxBuffer_
+            a->hashes_[a->num_] = l->hashes_[lastIndex];
             if (i == lastIndex + 1) {
-                a->hashes_[a->num_] = l->hashes_[lastIndex];
                 // the size wouldn't have changed
                 a->sizes_[a->num_] = l->sizes_[lastIndex];
                 memmove(a->data_ + a->size_,
@@ -422,10 +427,9 @@ namespace compresstree {
                 lastPAO->serialize(&serialized);
                 uint32_t buf_size = serialized.size();
 
-                a->hashes_[a->num_] = l->hashes_[lastIndex];
                 a->sizes_[a->num_] = buf_size;
                 memmove(a->data_ + a->size_,
-                        (void*)(perm_[lastIndex]), buf_size);                        
+                        (void*)serialized.data(), buf_size);                        
                 a->size_ += buf_size;
 #ifdef ENABLE_COUNTERS
                 tree_->monitor_->bctr++;
@@ -434,45 +438,162 @@ namespace compresstree {
             a->num_++;
             lastIndex = i;
         }
-        // copy the last PAO
-        std::string serialized;
-        lastPAO->serialize(&serialized);
-        buf_size = serialized.size();
+        // copy the last PAO; TODO: Clean this up!
+        // copy hash and size into auxBuffer_
+        if (lastIndex == l->num_-1) {
+            a->hashes_[a->num_] = l->hashes_[lastIndex];
+            // the size wouldn't have changed
+            a->sizes_[a->num_] = l->sizes_[lastIndex];
+            memmove(a->data_ + a->size_,
+                    (void*)(perm_[lastIndex]),
+                    l->sizes_[lastIndex]);
+            a->size_ += l->sizes_[lastIndex];
+        } else {
+            std::string serialized;
+            lastPAO->serialize(&serialized);
+            uint32_t buf_size = serialized.size();
 
-        a->hashes_[a->num_] = l->hashes_[lastIndex];
-        a->sizes_[a->num_] = buf_size;
-        memmove(a->data_ + a->size_,
-                (void*)(perm_[lastIndex]), buf_size);                        
-        a->size_ += buf_size;
+            a->hashes_[a->num_] = l->hashes_[lastIndex];
+            a->sizes_[a->num_] = buf_size;
+            memmove(a->data_ + a->size_,
+                    (void*)serialized.data(), buf_size);                        
+            a->size_ += buf_size;
+        }
         a->num_++;
 
         // free pointer memory
         free(perm_);
 
-        // swap buffer pointers
-        uint32_t* temp_hashes = l->hashes_;
-        uint32_t* temp_sizes = l->sizes_;
-        char* temp_data = l->data_;
+        // clear buffer and shallow copy aux into buffer
+        // aux is on stack and will be destroyed
 
-        l->hashes_ = a->hashes_;
-        l->sizes_ = a->sizes_;
-        l->data_ = a->data_;
-
-        a->hashes_ = temp_hashes;
-        a->sizes_ = temp_sizes;
-        a->data_ = temp_data;
-
-        l->size_ = a->size_;
-        l->num_ = a->num_;
+        Buffer temp = buffer_;
+        buffer_ = aux;
+        aux = temp;
+        temp.clear();
 
         return true;
     }
 
     bool Node::mergeBuffer()
     {
-        std::priority_queue<uint32_t*, std::vector<uint32_t*>,
+        std::priority_queue<Node::MergeElement, 
+                std::vector<Node::MergeElement>,
                 MergeComparator> queue;
-        
+
+        if (buffer_.lists_.size() == 1)
+            return true;
+
+        // initialize aux buffer
+        Buffer aux;
+        Buffer::List* a = aux.addList();
+
+        // track number of PAOs that have been merged with lastPAO
+        uint32_t numMerged = 0;
+
+        // Load each of the list heads into the priority queue
+        // keep track of offsets for possible deserialization
+        for (int i=0; i<buffer_.lists_.size(); i++) {
+            Node::MergeElement* mge = new Node::MergeElement(buffer_.lists_[i]);
+            queue.push(*mge);
+        }
+
+        Node::MergeElement m = queue.top();
+        queue.pop();
+
+        // allocate another element to store the last element
+        Node::MergeElement last = m;
+        if (m.next())
+            queue.push(m);
+
+        while (!queue.empty()) {
+            Node::MergeElement n = queue.top();
+            queue.pop();
+            if (last.hash() == n.hash()) {
+                // aggregate elements
+                if (numMerged == 0) {
+                    assert(lastPAO->deserialize(last.data(), last.size()));
+                }
+                assert(thisPAO->deserialize(n.data(), n.size()));
+                if (!thisPAO->key().compare(lastPAO->key())) {
+                    lastPAO->merge(thisPAO);
+                    numMerged++;
+                    continue;
+                }
+            }
+
+            // copy hash values
+            a->hashes_[a->num_] = last.hash();
+
+            /* Now, we check if some PAOs have been merged. If they
+             * have, we serialize from the lastPAO to the aux buffer. 
+             * Otherwise we simply copy the serialized contents to 
+             * the aux buffer */
+            if (numMerged > 0) {
+                std::string serialized;
+                lastPAO->serialize(&serialized);
+                uint32_t buf_size = serialized.size();
+
+                a->sizes_[a->num_] = buf_size;
+                memmove(a->data_ + a->size_,
+                        (void*)(serialized.data()), buf_size);                        
+                a->size_ += buf_size;
+                numMerged = 0;
+            } else {
+                uint32_t buf_size = last.size();
+                a->sizes_[a->num_] = buf_size;
+                memmove(a->data_ + a->size_,
+                        (void*)last.data(), buf_size);
+                a->size_ += buf_size;
+            }
+            // increment num elements in aux list and update last
+            a->num_++;
+            last = n;
+            // increment n pointer and re-insert n into prioQ
+            if (n.next())
+                queue.push(n);
+            else
+                delete &n;
+        }
+
+        // copy last PAO; TODO: Clean!
+
+        // copy hash values
+        a->hashes_[a->num_] = last.hash();
+
+        /* Now, we check if some PAOs have been merged. If they
+         * have, we serialize from the lastPAO to the aux buffer. 
+         * Otherwise we simply copy the serialized contents to 
+         * the aux buffer */
+        if (numMerged > 0) {
+            std::string serialized;
+            lastPAO->serialize(&serialized);
+            uint32_t buf_size = serialized.size();
+
+            a->sizes_[a->num_] = buf_size;
+            memmove(a->data_ + a->size_,
+                    (void*)(serialized.data()), buf_size);                        
+            a->size_ += buf_size;
+            numMerged = 0;
+        } else {
+            uint32_t buf_size = last.size();
+            a->sizes_[a->num_] = buf_size;
+            memmove(a->data_ + a->size_,
+                    (void*)last.data(), buf_size);
+            a->size_ += buf_size;
+        }
+        // increment num elements in aux list and update last
+        a->num_++;
+
+        delete &last; 
+
+        // clear buffer and copy over aux. Shallow copy is fine
+        // aux itself is on the stack and will be destroyed
+        Buffer temp = buffer_;
+        buffer_ = aux;
+        aux = temp;
+        temp.clear();
+        return true;
     }
 
     /* A leaf is split by moving half the elements of the buffer into a
@@ -558,6 +679,7 @@ namespace compresstree {
                 num_bytes);
         l->num_ = num;
         l->size_ = num_bytes;
+        fprintf(stderr, "Copying %u elements into Node %d; tot: %u\n", num, id_, buffer_.numElements());
         return true;
     }
 
