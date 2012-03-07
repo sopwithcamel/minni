@@ -10,6 +10,15 @@ namespace compresstree {
             c_datalen_(0),
             size_(0)
     {
+    }
+
+    Buffer::List::~List()
+    {
+        deallocate();
+    }
+
+    void Buffer::List::allocate()
+    {
         hashes_ = (uint32_t*)malloc(sizeof(uint32_t) * 
                 compresstree::MAX_ELS_PER_BUFFER);
         sizes_ = (uint32_t*)malloc(sizeof(uint32_t) *
@@ -17,8 +26,8 @@ namespace compresstree {
         data_ = (char*)malloc(BUFFER_SIZE);
     }
 
-    Buffer::List::~List()
-    {
+    void Buffer::List::deallocate()
+    {    
         if (hashes_) { free(hashes_); hashes_ = NULL;}
         if (sizes_) { free(sizes_); sizes_ = NULL;}
         if (data_) { free(data_); data_ = NULL;}
@@ -42,6 +51,7 @@ namespace compresstree {
     Buffer::List* Buffer::addList()
     {
         List *l = new List();
+        l->allocate();
         lists_.push_back(l);
         return l;
     }
@@ -59,13 +69,12 @@ namespace compresstree {
     void Buffer::deallocate()
     {
         for (uint32_t i=0; i<lists_.size(); i++)
-            delete lists_[i];
-        lists_.clear();
+            lists_[i]->deallocate();
     }
 
     bool Buffer::empty() const
     {
-        return (lists_.empty() || numElements() == 0);
+        return (numElements() == 0);
     }
 
     uint32_t Buffer::numElements() const

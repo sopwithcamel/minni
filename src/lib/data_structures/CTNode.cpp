@@ -467,11 +467,9 @@ namespace compresstree {
         // clear buffer and shallow copy aux into buffer
         // aux is on stack and will be destroyed
 
-        Buffer temp = buffer_;
+        buffer_.deallocate();
         buffer_ = aux;
-        aux = temp;
-        temp.clear();
-
+        aux.clear();
         return true;
     }
 
@@ -587,12 +585,11 @@ namespace compresstree {
 
         delete &last; 
 
-        // clear buffer and copy over aux. Shallow copy is fine
+        // clear buffer and copy over aux.
         // aux itself is on the stack and will be destroyed
-        Buffer temp = buffer_;
+        buffer_.deallocate();
         buffer_ = aux;
-        aux = temp;
-        temp.clear();
+        aux.clear();
         return true;
     }
 
@@ -679,7 +676,6 @@ namespace compresstree {
                 num_bytes);
         l->num_ = num;
         l->size_ = num_bytes;
-        fprintf(stderr, "Copying %u elements into Node %d; tot: %u\n", num, id_, buffer_.numElements());
         return true;
     }
 
@@ -852,8 +848,10 @@ namespace compresstree {
     
     bool Node::asyncDecompress()
     {
-        if (!compressible_)
+        if (!compressible_) {
+            fprintf(stderr, "Node %d not compressible\n", id_);
             return true;
+        }
         pthread_mutex_lock(&compActMutex_);
         // check if node already in list
         if (queuedForCompAct_) {
@@ -917,37 +915,39 @@ namespace compresstree {
 #endif
         if (!buffer_.empty()) {
             // allocate memory for compressed buffers
-            while (compressed_.lists_.size() < buffer_.lists_.size())
-                compressed_.addList();
+            Buffer compressed;
+            for (uint32_t i=0; i<buffer_.lists_.size(); i++) {
+                compressed.addList();
+            }
+
             for (uint32_t i=0; i<buffer_.lists_.size(); i++) {
                 Buffer::List* l = buffer_.lists_[i];
-                Buffer::List* cl = compressed_.lists_[i];
+                Buffer::List* cl = compressed.lists_[i];
                 snappy::RawCompress((const char*)l->hashes_, 
                         l->num_ * sizeof(uint32_t), 
                         (char*)cl->hashes_,
-                        &cl->c_hashlen_);
+                        &l->c_hashlen_);
 
                 snappy::RawCompress((const char*)l->sizes_, 
                         l->num_ * sizeof(uint32_t), 
                         (char*)cl->sizes_,
-                        &cl->c_sizelen_);
+                        &l->c_sizelen_);
 
                 snappy::RawCompress(l->data_, l->size_, 
                         cl->data_, 
-                        &cl->c_datalen_);
+                        &l->c_datalen_);
             }
-            /* Can be called from multiple places:
-             * + emptyBuffer()-1: on the node whose buffer was emptied - no free
-             * + emptyBuffer()-2: on children of emptied node - free required
-             * + splitNonLeaf(): called on ex-root node which is empty - no free
-             * + handleFullLeaves(): called on split leaves - free required
-             */
+            // deallocate node buffers and add lists from compressed
             buffer_.deallocate();
-        } else {
-            if (!compressed_.empty())
-                compressed_.deallocate();
-        }
+            for (uint32_t i=0; i<buffer_.lists_.size(); i++) {
+                buffer_.lists_[i]->hashes_ = compressed.lists_[i]->hashes_;
+                buffer_.lists_[i]->sizes_ = compressed.lists_[i]->sizes_;
+                buffer_.lists_[i]->data_ = compressed.lists_[i]->data_;
+            }
 
+            // clear compressed list so it won't be deallocated on return
+            compressed.clear();
+        }
         setState(COMPRESSED);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "compressed node %d\n", id_);
@@ -963,18 +963,16 @@ namespace compresstree {
             assert(false);
         }
 #endif
-        /* + emptyBuffer()-1: the node to be emptied is not NULL
-         * + emptyBuffer()-2: children may be empty
-         * + handleFullLeaves(): not empty
-         */
-        if (!compressed_.empty()) {
+        if (!buffer_.empty()) {
             // allocate memory for decompressed buffers
-            while (buffer_.lists_.size() < compressed_.lists_.size())
-                buffer_.addList();
+            Buffer decompressed;
+            for (uint32_t i=0; i<buffer_.lists_.size(); i++) {
+                decompressed.addList();
+            }
 
-            for (uint32_t i=0; i<compressed_.lists_.size(); i++) {
-                Buffer::List* l = buffer_.lists_[i];
-                Buffer::List* cl = compressed_.lists_[i];
+            for (uint32_t i=0; i<buffer_.lists_.size(); i++) {
+                Buffer::List* cl = buffer_.lists_[i];
+                Buffer::List* l = decompressed.lists_[i];
                 snappy::RawUncompress((const char*)cl->hashes_, 
                         cl->c_hashlen_, (char*)l->hashes_);
                 snappy::RawUncompress((const char*)cl->sizes_, 
@@ -982,7 +980,14 @@ namespace compresstree {
                 snappy::RawUncompress(cl->data_, cl->c_datalen_,
                         l->data_);
             }
-            compressed_.deallocate();
+            buffer_.deallocate();
+            for (uint32_t i=0; i<buffer_.lists_.size(); i++) {
+                buffer_.lists_[i]->hashes_ = decompressed.lists_[i]->hashes_;
+                buffer_.lists_[i]->sizes_ = decompressed.lists_[i]->sizes_;
+                buffer_.lists_[i]->data_ = decompressed.lists_[i]->data_;
+            }
+            // clear decompressed list so it won't be deallocated on return
+            decompressed.clear();
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "decompressed node %d\n", id_);
 #endif
@@ -1032,7 +1037,7 @@ namespace compresstree {
     {
         if (compLength_ > 0) {
             size_t ret;
-            ret = pwrite(fd_, compressed_, compLength_, 0);
+            ret = pwrite(fd_, buffer_, compLength_, 0);
 #ifdef ENABLE_ASSERT_CHECKS
             if (ret != compLength_) {
                 fprintf(stderr, "Node %d page-out fail! Error: %d\n", id_, errno);
@@ -1043,9 +1048,9 @@ namespace compresstree {
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Node: %d: Flushed %ld bytes\n", id_, ret); 
 #endif
-            free(compressed_);
+            free(buffer_);
         }
-        compressed_ = NULL;
+        buffer_ = NULL;
 
         setState(PAGED_OUT);
         return true;
@@ -1054,8 +1059,8 @@ namespace compresstree {
     bool Node::pageIn()
     {
         if (compLength_ > 0) {
-            compressed_ = (char*)malloc(BUFFER_SIZE);
-            size_t ret = pread(fd_, compressed_, compLength_, 0);
+            buffer_ = (char*)malloc(BUFFER_SIZE);
+            size_t ret = pread(fd_, buffer_, compLength_, 0);
 #ifdef ENABLE_ASSERT_CHECKS
             if (ret != compLength_) {
                 fprintf(stderr, "Node %d page-in fail! Error: %d\n", id_, errno);

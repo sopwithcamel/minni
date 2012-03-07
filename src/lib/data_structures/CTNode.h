@@ -85,7 +85,7 @@ namespace compresstree {
             bool operator()(const MergeElement& lhs,
                     const MergeElement& rhs) const
             {
-                return (lhs.list->hashes_[lhs.off] < 
+                return (lhs.list->hashes_[lhs.ind] >
                         rhs.list->hashes_[rhs.ind]);
             } 
         };
@@ -191,7 +191,6 @@ namespace compresstree {
         Buffer buffer_;
         NodeState state_;
         pthread_mutex_t stateMutex_;
-        Buffer compressed_;
         uint32_t id_;
         /* level in the tree; 0 at leaves and increases upwards */
         uint32_t level_;

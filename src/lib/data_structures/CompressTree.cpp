@@ -78,11 +78,11 @@ namespace compresstree {
 #endif
             }
             // switch buffers
-            Buffer::List* temp = rootNode_->buffer_.lists_[0];
-            rootNode_->buffer_.lists_ = inputNode_->buffer_.lists_;
+            Buffer temp = rootNode_->buffer_;
+            rootNode_->buffer_ = inputNode_->buffer_;
+            inputNode_->buffer_ = temp;
+            temp.clear();
 
-            inputNode_->buffer_.clear();
-            inputNode_->buffer_.addList(temp);
             pthread_mutex_unlock(&rootNodeAvailableMutex_);
 
             // schedule the root node for emptying
@@ -242,11 +242,10 @@ namespace compresstree {
         Node::emptyType_ = Node::ALWAYS;
 
         // switch buffers
-        Buffer::List* temp = rootNode_->buffer_.lists_[0];
-        rootNode_->buffer_.lists_ = inputNode_->buffer_.lists_;
-
-        inputNode_->buffer_.clear();
-        inputNode_->buffer_.addList(temp);
+        Buffer temp = rootNode_->buffer_;
+        rootNode_->buffer_ = inputNode_->buffer_;
+        inputNode_->buffer_ = temp;
+        temp.clear();
 
         sorter_->addNode(rootNode_);
         sorter_->wakeup();

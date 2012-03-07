@@ -10,6 +10,11 @@ namespace compresstree {
             public:
               List();
               ~List();
+              /* allocates buffers */
+              void allocate();
+              /* frees allocated buffers. Maintains counter info */
+              void deallocate();
+              /* set list to empty */
               void setEmpty();
 
               uint32_t* hashes_;
@@ -27,10 +32,16 @@ namespace compresstree {
           // add a list and allocate memory
           List* addList();
           void addList(List* l);
-          // free all lists
+          /* clear the lists_ vector. This does not free space allocated
+           * for the buffers but merely deletes the pointers. To avoid
+           * memory leaks, this must be called after deallocate() */
           void clear();
-          // deallocate buffers
+          /* frees buffers in all the lists. This maintains all the count
+           * information about each of the lists */
           void deallocate();
+          /* returns true if the sum of all the list_s[i]->num_ is zero. This
+           * can happen even if no memory is allocated to the buffers as all
+           * buffers may be compressed */
           bool empty() const;
           uint32_t numElements() const;
           std::vector<List*> lists_;
