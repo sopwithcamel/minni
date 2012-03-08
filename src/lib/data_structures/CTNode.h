@@ -26,10 +26,6 @@ namespace compresstree {
         friend class Sorter;
         friend class Pager;
         typedef bool (Node::*NodeCompressionFn)();
-        enum EmptyType {
-            ALWAYS,
-            IF_FULL
-        };
 
         enum NodeState {
             DECOMPRESSED,
@@ -70,8 +66,9 @@ namespace compresstree {
             }
             bool next()
             {
-                if (ind >= list->num_-1)
+                if (ind >= list->num_-1) {
                     return false;
+                }
                 off += list->sizes_[ind++];
                 return true;
             }                
@@ -184,7 +181,6 @@ namespace compresstree {
 #endif
 
       private:
-        static EmptyType emptyType_;
         /* pointer to the tree */
         CompressTree* tree_;
         /* Buffer */

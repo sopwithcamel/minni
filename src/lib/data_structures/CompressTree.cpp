@@ -166,8 +166,11 @@ namespace compresstree {
         Buffer::List* l = curLeaf->buffer_.lists_[0];
         hash = (void*)&l->hashes_[lastElement_];
         createPAO_(NULL, &agg);
-        agg->deserialize(l->data_ + lastOffset_,
-                l->sizes_[lastElement_]);
+        if (!agg->deserialize(l->data_ + lastOffset_,
+                l->sizes_[lastElement_])) {
+            fprintf(stderr, "Node: %d; num lists: %d\n", curLeaf->id_, curLeaf->buffer_.lists_.size());
+            assert(false);
+        }
         lastOffset_ += l->sizes_[lastElement_];
         lastElement_++;
 
@@ -223,7 +226,6 @@ namespace compresstree {
         lastElement_ = 0;
     
         nodeCtr = 0;
-        Node::emptyType_ = Node::IF_FULL;
     }
 
     bool CompressTree::flushBuffers()
@@ -239,7 +241,7 @@ namespace compresstree {
         }
         pthread_mutex_unlock(&rootNodeAvailableMutex_);
         // root node is now empty
-        Node::emptyType_ = Node::ALWAYS;
+        emptyType_ = ALWAYS;
 
         // switch buffers
         Buffer temp = rootNode_->buffer_;
@@ -310,15 +312,6 @@ namespace compresstree {
 
             if (node->isRoot())
                 node->aggregateBuffer();
-            // check if sorting and aggregating made the leaf small enough
-            if (!node->isFull() && node->compressible_) {
-#ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Leaf node %d reduced in size, so no split\n",
-                        node->id_);
-#endif
-                CALL_MEM_FUNC(*node, node->compress)();
-                continue;
-            }
             Node* newLeaf = node->splitLeaf();
             Node *l1 = NULL, *l2 = NULL;
             if (node->isFull()) {
@@ -360,7 +353,7 @@ namespace compresstree {
         // buffer for holding evicted values
         evictedBuffer_ = (char*)malloc(BUFFER_SIZE);
 #endif
-        Node::emptyType_ = Node::IF_FULL;
+        emptyType_ = IF_FULL;
 
         pthread_attr_t attr;
 

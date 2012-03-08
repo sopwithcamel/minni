@@ -80,7 +80,9 @@ void* Deserializer::operator()(void*)
 
     while (!cur_bucket->eof()) {
         createPAO(NULL, &(this_list[pao_list_ctr]));
-        this_list[pao_list_ctr]->deserialize(coded_input);
+        if (!this_list[pao_list_ctr]->deserialize(coded_input)) {
+            assert(false);
+        }
         pao_list_ctr++;
         if (pao_list_ctr == max_keys_per_token - 1) {
             break;

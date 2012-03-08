@@ -8,9 +8,9 @@
 #include "Accumulator.h"
 #include "PartialAgg.h"
 
-#define ENABLE_ASSERT_CHECKS
+//#define ENABLE_ASSERT_CHECKS
 //#define CT_NODE_DEBUG
-#define ENABLE_INTEGRITY_CHECK
+//#define ENABLE_INTEGRITY_CHECK
 //#define ENABLE_COUNTERS
 /* broken */
 //#define ENABLE_PAGING
@@ -29,6 +29,11 @@ namespace compresstree {
     enum CompressAlgorithm {
         SNAPPY,
         ZLIB
+    };
+
+    enum EmptyType {
+        ALWAYS,
+        IF_FULL
     };
     
     class Node;
@@ -63,12 +68,6 @@ namespace compresstree {
         /* read values */
         bool nextValue(void*& hash, PartialAgg*& agg);
       private:
-/*
-        static void* callSortHelper(void* context);
-        static void* callEmptyHelper(void* context);
-        static void* callCompressHelper(void *context);
-        static void* callPageHelper(void *context);
-*/        
         bool addLeafToEmpty(Node* node);
         bool createNewRoot(Node* otherChild);
         void emptyTree();
@@ -89,6 +88,7 @@ namespace compresstree {
         Node* rootNode_;
         Node* inputNode_;
         bool allFlush_;
+        EmptyType emptyType_;
         std::deque<Node*> leavesToBeEmptied_;
         std::vector<Node*> allLeaves_;
         uint32_t lastLeafRead_;

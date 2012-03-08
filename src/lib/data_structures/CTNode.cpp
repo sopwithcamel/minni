@@ -14,8 +14,6 @@
 #include "zlib.h"
 
 namespace compresstree {
-    Node::EmptyType Node::emptyType_ = IF_FULL;
-
     Node::Node(CompressTree* tree, uint32_t level) :
         tree_(tree),
         level_(level),
@@ -118,7 +116,7 @@ namespace compresstree {
 
     bool Node::emptyOrCompress()
     {
-        if (emptyType_ == ALWAYS || isFull()) {
+        if (tree_->emptyType_ == ALWAYS || isFull()) {
             tree_->sorter_->addNode(this);
             tree_->sorter_->wakeup();
         } else {
@@ -250,6 +248,12 @@ namespace compresstree {
                         children_[curChild]->id_,
                         children_[curChild]->separator_);
 #endif
+                curChild++;
+            }
+            // empty or compress any remaining children
+            while (curChild < children_.size()) {
+                children_[curChild]->emptyOrCompress();
+                curChild++;
             }
 
             // reset
@@ -257,6 +261,7 @@ namespace compresstree {
 
             if (!isRoot()) {
                 buffer_.deallocate();
+                buffer_.clear();
                 CALL_MEM_FUNC(*this, compress)();
             }
         }
@@ -510,12 +515,16 @@ namespace compresstree {
             if (last.hash() == n.hash()) {
                 // aggregate elements
                 if (numMerged == 0) {
-                    assert(lastPAO->deserialize(last.data(), last.size()));
+                    if (!lastPAO->deserialize(last.data(), last.size())) {
+                        assert(false);
+                    }
                 }
                 assert(thisPAO->deserialize(n.data(), n.size()));
                 if (!thisPAO->key().compare(lastPAO->key())) {
                     lastPAO->merge(thisPAO);
                     numMerged++;
+                    if (n.next())
+                        queue.push(n);
                     continue;
                 }
             }
@@ -550,8 +559,6 @@ namespace compresstree {
             // increment n pointer and re-insert n into prioQ
             if (n.next())
                 queue.push(n);
-            else
-                delete &n;
         }
 
         // copy last PAO; TODO: Clean!
@@ -588,8 +595,11 @@ namespace compresstree {
         // clear buffer and copy over aux.
         // aux itself is on the stack and will be destroyed
         buffer_.deallocate();
+        buffer_.clear();
         buffer_ = aux;
         aux.clear();
+
+        assert(buffer_.lists_.size() == 1);
         return true;
     }
 
@@ -767,6 +777,7 @@ namespace compresstree {
         if (isRoot()) {
             setCompressible(true);
             buffer_.deallocate();
+            buffer_.clear();
             // actually compress the node that was formerly the root
             setState(DECOMPRESSED);
             CALL_MEM_FUNC(*this, compress)();
@@ -950,7 +961,7 @@ namespace compresstree {
         }
         setState(COMPRESSED);
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "compressed node %d\n", id_);
+        fprintf(stderr, "compressed node %d; n:%u\n", id_, buffer_.numElements());
 #endif
         return true;
     }
@@ -989,7 +1000,7 @@ namespace compresstree {
             // clear decompressed list so it won't be deallocated on return
             decompressed.clear();
 #ifdef CT_NODE_DEBUG
-            fprintf(stderr, "decompressed node %d\n", id_);
+            fprintf(stderr, "decompressed node %d; n: %u\n", id_, buffer_.numElements());
 #endif
         }
         setState(DECOMPRESSED);

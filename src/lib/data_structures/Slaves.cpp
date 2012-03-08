@@ -314,8 +314,20 @@ namespace compresstree {
                     n->mergeBuffer();
                     n->checkIntegrity();
                 }
-                tree_->emptier_->addNode(n);
-                tree_->emptier_->wakeup();
+                // check if sorting and aggregating made the node small enough
+                if (!n->isFull() && !n->isRoot() && tree_->emptyType_ != ALWAYS) {
+#ifdef CT_NODE_DEBUG
+                    fprintf(stderr, "node: %d reduced in size to %u\n", n->id_, n->buffer_.numElements());
+#endif
+                    // Set node as NOT queued for emptying
+                    pthread_mutex_lock(&n->queuedForEmptyMutex_);
+                    n->queuedForEmptying_ = false;
+                    pthread_mutex_unlock(&n->queuedForEmptyMutex_);
+                    CALL_MEM_FUNC(*n, n->compress)();
+                } else {
+                    tree_->emptier_->addNode(n);
+                    tree_->emptier_->wakeup();
+                }
                 pthread_mutex_lock(&queueMutex_);
             }
             sendCompletionNotice();
@@ -340,7 +352,8 @@ namespace compresstree {
         }
         pthread_mutex_unlock(&queueMutex_);
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node %d added to to-sort list\n", node->id_);
+        fprintf(stderr, "Node %d added to to-sort list (size: %u)\n",
+                node->id_, node->buffer_.numElements());
         for (int i=0; i<nodes_.size(); i++)
             fprintf(stderr, "%d, ", nodes_[i]->id_);
         fprintf(stderr, "\n");
