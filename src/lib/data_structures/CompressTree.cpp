@@ -156,10 +156,8 @@ namespace compresstree {
                 curLeaf->waitForPageIn();
             }
 #endif
-            if (curLeaf->isCompressed()) {
-                CALL_MEM_FUNC(*curLeaf, curLeaf->decompress)();
-                curLeaf->waitForCompressAction(Node::DECOMPRESS);
-            }
+            CALL_MEM_FUNC(*curLeaf, curLeaf->decompress)();
+            curLeaf->waitForCompressAction(Node::DECOMPRESS);
         }
 
         Node* curLeaf = allLeaves_[lastLeafRead_];

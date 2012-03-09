@@ -8,7 +8,8 @@ namespace compresstree {
             c_hashlen_(0),
             c_sizelen_(0),
             c_datalen_(0),
-            size_(0)
+            size_(0),
+            state_(DECOMPRESSED)
     {
     }
 
@@ -37,6 +38,7 @@ namespace compresstree {
     {
         num_ = 0;
         size_ = 0;
+        state_ = DECOMPRESSED;
     }
 
     Buffer::Buffer()

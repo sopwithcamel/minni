@@ -113,8 +113,6 @@ namespace compresstree {
                     // schedule pre-fetching of children of node into memory
                     tree_->pager_->pageIn(n->children_[i]);
 #endif
-                    CALL_MEM_FUNC(*n->children_[i],
-                            n->children_[i]->decompress)();
                 }        
                 if (n->isRoot())
                     n->aggregateSortedBuffer();
@@ -179,8 +177,6 @@ namespace compresstree {
         fprintf(stderr, "Node %d added to to-empty list: ", node->id_);
         queue_.printElements();
 #endif
-        // The node is decompressed when called.
-        assert(!node->isCompressed());
     }
 
     Compressor::Compressor(CompressTree* tree) :
@@ -215,7 +211,7 @@ namespace compresstree {
                 nodes_.pop_front();
                 pthread_mutex_unlock(&queueMutex_);
                 pthread_mutex_lock(&(n->compActMutex_));
-                if (n->compAct_ == Node::COMPRESS && !n->isCompressed()) {
+                if (n->compAct_ == Node::COMPRESS) {
                     n->snappyCompress();
 #ifdef ENABLE_COUNTERS
                     tree_->monitor_->decompCtr--;
@@ -223,17 +219,15 @@ namespace compresstree {
                     // signal to agent waiting for completion.
                     pthread_cond_signal(&n->compActCond_);
                 } else if (n->compAct_ == Node::DECOMPRESS) {
-                    if (n->isCompressed()) {
-                        pthread_mutex_unlock(&(n->compActMutex_));
+                    pthread_mutex_unlock(&(n->compActMutex_));
 #ifdef ENABLE_PAGING
-                        n->waitForPageIn();
+                    n->waitForPageIn();
 #endif
-                        pthread_mutex_lock(&(n->compActMutex_));
-                        n->snappyDecompress();
+                    pthread_mutex_lock(&(n->compActMutex_));
+                    n->snappyDecompress();
 #ifdef ENABLE_COUNTERS
-                        tree_->monitor_->decompCtr++;
+                    tree_->monitor_->decompCtr++;
 #endif
-                    }
                     pthread_cond_signal(&n->compActCond_);
                 }
                 n->queuedForCompAct_ = false;

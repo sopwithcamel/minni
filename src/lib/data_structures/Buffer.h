@@ -8,6 +8,11 @@ namespace compresstree {
         public:
           class List {
             public:
+              enum ListState {
+                  DECOMPRESSED,
+                  COMPRESSED,
+                  PAGED_OUT
+              };
               List();
               ~List();
               /* allocates buffers */
@@ -22,6 +27,7 @@ namespace compresstree {
               char* data_;
               uint32_t num_;
               uint32_t size_;
+              ListState state_;
               size_t c_hashlen_;
               size_t c_sizelen_;
               size_t c_datalen_;

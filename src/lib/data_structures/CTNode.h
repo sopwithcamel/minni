@@ -27,12 +27,6 @@ namespace compresstree {
         friend class Pager;
         typedef bool (Node::*NodeCompressionFn)();
 
-        enum NodeState {
-            DECOMPRESSED,
-            COMPRESSED,
-            PAGED_OUT
-        };
-
         enum CompressionAction {
             NONE,
             COMPRESS,
@@ -102,8 +96,6 @@ namespace compresstree {
         uint32_t level() const;
         uint32_t id() const;
       private:
-        inline void setState(NodeState state);
-
         /* Buffer handling functions */
 
         bool emptyOrCompress();
@@ -187,7 +179,6 @@ namespace compresstree {
         CompressTree* tree_;
         /* Buffer */
         Buffer buffer_;
-        NodeState state_;
         pthread_mutex_t stateMutex_;
         uint32_t id_;
         /* level in the tree; 0 at leaves and increases upwards */
