@@ -69,7 +69,8 @@ namespace compresstree {
                 if (ind >= list->num_-1) {
                     return false;
                 }
-                off += list->sizes_[ind++];
+                off += list->sizes_[ind];
+                ind++;
                 return true;
             }                
             uint32_t ind;           // index of hash being compared
@@ -122,7 +123,8 @@ namespace compresstree {
          * aggregating by merging. */
         bool sortBuffer();
         /* Aggregate the sorted root buffer */
-        bool aggregateBuffer();
+        bool aggregateSortedBuffer();
+        bool aggregateMergedBuffer();
         /* Merge the sorted sub-lists of the buffer */
         bool mergeBuffer();
         /* copy contents from node's buffer into this buffer. Starting from

@@ -113,11 +113,28 @@ namespace compresstree {
                     // schedule pre-fetching of children of node into memory
                     tree_->pager_->pageIn(n->children_[i]);
 #endif
-                    CALL_MEM_FUNC(*n->children_[i], n->children_[i]->decompress)();
+                    CALL_MEM_FUNC(*n->children_[i],
+                            n->children_[i]->decompress)();
                 }        
-                n->emptyBuffer();
-                if (n->isLeaf())
-                    tree_->handleFullLeaves();
+                if (n->isRoot())
+                    n->aggregateSortedBuffer();
+                else {
+                    n->aggregateMergedBuffer();
+                }
+                // check if aggregation made the node small enough
+                if (!n->isFull() && !n->isRoot() && 
+                        tree_->emptyType_ != ALWAYS) {
+#ifdef CT_NODE_DEBUG
+                    fprintf(stderr, "node: %d reduced in size to %u\n", 
+                            n->id_, n->buffer_.numElements());
+#endif
+                    // Set node as NOT queued for emptying
+                    CALL_MEM_FUNC(*n, n->compress)();
+                } else {
+                    n->emptyBuffer();
+                    if (n->isLeaf())
+                        tree_->handleFullLeaves();
+                }
                 if (rootFlag) {
                     // do the split and create new root
                     rootFlag = false;
@@ -312,22 +329,9 @@ namespace compresstree {
                     n->sortBuffer();
                 else {
                     n->mergeBuffer();
-                    n->checkIntegrity();
                 }
-                // check if sorting and aggregating made the node small enough
-                if (!n->isFull() && !n->isRoot() && tree_->emptyType_ != ALWAYS) {
-#ifdef CT_NODE_DEBUG
-                    fprintf(stderr, "node: %d reduced in size to %u\n", n->id_, n->buffer_.numElements());
-#endif
-                    // Set node as NOT queued for emptying
-                    pthread_mutex_lock(&n->queuedForEmptyMutex_);
-                    n->queuedForEmptying_ = false;
-                    pthread_mutex_unlock(&n->queuedForEmptyMutex_);
-                    CALL_MEM_FUNC(*n, n->compress)();
-                } else {
-                    tree_->emptier_->addNode(n);
-                    tree_->emptier_->wakeup();
-                }
+                tree_->emptier_->addNode(n);
+                tree_->emptier_->wakeup();
                 pthread_mutex_lock(&queueMutex_);
             }
             sendCompletionNotice();

@@ -310,8 +310,6 @@ namespace compresstree {
             Node* node = leavesToBeEmptied_.front();
             leavesToBeEmptied_.pop_front();
 
-            if (node->isRoot())
-                node->aggregateBuffer();
             Node* newLeaf = node->splitLeaf();
             Node *l1 = NULL, *l2 = NULL;
             if (node->isFull()) {

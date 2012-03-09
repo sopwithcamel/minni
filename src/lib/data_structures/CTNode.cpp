@@ -137,15 +137,13 @@ namespace compresstree {
         if (isLeaf()) {
             /* this may be called even when buffer is not full (when flushing
              * all buffers at the end). */
-            if (isFull()) {
+            if (isFull() || isRoot()) {
                 tree_->addLeafToEmpty(this);
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Leaf node %d added to full-leaf-list\
                         %u/%u\n", id_, buffer_.numElements(), EMPTY_THRESHOLD);
 #endif
-            } else { // we aggregate and compress
-                if (isRoot())
-                    aggregateBuffer();
+            } else { // compress
                 CALL_MEM_FUNC(*this, compress)();
             }
             return true;
@@ -156,11 +154,6 @@ namespace compresstree {
                 children_[curChild]->emptyOrCompress();
             }
         } else {
-            if (isRoot()) {
-                aggregateBuffer();
-                checkIntegrity();
-            }
-
             Buffer::List* l = buffer_.lists_[0];
             // find the first separator strictly greater than the first element
             while (l->hashes_[curElement] >= 
@@ -199,6 +192,7 @@ namespace compresstree {
                         // copy elements into child
                         children_[curChild]->copyIntoBuffer(l, lastElement,
                                 curElement - lastElement);
+                        children_[curChild]->checkIntegrity();
 #ifdef CT_NODE_DEBUG
                         fprintf(stderr, "Copied %u elements into node %d;\
                                 sep: %u, next: %u\n",
@@ -224,6 +218,7 @@ namespace compresstree {
                     }
                 }
                 // proceed to next element
+                assert(l->sizes_[curElement] != 0);
                 curElement++;
             }
 
@@ -241,6 +236,7 @@ namespace compresstree {
                 children_[curChild]->copyIntoBuffer(l, lastElement,
                         curElement - lastElement);
                 children_[curChild]->emptyOrCompress();
+                children_[curChild]->checkIntegrity();
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Copied %u elements into node %d; \
                         sep: %u\n",
@@ -388,7 +384,7 @@ namespace compresstree {
         checkIntegrity();
     }
 
-    bool Node::aggregateBuffer()
+    bool Node::aggregateSortedBuffer()
     {
         uint32_t buf_size;
 
@@ -501,96 +497,23 @@ namespace compresstree {
             queue.push(*mge);
         }
 
-        Node::MergeElement m = queue.top();
-        queue.pop();
-
-        // allocate another element to store the last element
-        Node::MergeElement last = m;
-        if (m.next())
-            queue.push(m);
-
         while (!queue.empty()) {
             Node::MergeElement n = queue.top();
             queue.pop();
-            if (last.hash() == n.hash()) {
-                // aggregate elements
-                if (numMerged == 0) {
-                    if (!lastPAO->deserialize(last.data(), last.size())) {
-                        assert(false);
-                    }
-                }
-                assert(thisPAO->deserialize(n.data(), n.size()));
-                if (!thisPAO->key().compare(lastPAO->key())) {
-                    lastPAO->merge(thisPAO);
-                    numMerged++;
-                    if (n.next())
-                        queue.push(n);
-                    continue;
-                }
-            }
 
             // copy hash values
-            a->hashes_[a->num_] = last.hash();
-
-            /* Now, we check if some PAOs have been merged. If they
-             * have, we serialize from the lastPAO to the aux buffer. 
-             * Otherwise we simply copy the serialized contents to 
-             * the aux buffer */
-            if (numMerged > 0) {
-                std::string serialized;
-                lastPAO->serialize(&serialized);
-                uint32_t buf_size = serialized.size();
-
-                a->sizes_[a->num_] = buf_size;
-                memmove(a->data_ + a->size_,
-                        (void*)(serialized.data()), buf_size);                        
-                a->size_ += buf_size;
-                numMerged = 0;
-            } else {
-                uint32_t buf_size = last.size();
-                a->sizes_[a->num_] = buf_size;
-                memmove(a->data_ + a->size_,
-                        (void*)last.data(), buf_size);
-                a->size_ += buf_size;
-            }
-            // increment num elements in aux list and update last
+            a->hashes_[a->num_] = n.hash();
+            uint32_t buf_size = n.size();
+            a->sizes_[a->num_] = buf_size;
+            memmove(a->data_ + a->size_,
+                    (void*)n.data(), buf_size);
+            a->size_ += buf_size;
             a->num_++;
-            last = n;
+
             // increment n pointer and re-insert n into prioQ
             if (n.next())
                 queue.push(n);
         }
-
-        // copy last PAO; TODO: Clean!
-
-        // copy hash values
-        a->hashes_[a->num_] = last.hash();
-
-        /* Now, we check if some PAOs have been merged. If they
-         * have, we serialize from the lastPAO to the aux buffer. 
-         * Otherwise we simply copy the serialized contents to 
-         * the aux buffer */
-        if (numMerged > 0) {
-            std::string serialized;
-            lastPAO->serialize(&serialized);
-            uint32_t buf_size = serialized.size();
-
-            a->sizes_[a->num_] = buf_size;
-            memmove(a->data_ + a->size_,
-                    (void*)(serialized.data()), buf_size);                        
-            a->size_ += buf_size;
-            numMerged = 0;
-        } else {
-            uint32_t buf_size = last.size();
-            a->sizes_[a->num_] = buf_size;
-            memmove(a->data_ + a->size_,
-                    (void*)last.data(), buf_size);
-            a->size_ += buf_size;
-        }
-        // increment num elements in aux list and update last
-        a->num_++;
-
-        delete &last; 
 
         // clear buffer and copy over aux.
         // aux itself is on the stack and will be destroyed
@@ -599,7 +522,88 @@ namespace compresstree {
         buffer_ = aux;
         aux.clear();
 
-        assert(buffer_.lists_.size() == 1);
+        return true;
+    }
+
+    bool Node::aggregateMergedBuffer()
+    {
+        // initialize aux buffer
+        Buffer aux;
+        Buffer::List* a = aux.addList();
+
+        Buffer::List* l = buffer_.lists_[0];
+        uint32_t num = buffer_.numElements();
+        uint32_t numMerged = 0;
+        uint32_t offset = 0;
+
+        uint32_t lastIndex = 0;
+        offset += l->sizes_[0];
+        uint32_t lastOffset = 0;
+
+        // aggregate elements in buffer
+        for (uint32_t i=1; i<num; i++) {
+            if (l->hashes_[i] == l->hashes_[lastIndex]) {
+                if (numMerged == 0) {
+                    assert(lastPAO->deserialize(l->data_ + lastOffset,
+                            l->sizes_[lastIndex]));
+                }
+                if(!thisPAO->deserialize(l->data_ + offset, l->sizes_[i])) {
+                    assert(false);
+                }
+                if (!thisPAO->key().compare(lastPAO->key())) {
+                    lastPAO->merge(thisPAO);
+                    numMerged++;
+                    offset += l->sizes_[i];
+                    continue;
+                }
+            }
+            a->hashes_[a->num_] = l->hashes_[lastIndex];
+            if (numMerged == 0) {
+                uint32_t buf_size = l->sizes_[lastIndex];
+                a->sizes_[a->num_] = l->sizes_[lastIndex];
+                memmove(a->data_ + a->size_,
+                        (void*)(l->data_ + lastOffset), l->sizes_[lastIndex]);
+                a->size_ += buf_size;
+            } else {
+                std::string serialized;
+                lastPAO->serialize(&serialized);
+                uint32_t buf_size = serialized.size();
+                a->sizes_[a->num_] = buf_size;
+                memmove(a->data_ + a->size_,
+                        (void*)(serialized.data()), buf_size);
+                a->size_ += buf_size;
+            }
+            a->num_++;
+            numMerged = 0;
+            lastIndex = i;
+            lastOffset = offset;
+            offset += l->sizes_[i];
+        }
+        // copy last PAO
+        a->hashes_[a->num_] = l->hashes_[lastIndex];
+        if (numMerged == 0) {
+            uint32_t buf_size = l->sizes_[lastIndex];
+            a->sizes_[a->num_] = l->sizes_[lastIndex];
+            memmove(a->data_ + a->size_,
+                    (void*)(l->data_ + lastOffset), l->sizes_[lastIndex]);
+            a->size_ += buf_size;
+        } else {
+            std::string serialized;
+            lastPAO->serialize(&serialized);
+            uint32_t buf_size = serialized.size();
+            a->sizes_[a->num_] = buf_size;
+            memmove(a->data_ + a->size_,
+                    (void*)(serialized.data()), buf_size);
+            a->size_ += buf_size;
+        }
+        a->num_++;
+
+        // clear buffer and copy over aux.
+        // aux itself is on the stack and will be destroyed
+        buffer_.deallocate();
+        buffer_.clear();
+        buffer_ = aux;
+        aux.clear();
         return true;
     }
 
@@ -1106,9 +1110,15 @@ namespace compresstree {
             for (uint32_t i=0; i<l->num_-1; i++) {
                 if (l->hashes_[i] > l->hashes_[i+1]) {
                     fprintf(stderr, "Node: %d, List: %d: Hash %u at index %u\
-                            greater than hash %u at %u\n", id_, j,
+                            greater than hash %u at %u (size: %u)\n", id_, j,
                             l->hashes_[i], i, l->hashes_[i+1],
-                            i+1);
+                            i+1, l->num_);
+                    assert(false);
+                }
+            }
+            for (uint32_t i=0; i<l->num_; i++) {
+                if (l->sizes_[i] == 0) {
+                    fprintf(stderr, "Element %u in list %u has 0 size; tot size: %u\n", i, j, l->num_);
                     assert(false);
                 }
             }
