@@ -245,11 +245,9 @@ void PartitionGrabber::setPID(PartID p)
  * addLocations() where we pick up the mutex */
 void PartitionGrabber::addLocation(Location l)
 {
-  if(locations.count(l) != 0){
-    assert(locations.count(l) == 0);
-    return;
+  if(locations.count(l) == 0){
+      locations.insert(l);
   }
-  locations.insert(l);
   cout << "Inserting pid: " << pid << " for ip " << l.ip << endl;
   transfers.push_back(Transfer(pid, l));
 }
