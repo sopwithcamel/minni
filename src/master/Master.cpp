@@ -50,7 +50,7 @@ Master::Master(MapReduceSpecification* spec, DFS &dfs, string nodesFile) : spec(
 		if (dfs.isDirectory((*iter).c_str())) {
 			splitDir(dfs, *iter);
 		} else {
-			splitFile(dfs, *iter);
+			splitFile(spec, dfs, *iter);
 		}
 	}
 	cout << "All maps assigned." << endl;
@@ -82,21 +82,21 @@ Master::~Master()
 	}
 }
 
-void Master::splitFile(DFS& dfs, const string& fil)
+void Master::splitFile(MapReduceSpecification* spec, DFS& dfs, const string& fil)
 {
 	map<string, Node*>::iterator nodeIter;
 	uint64_t num_chunks = dfs.getNumChunks((fil));
 	uint64_t rem_chunks = num_chunks;
-	int rem_nodes = getNumberOfNodes();
+	int rem_maps = getNumberOfNodes() * spec->getMaxMaps();
 	uint64_t cids_for_map = 0;
 
 	for (uint64_t i = 0; i < num_chunks; i+=cids_for_map)
 	{
-		assert(rem_nodes);
+		assert(rem_maps);
 		cids_for_map = (uint64_t) floor(((double)rem_chunks / 
-				rem_nodes));
+				rem_maps));
 		rem_chunks -= cids_for_map;
-		rem_nodes--;
+		rem_maps--;
 
 		vector<string> locs;
 		Node* min = (*(nodes.begin())).second;
@@ -158,9 +158,12 @@ void Master::splitDir(DFS& dfs, const string& dir)
 	
 }
 
-void Master::assignMapJob(Node* node, ChunkID cid_start, ChunkID cid_end, string fileIn)
+void Master::assignMapJob(Node* node, ChunkID cid_start, ChunkID cid_end,
+        string fileIn)
 {
-	struct MapJob job(jidCounter*2, cid_start, cid_end, jobstatus::INPROGRESS, fileIn, spec->getSoName(), spec->getMaxReduces(), spec->getDfsMaster(), spec->getDfsPort());
+	struct MapJob job(jidCounter*2, cid_start, cid_end, jobstatus::INPROGRESS,
+            fileIn, spec->getSoName(), spec->getMaxReduces(),
+            spec->getDfsMaster(), spec->getDfsPort());
 	node->addMap(job);
 	remainingMappers++;
 	jidCounter++;

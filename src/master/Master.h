@@ -57,7 +57,7 @@ class Master {
 		/* print and resubmit currently running reduces */
 		void printReduces(map<string, Node*> nodes);
 		/* split chunks of large file among mappers */
-		void splitFile(DFS&, const string&);
+		void splitFile(MapReduceSpecification* spec, DFS&, const string&);
 		/* split files in directory among mappers */
 		void splitDir(DFS&, const string&);
 		void broadcastKill();
