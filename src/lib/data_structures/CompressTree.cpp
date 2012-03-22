@@ -55,7 +55,7 @@ namespace compresstree {
     }
 
     bool CompressTree::insert(void* hash, PartialAgg* agg, PartialAgg**& evicted,
-            size_t& num_evicted)
+            size_t& num_evicted, size_t max_evictable)
     {
         // copy buf into root node buffer
         // root node buffer always decompressed

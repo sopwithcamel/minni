@@ -40,15 +40,18 @@ void* SparseHashInserter::operator()(void* recv)
 	FilterInfo* this_send = (*send_)[next_buffer];
 	PartialAgg** this_list = (*evicted_list_)[next_buffer];
 	next_buffer = (next_buffer + 1) % aggregator_->getNumBuffers();
-    size_t numEvicted = 0;
     size_t evict_list_ctr = 0;
 
 	// Insert PAOs
     while (ind < recv_length) {
+        size_t numEvicted = 0;
         pao = pao_l[ind];
         PartialAgg** l = this_list + evict_list_ctr;
-        bool ret = sh->insert((void*)pao->key().c_str(), pao, l, numEvicted);
-        evict_list_ctr += numEvicted;
+        bool ret = sh->insert((void*)pao->key().c_str(), pao, l, numEvicted,
+                max_keys_per_token - evict_list_ctr);
+        if (numEvicted > 0) {
+            evict_list_ctr += numEvicted;
+        }
         if (recv_list->destroy_pao && !ret)
             destroyPAO(pao);
         ind++;

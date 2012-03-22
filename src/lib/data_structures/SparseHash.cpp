@@ -1,8 +1,8 @@
 #include "SparseHash.h"
 
-SparseHash::SparseHash(size_t capacity) :
+SparseHash::SparseHash(size_t capacity, size_t evictAtTime) :
         capacity_(capacity),
-        evictAtTime_(capacity_ >> 7),
+        evictAtTime_(evictAtTime),
         numElements_(0)
 {
     accumulator_.set_deleted_key("mamihlapinatapai");
@@ -13,7 +13,7 @@ SparseHash::~SparseHash()
 }
 
 bool SparseHash::insert(void* key, PartialAgg* value, PartialAgg**& evicted,
-        size_t& num_evicted)
+        size_t& num_evicted, size_t max_evictable)
 {
     bool ret;
     char* k = (char*)key;
@@ -30,8 +30,9 @@ bool SparseHash::insert(void* key, PartialAgg* value, PartialAgg**& evicted,
             for (Hash::iterator it=accumulator_.begin(); it != accumulator_.end(); 
                     it++) {
                 evicted[evictCtr++] = it->second;
+                assert(it->second != NULL);
                 accumulator_.erase(it);
-                if (evictCtr == evictAtTime_)
+                if (evictCtr == max_evictable)
                     break;
             }
             numElements_ -= evictCtr;

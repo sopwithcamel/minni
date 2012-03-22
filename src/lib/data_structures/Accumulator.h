@@ -9,7 +9,7 @@ class Accumulator
     Accumulator() {}
     virtual ~Accumulator() {}
     virtual bool insert(void* key, PartialAgg* value, PartialAgg**& evicted,
-            size_t& num_evicted) = 0;
+            size_t& num_evicted, size_t max_evictable) = 0;
     virtual bool nextValue(void*& key, PartialAgg*& value) = 0;
 };
 

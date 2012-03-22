@@ -29,12 +29,12 @@ class SparseHash :
     typedef google::sparse_hash_map<const char*, PartialAgg*, Murmur, 
             eqstr> Hash;
   public:
-    SparseHash(size_t capacity);
+    SparseHash(size_t capacity, size_t evictAtTime);
     ~SparseHash();
     /* returns true if an insert was performed; returns false if
      * merged with existing PAO */
     bool insert(void* key, PartialAgg* value, PartialAgg**& evicted,
-            size_t& num_evicted);
+            size_t& num_evicted, size_t max_evictable);
     bool nextValue(void*& key, PartialAgg*& value);
   private:
     Hash accumulator_;

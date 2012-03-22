@@ -56,7 +56,8 @@ void* CompressTreeInserter::operator()(void* recv)
 
         ptrToHash = (void*)&hashv;
         PartialAgg** l = this_list + evict_list_ctr;
-        ct->insert(ptrToHash, pao, l, numEvicted);
+        ct->insert(ptrToHash, pao, l, numEvicted,
+                max_keys_per_token - evict_list_ctr);
         evict_list_ctr += numEvicted;
         if (recv_list->destroy_pao)
             destroyPAO(pao);

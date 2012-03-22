@@ -64,7 +64,7 @@ namespace compresstree {
 
         /* Insert record into tree */
         bool insert(void* hash, PartialAgg* agg, PartialAgg**& evicted, 
-                size_t& num_evicted);
+                size_t& num_evicted, size_t max_evictable);
         /* read values */
         bool nextValue(void*& hash, PartialAgg*& agg);
       private:
