@@ -78,10 +78,12 @@ void* Deserializer::operator()(void*)
 		fprintf(stderr, "opening file %s\n", file_name.c_str());
 	}
 
-    while (!cur_bucket->eof()) {
+    while (!coded_input->ExpectAtEnd()) {
         createPAO(NULL, &(this_list[pao_list_ctr]));
         if (!this_list[pao_list_ctr]->deserialize(coded_input)) {
-            assert(false);
+            destroyPAO(this_list[pao_list_ctr]);
+            this_list[pao_list_ctr] = NULL;
+            break;           
         }
         pao_list_ctr++;
         if (pao_list_ctr == max_keys_per_token - 1) {
