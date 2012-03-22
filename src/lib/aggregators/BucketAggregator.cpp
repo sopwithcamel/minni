@@ -4,6 +4,7 @@
  * Initialize pipeline
  */
 BucketAggregator::BucketAggregator(const Config &cfg,
+                JobID jid,
                 AggType type, 
                 const uint64_t num_part,
                 MapInput* _map_input,
@@ -11,7 +12,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
                 size_t (*createPAOFunc)(Token* t, PartialAgg** p), 
                 void (*destroyPAOFunc)(PartialAgg* p), 
                 const char* outfile):
-        Aggregator(cfg, type, 2, num_part, createPAOFunc, destroyPAOFunc),
+        Aggregator(cfg, jid, type, 2, num_part, createPAOFunc, destroyPAOFunc),
         map_input(_map_input),
         chunkreader(NULL),
         filereader(NULL),
@@ -72,7 +73,8 @@ BucketAggregator::BucketAggregator(const Config &cfg,
                 destroyPAOFunc, max_keys_per_token));
 
     } else if (!intagg.compare("sparsehash")) {
-        acc_internal_ = dynamic_cast<Accumulator*>(new SparseHash(capacity));
+        acc_internal_ = dynamic_cast<Accumulator*>(new SparseHash(capacity,
+                max_keys_per_token));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 SparseHashInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
@@ -136,6 +138,10 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 
     char* bucket_prefix = (char*)malloc(FILENAME_LENGTH);
     strcpy(bucket_prefix, fprefix.c_str());
+    char jidstr[10];
+    sprintf(jidstr, "%lu", (uint64_t)jid);
+    strcat(jidstr, "-");
+    strcat(bucket_prefix, jidstr);
     if (type == Map)
         strcat(bucket_prefix, "map-");
     else if (type == Reduce)

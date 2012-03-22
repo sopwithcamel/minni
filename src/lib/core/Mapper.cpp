@@ -140,12 +140,12 @@ task* MapperWrapperTask::execute() {
 
 	if (!selected_map_aggregator.compare("bucket")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new BucketAggregator(
-						cfg, Map, npart, myinput, NULL,
+						cfg, jobid, Map, npart, myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO, 
 						map_out_file.c_str()));
 	} else if (!selected_map_aggregator.compare("hashsort")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new HashsortAggregator(
-						cfg, Map, npart, myinput, NULL,
+						cfg, jobid, Map, npart, myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO,
 						map_out_file.c_str()));
 	} else {

@@ -35,6 +35,7 @@ class BucketAggregator :
     public Aggregator {
   public:
     BucketAggregator(const Config &cfg, 
+                JobID jid,
                 AggType type, 
                 const uint64_t num_part,
                 MapInput* _map_input,

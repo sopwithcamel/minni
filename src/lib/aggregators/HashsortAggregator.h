@@ -35,6 +35,7 @@
 class HashsortAggregator : public Aggregator {
 public:
 	HashsortAggregator(const Config &cfg,
+                JobID jid,
 				AggType type, 
 				const uint64_t _partid,
 				MapInput* _map_input,

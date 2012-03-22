@@ -106,8 +106,8 @@ task* ReducerWrapperTask::execute() {
 
 	if (!selected_reduce_aggregator.compare("bucket")) {
 		reducer->aggreg = dynamic_cast<Aggregator*>(new BucketAggregator(cfg,
-					Reduce, 1, NULL, input_file.c_str(), reducer->createPAO, 
-					reducer->destroyPAO, "result"));
+					jobid, Reduce, 1, NULL, input_file.c_str(),
+                    reducer->createPAO, reducer->destroyPAO, "result"));
 	}
 		
 	int sleeptime = BASE_SLEEPTIME;

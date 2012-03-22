@@ -10,10 +10,12 @@
 #include "tbb/task_scheduler_init.h"
 #include "tbb/tbb_allocator.h"
 
+#include "daemon_types.h"
 #include "Defs.h"
 #include "PartialAgg.h"
 #include "util.h"
 
+using namespace workdaemon;
 using namespace libconfig;
 
 enum AggType {Map, Reduce};
@@ -22,6 +24,7 @@ class Aggregator
 {
   public:
 	Aggregator(const Config &cfg,
+            JobID jid,
 			AggType where,
 			uint64_t num_pipelines, 
 			uint64_t num_part, 
@@ -44,6 +47,7 @@ class Aggregator
 	AggType getType() const;
 	virtual bool repeatPipeline(uint64_t it);
   private:
+    JobID jobid;
 	AggType type;
 	uint64_t num_threads;
 	uint64_t num_buffers;
