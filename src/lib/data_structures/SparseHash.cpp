@@ -1,4 +1,5 @@
 #include "SparseHash.h"
+#include <algorithm>
 
 SparseHash::SparseHash(size_t capacity, size_t evictAtTime) :
         capacity_(capacity),
@@ -27,14 +28,13 @@ bool SparseHash::insert(void* key, PartialAgg* value, PartialAgg**& evicted,
         ret = true;
         if (++numElements_ >= capacity_) {
             size_t evictCtr = 0;
-            for (Hash::iterator it=accumulator_.begin(); it != accumulator_.end(); 
-                    it++) {
+            for (Hash::iterator it=accumulator_.begin(); it != accumulator_.end(),
+                    evictCtr < max_evictable; it++) {
                 evicted[evictCtr++] = it->second;
                 assert(it->second != NULL);
                 accumulator_.erase(it);
-                if (evictCtr == max_evictable)
-                    break;
             }
+            accumulator_.resize(0);
             numElements_ -= evictCtr;
             num_evicted = evictCtr;
         } else
