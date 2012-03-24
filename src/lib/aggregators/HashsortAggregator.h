@@ -29,7 +29,6 @@
 #include "SparseHash.h"
 #include "SparseHashFilter.h"
 #include "TokenizerFilter.h"
-#include "UTHashtable.h"
 #include "util.h"
 
 class HashsortAggregator : public Aggregator {
