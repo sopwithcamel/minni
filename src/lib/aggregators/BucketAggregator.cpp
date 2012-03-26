@@ -149,7 +149,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
     strcat(bucket_prefix, "bucket");
 
     bucket_serializer_ = new Serializer(this, num_buckets, 
-            bucket_prefix, destroyPAOFunc);
+            bucket_prefix, createPAOFunc, destroyPAOFunc);
     pipeline_list[0].add_filter(*bucket_serializer_);
     
     /* Second pipeline: In this pipeline, a token is an entire bucket. In
@@ -175,7 +175,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
     strcpy(final_path, fprefix.c_str());
     strcat(final_path, outfile_);
     final_serializer_ = new Serializer(this, getNumPartitions(), 
-            final_path, destroyPAOFunc); 
+            final_path, createPAOFunc, destroyPAOFunc); 
     pipeline_list[1].add_filter(*final_serializer_);
 
     free(bucket_prefix);
