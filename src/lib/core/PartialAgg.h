@@ -1,6 +1,5 @@
-#ifndef PartialAgg_H
-#define PartialAgg_H
-#include <google/protobuf/io/coded_stream.h>
+#ifndef PARTIALAGG_H
+#define PARTIALAGG_H
 #include <string>
 #include <sstream>
 #include <stdlib.h>
@@ -31,20 +30,9 @@ class PartialAgg {
 	virtual ~PartialAgg() {}
     /* Get key */
     virtual const std::string& key() const = 0;
-//    virtual void add(void* val) = 0;
 	virtual void merge(PartialAgg* add_agg) = 0;
-	/* Serialize into file */
-	virtual void serialize(
-            google::protobuf::io::CodedOutputStream* output) const = 0;
-	/* Serialize into string */
-	virtual void serialize(std::string* output) const = 0;
-	/* Deserialize from file */
-	virtual bool deserialize(
-            google::protobuf::io::CodedInputStream* input) = 0;
-	/* Deserialize from buffer */
-	virtual bool deserialize(const std::string& input) = 0;
-	virtual bool deserialize(const char* input, size_t size) = 0;
 	static size_t create(Token*& t, PartialAgg** p_list) { return 0; }
+    virtual bool usesProtobuf() const = 0;
 #ifdef UTHASH
 	UT_hash_handle hh;
 #endif
