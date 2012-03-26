@@ -7,16 +7,23 @@ using namespace google::protobuf::io;
 Serializer::Serializer(Aggregator* agg,
 			const uint64_t nb, 
 			const char* outfile_prefix,
+			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p)) :
 		filter(serial_in_order),
 		aggregator(agg),
 		already_partitioned(false),
 		num_buckets(nb),
 		tokens_processed(0),
+		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc)
 {
 	char num[10];
 	char* fname = (char*)malloc(FILENAME_LENGTH);
+
+    PartialAgg* dummy;
+    createPAO(NULL, &dummy);
+    usesProtobuf_ = dummy->usesProtobuf();
+    destroyPAO(dummy);
 
 	for (int i=0; i<num_buckets; i++) {
 		sprintf(num, "%d", i);
@@ -25,8 +32,10 @@ Serializer::Serializer(Aggregator* agg,
 
         std::ofstream* of = new std::ofstream(fname, ios::out|ios::binary);
         fl_.push_back(of);
-        raw_output_.push_back(new OstreamOutputStream(fl_[i]));
-        coded_output_.push_back(new CodedOutputStream(raw_output_[i]));
+        if (usesProtobuf_) {
+            raw_output_.push_back(new OstreamOutputStream(fl_[i]));
+            coded_output_.push_back(new CodedOutputStream(raw_output_[i]));
+        }
 		assert(NULL != fl_[i]);
 	}
 	free(fname);
@@ -63,7 +72,10 @@ void* Serializer::operator()(void* pao_list)
         pao = pao_l[ind];
         buc = partition(pao->key());	
         assert(pao != NULL);
-        pao->serialize(coded_output_[buc]);
+        if (usesProtobuf_)
+            ((ProtobufPartialAgg*)pao)->serialize(coded_output_[buc]);
+        else
+            ((HandSerializedPartialAgg*)pao)->serialize(fl_[buc]);
         if (recv->destroy_pao)
             destroyPAO(pao);
         ind++;
@@ -74,8 +86,10 @@ void* Serializer::operator()(void* pao_list)
             aggregator->sendNextToken == true) {
 
         for (int i=0; i<num_buckets; i++) {
-            delete coded_output_[i];
-            delete raw_output_[i];
+            if (usesProtobuf_) {
+                delete coded_output_[i];
+                delete raw_output_[i];
+            }
             fl_[i]->close();
             delete fl_[i];
         }

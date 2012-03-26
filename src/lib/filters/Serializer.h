@@ -13,7 +13,8 @@
 #include "tbb/tbb_allocator.h"
 
 #include "Defs.h"
-#include "PartialAgg.h"
+#include "HandSerializedPartialAgg.h"
+#include "ProtobufPartialAgg.h"
 #include "Mapper.h"
 
 /**
@@ -27,14 +28,18 @@ public:
 	Serializer(Aggregator* agg,
 			const uint64_t nb,
 			const char* outfile_prefix, 
+			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p));
 	~Serializer();
 private:
 	Aggregator* aggregator;
 	AggType type;
+	size_t (*createPAO)(Token* t, PartialAgg** p);
 	void (*destroyPAO)(PartialAgg* p);
 	bool already_partitioned;
 	int num_buckets;
+
+    bool usesProtobuf_;
 	std::vector<std::ofstream*> fl_;
     std::vector<google::protobuf::io::ZeroCopyOutputStream*> raw_output_;
     std::vector<google::protobuf::io::CodedOutputStream*> coded_output_;
