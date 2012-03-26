@@ -26,7 +26,6 @@ AC_SYS_LARGEFILE
 # Checks for libraries.
 AC_ARG_WITH([kfs], [AS_HELP_STRING([--with-kfs=DIR], [look for libkfs in DIR])])
 FIND_LIBRARY([kfs], [kfsClient], [KFS::ErrorCodeToStr], [kfs/KfsClient.h], [$with_kfs /usr/local /usr])
-PKG_CHECK_MODULES(TBB, tbb >= 2.1)
 PKG_CHECK_MODULES(THRIFT, thrift >= 0.2.0)
 
 # Checks for header files.
