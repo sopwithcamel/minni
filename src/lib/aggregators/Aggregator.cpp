@@ -23,10 +23,10 @@ Aggregator::Aggregator(const Config &cfg,
 	Setting& c_num_threads = readConfigFile(cfg, "minni.tbb.threads");
 	num_threads = c_num_threads;
 
-	Setting& c_num_buffers = readConfigFile(cfg, "minni.tbb.buffers");
-	num_buffers = c_num_buffers;
+//	Setting& c_num_buffers = readConfigFile(cfg, "minni.tbb.buffers");
 
-	init = new tbb::task_scheduler_init(8);
+	init = new tbb::task_scheduler_init();
+	num_buffers = init->default_num_threads();
 	pipeline_list = new tbb::pipeline[num_pipelines]; 
 }
 
