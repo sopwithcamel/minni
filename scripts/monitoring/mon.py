@@ -2,6 +2,8 @@
 import sys, os, time, signal
 
 pgsize = 4096
+dfs_disk = "sda"
+num_samp = 100
 
 if len(sys.argv) < 2:
   print "What program should I monitor?"
@@ -30,7 +32,11 @@ idle_prev = -1
 signal.signal(signal.SIGINT, sigint_handler)
 signal.signal(signal.SIGUSR1, sigusr1_handler)
 
+i = 0
 while True:
+    i = i + 1
+    if i == num_samp:
+      break
     write_str = ""
     if not os.path.exists("/proc/" + str(pid)):
       fil.close()
@@ -59,6 +65,10 @@ while True:
     inoct = int(nets[7])
     outoct = int(nets[8])
 
+    sys_disk = os.popen("cat /proc/diskstats | grep " + dfs_disk)
+    disku = sys_disk.read().split(" ")[-3]
+    write_str = write_str + ", " + str(int(disku))
+
     if (inoct_prev > 0):
       write_str = write_str + ", " + str(float(inoct - inoct_prev) / 1024**2)
       write_str = write_str + ", " + str(float(outoct - outoct_prev) / 1024**2)
@@ -69,3 +79,6 @@ while True:
     child_mem.close()
     child_net.close()
     time.sleep(1)
+
+    
+    

@@ -21,9 +21,9 @@ print "Map time: ", map_time
 print "Stage 1 time: ", st1_time
 print "Stage 2 time: ", st2_time
 
-os.system("head -n " + str(map_time) + " /localfs/hamur/mon.out " + " | head -n " + str(st1_time) + " > /localfs/hamur/stage1_tim.temp")
-os.system("head -n " + str(map_time) + " /localfs/hamur/mon.out " + " | tail -n " + str(st2_time) + " > /localfs/hamur/stage2_tim.temp")
-os.system("head -n " + str(map_time) + " /localfs/hamur/mon.out > /localfs/hamur/map_tim.temp")
+os.system("head -n " + str(map_time) + sys.argv[1] + " | head -n " + str(st1_time) + " > /localfs/hamur/stage1_tim.temp")
+os.system("head -n " + str(map_time) + sys.argv[1] + " | tail -n " + str(st2_time) + " > /localfs/hamur/stage2_tim.temp")
+os.system("head -n " + str(map_time) + sys.argv[1] " > /localfs/hamur/map_tim.temp")
 tim_file.close()
 
 file1 = open("/localfs/hamur/map_tim.temp")
