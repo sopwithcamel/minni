@@ -92,7 +92,9 @@ minni_include_HEADERS = core/PartialAgg.h \
 			data_structures/SparseHash.h \
 			data_structures/Slaves.h \
 			resources/ElasticObject.h \
-			utils/HashUtil.h
+			utils/HashUtil.h \
+			utils/compsort.h \
+			utils/rle.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 
