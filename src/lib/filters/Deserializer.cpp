@@ -29,6 +29,11 @@ Deserializer::Deserializer(Aggregator* agg,
 			max_keys_per_token);
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 	read_buf = malloc(BUF_SIZE + 1);
+
+    PartialAgg* dummy;
+    createPAO(NULL, &dummy);
+    usesProtobuf_ = dummy->usesProtobuf();
+    destroyPAO(dummy);
 }
 
 Deserializer::~Deserializer()
@@ -71,16 +76,25 @@ void* Deserializer::operator()(void*)
 		ss << buckets_processed++;
 		file_name = file_name + ss.str();
 		cur_bucket = new std::ifstream(file_name.c_str(), ios::in|ios::binary);
-        raw_input = new IstreamInputStream(cur_bucket);
-        coded_input = new CodedInputStream(raw_input);
-        coded_input->SetTotalBytesLimit(1073741824, -1);
+        if (usesProtobuf_) {
+            raw_input = new IstreamInputStream(cur_bucket);
+            coded_input = new CodedInputStream(raw_input);
+            coded_input->SetTotalBytesLimit(1073741824, -1);
+        }
         assert(cur_bucket->is_open());
 		fprintf(stderr, "opening file %s\n", file_name.c_str());
 	}
 
-    while (!coded_input->ExpectAtEnd()) {
+    while (!cur_bucket->eof()) {
         createPAO(NULL, &(this_list[pao_list_ctr]));
-        if (!this_list[pao_list_ctr]->deserialize(coded_input)) {
+        bool ret;
+        if (usesProtobuf_)
+            ret = ((ProtobufPartialAgg*)this_list[
+                    pao_list_ctr])->deserialize(coded_input);
+        else
+            ret = ((HandSerializedPartialAgg*)this_list[
+                    pao_list_ctr])->deserialize(cur_bucket);
+        if (!ret) {
             destroyPAO(this_list[pao_list_ctr]);
             this_list[pao_list_ctr] = NULL;
             break;           
@@ -92,8 +106,10 @@ void* Deserializer::operator()(void*)
     }
 
 	if (cur_bucket->eof()) {
-        delete coded_input;
-        delete raw_input;
+        if (usesProtobuf_) {
+            delete coded_input;
+            delete raw_input;
+        }
 		cur_bucket->close();
         delete cur_bucket;
 		cur_bucket = NULL;

@@ -29,14 +29,6 @@ size_t WordCountPartialAgg::create(Token* t, PartialAgg** p)
 	return 1;
 }
 
-/*
-void WordCountPartialAgg::add(void* v)
-{
-	int val = atoi((char*)v);
-	count += val;
-}
-*/
-
 void WordCountPartialAgg::merge(PartialAgg* add_agg)
 {
 	WordCountPartialAgg* wp = (WordCountPartialAgg*)add_agg;

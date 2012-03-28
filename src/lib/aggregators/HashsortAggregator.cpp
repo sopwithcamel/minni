@@ -118,7 +118,7 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	strcat(unsorted_file, "unsorted");
 
 	serializer = new Serializer(this, 1/*create one unsorted file*/, 
-			unsorted_file, destroyPAOFunc);
+			unsorted_file, createPAOFunc, destroyPAOFunc);
 	pipeline_list[0].add_filter(*serializer);
 
 	/* In the second pipeline, each bucket is sorted using nsort */
@@ -142,7 +142,7 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	strcpy(final_path, fprefix.c_str());
 	strcat(final_path, outfile);
 	final_serializer = new Serializer(this, getNumPartitions(), 
-			final_path, destroyPAOFunc); 
+			final_path, createPAOFunc, destroyPAOFunc); 
 	pipeline_list[2].add_filter(*final_serializer);
 
 	free(final_path);

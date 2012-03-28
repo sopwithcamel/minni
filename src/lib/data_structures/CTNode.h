@@ -7,7 +7,7 @@
 
 #include "Buffer.h"
 #include "CompressTree.h"
-#include "PartialAgg.h"
+#include "ProtobufPartialAgg.h"
 
 #define CALL_MEM_FUNC(object,ptrToMember) ((object).*(ptrToMember))
 
@@ -184,7 +184,7 @@ namespace compresstree {
         /* level in the tree; 0 at leaves and increases upwards */
         uint32_t level_;
         Node* parent_;
-        PartialAgg *lastPAO, *thisPAO;
+        ProtobufPartialAgg *lastPAO, *thisPAO;
 
         /* Pointers to children */
         std::vector<Node*> children_;

@@ -90,7 +90,7 @@ namespace compresstree {
             sorter_->wakeup();
         }
         std::string serialized;
-        agg->serialize(&serialized);
+        ((ProtobufPartialAgg*)agg)->serialize(&serialized);
         bool ret = inputNode_->insert(*(uint64_t*)hash, serialized);
 
 #ifdef ENABLE_EVICTION
@@ -164,7 +164,7 @@ namespace compresstree {
         Buffer::List* l = curLeaf->buffer_.lists_[0];
         hash = (void*)&l->hashes_[lastElement_];
         createPAO_(NULL, &agg);
-        if (!agg->deserialize(l->data_ + lastOffset_,
+        if (!((ProtobufPartialAgg*)agg)->deserialize(l->data_ + lastOffset_,
                 l->sizes_[lastElement_])) {
             fprintf(stderr, "Node: %d; num lists: %d\n", curLeaf->id_, curLeaf->buffer_.lists_.size());
             assert(false);

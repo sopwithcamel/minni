@@ -1,11 +1,11 @@
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include "Mapper.h"
-#include "PartialAgg.h"
+#include "ProtobufPartialAgg.h"
 #include "Tokenizer.h"
 #include "wordcountpao.pb.h"
 
-class WordCountPartialAgg : public PartialAgg {
+class WordCountPartialAgg : public ProtobufPartialAgg {
   public:
 	WordCountPartialAgg(char* wrd);
 	~WordCountPartialAgg();

@@ -14,7 +14,8 @@
 #include "tbb/tbb_allocator.h"
 
 #include "Defs.h"
-#include "PartialAgg.h"
+#include "HandSerializedPartialAgg.h"
+#include "ProtobufPartialAgg.h"
 #include "Mapper.h"
 #include "Util.h"
 
@@ -49,6 +50,7 @@ private:
 	MultiBuffer<FilterInfo>* send;
 	void* read_buf;
 
+    bool usesProtobuf_;
 	std::ifstream *cur_bucket;		// file pointer for current bucket
     google::protobuf::io::ZeroCopyInputStream *raw_input;
     google::protobuf::io::CodedInputStream* coded_input;

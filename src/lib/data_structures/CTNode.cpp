@@ -36,8 +36,8 @@ namespace compresstree {
         pthread_mutex_init(&queuedForEmptyMutex_, NULL);
         pthread_mutex_init(&compActMutex_, NULL);
         pthread_cond_init(&compActCond_, NULL);
-        tree_->createPAO_(NULL, &lastPAO);
-        tree_->createPAO_(NULL, &thisPAO);
+        tree_->createPAO_(NULL, (PartialAgg**)&lastPAO);
+        tree_->createPAO_(NULL, (PartialAgg**)&thisPAO);
 
 #ifdef ENABLE_PAGING
         pthread_mutex_init(&pageMutex_, NULL);
