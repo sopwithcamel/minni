@@ -1,3 +1,4 @@
+#include "config.h"
 #include "Reader.h"
 
 int main(int argc, char* args[])

@@ -1,3 +1,4 @@
+#include "config.h"
 #include "FileTokenizerFilter.h"
 
 FileTokenizerFilter::FileTokenizerFilter(Aggregator* agg, const Config& cfg,

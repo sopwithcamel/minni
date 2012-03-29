@@ -1,3 +1,4 @@
+#include "config.h"
 #include "DFSReader.h"
 #include "Aggregator.h"
 
