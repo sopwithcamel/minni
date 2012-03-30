@@ -7,6 +7,7 @@
 #include <list>
 #include "Neighbor.h"
 #include <math.h>
+#include "wordcountpao.pb.h"
 
 #define cimg_plugin "plugins/jpeg_buffer.h"
 #include "CImg.h"
