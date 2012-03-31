@@ -50,8 +50,13 @@ void WordCountPlain::serialize(boost::archive::binary_oarchive* output) const
 
 bool WordCountPlain::deserialize(boost::archive::binary_iarchive* input)
 {
-    (*input) >> key_;
-    (*input) >> count_;
+    try {
+        (*input) >> key_;
+        (*input) >> count_;
+        return true;
+    } catch (...) {
+        return false;
+    }
 }
 
 REGISTER_PAO(WordCountPlain);
