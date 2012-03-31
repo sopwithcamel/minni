@@ -52,7 +52,8 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
 			-L/usr/lib/tbb \
-			-lltdl -lpthread -ltbb -lconfig++ -lsnappy -lssl -lhoard -lprotobuf
+			-lltdl -lpthread -ltbb -lconfig++ -lsnappy -lssl -lhoard \
+			-lprotobuf -lboost_serialization
 
 minni_includedir = $(includedir)/libminni/libminni
 

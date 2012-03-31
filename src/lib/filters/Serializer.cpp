@@ -22,7 +22,7 @@ Serializer::Serializer(Aggregator* agg,
 
     PartialAgg* dummy;
     createPAO(NULL, &dummy);
-    usesProtobuf_ = dummy->usesProtobuf();
+    serializationMethod_ = dummy->getSerializationMethod();
     destroyPAO(dummy);
 
 	for (int i=0; i<num_buckets; i++) {
@@ -32,9 +32,14 @@ Serializer::Serializer(Aggregator* agg,
 
         std::ofstream* of = new std::ofstream(fname, ios::out|ios::binary);
         fl_.push_back(of);
-        if (usesProtobuf_) {
-            raw_output_.push_back(new OstreamOutputStream(fl_[i]));
-            coded_output_.push_back(new CodedOutputStream(raw_output_[i]));
+        switch (serializationMethod_) {
+            case PartialAgg::PROTOBUF:
+                raw_output_.push_back(new OstreamOutputStream(fl_[i]));
+                coded_output_.push_back(new CodedOutputStream(raw_output_[i]));
+                break;
+            case PartialAgg::BOOST:
+                oa_.push_back(new boost::archive::binary_oarchive(*fl_[i]));
+                break;
         }
 		assert(NULL != fl_[i]);
 	}
@@ -72,10 +77,17 @@ void* Serializer::operator()(void* pao_list)
         pao = pao_l[ind];
         buc = partition(pao->key());	
         assert(pao != NULL);
-        if (usesProtobuf_)
-            ((ProtobufPartialAgg*)pao)->serialize(coded_output_[buc]);
-        else
-            ((HandSerializedPartialAgg*)pao)->serialize(fl_[buc]);
+        switch (serializationMethod_) {
+            case PartialAgg::PROTOBUF:
+                ((ProtobufPartialAgg*)pao)->serialize(coded_output_[buc]);
+                break;
+            case PartialAgg::BOOST:
+                ((BoostPartialAgg*)pao)->serialize(oa_[buc]);
+                break;
+            case PartialAgg::HAND:
+                ((HandSerializedPartialAgg*)pao)->serialize(fl_[buc]);
+                break;
+        }
         if (recv->destroy_pao)
             destroyPAO(pao);
         ind++;
@@ -86,9 +98,14 @@ void* Serializer::operator()(void* pao_list)
             aggregator->sendNextToken == true) {
 
         for (int i=0; i<num_buckets; i++) {
-            if (usesProtobuf_) {
-                delete coded_output_[i];
-                delete raw_output_[i];
+            switch(serializationMethod_) {
+                case PartialAgg::PROTOBUF:
+                    delete coded_output_[i];
+                    delete raw_output_[i];
+                    break;
+                case PartialAgg::BOOST:
+                    delete oa_[i];
+                    break;
             }
             fl_[i]->close();
             delete fl_[i];

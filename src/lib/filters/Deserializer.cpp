@@ -32,7 +32,7 @@ Deserializer::Deserializer(Aggregator* agg,
 
     PartialAgg* dummy;
     createPAO(NULL, &dummy);
-    usesProtobuf_ = dummy->usesProtobuf();
+    serializationMethod_ = dummy->getSerializationMethod();
     destroyPAO(dummy);
 }
 
@@ -76,10 +76,15 @@ void* Deserializer::operator()(void*)
 		ss << buckets_processed++;
 		file_name = file_name + ss.str();
 		cur_bucket = new std::ifstream(file_name.c_str(), ios::in|ios::binary);
-        if (usesProtobuf_) {
-            raw_input = new IstreamInputStream(cur_bucket);
-            coded_input = new CodedInputStream(raw_input);
-            coded_input->SetTotalBytesLimit(1073741824, -1);
+        switch (serializationMethod_) {
+            case PartialAgg::PROTOBUF:
+                raw_input = new IstreamInputStream(cur_bucket);
+                coded_input = new CodedInputStream(raw_input);
+                coded_input->SetTotalBytesLimit(1073741824, -1);
+                break;
+            case PartialAgg::BOOST:
+                ia_ = new boost::archive::binary_iarchive(*cur_bucket);
+                break;
         }
         assert(cur_bucket->is_open());
 		fprintf(stderr, "opening file %s\n", file_name.c_str());
@@ -88,12 +93,20 @@ void* Deserializer::operator()(void*)
     while (!cur_bucket->eof()) {
         createPAO(NULL, &(this_list[pao_list_ctr]));
         bool ret;
-        if (usesProtobuf_)
-            ret = ((ProtobufPartialAgg*)this_list[
-                    pao_list_ctr])->deserialize(coded_input);
-        else
-            ret = ((HandSerializedPartialAgg*)this_list[
-                    pao_list_ctr])->deserialize(cur_bucket);
+        switch (serializationMethod_) {
+            case PartialAgg::PROTOBUF:
+                ret = ((ProtobufPartialAgg*)this_list[
+                        pao_list_ctr])->deserialize(coded_input);
+                break;
+            case PartialAgg::BOOST:
+                ret = ((BoostPartialAgg*)this_list[
+                        pao_list_ctr])->deserialize(ia_);
+                break;
+            case PartialAgg::HAND:
+                ret = ((HandSerializedPartialAgg*)this_list[
+                        pao_list_ctr])->deserialize(cur_bucket);
+                break;
+        }
         if (!ret) {
             destroyPAO(this_list[pao_list_ctr]);
             this_list[pao_list_ctr] = NULL;
@@ -106,9 +119,14 @@ void* Deserializer::operator()(void*)
     }
 
 	if (cur_bucket->eof()) {
-        if (usesProtobuf_) {
-            delete coded_input;
-            delete raw_input;
+        switch (serializationMethod_) {
+            case PartialAgg::PROTOBUF:
+                delete coded_input;
+                delete raw_input;
+                break;
+            case PartialAgg::BOOST:
+                delete ia_;
+                break;
         }
 		cur_bucket->close();
         delete cur_bucket;

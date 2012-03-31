@@ -1,10 +1,11 @@
 #ifndef LIB_SERIALIZER_H
 #define LIB_SERIALIZER_H
 
-#include <stdlib.h>
+#include <boost/archive/binary_oarchive.hpp>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <iostream>
+#include <stdlib.h>
 #include <tr1/unordered_map>
 
 #include "tbb/pipeline.h"
@@ -13,6 +14,7 @@
 #include "tbb/tbb_allocator.h"
 
 #include "Defs.h"
+#include "BoostPartialAgg.h"
 #include "HandSerializedPartialAgg.h"
 #include "ProtobufPartialAgg.h"
 #include "Mapper.h"
@@ -39,10 +41,11 @@ private:
 	bool already_partitioned;
 	int num_buckets;
 
-    bool usesProtobuf_;
+    PartialAgg::SerializationMethod serializationMethod_;
 	std::vector<std::ofstream*> fl_;
     std::vector<google::protobuf::io::ZeroCopyOutputStream*> raw_output_;
     std::vector<google::protobuf::io::CodedOutputStream*> coded_output_;
+    std::vector<boost::archive::binary_oarchive*> oa_;
 	char* outfile_prefix;
 	size_t tokens_processed;
 	void* operator()(void* pao_list);
