@@ -1,3 +1,4 @@
+#include "config.h"
 #include "Reducer.h"
 #include "BucketAggregator.h"
 #include "util.h"

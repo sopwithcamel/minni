@@ -20,6 +20,9 @@ long LEN;
 long REPEAT_FACTOR;
 /* Config ends */
 
+#define USAGE "%s <Number of unique keys> <Key repitition factor> " \
+              "<Length of a key in bytes> <Random file name>\n"
+
 #define CONV_26(x)      x * log(2)/log(26)
 
 char** fillers;
@@ -49,16 +52,16 @@ void gen_fillers(int fillen)
 
 int main(int argc, char* argv[])
 {
-        if (argc < 4) {
-                cout << "Insufficient arguments. Exiting..." << endl;
-                exit(1);
+        if (argc < 5) {
+                fprintf(stdout, USAGE, argv[0]);
+                exit(EXIT_FAILURE);
         }
 
         UNIQ_KEYS = atoi(argv[1]);
         REPEAT_FACTOR = atoi(argv[2]);
         LEN = atoi(argv[3]);
 
-        FILE* f = fopen("/mnt/hamur/randinput.txt", "w");
+        FILE* f = fopen(argv[4], "w");
         int i = 0, k = 0;
         char* word = (char*)malloc(LEN + 1);
         char* filler = (char*)malloc(LEN + 1);

@@ -1,3 +1,4 @@
+#include "config.h"
 #include "Deserializer.h"
 
 using namespace google::protobuf::io;

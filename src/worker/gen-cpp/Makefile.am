@@ -44,4 +44,5 @@ workdaemon_LDFLAGS = $(TBB_LIBS) \
 		     -lpthread \
 		     -lconfig++ \
 			 -lhoard \
+			 -ltbb \
 			 -lprotobuf

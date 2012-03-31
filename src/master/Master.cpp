@@ -1,3 +1,4 @@
+#include "config.h"
 #include "Master.h"
 
 void printInputFiles(vector<string> vec)

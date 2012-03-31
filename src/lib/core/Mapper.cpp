@@ -1,3 +1,4 @@
+#include "config.h"
 #include "Mapper.h"
 
 #include "BucketAggregator.h"
