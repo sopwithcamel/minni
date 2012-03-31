@@ -10,7 +10,7 @@ class ProtobufPartialAgg : public PartialAgg {
 	ProtobufPartialAgg() {}
 	virtual ~ProtobufPartialAgg() {}
 
-    bool usesProtobuf() const { return true; }
+    virtual SerializationMethod getSerializationMethod() const { return PROTOBUF; }
 
 	/* serialize into file */
 	virtual void serialize(
