@@ -45,11 +45,6 @@ void* CompressTreeInserter::operator()(void* recv)
     size_t numEvicted = 0;
     size_t evict_list_ctr = 0;
 
-    unsigned char md_value[EVP_MAX_MD_SIZE];                                                                      
-    unsigned char md_trunc[64];                                                                                   
-    EVP_MD_CTX mdctx;
-    unsigned int md_len;
-
     while (ind < recv_length) {
         pao = pao_l[ind];
         hashv = HashUtil::MurmurHash(pao->key(), pao->key().size()); 

@@ -19,7 +19,7 @@ namespace compresstree {
         createPAO_(createPAOFunc),
         destroyPAO_(destroyPAOFunc),
         alg_(SNAPPY),
-        allFlush_(false),
+        allFlush_(true),
         lastLeafRead_(0),
         lastOffset_(0),
         lastElement_(0),
@@ -166,8 +166,8 @@ namespace compresstree {
         createPAO_(NULL, &agg);
         if (!((ProtobufPartialAgg*)agg)->deserialize(l->data_ + lastOffset_,
                 l->sizes_[lastElement_])) {
-            fprintf(stderr, "Node: %d; num lists: %d\n", curLeaf->id_, curLeaf->buffer_.lists_.size());
-            assert(false);
+            // file is empty
+            return false;
         }
         lastOffset_ += l->sizes_[lastElement_];
         lastElement_++;
@@ -218,7 +218,7 @@ namespace compresstree {
         }
         allLeaves_.clear();
         leavesToBeEmptied_.clear();
-        allFlush_ = false;
+        allFlush_ = true;
         lastLeafRead_ = 0;
         lastOffset_ = 0;
         lastElement_ = 0;
