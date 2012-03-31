@@ -42,14 +42,13 @@ void WordCountPlain::merge(PartialAgg* add_agg)
     count_ += wp->count_;
 }
 
-void WordCountPlain::serialize(std::ofstream* output) const
+void WordCountPlain::serialize(boost::archive::binary_oarchive* output) const
 {
-    (*output) << (key_ + " ");
+    (*output) << key_;
     (*output) << count_;
-    (*output) << endl;
 }
 
-bool WordCountPlain::deserialize(std::ifstream* input)
+bool WordCountPlain::deserialize(boost::archive::binary_iarchive* input)
 {
     (*input) >> key_;
     (*input) >> count_;
