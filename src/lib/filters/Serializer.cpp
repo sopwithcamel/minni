@@ -98,6 +98,7 @@ void* Serializer::operator()(void* pao_list)
             aggregator->sendNextToken == true) {
 
         for (int i=0; i<num_buckets; i++) {
+            fl_[i]->close();
             switch(serializationMethod_) {
                 case PartialAgg::PROTOBUF:
                     delete coded_output_[i];
@@ -107,7 +108,6 @@ void* Serializer::operator()(void* pao_list)
                     delete oa_[i];
                     break;
             }
-            fl_[i]->close();
             delete fl_[i];
         }
 

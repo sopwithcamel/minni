@@ -91,7 +91,8 @@ void* Deserializer::operator()(void*)
 		fprintf(stderr, "opening file %s\n", file_name.c_str());
 	}
 
-    while (!cur_bucket->eof()) {
+    bool eof_reached = false;
+    while (true) {
         createPAO(NULL, &(this_list[pao_list_ctr]));
         bool ret;
         switch (serializationMethod_) {
@@ -111,6 +112,7 @@ void* Deserializer::operator()(void*)
         if (!ret) {
             destroyPAO(this_list[pao_list_ctr]);
             this_list[pao_list_ctr] = NULL;
+            eof_reached = true;
             break;           
         }
         pao_list_ctr++;
@@ -119,7 +121,7 @@ void* Deserializer::operator()(void*)
         }
     }
 
-	if (cur_bucket->eof()) {
+	if (eof_reached) {
         switch (serializationMethod_) {
             case PartialAgg::PROTOBUF:
                 delete coded_input;
