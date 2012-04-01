@@ -7,10 +7,12 @@ SparseHashInserter::SparseHashInserter(Aggregator* agg,
         Accumulator* acc,
         size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 		void (*destroyPAOFunc)(PartialAgg* p),
+        int num_part,
 		size_t max_keys) :
     AccumulatorInserter(agg, acc, destroyPAOFunc, max_keys),
     createPAO_(createPAOFunc),
-    next_buffer(0)
+    next_buffer(0),
+    numPartitions_(num_part)
 {
 	uint64_t num_buffers = aggregator_->getNumBuffers();
 	send_ = new MultiBuffer<FilterInfo>(num_buffers, 1);
@@ -22,6 +24,17 @@ SparseHashInserter::~SparseHashInserter()
 {
 	delete evicted_list_;
 	delete send_;
+}
+
+int SparseHashInserter::partition(const std::string& key)
+{
+	int buc, sum = 0;
+	for (int i=0; i<key.size(); i++)
+		sum += key[i];
+	buc = (sum) % numPartitions_;
+	if (buc < 0)
+		buc += numPartitions_;
+	return buc;
 }
 
 void* SparseHashInserter::operator()(void* recv)
@@ -47,13 +60,15 @@ void* SparseHashInserter::operator()(void* recv)
         size_t numEvicted = 0;
         pao = pao_l[ind];
         PartialAgg** l = this_list + evict_list_ctr;
-        bool ret = sh->insert((void*)pao->key().c_str(), pao, l, numEvicted,
-                max_keys_per_token - evict_list_ctr);
-        if (numEvicted > 0) {
-            evict_list_ctr += numEvicted;
+        int p = partition(pao->key());
+        if (p == 0) {
+            bool ret = sh->insert((void*)pao->key().c_str(), pao, l, numEvicted,
+                    max_keys_per_token - evict_list_ctr);
+            if (recv_list->destroy_pao && !ret)
+                destroyPAO(pao);
+        } else {
+            this_list[evict_list_ctr++] = pao;
         }
-        if (recv_list->destroy_pao && !ret)
-            destroyPAO(pao);
         ind++;
     }
     assert(evict_list_ctr <= max_keys_per_token);
