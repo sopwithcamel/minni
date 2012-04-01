@@ -63,27 +63,21 @@ BucketAggregator::BucketAggregator(const Config &cfg,
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
-/*
-        acc_bucket_ = dynamic_cast<Accumulator*>(new 
-                compresstree::CompressTree(2, 8, 1000, createPAOFunc, 
-                destroyPAOFunc));
-*/
         bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
 
     } else if (!intagg.compare("sparsehash")) {
+        Setting& c_num_part = readConfigFile(cfg, "minni.internal.partitions");
+        int num_part = c_num_part;
         acc_internal_ = dynamic_cast<Accumulator*>(new SparseHash(capacity,
                 max_keys_per_token));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 SparseHashInserter(this, acc_internal_, createPAOFunc,
-                destroyPAOFunc, max_keys_per_token));
-/*
-        acc_bucket_ = dynamic_cast<Accumulator*>(new SparseHash(capacity));
-*/
+                destroyPAOFunc, num_part, max_keys_per_token));
         bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 SparseHashInserter(this, acc_internal_, createPAOFunc,
-                destroyPAOFunc, max_keys_per_token));
+                destroyPAOFunc, 1, max_keys_per_token));
 
     } 
 #ifdef UTHASH

@@ -51,11 +51,13 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
                 CompressTreeInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
     } else if (!intagg.compare("sparsehash")) {
+        Setting& c_num_part = readConfigFile(cfg, "minni.internal.partitions");
+        int num_part = c_num_part;
         acc_internal_ = dynamic_cast<Accumulator*>(new SparseHash(capacity,
                 max_keys_per_token));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 SparseHashInserter(this, acc_internal_, createPAOFunc,
-                destroyPAOFunc, max_keys_per_token));
+                destroyPAOFunc, num_part, max_keys_per_token));
     } 
 #ifdef UTHASH
     else if (!intagg.compare("uthash")) {
