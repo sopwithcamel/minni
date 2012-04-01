@@ -57,7 +57,6 @@ void* Deserializer::operator()(void*)
 	FilterInfo* this_send = (*send)[next_buffer];
 	this_send->flush_hash = false;
 	next_buffer = (next_buffer + 1) % num_buffers;
-	aggregator->tot_input_tokens++;
 
     if (!aggregator->sendNextToken) {
         aggregator->sendNextToken = true;
@@ -70,6 +69,7 @@ void* Deserializer::operator()(void*)
 
 	if (aggregator->input_finished)
         return NULL;
+	aggregator->tot_input_tokens++;
 
 	if (!cur_bucket) { // new bucket has to be opened
 		string file_name = inputfile_prefix;
