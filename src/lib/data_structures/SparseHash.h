@@ -36,6 +36,7 @@ class SparseHash :
     bool insert(void* key, PartialAgg* value, PartialAgg**& evicted,
             size_t& num_evicted, size_t max_evictable);
     bool nextValue(void*& key, PartialAgg*& value);
+    size_t getNumElements() const;
   private:
     Hash accumulator_;
     size_t capacity_;

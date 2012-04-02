@@ -51,3 +51,8 @@ bool SparseHash::nextValue(void*& key, PartialAgg*& value)
     numElements_ = 0;
     return false;
 }
+
+size_t SparseHash::getNumElements() const
+{
+    return numElements_;
+}

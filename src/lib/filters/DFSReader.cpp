@@ -43,15 +43,17 @@ void* DFSReader::operator()(void*)
 	FilterInfo* this_send = send[next_buffer];
 	next_chunk = (next_chunk + 1) % aggregator->getNumBuffers();
 
-    if (!aggregator->sendNextToken) {
-        aggregator->sendNextToken = true;
-        this_send->result = NULL;
-        this_send->length = 0;
-        return this_send;
+    if (aggregator->input_finished) {
+        if (aggregator->can_exit)
+            return NULL;
+        else {
+            this_send->result = NULL;
+            this_send->length = 0;
+            // still have to count this as a token
+            aggregator->tot_input_tokens++;
+            return this_send;
+        }
     }
-
-	if (aggregator->input_finished)
-        return NULL;
 	aggregator->tot_input_tokens++;
 
 	if (0 >= rem_buffer_size) {
@@ -69,7 +71,6 @@ void* DFSReader::operator()(void*)
 
 	if (id > input->chunk_id_end && rem_buffer_size <= 0) {
 		aggregator->input_finished = true;
-        aggregator->sendNextToken = true;
 	}
 	this_send->result = this_chunk;
 	this_send->length = 1;

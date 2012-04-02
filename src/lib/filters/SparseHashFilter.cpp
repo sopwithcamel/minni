@@ -78,16 +78,15 @@ void* SparseHashInserter::operator()(void* recv)
         uint64_t hash;
         void* ptrToHash = (void*)&hash;
         bool remain;
-        if (evict_list_ctr == max_keys_per_token) {
-            aggregator_->sendNextToken = false; // i'm not done yet!
-            goto ship_tokens;
-        }
-        while(sh->nextValue(ptrToHash, this_list[evict_list_ctr])) {
-            evict_list_ctr++;
-            if (evict_list_ctr == max_keys_per_token) {
-                aggregator_->sendNextToken = false; // i'm not done yet!
+        while(true) {
+            if (evict_list_ctr == max_keys_per_token)
+                break;
+            remain = sh->nextValue(ptrToHash, this_list[evict_list_ctr]);
+            if (!remain) {
+                aggregator_->can_exit = true;
                 break;
             }
+            evict_list_ctr++;
         }
 	}
 ship_tokens:

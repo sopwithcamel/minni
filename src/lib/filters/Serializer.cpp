@@ -93,9 +93,13 @@ void* Serializer::operator()(void* pao_list)
         ind++;
     }
 
+    /* The first condition checks that the first stage has processed
+     * all input. The second checks that all the tokens have arrived
+     * at this, the last stage. The third checks that no stage in the
+     * middle has any data left to send */
     if (aggregator->input_finished && 
-            tokens_processed == aggregator->tot_input_tokens &&
-            aggregator->sendNextToken == true) {
+            tokens_processed == aggregator->tot_input_tokens  &&
+            aggregator->can_exit == true) {
 
         for (int i=0; i<num_buckets; i++) {
             fl_[i]->close();

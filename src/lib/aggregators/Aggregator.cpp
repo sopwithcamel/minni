@@ -15,7 +15,7 @@ Aggregator::Aggregator(const Config &cfg,
 		num_pipelines(num_pipelines),
 		num_partitions(num_part),
 		input_finished(false),
-        sendNextToken(true),
+        can_exit(false),
 		tot_input_tokens(0),
 		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc)
@@ -27,6 +27,7 @@ Aggregator::Aggregator(const Config &cfg,
 
 	init = new tbb::task_scheduler_init();
 	num_buffers = init->default_num_threads();
+    fprintf(stderr, "Number of threads: %d\n", num_buffers);
 	pipeline_list = new tbb::pipeline[num_pipelines]; 
 }
 
@@ -55,7 +56,7 @@ void Aggregator::runPipeline()
 void Aggregator::resetFlags()
 {
 	input_finished = false;
-    sendNextToken = true;
+    can_exit = false;
 	tot_input_tokens = 0;
 }
 

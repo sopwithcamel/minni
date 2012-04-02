@@ -71,8 +71,8 @@ void* Hasher::operator()(void* recv)
         size_t num_evicted;
         bool evictDone = hashtable->evictAll(this_list + evict_list_ctr, 
                 num_evicted, max_keys_per_token - evict_list_ctr);
-        if (!evictDone) {
-            aggregator->sendNextToken = false; // i'm not done yet!
+        if (evictDone) {
+            aggregator->can_exit = true; // i'm done now!
         }
         evict_list_ctr += num_evicted;
 	}
