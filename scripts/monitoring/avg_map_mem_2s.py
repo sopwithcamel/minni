@@ -1,5 +1,4 @@
-#!/usr/bin/python
-import glob, os.path, os, numpy
+import glob, os.path, os, numpy, sys
 
 tim_file = open("/localfs/hamur/timelog")
 
@@ -21,9 +20,9 @@ print "Map time: ", map_time
 print "Stage 1 time: ", st1_time
 print "Stage 2 time: ", st2_time
 
-os.system("head -n " + str(map_time) + sys.argv[1] + " | head -n " + str(st1_time) + " > /localfs/hamur/stage1_tim.temp")
-os.system("head -n " + str(map_time) + sys.argv[1] + " | tail -n " + str(st2_time) + " > /localfs/hamur/stage2_tim.temp")
-os.system("head -n " + str(map_time) + sys.argv[1] " > /localfs/hamur/map_tim.temp")
+os.system("head -n " + str(map_time) + " " + sys.argv[1] + " | head -n " + str(st1_time) + " > /localfs/hamur/stage1_tim.temp")
+os.system("head -n " + str(map_time) + " " + sys.argv[1] + " | tail -n " + str(st2_time) + " > /localfs/hamur/stage2_tim.temp")
+os.system("head -n " + str(map_time) + " " + sys.argv[1] + " > /localfs/hamur/map_tim.temp")
 tim_file.close()
 
 file1 = open("/localfs/hamur/map_tim.temp")
@@ -38,10 +37,16 @@ print "Map CPU: ", numpy.mean(cpu)
 
 file2 = open("/localfs/hamur/stage1_tim.temp")
 mem = []
+disk_read = []
+disk_write = []
 for line in file2:
   line = line.split(",")
   mem.append(float(line[0]))
+  disk_read.append(float(line[2]))
+  disk_write.append(float(line[3]))
 print "Stage 1 memory: ", numpy.mean(mem)
+print "Stage 1 disk read: ", numpy.mean(disk_read)
+print "Stage 1 disk write: ", numpy.mean(disk_write)
 
 file3 = open("/localfs/hamur/stage2_tim.temp")
 mem = []

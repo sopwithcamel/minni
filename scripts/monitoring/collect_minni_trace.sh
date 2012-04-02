@@ -19,6 +19,8 @@ sleep 10
 echo "Starting master..."
 ./run_master.sh &
 
+sleep 30
+
 #Start monitoring scripts
 echo "Starting monitoring scripts..."
 ./mon.py `pgrep workdaemon` $tempfiles"/mon.out"

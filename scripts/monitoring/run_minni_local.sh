@@ -17,11 +17,11 @@ echo "Starting workdaemons..."
 sleep 10
 #Start master
 echo "Starting master..."
-./run_master.sh
+./run_master.sh &
 
 #Start monitoring scripts
-#echo "Starting monitoring scripts..."
-./mon.py `pgrep workdaemon` $tempfiles"/mon.out" &
+echo "Starting monitoring scripts..."
+./mon.py `pgrep workdaemon` $tempfiles"/mon.out"
 
 echo "Map Statistics" 
 ./avg_map_mem_2s.py $tempfiles"/mon.out"
