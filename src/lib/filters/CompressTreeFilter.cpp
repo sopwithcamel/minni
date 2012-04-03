@@ -48,7 +48,17 @@ void* CompressTreeInserter::operator()(void* recv)
     while (ind < recv_length) {
         pao = pao_l[ind];
         hashv = HashUtil::MurmurHash(pao->key(), pao->key().size()); 
-
+/*
+        std::string k = pao->key();
+        hashv &= 0xFFFF;
+        uint32_t let = 0;
+        let = k[0];
+        let <<= 8;
+        let |= k[1];
+        let <<=16;
+        let |= hashv;
+        hashv = let;
+*/
         ptrToHash = (void*)&hashv;
         PartialAgg** l = this_list + evict_list_ctr;
         ct->insert(ptrToHash, pao, l, numEvicted,
@@ -65,15 +75,15 @@ void* CompressTreeInserter::operator()(void* recv)
         uint64_t hash;
         void* ptrToHash = (void*)&hash;
         bool remain;
-        while(ct->nextValue(ptrToHash, this_list[evict_list_ctr++])) {
+        while(true) {
             if (evict_list_ctr == max_keys_per_token)
                 break;
             remain = ct->nextValue(ptrToHash, this_list[evict_list_ctr]);
-            evict_list_ctr++;
             if (!remain) {
                 aggregator_->can_exit = true;
                 break;
             }
+            evict_list_ctr++;
         }
 	}
 

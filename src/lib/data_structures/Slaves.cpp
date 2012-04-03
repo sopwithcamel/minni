@@ -103,7 +103,7 @@ namespace compresstree {
                 if (n->isRoot())
                     rootFlag = true;
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "emptier: emptying node: %d\t", n->id_);
+                fprintf(stderr, "emptier: emptying node: %d (size: %u)\t", n->id_, n->buffer_.numElements());
                 fprintf(stderr, "remaining: ");
                 queue_.printElements();
 #endif
@@ -174,7 +174,7 @@ namespace compresstree {
         }
         pthread_mutex_unlock(&queueMutex_);
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node %d added to to-empty list: ", node->id_);
+        fprintf(stderr, "Node %d (size: %u) added to to-empty list: ", node->id_, node->buffer_.numElements());
         queue_.printElements();
 #endif
     }
@@ -271,7 +271,7 @@ namespace compresstree {
             pthread_mutex_lock(&queueMutex_);
             nodes_.push_front(node);
 #ifdef CT_NODE_DEBUG
-            fprintf(stderr, "adding node %d to decompress: ", node->id_);
+            fprintf(stderr, "adding node %d (size: %u) to decompress: ", node->id_, node->buffer_.numElements());
             printElements();
 #endif
         }
@@ -311,14 +311,14 @@ namespace compresstree {
                 Node* n = nodes_.front();
                 nodes_.pop_front();
                 pthread_mutex_unlock(&queueMutex_);
+                n->waitForCompressAction(Node::DECOMPRESS);
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "sorter: sorting node: %d\t", n->id_);
+                fprintf(stderr, "sorter: sorting node: %d (size: %u)\t", n->id_, n->buffer_.numElements());
                 fprintf(stderr, "remaining: ");
                 for (int i=0; i<nodes_.size(); i++)
                     fprintf(stderr, "%d, ", nodes_[i]->id_);
                 fprintf(stderr, "\n");
 #endif
-                n->waitForCompressAction(Node::DECOMPRESS);
                 if (n->isRoot())
                     n->sortBuffer();
                 else {

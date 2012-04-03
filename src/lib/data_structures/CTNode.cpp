@@ -114,9 +114,9 @@ namespace compresstree {
     bool Node::emptyOrCompress()
     {
         if (tree_->emptyType_ == ALWAYS || isFull()) {
+            CALL_MEM_FUNC(*this, decompress)();
             tree_->sorter_->addNode(this);
             tree_->sorter_->wakeup();
-            CALL_MEM_FUNC(*this, decompress)();
         } else {
             CALL_MEM_FUNC(*this, compress)();
         }
@@ -217,7 +217,6 @@ namespace compresstree {
                 // copy elements into child
                 children_[curChild]->copyIntoBuffer(l, lastElement,
                         curElement - lastElement);
-                children_[curChild]->emptyOrCompress();
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Copied %u elements into node %d; \
                         sep: %u\n",
@@ -225,6 +224,7 @@ namespace compresstree {
                         children_[curChild]->id_,
                         children_[curChild]->separator_);
 #endif
+                children_[curChild]->emptyOrCompress();
                 curChild++;
             }
             // empty or compress any remaining children
@@ -454,7 +454,7 @@ namespace compresstree {
                 std::vector<Node::MergeElement>,
                 MergeComparator> queue;
 
-        if (buffer_.lists_.size() == 1)
+        if (buffer_.lists_.size() == 1 || buffer_.empty())
             return true;
 
         // initialize aux buffer
@@ -467,8 +467,11 @@ namespace compresstree {
         // Load each of the list heads into the priority queue
         // keep track of offsets for possible deserialization
         for (int i=0; i<buffer_.lists_.size(); i++) {
-            Node::MergeElement* mge = new Node::MergeElement(buffer_.lists_[i]);
-            queue.push(*mge);
+            if (buffer_.lists_[i]->num_ > 0) {
+                Node::MergeElement* mge = new Node::MergeElement(
+                        buffer_.lists_[i]);
+                queue.push(*mge);
+            }
         }
 
         while (!queue.empty()) {
@@ -483,6 +486,10 @@ namespace compresstree {
                     (void*)n.data(), buf_size);
             a->size_ += buf_size;
             a->num_++;
+            if (a->num_ >= MAX_ELS_PER_BUFFER) {
+                fprintf(stderr, "Num elements: %u\n", a->num_);
+                assert(false);
+            }
 
             // increment n pointer and re-insert n into prioQ
             if (n.next())
@@ -501,6 +508,8 @@ namespace compresstree {
 
     bool Node::aggregateMergedBuffer()
     {
+        if (buffer_.empty())
+            return true;
         // initialize aux buffer
         Buffer aux;
         Buffer::List* a = aux.addList();
@@ -889,7 +898,6 @@ namespace compresstree {
                 // latest added list
                 Buffer::List* cl = 
                         compressed.lists_[compressed.lists_.size()-1];
-/*
                 snappy::RawCompress((const char*)l->hashes_, 
                         l->num_ * sizeof(uint32_t), 
                         (char*)cl->hashes_,
@@ -898,11 +906,12 @@ namespace compresstree {
                         l->num_ * sizeof(uint32_t), 
                         (char*)cl->sizes_,
                         &l->c_sizelen_);
-*/
+/*
                 compsort::compress(l->hashes_, l->num_,
                         cl->hashes_, (uint32_t&)l->c_hashlen_);
                 rle::encode(l->sizes_, l->num_, cl->sizes_,
                         (uint32_t&)l->c_sizelen_);
+*/
                 snappy::RawCompress(l->data_, l->size_, 
                         cl->data_, 
                         &l->c_datalen_);
@@ -935,17 +944,17 @@ namespace compresstree {
                 // latest added list
                 Buffer::List* l =
                         decompressed.lists_[decompressed.lists_.size()-1];
-/*
                 snappy::RawUncompress((const char*)cl->hashes_, 
                         cl->c_hashlen_, (char*)l->hashes_);
                 snappy::RawUncompress((const char*)cl->sizes_, 
                         cl->c_sizelen_, (char*)l->sizes_);
-*/
+/*
                 uint32_t siz;
                 compsort::decompress(cl->hashes_, (uint32_t)cl->c_hashlen_,
                         l->hashes_, siz);
                 rle::decode(cl->sizes_, (uint32_t)cl->c_sizelen_,
                         l->sizes_, siz);
+*/
                 snappy::RawUncompress(cl->data_, cl->c_datalen_,
                         l->data_);
                 cl->deallocate();
