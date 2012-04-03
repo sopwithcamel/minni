@@ -58,20 +58,24 @@ while True:
       this_busy = busy - busy_prev
 #      this_idle = idle - idle_prev 
       write_str = write_str + ", " + str(this_busy) #str(float(this_busy) / (this_busy + this_idle))
+      fil.writelines(write_str + "\n")
     busy_prev = busy
 #    idle_prev = idle  
 
-    sys_disk = os.popen("cat /proc/diskstats | grep " + dfs_disk)
-    sys_disk = sys_disk.read().split()
-    num_reads = int(sys_disk[3])
-    num_writes = int(sys_disk[7])
-    if reads_prev > 0:
-      reads_now = num_reads - reads_prev
-      writes_now = num_writes - writes_prev
-      write_str = write_str + ", " + str(reads_now) + ", " + str(writes_now)
-      fil.writelines(write_str + "\n")
-    reads_prev = num_reads
-    writes_prev = num_writes
+#    pidd = os.popen("pidstat -p `pgrep chunkserver` -d -t")
+#    pidd.readline()
+#    pidd.readline()
+#    pidd.readline()
+#    sys_disk = pidd.readline().split()
+#    num_reads = float(sys_disk[4])
+#    num_writes = float(sys_disk[5])
+#    print sys_disk, num_reads, num_writes
+#    if reads_prev > 0:
+#      reads_now = num_reads - reads_prev
+#      writes_now = num_writes - writes_prev
+#      write_str = write_str + ", " + str(reads_now) + ", " + str(writes_now)
+#    reads_prev = num_reads
+#    writes_prev = num_writes
 
 
 #    child_net = os.popen("cat /proc/" + str(pid) + "/net/netstat | grep IpExt")

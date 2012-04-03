@@ -8,7 +8,7 @@ tempfiles=/localfs/hamur/
 
 # Clear old files
 echo "Clearing old files..."
-rm -f $tempfiles"/*"
+rm -f /localfs/hamur/*
 
 # Start workdaemons
 echo "Starting workdaemons..."
@@ -21,8 +21,10 @@ echo "Starting master..."
 
 #Start monitoring scripts
 echo "Starting monitoring scripts..."
+pidstat -p `pgrep chunkserver` -d -t 1 > $tempfiles"/disk.out" &
 ./mon.py `pgrep workdaemon` $tempfiles"/mon.out"
 
 echo "Map Statistics" 
 ./avg_map_mem_2s.py $tempfiles"/mon.out"
+./avg_diskstats_2s.py $tempfiles"/disk.out"
 

@@ -42,12 +42,7 @@ disk_write = []
 for line in file2:
   line = line.split(",")
   mem.append(float(line[0]))
-  disk_read.append(float(line[2]))
-  disk_write.append(float(line[3]))
 print "Stage 1 memory: ", numpy.mean(mem)
-print "Stage 1 disk read: ", numpy.mean(disk_read)
-print "Stage 1 disk write: ", numpy.mean(disk_write)
-
 file3 = open("/localfs/hamur/stage2_tim.temp")
 mem = []
 for line in file3:
