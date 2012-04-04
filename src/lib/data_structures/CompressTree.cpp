@@ -54,6 +54,7 @@ namespace compresstree {
         pthread_barrier_destroy(&threadsBarrier_);
     }
 
+#ifdef ENABLE_ROOT_DOUBLE_BUF
     bool CompressTree::insert(void* hash, PartialAgg* agg, PartialAgg**& evicted,
             size_t& num_evicted, size_t max_evictable)
     {
@@ -119,9 +120,72 @@ namespace compresstree {
             evictedBufferOffset_ = 0;
         }
         pthread_mutex_unlock(&evictedBufferMutex_);
-#endif
+#endif //ENABLE_EVICTION
         return ret;
     }
+#else // ENABLE_ROOT_DOUBLE_BUF
+
+    bool CompressTree::insert(void* hash, PartialAgg* agg, PartialAgg**& evicted,
+            size_t& num_evicted, size_t max_evictable)
+    {
+        // copy buf into root node buffer
+        // root node buffer always decompressed
+        allFlush_ = false;
+        if (!threadsStarted_) {
+            startThreads();
+        }
+        pthread_mutex_lock(&rootNodeAvailableMutex_);
+        if (rootNode_->isFull()) {
+            pthread_mutex_unlock(&rootNodeAvailableMutex_);
+            sorter_->addNode(rootNode_);
+            sorter_->wakeup();
+            pthread_mutex_lock(&rootNodeAvailableMutex_);
+            while (rootNode_->isFull()) {
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "inserter sleeping\n");
+#endif
+                pthread_cond_wait(&rootNodeAvailableForWriting_,
+                        &rootNodeAvailableMutex_);
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "inserter fingered\n");
+#endif
+            }
+        }
+        std::string serialized;
+        ((ProtobufPartialAgg*)agg)->serialize(&serialized);
+        bool ret = rootNode_->insert(*(uint64_t*)hash, serialized);
+        pthread_mutex_unlock(&rootNodeAvailableMutex_);
+
+#ifdef ENABLE_EVICTION
+        // check if any elements were evicted and pick those up
+        // returns non-zero if unsucc.
+        if (pthread_mutex_trylock(&evictedBufferMutex_)) {
+            num_evicted = 0;
+            return ret; 
+        }
+        num_evicted = numEvicted_;
+        if (numEvicted_ > 0) {
+            char* buf = evictedBuffer_;
+            size_t offset = 0;
+            size_t* bufSize;
+            fprintf(stderr, "Evicting %lu elements\n", numEvicted_);
+            PartialAgg* p;
+            for (uint32_t i=0; i<numEvicted_; i++) {
+                createPAO_(NULL, &p);
+                rootNode_->deserializePAO((uint64_t*)(buf + offset), p);
+                evicted[i] = p;
+                offset += sizeof(uint64_t);
+                bufSize = (size_t*)(buf + offset);
+                offset += sizeof(size_t) + *bufSize;
+            }
+            numEvicted_ = 0;
+            evictedBufferOffset_ = 0;
+        }
+        pthread_mutex_unlock(&evictedBufferMutex_);
+#endif //ENABLE_EVICTION
+        return ret;
+    }
+#endif // ENABLE_ROOT_DOUBLE_BUF
 
     bool CompressTree::nextValue(void*& hash, PartialAgg*& agg)
     {
@@ -240,12 +304,13 @@ namespace compresstree {
         pthread_mutex_unlock(&rootNodeAvailableMutex_);
         // root node is now empty
         emptyType_ = ALWAYS;
-
+#ifdef ENABLE_ROOT_DOUBLE_BUF
         // switch buffers
         Buffer temp = rootNode_->buffer_;
         rootNode_->buffer_ = inputNode_->buffer_;
         inputNode_->buffer_ = temp;
         temp.clear();
+#endif
 
         sorter_->addNode(rootNode_);
         sorter_->wakeup();
@@ -340,10 +405,12 @@ namespace compresstree {
         rootNode_->separator_ = UINT32_MAX;
         rootNode_->setCompressible(false);
 
+#ifdef ENABLE_ROOT_DOUBLE_BUF
         inputNode_ = new Node(this, 0);
         inputNode_->buffer_.addList();
         inputNode_->separator_ = UINT32_MAX;
         inputNode_->setCompressible(false);
+#endif
         
 #ifdef ENABLE_EVICTION
         // buffer for holding evicted values
@@ -389,7 +456,9 @@ namespace compresstree {
     void CompressTree::stopThreads()
     {
         void* status;
+#ifdef ENABLE_ROOT_DOUBLE_BUF
         delete inputNode_;
+#endif
 
         sorter_->setInputComplete(true);
         sorter_->wakeup();
