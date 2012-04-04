@@ -64,8 +64,8 @@ namespace compresstree {
 
     void Buffer::delList(uint32_t ind)
     {
-        // erase calls list destructor which deallocates
         if (ind < lists_.size()) {
+            delete lists_[ind];
             lists_.erase(lists_.begin() + ind);
         }
     }

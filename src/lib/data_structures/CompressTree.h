@@ -8,8 +8,8 @@
 #include "Accumulator.h"
 #include "PartialAgg.h"
 
-#define ENABLE_ASSERT_CHECKS
-#define CT_NODE_DEBUG
+//#define ENABLE_ASSERT_CHECKS
+//#define CT_NODE_DEBUG
 //#define ENABLE_INTEGRITY_CHECK
 //#define ENABLE_COUNTERS
 /* broken */

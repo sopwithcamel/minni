@@ -632,7 +632,6 @@ namespace compresstree {
         // copy the first half into another list in this buffer and delete
         // the original list
         copyIntoBuffer(l, 0, splitIndex);
-        buffer_.delList(0);
         separator_ = l->hashes_[splitIndex];
 
         // check integrity of both leaves
@@ -644,6 +643,9 @@ namespace compresstree {
                 l->size_, newLeaf->buffer_.lists_[0]->size_, separator_, 
                 newLeaf->separator_);
 #endif
+        // delete the old list
+        buffer_.delList(0);
+        l = NULL;
 
         // if leaf is also the root, create new root
         if (isRoot()) {
