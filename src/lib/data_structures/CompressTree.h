@@ -8,6 +8,10 @@
 #include "Accumulator.h"
 #include "PartialAgg.h"
 
+/*Optimizations */
+//#define PRIORITIZE_DECOMPRESSION
+//#define PRIORITIZE_HIGH_NODES_FOR_EMPTY
+
 //#define ENABLE_ASSERT_CHECKS
 //#define CT_NODE_DEBUG
 //#define ENABLE_INTEGRITY_CHECK

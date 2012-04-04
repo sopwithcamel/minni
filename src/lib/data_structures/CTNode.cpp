@@ -463,7 +463,7 @@ namespace compresstree {
         if (buffer_.numElements() < MAX_ELS_PER_BUFFER)
             a = aux.addList();
         else
-            a = aux.addList(/*large buffer=*/true);
+            a = aux.addList(/*isLarge=*/true);
 
         // track number of PAOs that have been merged with lastPAO
         uint32_t numMerged = 0;
@@ -515,6 +515,7 @@ namespace compresstree {
     {
         if (buffer_.empty())
             return true;
+        assert(buffer_.lists_.size() == 1);
         // initialize aux buffer
         Buffer aux;
         Buffer::List* a;

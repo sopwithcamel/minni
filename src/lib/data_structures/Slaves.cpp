@@ -155,11 +155,19 @@ namespace compresstree {
     {
         pthread_mutex_lock(&queueMutex_);
         if (node) {
+#ifdef PRIORITIZE_HIGH_NODES_FOR_EMPTY
             queue_.insert(node, node->level());
+#else
+            queue_.insert(node, 1);
+#endif
             queueEmpty_ = false;
 
             std::deque<Node*> depNodes;
+#ifdef PRIORITIZE_HIGH_NODES_FOR_EMPTY
             uint32_t prio = node->level();
+#else
+            uint32_t prio = 1;
+#endif
             depNodes.push_back(node);
             while (!depNodes.empty()) {
                 Node* t = depNodes.front();
@@ -269,7 +277,11 @@ namespace compresstree {
         } else {
             pthread_mutex_unlock(&node->compActMutex_);
             pthread_mutex_lock(&queueMutex_);
+#ifdef PRIORITIZE_DECOMPRESSION
             nodes_.push_front(node);
+#else
+            nodes_.push_back(node);
+#endif
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "adding node %d (size: %u) to decompress: ", node->id_, node->buffer_.numElements());
             printElements();
