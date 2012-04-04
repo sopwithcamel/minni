@@ -114,11 +114,19 @@ namespace compresstree {
                     tree_->pager_->pageIn(n->children_[i]);
 #endif
                 }        
+#ifdef STRUCTURE_BUFFER
                 if (n->isRoot())
                     n->aggregateSortedBuffer();
                 else {
                     n->aggregateMergedBuffer();
                 }
+#else
+                for (int i=0; i<n->children_.size(); i++) {
+                    CALL_MEM_FUNC(*n->children_[i],
+                            n->children_[i]->decompress)();
+                }
+                n->aggregateSortedBuffer();
+#endif
                 // check if aggregation made the node small enough
                 if (!n->isFull() && !n->isRoot() && 
                         tree_->emptyType_ != ALWAYS) {
@@ -331,11 +339,15 @@ namespace compresstree {
                     fprintf(stderr, "%d, ", nodes_[i]->id_);
                 fprintf(stderr, "\n");
 #endif
+#ifdef STRUCTURE_BUFFER
                 if (n->isRoot())
                     n->sortBuffer();
                 else {
                     n->mergeBuffer();
                 }
+#else
+                n->sortBuffer();
+#endif
                 tree_->emptier_->addNode(n);
                 tree_->emptier_->wakeup();
                 pthread_mutex_lock(&queueMutex_);

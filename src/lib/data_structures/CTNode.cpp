@@ -114,7 +114,9 @@ namespace compresstree {
     bool Node::emptyOrCompress()
     {
         if (tree_->emptyType_ == ALWAYS || isFull()) {
+#ifndef STRUCTURE_BUFFER
             CALL_MEM_FUNC(*this, decompress)();
+#endif
             tree_->sorter_->addNode(this);
             tree_->sorter_->wakeup();
         } else {
@@ -181,6 +183,9 @@ namespace compresstree {
                      */
                     if (curElement > lastElement) {
                         // copy elements into child
+#ifndef STRUCTURE_BUFFER
+                        children_[curChild]->waitForCompressAction(DECOMPRESS);
+#endif
                         children_[curChild]->copyIntoBuffer(l, lastElement,
                                 curElement - lastElement);
 #ifdef CT_NODE_DEBUG
@@ -215,6 +220,9 @@ namespace compresstree {
             // copy remaining elements into child
             if (curElement >= lastElement) {
                 // copy elements into child
+#ifndef STRUCTURE_BUFFER
+                children_[curChild]->waitForCompressAction(DECOMPRESS);
+#endif
                 children_[curChild]->copyIntoBuffer(l, lastElement,
                         curElement - lastElement);
 #ifdef CT_NODE_DEBUG
@@ -376,8 +384,11 @@ namespace compresstree {
             if (l->hashes_[i] == l->hashes_[lastIndex]) {
                 // aggregate elements
                 if (i == lastIndex + 1) {
-                    assert(lastPAO->deserialize(perm_[lastIndex], 
-                            l->sizes_[i]));
+                    if (!lastPAO->deserialize(perm_[lastIndex], 
+                            l->sizes_[i])) {
+                        fprintf(stderr, "Error at index %u\n", lastIndex);
+                        assert(false);
+                    }
                 }
                 assert(thisPAO->deserialize(perm_[i], l->sizes_[i]));
                 if (!thisPAO->key().compare(lastPAO->key())) {
@@ -629,10 +640,18 @@ namespace compresstree {
         newLeaf->separator_ = separator_;
 
         // modify this leaf properties
-
+#ifndef STRUCTURE_BUFFER
+        uint32_t offset = 0;
+        for (uint32_t i=0; i<splitIndex; i++) {
+            offset += l->sizes_[i];
+        }
+        l->size_ = offset;
+        l->num_ = splitIndex;
+#else
         // copy the first half into another list in this buffer and delete
         // the original list
         copyIntoBuffer(l, 0, splitIndex);
+#endif
         separator_ = l->hashes_[splitIndex];
 
         // check integrity of both leaves
@@ -658,6 +677,7 @@ namespace compresstree {
         return newLeaf;
     }
 
+#ifdef STRUCTURE_BUFFER
     bool Node::copyIntoBuffer(Buffer::List* parent_list, uint32_t index, 
             uint32_t num)
     {
@@ -689,6 +709,42 @@ namespace compresstree {
         l->size_ = num_bytes;
         return true;
     }
+#else
+    bool Node::copyIntoBuffer(Buffer::List* parent_list, uint32_t index, 
+            uint32_t num)
+    {
+        Buffer::List* l;
+        if (buffer_.lists_.size() == 0)
+            l = buffer_.addList();
+        else
+            l = buffer_.lists_[0];
+        // calculate offset
+        uint32_t offset = 0;
+        uint32_t num_bytes = 0;
+        for (uint32_t i=0; i<index; i++) {
+            offset += parent_list->sizes_[i];
+        }
+        for (uint32_t i=0; i<num; i++) {
+            num_bytes += parent_list->sizes_[index + i];
+        }
+#ifdef ENABLE_ASSERT_CHECKS
+        if (num_bytes + l->size_ >= BUFFER_SIZE) {
+            fprintf(stderr, "Node: %d, buf: %d\n", id_, 
+                    num_bytes); 
+            assert(false);
+        }
+#endif
+        memmove(l->hashes_ + l->num_, parent_list->hashes_ + index,
+                num * sizeof(uint32_t));
+        memmove(l->sizes_ + l->num_, parent_list->sizes_ + index,
+                num * sizeof(uint32_t));
+        memmove(l->data_ + l->size_, parent_list->data_ + offset, 
+                num_bytes);
+        l->num_ += num;
+        l->size_ += num_bytes;
+        return true;
+    }
+#endif
 
     bool Node::addChild(Node* newNode)   
     {
