@@ -459,7 +459,11 @@ namespace compresstree {
 
         // initialize aux buffer
         Buffer aux;
-        Buffer::List* a = aux.addList();
+        Buffer::List* a;
+        if (buffer_.numElements() < MAX_ELS_PER_BUFFER)
+            a = aux.addList();
+        else
+            a = aux.addList(/*large buffer=*/true);
 
         // track number of PAOs that have been merged with lastPAO
         uint32_t numMerged = 0;
@@ -486,11 +490,12 @@ namespace compresstree {
                     (void*)n.data(), buf_size);
             a->size_ += buf_size;
             a->num_++;
+/*
             if (a->num_ >= MAX_ELS_PER_BUFFER) {
                 fprintf(stderr, "Num elements: %u\n", a->num_);
                 assert(false);
             }
-
+*/
             // increment n pointer and re-insert n into prioQ
             if (n.next())
                 queue.push(n);
@@ -512,7 +517,11 @@ namespace compresstree {
             return true;
         // initialize aux buffer
         Buffer aux;
-        Buffer::List* a = aux.addList();
+        Buffer::List* a;
+        if (buffer_.numElements() < MAX_ELS_PER_BUFFER)
+            a = aux.addList();
+        else
+            a = aux.addList(/*isLarge=*/true);
 
         Buffer::List* l = buffer_.lists_[0];
         uint32_t num = buffer_.numElements();
@@ -619,12 +628,11 @@ namespace compresstree {
         newLeaf->separator_ = separator_;
 
         // modify this leaf properties
-        uint32_t offset = 0;
-        for (uint32_t i=0; i<splitIndex; i++) {
-            offset += l->sizes_[i];
-        }
-        l->size_ = offset;
-        l->num_ = splitIndex;
+
+        // copy the first half into another list in this buffer and delete
+        // the original list
+        copyIntoBuffer(l, 0, splitIndex);
+        buffer_.delList(0);
         separator_ = l->hashes_[splitIndex];
 
         // check integrity of both leaves
