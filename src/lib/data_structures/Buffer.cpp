@@ -23,8 +23,8 @@ namespace compresstree {
         uint32_t nel = compresstree::MAX_ELS_PER_BUFFER;
         uint32_t buf = compresstree::BUFFER_SIZE;
         if (isLarge) {
-            nel *= 1;
-            buf *= 1;
+            nel *= 2;
+            buf *= 2;
         }
         hashes_ = (uint32_t*)malloc(sizeof(uint32_t) * nel);
         sizes_ = (uint32_t*)malloc(sizeof(uint32_t) * nel);
