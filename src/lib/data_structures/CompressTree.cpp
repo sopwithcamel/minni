@@ -214,6 +214,8 @@ namespace compresstree {
 
             // page in and decompress first leaf
             Node* curLeaf = allLeaves_[0];
+            while (curLeaf->buffer_.numElements() == 0)
+                curLeaf = allLeaves_[++lastLeafRead_];
 #ifdef ENABLE_PAGING
             if (curLeaf->isPagedOut()) {
                 pager_->pageIn(curLeaf);
@@ -249,6 +251,8 @@ namespace compresstree {
                 return false;
             }
             Node *n = allLeaves_[lastLeafRead_];
+            while (n->buffer_.numElements() == 0)
+                n = allLeaves_[++lastLeafRead_];
 #ifdef ENABLE_PAGING
             pager_->pageIn(n);
             n->waitForPageIn();

@@ -370,9 +370,16 @@ namespace compresstree {
     {
         uint32_t buf_size;
 
+        if (buffer_.empty())
+            return true;
+
         // initialize auxiliary buffer
         Buffer aux;
-        Buffer::List* a = aux.addList();
+        Buffer::List* a;
+        if (buffer_.numElements() < MAX_ELS_PER_BUFFER)
+            a = aux.addList();
+        else
+            a = aux.addList(/*isLarge=*/true);
 
         // exit condition
         bool last_serialized = false;
@@ -727,13 +734,21 @@ namespace compresstree {
         for (uint32_t i=0; i<num; i++) {
             num_bytes += parent_list->sizes_[index + i];
         }
-#ifdef ENABLE_ASSERT_CHECKS
-        if (num_bytes + l->size_ >= BUFFER_SIZE) {
-            fprintf(stderr, "Node: %d, buf: %d\n", id_, 
-                    num_bytes); 
-            assert(false);
+        if (num_bytes + l->size_ >= BUFFER_SIZE || l->num_ + num >= MAX_ELS_PER_BUFFER) {
+            Buffer aux;
+            Buffer::List* a = aux.addList(/*isLarge=*/true);
+            // move data to new list
+            memmove(a->hashes_, l->hashes_, l->num_ * sizeof(uint32_t));
+            memmove(a->sizes_, l->sizes_, l->num_ * sizeof(uint32_t));
+            memmove(a->data_, l->data_, l->size_);
+            a->num_ = l->num_;
+            a->size_ = l->size_;            
+            buffer_.deallocate();
+            buffer_.clear();
+            buffer_ = aux;
+            aux.clear();
+            l = buffer_.lists_[0];
         }
-#endif
         memmove(l->hashes_ + l->num_, parent_list->hashes_ + index,
                 num * sizeof(uint32_t));
         memmove(l->sizes_ + l->num_, parent_list->sizes_ + index,
