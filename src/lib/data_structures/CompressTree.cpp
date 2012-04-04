@@ -92,8 +92,7 @@ namespace compresstree {
             sorter_->wakeup();
 #else
             rootNode_->sortBuffer();
-            emptier_->addNode(rootNode_);
-            emptier_->wakeup();
+            rootNode_->syncEmpty();
 #endif
         }
         std::string serialized;
@@ -148,8 +147,7 @@ namespace compresstree {
             sorter_->wakeup();
 #else
             rootNode_->sortBuffer();
-            emptier_->addNode(rootNode_);
-            emptier_->wakeup();
+            rootNode_->syncEmpty();
 #endif
             pthread_mutex_lock(&rootNodeAvailableMutex_);
             while (rootNode_->isFull()) {
@@ -345,25 +343,24 @@ namespace compresstree {
         sorter_->wakeup();
 #else
         rootNode_->sortBuffer();
-        emptier_->addNode(rootNode_);
-        emptier_->wakeup();
+        rootNode_->syncEmpty();
 #endif
 
+#ifdef ASYNC_SORTING
         /* wait for all nodes to be sorted and emptied
            before proceeding */
         do {
 #ifdef ENABLE_PAGING
             pager_->waitUntilCompletionNoticeReceived();
 #endif
-#ifdef ASYNC_SORTING
             sorter_->waitUntilCompletionNoticeReceived();
-#endif
             emptier_->waitUntilCompletionNoticeReceived();
 #ifdef ENABLE_PAGING
         } while (!sorter_->empty() || !emptier_->empty() || !pager_->empty());
 #else
         } while (!sorter_->empty() || !emptier_->empty());
 #endif
+#endif // ASYNC_SORTING
 
         // add all leaves; 
         visitQueue.push_back(rootNode_);

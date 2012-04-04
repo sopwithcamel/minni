@@ -111,6 +111,30 @@ namespace compresstree {
         return false;
     }
 
+#ifndef ASYNC_SORTING
+    void Node::syncEmpty()
+    {
+        aggregateSortedBuffer();
+        if (!isFull() && !isRoot() && 
+                tree_->emptyType_ != ALWAYS) {
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "node: %d reduced in size to %u\n", 
+                    id_, buffer_.numElements());
+#endif
+            // Set node as NOT queued for emptying
+#ifdef ASYNC_COMPRESSION
+            CALL_MEM_FUNC(*this, compress)();
+#else
+            snappyCompress();
+#endif
+        } else {
+            emptyBuffer();
+            if (isLeaf())
+                tree_->handleFullLeaves();
+        }
+    }
+#endif
+
     bool Node::emptyOrCompress()
     {
         if (tree_->emptyType_ == ALWAYS || isFull()) {
@@ -128,8 +152,7 @@ namespace compresstree {
             tree_->sorter_->wakeup();
 #else
             sortBuffer();
-            tree_->emptier_->addNode(this);
-            tree_->emptier_->wakeup();
+            syncEmpty();
 #endif
         } else {
 #ifdef ASYNC_COMPRESSION
