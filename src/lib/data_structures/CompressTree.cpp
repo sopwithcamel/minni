@@ -87,8 +87,14 @@ namespace compresstree {
             pthread_mutex_unlock(&rootNodeAvailableMutex_);
 
             // schedule the root node for emptying
+#ifdef ASYNC_SORTING
             sorter_->addNode(rootNode_);
             sorter_->wakeup();
+#else
+            rootNode_->sortBuffer();
+            emptier_->addNode(rootNode_);
+            emptier_->wakeup();
+#endif
         }
         std::string serialized;
         ((ProtobufPartialAgg*)agg)->serialize(&serialized);
@@ -137,8 +143,14 @@ namespace compresstree {
         pthread_mutex_lock(&rootNodeAvailableMutex_);
         if (rootNode_->isFull()) {
             pthread_mutex_unlock(&rootNodeAvailableMutex_);
+#ifdef ASYNC_SORTING
             sorter_->addNode(rootNode_);
             sorter_->wakeup();
+#else
+            rootNode_->sortBuffer();
+            emptier_->addNode(rootNode_);
+            emptier_->wakeup();
+#endif
             pthread_mutex_lock(&rootNodeAvailableMutex_);
             while (rootNode_->isFull()) {
 #ifdef CT_NODE_DEBUG
@@ -328,8 +340,14 @@ namespace compresstree {
         temp.clear();
 #endif
 
+#ifdef ASYNC_SORTING
         sorter_->addNode(rootNode_);
         sorter_->wakeup();
+#else
+        rootNode_->sortBuffer();
+        emptier_->addNode(rootNode_);
+        emptier_->wakeup();
+#endif
 
         /* wait for all nodes to be sorted and emptied
            before proceeding */
@@ -337,7 +355,9 @@ namespace compresstree {
 #ifdef ENABLE_PAGING
             pager_->waitUntilCompletionNoticeReceived();
 #endif
+#ifdef ASYNC_SORTING
             sorter_->waitUntilCompletionNoticeReceived();
+#endif
             emptier_->waitUntilCompletionNoticeReceived();
 #ifdef ENABLE_PAGING
         } while (!sorter_->empty() || !emptier_->empty() || !pager_->empty());

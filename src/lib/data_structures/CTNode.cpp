@@ -117,10 +117,20 @@ namespace compresstree {
 #ifndef STRUCTURE_BUFFER
 #ifdef ASYNC_COMPRESSION
             CALL_MEM_FUNC(*this, decompress)();
+#else
+            if (buffer_.lists_[0]->state_ == Buffer::List::COMPRESSED)
+                snappyDecompress();
 #endif
 #endif
+
+#ifdef ASYNC_SORTING
             tree_->sorter_->addNode(this);
             tree_->sorter_->wakeup();
+#else
+            sortBuffer();
+            tree_->emptier_->addNode(this);
+            tree_->emptier_->wakeup();
+#endif
         } else {
 #ifdef ASYNC_COMPRESSION
             CALL_MEM_FUNC(*this, compress)();
