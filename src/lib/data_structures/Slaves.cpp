@@ -121,10 +121,12 @@ namespace compresstree {
                     n->aggregateMergedBuffer();
                 }
 #else
+#ifdef ASYNC_COMPRESSION
                 for (int i=0; i<n->children_.size(); i++) {
                     CALL_MEM_FUNC(*n->children_[i],
                             n->children_[i]->decompress)();
                 }
+#endif
                 n->aggregateSortedBuffer();
 #endif
                 // check if aggregation made the node small enough
@@ -135,7 +137,11 @@ namespace compresstree {
                             n->id_, n->buffer_.numElements());
 #endif
                     // Set node as NOT queued for emptying
+#ifdef ASYNC_COMPRESSION
                     CALL_MEM_FUNC(*n, n->compress)();
+#else
+                    n->snappyCompress();
+#endif
                 } else {
                     n->emptyBuffer();
                     if (n->isLeaf())

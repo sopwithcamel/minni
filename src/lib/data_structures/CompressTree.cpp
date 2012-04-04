@@ -222,8 +222,12 @@ namespace compresstree {
                 curLeaf->waitForPageIn();
             }
 #endif
+#ifdef ASYNC_COMPRESSION
             CALL_MEM_FUNC(*curLeaf, curLeaf->decompress)();
             curLeaf->waitForCompressAction(Node::DECOMPRESS);
+#else
+            curLeaf->snappyDecompress();
+#endif
         }
 
         Node* curLeaf = allLeaves_[lastLeafRead_];
@@ -239,7 +243,11 @@ namespace compresstree {
         lastElement_++;
 
         if (lastElement_ >= curLeaf->buffer_.numElements()) {
+#ifdef ASYNC_COMPRESSION
             CALL_MEM_FUNC(*curLeaf, curLeaf->compress)();
+#else
+            curLeaf->snappyCompress();
+#endif
             if (++lastLeafRead_ == allLeaves_.size()) {
                 /* Wait for all outstanding compression work to finish */
                 compressor_->waitUntilCompletionNoticeReceived();
@@ -257,8 +265,12 @@ namespace compresstree {
             pager_->pageIn(n);
             n->waitForPageIn();
 #endif
+#ifdef ASYNC_COMPRESSION
             CALL_MEM_FUNC(*n, n->decompress)();
             n->waitForCompressAction(Node::DECOMPRESS);
+#else
+            n->snappyDecompress();
+#endif
             lastOffset_ = 0;
             lastElement_ = 0;
         }
@@ -385,13 +397,32 @@ namespace compresstree {
             if (newLeaf && newLeaf->isFull()) {
                 l2 = newLeaf->splitLeaf();
             }
+#ifdef ASYNC_COMPRESSION
             CALL_MEM_FUNC(*node, node->compress)();
-            if (newLeaf)
+#else
+            node->snappyCompress();
+#endif
+            if (newLeaf) {
+#ifdef ASYNC_COMPRESSION
                 CALL_MEM_FUNC(*newLeaf, newLeaf->compress)();
-            if (l1)
+#else
+                newLeaf->snappyCompress();
+#endif
+            }
+            if (l1) {
+#ifdef ASYNC_COMPRESSION
                 CALL_MEM_FUNC(*l1, l1->compress)();
-            if (l2)
+#else
+                l1->snappyCompress();
+#endif
+            }
+            if (l2) {
+#ifdef ASYNC_COMPRESSION
                 CALL_MEM_FUNC(*l2, l2->compress)();
+#else
+                l2->snappyCompress();
+#endif
+            }
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Leaf node %d removed from full-leaf-list\n", node->id_);
 #endif

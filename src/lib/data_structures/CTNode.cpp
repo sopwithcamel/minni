@@ -115,12 +115,18 @@ namespace compresstree {
     {
         if (tree_->emptyType_ == ALWAYS || isFull()) {
 #ifndef STRUCTURE_BUFFER
+#ifdef ASYNC_COMPRESSION
             CALL_MEM_FUNC(*this, decompress)();
+#endif
 #endif
             tree_->sorter_->addNode(this);
             tree_->sorter_->wakeup();
         } else {
+#ifdef ASYNC_COMPRESSION
             CALL_MEM_FUNC(*this, compress)();
+#else
+            snappyCompress();
+#endif
         }
     }
 
@@ -144,7 +150,11 @@ namespace compresstree {
                         %u/%u\n", id_, buffer_.numElements(), EMPTY_THRESHOLD);
 #endif
             } else { // compress
+#ifdef ASYNC_COMPRESSION
                 CALL_MEM_FUNC(*this, compress)();
+#else
+                snappyCompress();
+#endif
             }
             return true;
         }
@@ -184,7 +194,11 @@ namespace compresstree {
                     if (curElement > lastElement) {
                         // copy elements into child
 #ifndef STRUCTURE_BUFFER
+#ifdef ASYNC_COMPRESSION
                         children_[curChild]->waitForCompressAction(DECOMPRESS);
+#else
+                        children_[curChild]->snappyDecompress();
+#endif
 #endif
                         children_[curChild]->copyIntoBuffer(l, lastElement,
                                 curElement - lastElement);
@@ -221,7 +235,11 @@ namespace compresstree {
             if (curElement >= lastElement) {
                 // copy elements into child
 #ifndef STRUCTURE_BUFFER
+#ifdef ASYNC_COMPRESSION
                 children_[curChild]->waitForCompressAction(DECOMPRESS);
+#else
+                        children_[curChild]->snappyDecompress();
+#endif
 #endif
                 children_[curChild]->copyIntoBuffer(l, lastElement,
                         curElement - lastElement);
