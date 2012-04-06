@@ -75,7 +75,7 @@ void* CompressTreeInserter::operator()(void* recv)
         uint64_t hash;
         void* ptrToHash = (void*)&hash;
         bool remain;
-        while(true) {
+        while(!aggregator_->can_exit) {
             if (evict_list_ctr == max_keys_per_token)
                 break;
             remain = ct->nextValue(ptrToHash, this_list[evict_list_ctr]);
