@@ -81,16 +81,17 @@ namespace compresstree {
 #endif
     }
 
-    bool Node::insert(uint64_t hash, const std::string& value)
+    bool Node::insert(uint64_t hash, PartialAgg* agg)
     {
         uint32_t hashv = (uint32_t)hash;
-        uint32_t buf_size = value.size();
+        uint32_t buf_size = ((ProtobufPartialAgg*)agg)->serializedSize();
 
         // copy into Buffer fields
         Buffer::List* l = buffer_.lists_[0];
         l->hashes_[l->num_] = hashv;
         l->sizes_[l->num_] = buf_size;
-        memmove(l->data_ + l->size_, (void*)value.data(), buf_size);
+        ((ProtobufPartialAgg*)agg)->serialize(l->data_ + l->size_,
+                buf_size);
         l->size_ += buf_size;
         l->num_++;
 
@@ -173,6 +174,10 @@ namespace compresstree {
                     children_[curChild]->separator_, curChild, l->hashes_[0]);
 #endif
             uint32_t num = buffer_.numElements();
+#ifdef ENABLE_ASSERT_CHECKS
+            // there has to be a single list in the buffer at this point
+            assert(buffer_.lists_.size() == 1);
+#endif
             while (curElement < num) {
                 if (l->hashes_[curElement] >= 
                         children_[curChild]->separator_) {
@@ -398,13 +403,10 @@ namespace compresstree {
                         l->sizes_[lastIndex]);
                 a->size_ += l->sizes_[lastIndex];
             } else {
-                std::string serialized;
-                lastPAO->serialize(&serialized);
-                uint32_t buf_size = serialized.size();
+                uint32_t buf_size = lastPAO->serializedSize();
+                lastPAO->serialize(a->data_ + a->size_, buf_size);
 
                 a->sizes_[a->num_] = buf_size;
-                memmove(a->data_ + a->size_,
-                        (void*)serialized.data(), buf_size);                        
                 a->size_ += buf_size;
 #ifdef ENABLE_COUNTERS
                 tree_->monitor_->bctr++;
@@ -424,14 +426,11 @@ namespace compresstree {
                     l->sizes_[lastIndex]);
             a->size_ += l->sizes_[lastIndex];
         } else {
-            std::string serialized;
-            lastPAO->serialize(&serialized);
-            uint32_t buf_size = serialized.size();
+            uint32_t buf_size = lastPAO->serializedSize();
+            lastPAO->serialize(a->data_ + a->size_, buf_size);
 
             a->hashes_[a->num_] = l->hashes_[lastIndex];
             a->sizes_[a->num_] = buf_size;
-            memmove(a->data_ + a->size_,
-                    (void*)serialized.data(), buf_size);                        
             a->size_ += buf_size;
         }
         a->num_++;
@@ -560,12 +559,9 @@ namespace compresstree {
                         (void*)(l->data_ + lastOffset), l->sizes_[lastIndex]);
                 a->size_ += buf_size;
             } else {
-                std::string serialized;
-                lastPAO->serialize(&serialized);
-                uint32_t buf_size = serialized.size();
+                uint32_t buf_size = lastPAO->serializedSize();
+                lastPAO->serialize(a->data_ + a->size_, buf_size);
                 a->sizes_[a->num_] = buf_size;
-                memmove(a->data_ + a->size_,
-                        (void*)(serialized.data()), buf_size);
                 a->size_ += buf_size;
             }
             a->num_++;
@@ -583,12 +579,9 @@ namespace compresstree {
                     (void*)(l->data_ + lastOffset), l->sizes_[lastIndex]);
             a->size_ += buf_size;
         } else {
-            std::string serialized;
-            lastPAO->serialize(&serialized);
-            uint32_t buf_size = serialized.size();
+            uint32_t buf_size = lastPAO->serializedSize();
+            lastPAO->serialize(a->data_ + a->size_, buf_size);
             a->sizes_[a->num_] = buf_size;
-            memmove(a->data_ + a->size_,
-                    (void*)(serialized.data()), buf_size);
             a->size_ += buf_size;
         }
         a->num_++;

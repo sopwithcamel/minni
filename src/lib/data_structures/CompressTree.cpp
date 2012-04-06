@@ -89,9 +89,7 @@ namespace compresstree {
             sorter_->addNode(rootNode_);
             sorter_->wakeup();
         }
-        std::string serialized;
-        ((ProtobufPartialAgg*)agg)->serialize(&serialized);
-        bool ret = inputNode_->insert(*(uint64_t*)hash, serialized);
+        bool ret = inputNode_->insert(*(uint64_t*)hash, agg);
 
 #ifdef ENABLE_EVICTION
         // check if any elements were evicted and pick those up
@@ -150,6 +148,8 @@ namespace compresstree {
 
             // page in and decompress first leaf
             Node* curLeaf = allLeaves_[0];
+            while (curLeaf->buffer_.numElements() == 0)
+                curLeaf = allLeaves_[++lastLeafRead_];
 #ifdef ENABLE_PAGING
             if (curLeaf->isPagedOut()) {
                 pager_->pageIn(curLeaf);
@@ -185,6 +185,8 @@ namespace compresstree {
                 return false;
             }
             Node *n = allLeaves_[lastLeafRead_];
+            while (curLeaf->buffer_.numElements() == 0)
+                curLeaf = allLeaves_[++lastLeafRead_];
 #ifdef ENABLE_PAGING
             pager_->pageIn(n);
             n->waitForPageIn();
