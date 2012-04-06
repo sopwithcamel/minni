@@ -119,20 +119,9 @@ namespace compresstree {
                 else {
                     n->aggregateMergedBuffer();
                 }
-                // check if aggregation made the node small enough
-                if (!n->isFull() && !n->isRoot() && 
-                        tree_->emptyType_ != ALWAYS) {
-#ifdef CT_NODE_DEBUG
-                    fprintf(stderr, "node: %d reduced in size to %u\n", 
-                            n->id_, n->buffer_.numElements());
-#endif
-                    // Set node as NOT queued for emptying
-                    CALL_MEM_FUNC(*n, n->compress)();
-                } else {
-                    n->emptyBuffer();
-                    if (n->isLeaf())
-                        tree_->handleFullLeaves();
-                }
+                n->emptyBuffer();
+                if (n->isLeaf())
+                    tree_->handleFullLeaves();
                 if (rootFlag) {
                     // do the split and create new root
                     rootFlag = false;
