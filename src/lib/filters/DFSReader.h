@@ -35,8 +35,8 @@ private:
 	char* buffer;
 	uint64_t next_buffer;
 	const size_t chunksize;
-	char** chunk; 
-	FilterInfo** send;
+	MultiBuffer<char*>* chunk; 
+	MultiBuffer<FilterInfo>* send;
 	size_t next_chunk;
 	ChunkID id;
 	void* operator()(void* pao);
