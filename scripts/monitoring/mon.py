@@ -52,7 +52,7 @@ while True:
     cpu = sys_cpu.read()
     line_cpu = cpu.split()
 
-    busy = int(line_cpu[13])
+    busy = int(line_cpu[13]) + int(line_cpu[14])
 #    idle = int(line_cpu[5])
     if busy_prev > 0:
       this_busy = busy - busy_prev
