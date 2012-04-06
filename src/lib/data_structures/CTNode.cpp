@@ -653,6 +653,9 @@ namespace compresstree {
     bool Node::copyIntoBuffer(Buffer::List* parent_list, uint32_t index, 
             uint32_t num)
     {
+        // check if the node is still queued up for a previous compression
+        waitForCompressAction(COMPRESS);
+
         // calculate offset
         uint32_t offset = 0;
         uint32_t num_bytes = 0;
