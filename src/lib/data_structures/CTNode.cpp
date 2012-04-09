@@ -381,8 +381,11 @@ namespace compresstree {
             if (l->hashes_[i] == l->hashes_[lastIndex]) {
                 // aggregate elements
                 if (i == lastIndex + 1) {
-                    assert(lastPAO->deserialize(perm_[lastIndex], 
-                            l->sizes_[i]));
+                    if (!lastPAO->deserialize(perm_[lastIndex], 
+                            l->sizes_[lastIndex])) {
+                        fprintf(stderr, "Error at index %d\n", i);
+                        assert(false);
+                    }
                 }
                 assert(thisPAO->deserialize(perm_[i], l->sizes_[i]));
                 if (!thisPAO->key().compare(lastPAO->key())) {
@@ -904,6 +907,7 @@ namespace compresstree {
                 // latest added list
                 Buffer::List* cl = 
                         compressed.lists_[compressed.lists_.size()-1];
+/*
                 snappy::RawCompress((const char*)l->hashes_, 
                         l->num_ * sizeof(uint32_t), 
                         (char*)cl->hashes_,
@@ -912,12 +916,11 @@ namespace compresstree {
                         l->num_ * sizeof(uint32_t), 
                         (char*)cl->sizes_,
                         &l->c_sizelen_);
-/*
+*/
                 compsort::compress(l->hashes_, l->num_,
                         cl->hashes_, (uint32_t&)l->c_hashlen_);
                 rle::encode(l->sizes_, l->num_, cl->sizes_,
                         (uint32_t&)l->c_sizelen_);
-*/
                 snappy::RawCompress(l->data_, l->size_, 
                         cl->data_, 
                         &l->c_datalen_);
@@ -950,17 +953,17 @@ namespace compresstree {
                 // latest added list
                 Buffer::List* l =
                         decompressed.lists_[decompressed.lists_.size()-1];
+/*
                 snappy::RawUncompress((const char*)cl->hashes_, 
                         cl->c_hashlen_, (char*)l->hashes_);
                 snappy::RawUncompress((const char*)cl->sizes_, 
                         cl->c_sizelen_, (char*)l->sizes_);
-/*
+*/
                 uint32_t siz;
                 compsort::decompress(cl->hashes_, (uint32_t)cl->c_hashlen_,
                         l->hashes_, siz);
                 rle::decode(cl->sizes_, (uint32_t)cl->c_sizelen_,
                         l->sizes_, siz);
-*/
                 snappy::RawUncompress(cl->data_, cl->c_datalen_,
                         l->data_);
                 cl->deallocate();
