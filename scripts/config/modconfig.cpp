@@ -9,6 +9,7 @@
 using namespace std;
 using namespace libconfig;
 
+DEFINE_uint64(minni__tbb__buffers, 0, "Number of buffers in TBB pipeline");
 DEFINE_uint64(minni__tbb__token_size, 0, "TBB token size");
 DEFINE_uint64(minni__tbb__max_keys_per_token, 0, "TBB max keys per token");
 
@@ -65,6 +66,11 @@ int main(int argc, char **argv)
     if (FLAGS_minni__tbb__max_keys_per_token) {
         Setting& c_max_keys = cfg.lookup("minni.tbb.max_keys_per_token");
         c_max_keys = (int)FLAGS_minni__tbb__max_keys_per_token;
+    }
+
+    if (FLAGS_minni__tbb__buffers) {
+        Setting& c_buffers = cfg.lookup("minni.tbb.buffers");
+        c_buffers = (int)FLAGS_minni__tbb__buffers;
     }
 
     static const char *output_file = "../../sample.cfg";

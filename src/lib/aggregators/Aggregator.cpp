@@ -20,13 +20,10 @@ Aggregator::Aggregator(const Config &cfg,
 		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc)
 {
-	Setting& c_num_threads = readConfigFile(cfg, "minni.tbb.threads");
-	num_threads = c_num_threads;
-
-//	Setting& c_num_buffers = readConfigFile(cfg, "minni.tbb.buffers");
+	Setting& c_num_buffers = readConfigFile(cfg, "minni.tbb.buffers");
 
 	init = new tbb::task_scheduler_init();
-	num_buffers = init->default_num_threads();
+	num_buffers = c_num_buffers; //init->default_num_threads();
     fprintf(stderr, "Number of threads: %d\n", num_buffers);
 	pipeline_list = new tbb::pipeline[num_pipelines]; 
 }
