@@ -24,7 +24,9 @@ echo "Starting monitoring scripts..."
 pidstat -p `pgrep chunkserver` -d -t 1 > $tempfiles"/disk.out" &
 ./mon.py `pgrep workdaemon` $tempfiles"/mon.out"
 
+kill -9 `pgrep test`
+
 echo "Map Statistics" 
-./avg_map_mem_2s.py $tempfiles"/mon.out"
-./avg_diskstats_2s.py $tempfiles"/disk.out"
+python avg_map_mem_2s.py $tempfiles"/mon.out"
+python avg_diskstats_2s.py $tempfiles"/disk.out"
 

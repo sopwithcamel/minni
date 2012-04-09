@@ -10,4 +10,4 @@ else
 fi
 echo "Flushing buffer cache"
 sync; sudo sysctl vm.drop_caches=3
-time ~/code/minni/src/worker/gen-cpp/workdaemon > /localfs/hamur/wlog
+~/code/minni/src/worker/gen-cpp/workdaemon > /localfs/hamur/wlog
