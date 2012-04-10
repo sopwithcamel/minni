@@ -244,7 +244,8 @@ namespace compresstree {
         fprintf(stderr, "Starting to flush\n");
         // check if rootNode_ is available
         pthread_mutex_lock(&rootNodeAvailableMutex_);
-        while (rootNode_->isFull()) {
+        while (!rootNode_->buffer_.empty() || 
+                rootNode_->queuedForEmptying_) {
             pthread_cond_wait(&rootNodeAvailableForWriting_,
                     &rootNodeAvailableMutex_);
         }
