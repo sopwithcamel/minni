@@ -8,6 +8,6 @@ then
 else
    LD_LIBRARY_PATH="$TBBROOT/lib/intel64/$TBB_ARCH:${LD_LIBRARY_PATH}"; export LD_LIBRARY_PATH
 fi
-echo "Flushing buffer cache"
+#echo "Flushing buffer cache"
 sync; sudo sysctl vm.drop_caches=3
-~/code/minni/src/worker/gen-cpp/workdaemon > /localfs/hamur/wlog
+~/code/minni/src/worker/gen-cpp/workdaemon &> /localfs/hamur/wlog
