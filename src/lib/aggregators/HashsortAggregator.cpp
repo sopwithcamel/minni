@@ -43,15 +43,22 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	string inp_type = (const char*)c_inp_typ;
 
     /* Initialize data structures */
-    if (!intagg.compare("comp-bt")) {
+    if (!intagg.compare("cbt")) {
+        Setting& c_fanout = readConfigFile(cfg,
+                "minni.internal.cbt.fanout");
+        uint32_t fanout = c_fanout;
+        Setting& c_buffer_size = readConfigFile(cfg,
+                "minni.internal.cbt.buffer_size");
+        uint32_t buffer_size = c_buffer_size;
         acc_internal_ = dynamic_cast<Accumulator*>(new 
-                compresstree::CompressTree(2, 8, 90, createPAOFunc, 
-                destroyPAOFunc));
+                compresstree::CompressTree(2, fanout, 90, buffer_size,
+                createPAOFunc, destroyPAOFunc));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
     } else if (!intagg.compare("sparsehash")) {
-        Setting& c_num_part = readConfigFile(cfg, "minni.internal.partitions");
+        Setting& c_num_part = readConfigFile(cfg,
+                "minni.internal.sparsehash.partitions");
         int num_part = c_num_part;
         acc_internal_ = dynamic_cast<Accumulator*>(new SparseHash(capacity,
                 max_keys_per_token));
@@ -99,7 +106,7 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	}
 
 	if (agg_in_mem) {
-        if (!intagg.compare("comp-bt") || !intagg.compare("sparsehash")) {
+        if (!intagg.compare("cbt") || !intagg.compare("sparsehash")) {
             pipeline_list[0].add_filter(*acc_int_inserter_);
         } else {
             hasher = new Hasher(this, hashtable_, destroyPAOFunc,

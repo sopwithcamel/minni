@@ -10,7 +10,12 @@
 
 namespace compresstree {
 
+    uint32_t BUFFER_SIZE;
+    uint32_t MAX_ELS_PER_BUFFER;
+    uint32_t EMPTY_THRESHOLD;
+
     CompressTree::CompressTree(uint32_t a, uint32_t b, uint32_t nodesInMemory,
+                uint32_t buffer_size,
                 size_t (*createPAOFunc)(Token* t, PartialAgg** p),
                 void (*destroyPAOFunc)(PartialAgg* p)) :
         a_(a),
@@ -27,6 +32,10 @@ namespace compresstree {
         nodesInMemory_(nodesInMemory),
         numEvicted_(0)
     {
+        BUFFER_SIZE = buffer_size;
+        MAX_ELS_PER_BUFFER = BUFFER_SIZE >> 4;
+        EMPTY_THRESHOLD = MAX_ELS_PER_BUFFER >> 1;
+    
         pthread_mutex_init(&rootNodeAvailableMutex_, NULL);
         pthread_cond_init(&rootNodeAvailableForWriting_, NULL);
 
