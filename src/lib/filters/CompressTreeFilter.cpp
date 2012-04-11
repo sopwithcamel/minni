@@ -3,10 +3,12 @@
 
 CompressTreeInserter::CompressTreeInserter(Aggregator* agg,
         Accumulator* acc,
+        HashFunction hf,
         size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 		void (*destroyPAOFunc)(PartialAgg* p),
 		size_t max_keys) :
     AccumulatorInserter(agg, acc, destroyPAOFunc, max_keys),
+    hf_(hf),
     createPAO_(createPAOFunc),
     next_buffer(0)
 {
@@ -47,7 +49,14 @@ void* CompressTreeInserter::operator()(void* recv)
 
     while (ind < recv_length) {
         pao = pao_l[ind];
-        hashv = HashUtil::MurmurHash(pao->key(), pao->key().size()); 
+        switch (hf_) {
+            case MURMUR:
+                hashv = HashUtil::MurmurHash(pao->key(), 42);
+                break;
+            case BOB:
+                hashv = HashUtil::BobHash(pao->key(), 42);
+                break;
+        }
 /*
         std::string k = pao->key();
         hashv &= 0xFFFF;

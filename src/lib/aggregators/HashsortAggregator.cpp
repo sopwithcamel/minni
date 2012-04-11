@@ -54,7 +54,8 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
                 compresstree::CompressTree(2, fanout, 90, buffer_size,
                 createPAOFunc, destroyPAOFunc));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                CompressTreeInserter(this, acc_internal_, createPAOFunc,
+                CompressTreeInserter(this, acc_internal_,
+                CompressTreeInserter::MURMUR, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
     } else if (!intagg.compare("sparsehash")) {
         Setting& c_num_part = readConfigFile(cfg,
