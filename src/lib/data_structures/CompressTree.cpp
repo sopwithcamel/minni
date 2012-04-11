@@ -74,6 +74,7 @@ namespace compresstree {
         }
         if (inputNode_->isFull()) {
             // check if rootNode_ is available
+            inputNode_->checkSerializationIntegrity();
             pthread_mutex_lock(&rootNodeAvailableMutex_);
             while (!rootNode_->buffer_.empty() || 
                     rootNode_->queuedForEmptying_) {
@@ -321,6 +322,7 @@ namespace compresstree {
             leavesToBeEmptied_.pop_front();
 
             Node* newLeaf = node->splitLeaf();
+
             Node *l1 = NULL, *l2 = NULL;
             if (node->isFull()) {
                 l1 = node->splitLeaf();
