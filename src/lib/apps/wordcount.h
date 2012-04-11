@@ -14,7 +14,7 @@ class WordCountPartialAgg : public ProtobufPartialAgg {
 	static size_t create(Token* t, PartialAgg** p);
 //	void add(void* value);
 	void merge(PartialAgg* add_agg);
-    inline int serializedSize() const;
+    inline uint32_t serializedSize() const;
 	inline void serialize(
             google::protobuf::io::CodedOutputStream* output) const;
 	inline void serialize(std::string* output) const;

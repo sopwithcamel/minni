@@ -42,7 +42,7 @@ inline void WordCountPartialAgg::serialize(
     pb.SerializeToCodedStream(output);
 }
 
-inline int WordCountPartialAgg::serializedSize() const
+inline uint32_t WordCountPartialAgg::serializedSize() const
 {
     return pb.ByteSize();
 }
@@ -55,6 +55,7 @@ inline void WordCountPartialAgg::serialize(std::string* output) const
 
 inline void WordCountPartialAgg::serialize(char* output, size_t size)
 {
+    memset((void*)output, 0, size);
 	pb.SerializeToArray(output, size);
 }
 

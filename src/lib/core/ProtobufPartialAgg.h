@@ -12,7 +12,7 @@ class ProtobufPartialAgg : public PartialAgg {
 
     virtual SerializationMethod getSerializationMethod() const { return PROTOBUF; }
 
-    virtual int serializedSize() const = 0;
+    virtual uint32_t serializedSize() const = 0;
 
 	/* serialize into file */
 	virtual void serialize(
