@@ -42,7 +42,8 @@ void* SparseHashInserter::operator()(void* recv)
 	char *key;
 	size_t ind = 0;
 	PartialAgg* pao;
-    SparseHash* sh = (SparseHash*)accumulator_;
+//    SparseHash* sh = (SparseHash*)accumulator_;
+    Accumulator* sh = accumulator_;
 
 	FilterInfo* recv_list = (FilterInfo*)recv;
 	PartialAgg** pao_l = (PartialAgg**)recv_list->result;

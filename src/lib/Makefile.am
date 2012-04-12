@@ -29,7 +29,8 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			data_structures/Buffer.cpp \
 			data_structures/CTNode.cpp \
 			data_structures/CompressTree.cpp \
-			data_structures/SparseHash.cpp \
+			data_structures/SparseHashMurmur.cpp \
+			data_structures/SparseHashBob.cpp \
 			data_structures/Slaves.cpp \
 			utils/HashUtil.cpp
 
@@ -90,7 +91,6 @@ minni_include_HEADERS = core/PartialAgg.h \
 			data_structures/Hashtable.h \
 			data_structures/CTNode.h \
 			data_structures/CompressTree.h \
-			data_structures/SparseHash.h \
 			data_structures/Slaves.h \
 			resources/ElasticObject.h \
 			utils/HashUtil.h \
