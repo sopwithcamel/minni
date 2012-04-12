@@ -493,10 +493,6 @@ namespace compresstree {
             a->hashes_[a->num_] = n.hash();
             uint32_t buf_size = n.size();
             a->sizes_[a->num_] = buf_size;
-            if (buf_size > 20) {
-                fprintf(stderr, "Trying to copy %u bytes\n", buf_size);
-                assert(false);
-            }
             memset(a->data_ + a->size_, 0, buf_size);
             memmove(a->data_ + a->size_,
                     (void*)n.data(), buf_size);
@@ -581,10 +577,6 @@ namespace compresstree {
             if (numMerged == 0) {
                 uint32_t buf_size = l->sizes_[lastIndex];
                 a->sizes_[a->num_] = l->sizes_[lastIndex];
-                if (l->sizes_[lastIndex] > 20) {
-                    fprintf(stderr, "Trying to copy %u bytes\n", l->sizes_[lastIndex]);
-                    assert(false);
-                }
                 memset(a->data_ + a->size_, 0, l->sizes_[lastIndex]);
                 memmove(a->data_ + a->size_,
                         (void*)(l->data_ + lastOffset), l->sizes_[lastIndex]);
@@ -606,7 +598,7 @@ namespace compresstree {
         if (numMerged == 0) {
             uint32_t buf_size = l->sizes_[lastIndex];
             a->sizes_[a->num_] = l->sizes_[lastIndex];
-            memset(l->data_ + a->size_, 0, l->sizes_[lastIndex]);
+            memset(a->data_ + a->size_, 0, l->sizes_[lastIndex]);
             memmove(a->data_ + a->size_,
                     (void*)(l->data_ + lastOffset), l->sizes_[lastIndex]);
             a->size_ += buf_size;
