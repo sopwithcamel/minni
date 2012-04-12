@@ -22,20 +22,16 @@ class CompressTreeInserter :
         public AccumulatorInserter
 {
   public:
-    enum HashFunction {
-        MURMUR,
-        BOB
-    };
 	CompressTreeInserter(Aggregator* agg,
 			Accumulator* acc,
-            HashFunction hf,
+            HashUtil::HashFunction hf,
             size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys);
 	~CompressTreeInserter();
 	void* operator()(void* pao_list);
   private:
-    HashFunction hf_;
+    HashUtil::HashFunction hf_;
 	size_t next_buffer;
 	MultiBuffer<FilterInfo>* send_;
     MultiBuffer<PartialAgg*>* evicted_list_;

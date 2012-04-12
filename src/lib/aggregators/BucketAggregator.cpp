@@ -68,11 +68,11 @@ BucketAggregator::BucketAggregator(const Config &cfg,
                 createPAOFunc, destroyPAOFunc));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_,
-                CompressTreeInserter::MURMUR, createPAOFunc,
+                HashUtil::MURMUR, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
         bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_,
-                CompressTreeInserter::BOB, createPAOFunc,
+                HashUtil::BOB, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
 
     } else if (!intagg.compare("sparsehash")) {
