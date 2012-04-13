@@ -1,6 +1,6 @@
 import os,sys,subprocess
 
-buffer_size = 30*1024**2;
+buffer_size = 150*1024**2;
 for fanout in [2**x for x in range(7)[2:]]:
 # Generate new config file
     print "Run: CBT buffer size: " + str(buffer_size) + ", fan-out: " + str(fanout)

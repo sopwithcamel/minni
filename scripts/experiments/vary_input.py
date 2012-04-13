@@ -2,7 +2,7 @@ import os,sys,subprocess
 
 buffer_size = 30*1024**2;
 fanout = 8
-for uniq in [10, 20, 30, 40, 50, 60, 70]:
+for uniq in [30, 40, 50, 60, 70]:
     for rep in [int(100/uniq), int(1000/uniq)]:
         fil = str(uniq) + "mil" + str(rep) + "x" + "10b.txt"
         # Generate file
