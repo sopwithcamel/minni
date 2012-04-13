@@ -169,9 +169,7 @@ namespace compresstree {
 #endif
             }
         }
-        std::string serialized;
-        ((ProtobufPartialAgg*)agg)->serialize(&serialized);
-        bool ret = rootNode_->insert(*(uint64_t*)hash, serialized);
+        bool ret = rootNode_->insert(*(uint64_t*)hash, agg);
         pthread_mutex_unlock(&rootNodeAvailableMutex_);
 
 #ifdef ENABLE_EVICTION
@@ -227,7 +225,9 @@ namespace compresstree {
             flushBuffers();
 
             /* Wait for all outstanding compression work to finish */
+#ifdef ASYNC_COMPRESSION
             compressor_->waitUntilCompletionNoticeReceived();
+#endif
             allFlush_ = true;
 
             // page in and decompress first leaf
@@ -268,7 +268,9 @@ namespace compresstree {
 #endif
             if (++lastLeafRead_ == allLeaves_.size()) {
                 /* Wait for all outstanding compression work to finish */
+#ifdef ASYNC_COMPRESSION
                 compressor_->waitUntilCompletionNoticeReceived();
+#endif
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Emptying tree!\n");
 #endif
@@ -277,8 +279,8 @@ namespace compresstree {
                 return false;
             }
             Node *n = allLeaves_[lastLeafRead_];
-            while (curLeaf->buffer_.numElements() == 0)
-                curLeaf = allLeaves_[++lastLeafRead_];
+            while (n->buffer_.numElements() == 0)
+                n = allLeaves_[++lastLeafRead_];
 #ifdef ENABLE_PAGING
             pager_->pageIn(n);
             n->waitForPageIn();
