@@ -86,7 +86,7 @@ namespace compresstree {
         ~Node();
         /* copy user data into buffer. Buffer should be decompressed
            before calling. */
-        bool insert(uint64_t hash, const std::string& value);
+        bool insert(uint64_t hash, PartialAgg* agg);
 
         // identification functions
         bool isLeaf() const;
@@ -142,6 +142,7 @@ namespace compresstree {
          * and sorted. If called on the root, then a new root is created */
         bool splitNonLeaf();
         bool checkIntegrity();
+        bool checkSerializationIntegrity(int listn=-1);
 
         /* Sorting-related functions */
         void quicksort(uint32_t left, uint32_t right);

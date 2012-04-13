@@ -12,7 +12,8 @@
 #include "Aggregator.h"
 #include "Accumulator.h"
 #include "AccumulatorFilter.h"
-#include "SparseHash.h"
+#include "SparseHashMurmur.h"
+#include "SparseHashBob.h"
 #include "PartialAgg.h"
 #include "Util.h"
 

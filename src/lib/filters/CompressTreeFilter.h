@@ -21,17 +21,17 @@
 class CompressTreeInserter :
         public AccumulatorInserter
 {
-    static const size_t BUF_SIZE = 65535;
-    static const uint64_t NUM_BUCKETS = UINT64_MAX;
   public:
 	CompressTreeInserter(Aggregator* agg,
 			Accumulator* acc,
+            HashUtil::HashFunction hf,
             size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys);
 	~CompressTreeInserter();
 	void* operator()(void* pao_list);
   private:
+    HashUtil::HashFunction hf_;
 	size_t next_buffer;
 	MultiBuffer<FilterInfo>* send_;
     MultiBuffer<PartialAgg*>* evicted_list_;

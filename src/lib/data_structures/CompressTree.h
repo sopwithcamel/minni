@@ -27,12 +27,9 @@
 
 namespace compresstree {
 
-//    const size_t BUFFER_SIZE = 256;
-//    const size_t BUFFER_SIZE = 10485760;
-//    const size_t BUFFER_SIZE = 20971520;
-    const uint32_t BUFFER_SIZE = 31457280;
-    const uint32_t MAX_ELS_PER_BUFFER = BUFFER_SIZE / 16;
-    const uint32_t EMPTY_THRESHOLD = MAX_ELS_PER_BUFFER / 2;
+    extern uint32_t BUFFER_SIZE;
+    extern uint32_t MAX_ELS_PER_BUFFER;
+    extern uint32_t EMPTY_THRESHOLD;
 
     enum CompressAlgorithm {
         SNAPPY,
@@ -66,6 +63,7 @@ namespace compresstree {
 #endif
       public:
         CompressTree(uint32_t a, uint32_t b, uint32_t nodesInMemory,
+                uint32_t buffer_size,
                 size_t (*createPAOFunc)(Token* t, PartialAgg** p),
                 void (*destroyPAOFunc)(PartialAgg* p));
         ~CompressTree();

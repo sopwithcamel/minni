@@ -26,7 +26,7 @@
 #include "PartialAgg.h"
 #include "Serializer.h"
 #include "Sorter.h"
-#include "SparseHash.h"
+#include "SparseHashMurmur.h"
 #include "SparseHashFilter.h"
 #include "TokenizerFilter.h"
 #include "util.h"

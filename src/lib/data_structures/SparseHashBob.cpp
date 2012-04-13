@@ -1,7 +1,7 @@
-#include "SparseHash.h"
+#include "SparseHashBob.h"
 #include <algorithm>
 
-SparseHash::SparseHash(size_t capacity, size_t evictAtTime) :
+SparseHashBob::SparseHashBob(size_t capacity, size_t evictAtTime) :
         capacity_(capacity),
         evictAtTime_(evictAtTime),
         numElements_(0)
@@ -9,11 +9,11 @@ SparseHash::SparseHash(size_t capacity, size_t evictAtTime) :
     accumulator_.set_deleted_key("mamihlapinatapai");
 }
 
-SparseHash::~SparseHash()
+SparseHashBob::~SparseHashBob()
 {
 }
 
-bool SparseHash::insert(void* key, PartialAgg* value, PartialAgg**& evicted,
+bool SparseHashBob::insert(void* key, PartialAgg* value, PartialAgg**& evicted,
         size_t& num_evicted, size_t max_evictable)
 {
     bool ret;
@@ -34,7 +34,7 @@ bool SparseHash::insert(void* key, PartialAgg* value, PartialAgg**& evicted,
     return ret;
 }
 
-bool SparseHash::nextValue(void*& key, PartialAgg*& value)
+bool SparseHashBob::nextValue(void*& key, PartialAgg*& value)
 {
     if (readIterator_ == accumulator_.end())
         readIterator_ = accumulator_.begin();
@@ -52,7 +52,7 @@ bool SparseHash::nextValue(void*& key, PartialAgg*& value)
     return false;
 }
 
-size_t SparseHash::getNumElements() const
+size_t SparseHashBob::getNumElements() const
 {
     return numElements_;
 }

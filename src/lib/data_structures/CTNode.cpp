@@ -81,16 +81,17 @@ namespace compresstree {
 #endif
     }
 
-    bool Node::insert(uint64_t hash, const std::string& value)
+    bool Node::insert(uint64_t hash, PartialAgg* agg)
     {
         uint32_t hashv = (uint32_t)hash;
-        uint32_t buf_size = value.size();
+        uint32_t buf_size = ((ProtobufPartialAgg*)agg)->serializedSize();
 
         // copy into Buffer fields
         Buffer::List* l = buffer_.lists_[0];
         l->hashes_[l->num_] = hashv;
         l->sizes_[l->num_] = buf_size;
-        memmove(l->data_ + l->size_, (void*)value.data(), buf_size);
+        ((ProtobufPartialAgg*)agg)->serialize(l->data_ + l->size_,
+                buf_size);
         l->size_ += buf_size;
         l->num_++;
 
@@ -176,7 +177,7 @@ namespace compresstree {
         if (isLeaf()) {
             /* this may be called even when buffer is not full (when flushing
              * all buffers at the end). */
-            if (isFull() || isRoot()) {
+            if (isFull() || isRoot()) { 
                 tree_->addLeafToEmpty(this);
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Leaf node %d added to full-leaf-list\
@@ -197,6 +198,7 @@ namespace compresstree {
                 children_[curChild]->emptyOrCompress();
             }
         } else {
+            checkSerializationIntegrity();
             Buffer::List* l = buffer_.lists_[0];
             // find the first separator strictly greater than the first element
             while (l->hashes_[curElement] >= 
@@ -218,6 +220,10 @@ namespace compresstree {
                     children_[curChild]->separator_, curChild, l->hashes_[0]);
 #endif
             uint32_t num = buffer_.numElements();
+#ifdef ENABLE_ASSERT_CHECKS
+            // there has to be a single list in the buffer at this point
+            assert(buffer_.lists_.size() == 1);
+#endif
             while (curElement < num) {
                 if (l->hashes_[curElement] >= 
                         children_[curChild]->separator_) {
@@ -443,8 +449,8 @@ namespace compresstree {
                 // aggregate elements
                 if (i == lastIndex + 1) {
                     if (!lastPAO->deserialize(perm_[lastIndex], 
-                            l->sizes_[i])) {
-                        fprintf(stderr, "Error at index %u\n", lastIndex);
+                            l->sizes_[lastIndex])) {
+                        fprintf(stderr, "Error at index %d\n", i);
                         assert(false);
                     }
                 }
@@ -462,18 +468,16 @@ namespace compresstree {
             if (i == lastIndex + 1) {
                 // the size wouldn't have changed
                 a->sizes_[a->num_] = l->sizes_[lastIndex];
+                memset(a->data_ + a->size_, 0, l->sizes_[lastIndex]);
                 memmove(a->data_ + a->size_,
                         (void*)(perm_[lastIndex]),
                         l->sizes_[lastIndex]);
                 a->size_ += l->sizes_[lastIndex];
             } else {
-                std::string serialized;
-                lastPAO->serialize(&serialized);
-                uint32_t buf_size = serialized.size();
+                uint32_t buf_size = lastPAO->serializedSize();
+                lastPAO->serialize(a->data_ + a->size_, buf_size);
 
                 a->sizes_[a->num_] = buf_size;
-                memmove(a->data_ + a->size_,
-                        (void*)serialized.data(), buf_size);                        
                 a->size_ += buf_size;
 #ifdef ENABLE_COUNTERS
                 tree_->monitor_->bctr++;
@@ -488,19 +492,17 @@ namespace compresstree {
             a->hashes_[a->num_] = l->hashes_[lastIndex];
             // the size wouldn't have changed
             a->sizes_[a->num_] = l->sizes_[lastIndex];
+            memset(a->data_ + a->size_, 0, l->sizes_[lastIndex]);
             memmove(a->data_ + a->size_,
                     (void*)(perm_[lastIndex]),
                     l->sizes_[lastIndex]);
             a->size_ += l->sizes_[lastIndex];
         } else {
-            std::string serialized;
-            lastPAO->serialize(&serialized);
-            uint32_t buf_size = serialized.size();
+            uint32_t buf_size = lastPAO->serializedSize();
+            lastPAO->serialize(a->data_ + a->size_, buf_size);
 
             a->hashes_[a->num_] = l->hashes_[lastIndex];
             a->sizes_[a->num_] = buf_size;
-            memmove(a->data_ + a->size_,
-                    (void*)serialized.data(), buf_size);                        
             a->size_ += buf_size;
         }
         a->num_++;
@@ -514,6 +516,7 @@ namespace compresstree {
         buffer_.deallocate();
         buffer_ = aux;
         aux.clear();
+        checkSerializationIntegrity();
         return true;
     }
 
@@ -526,6 +529,7 @@ namespace compresstree {
         if (buffer_.lists_.size() == 1 || buffer_.empty())
             return true;
 
+        checkSerializationIntegrity();
         // initialize aux buffer
         Buffer aux;
         Buffer::List* a;
@@ -555,6 +559,7 @@ namespace compresstree {
             a->hashes_[a->num_] = n.hash();
             uint32_t buf_size = n.size();
             a->sizes_[a->num_] = buf_size;
+            memset(a->data_ + a->size_, 0, buf_size);
             memmove(a->data_ + a->size_,
                     (void*)n.data(), buf_size);
             a->size_ += buf_size;
@@ -576,6 +581,7 @@ namespace compresstree {
         buffer_.clear();
         buffer_ = aux;
         aux.clear();
+        checkSerializationIntegrity();
 
         return true;
     }
@@ -608,11 +614,23 @@ namespace compresstree {
                 if (numMerged == 0) {
                     if (!lastPAO->deserialize(l->data_ + lastOffset,
                             l->sizes_[lastIndex])) {
-                        fprintf(stderr, "Error at %u\n", lastIndex);
+/*
+                        // skip error
+                        lastIndex = i;
+                        lastOffset = offset;
+                        offset += l->sizes_[i];
+                        continue;
+*/
+                        fprintf(stderr, "Can't deserialize at %u, index: %u\n", lastOffset, lastIndex);
                         assert(false);
                     }
                 }
                 if(!thisPAO->deserialize(l->data_ + offset, l->sizes_[i])) {
+/*
+                    offset += l->sizes_[i];
+                    continue;
+*/
+                    fprintf(stderr, "Can't deserialize at %u, index: %u\n", offset, i);
                     assert(false);
                 }
                 if (!thisPAO->key().compare(lastPAO->key())) {
@@ -626,16 +644,14 @@ namespace compresstree {
             if (numMerged == 0) {
                 uint32_t buf_size = l->sizes_[lastIndex];
                 a->sizes_[a->num_] = l->sizes_[lastIndex];
+                memset(a->data_ + a->size_, 0, l->sizes_[lastIndex]);
                 memmove(a->data_ + a->size_,
                         (void*)(l->data_ + lastOffset), l->sizes_[lastIndex]);
                 a->size_ += buf_size;
             } else {
-                std::string serialized;
-                lastPAO->serialize(&serialized);
-                uint32_t buf_size = serialized.size();
+                uint32_t buf_size = lastPAO->serializedSize();
+                lastPAO->serialize(a->data_ + a->size_, buf_size);
                 a->sizes_[a->num_] = buf_size;
-                memmove(a->data_ + a->size_,
-                        (void*)(serialized.data()), buf_size);
                 a->size_ += buf_size;
             }
             a->num_++;
@@ -649,16 +665,14 @@ namespace compresstree {
         if (numMerged == 0) {
             uint32_t buf_size = l->sizes_[lastIndex];
             a->sizes_[a->num_] = l->sizes_[lastIndex];
+            memset(a->data_ + a->size_, 0, l->sizes_[lastIndex]);
             memmove(a->data_ + a->size_,
                     (void*)(l->data_ + lastOffset), l->sizes_[lastIndex]);
             a->size_ += buf_size;
         } else {
-            std::string serialized;
-            lastPAO->serialize(&serialized);
-            uint32_t buf_size = serialized.size();
+            uint32_t buf_size = lastPAO->serializedSize();
+            lastPAO->serialize(a->data_ + a->size_, buf_size);
             a->sizes_[a->num_] = buf_size;
-            memmove(a->data_ + a->size_,
-                    (void*)(serialized.data()), buf_size);
             a->size_ += buf_size;
         }
         a->num_++;
@@ -692,6 +706,7 @@ namespace compresstree {
 #endif
         }
 
+        checkSerializationIntegrity();
         // create new leaf
         Node* newLeaf = new Node(tree_, 0);
         newLeaf->copyIntoBuffer(l, splitIndex, num - splitIndex);
@@ -711,19 +726,19 @@ namespace compresstree {
         copyIntoBuffer(l, 0, splitIndex);
 #endif
         separator_ = l->hashes_[splitIndex];
+        // delete the old list
+        buffer_.delList(0);
+        l = buffer_.lists_[0];
 
         // check integrity of both leaves
         newLeaf->checkIntegrity();
         checkIntegrity();
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node %d splits to Node %d: new offsets: %u and\
+        fprintf(stderr, "Node %d splits to Node %d: new indices: %u and\
                 %u; new separators: %u and %u\n", id_, newLeaf->id_, 
-                l->size_, newLeaf->buffer_.lists_[0]->size_, separator_, 
+                l->num_, newLeaf->buffer_.lists_[0]->num_, separator_, 
                 newLeaf->separator_);
 #endif
-        // delete the old list
-        buffer_.delList(0);
-        l = NULL;
 
         // if leaf is also the root, create new root
         if (isRoot()) {
@@ -739,6 +754,9 @@ namespace compresstree {
     bool Node::copyIntoBuffer(Buffer::List* parent_list, uint32_t index, 
             uint32_t num)
     {
+        // check if the node is still queued up for a previous compression
+        waitForCompressAction(COMPRESS);
+
         // calculate offset
         uint32_t offset = 0;
         uint32_t num_bytes = 0;
@@ -749,6 +767,7 @@ namespace compresstree {
             num_bytes += parent_list->sizes_[index + i];
         }
 #ifdef ENABLE_ASSERT_CHECKS
+        assert(parent_list->state_ == Buffer::List::DECOMPRESSED);
         if (num_bytes >= BUFFER_SIZE) {
             fprintf(stderr, "Node: %d, buf: %d\n", id_, 
                     num_bytes); 
@@ -757,14 +776,18 @@ namespace compresstree {
 #endif
         // allocate a new List in the buffer and copy data into it
         Buffer::List* l = buffer_.addList();
+        memset(l->hashes_, 0, num * sizeof(uint32_t));
         memmove(l->hashes_, parent_list->hashes_ + index,
                 num * sizeof(uint32_t));
+        memset(l->sizes_, 0, num * sizeof(uint32_t));
         memmove(l->sizes_, parent_list->sizes_ + index,
                 num * sizeof(uint32_t));
+        memset(l->data_, 0, num_bytes);
         memmove(l->data_, parent_list->data_ + offset, 
                 num_bytes);
         l->num_ = num;
         l->size_ = num_bytes;
+        checkSerializationIntegrity(buffer_.lists_.size()-1);
         return true;
     }
 #else
@@ -1181,6 +1204,41 @@ namespace compresstree {
         return false;
     }
 #endif //ENABLE_PAGING
+
+    bool Node::checkSerializationIntegrity(int listn/*=-1*/)
+    {
+#if 0
+        uint32_t offset;
+        PartialAgg* pao;
+        tree_->createPAO_(NULL, &pao);
+        if (listn < 0) {
+            for (uint32_t j=0; j<buffer_.lists_.size(); j++) {
+                Buffer::List* l = buffer_.lists_[j];
+                offset = 0;
+                for (uint32_t i=0; i<l->num_; i++) {
+                    if (!((ProtobufPartialAgg*)pao)->deserialize(l->data_ + offset, l->sizes_[i])) {
+                        fprintf(stderr, "Error in list %u, index %u, offset %u\n",
+                                j, i, offset);
+                        assert(false);
+                    }
+                    offset += l->sizes_[i];
+                }
+            }
+        } else {
+            Buffer::List* l = buffer_.lists_[listn];
+            offset = 0;
+            for (uint32_t i=0; i<l->num_; i++) {
+                if (!((ProtobufPartialAgg*)pao)->deserialize(l->data_ + offset, l->sizes_[i])) {
+                    fprintf(stderr, "Error in list %u, index %u, offset %u\n",
+                            listn, i, offset);
+                    assert(false);
+                }
+                offset += l->sizes_[i];
+            }
+        }
+        tree_->destroyPAO_(pao);
+#endif
+    }
 
     bool Node::checkIntegrity()
     {
