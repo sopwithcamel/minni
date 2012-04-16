@@ -202,9 +202,6 @@ namespace compresstree {
                 pthread_mutex_lock(&(n->compActMutex_));
                 if (n->compAct_ == Node::COMPRESS) {
                     n->snappyCompress();
-#ifdef ENABLE_COUNTERS
-                    tree_->monitor_->decompCtr--;
-#endif
                     // signal to agent waiting for completion.
                     pthread_cond_signal(&n->compActCond_);
                 } else if (n->compAct_ == Node::DECOMPRESS) {
@@ -214,9 +211,6 @@ namespace compresstree {
 #endif
                     pthread_mutex_lock(&(n->compActMutex_));
                     n->snappyDecompress();
-#ifdef ENABLE_COUNTERS
-                    tree_->monitor_->decompCtr++;
-#endif
                     pthread_cond_signal(&n->compActCond_);
                 }
                 n->queuedForCompAct_ = false;
@@ -523,10 +517,11 @@ namespace compresstree {
 #ifdef ENABLE_COUNTERS
     Monitor::Monitor(CompressTree* tree) :
             Slave(tree),
+            numElements(0),
+            numMerged(0),
             actr(0),
             bctr(0),
-            cctr(0),
-            decompCtr(1)
+            cctr(0)
     {
     }
 
@@ -544,23 +539,16 @@ namespace compresstree {
         pthread_barrier_wait(&tree_->threadsBarrier_);
         while (!inputComplete_) {
             sleep(1);
-            nodeCtr.push_back(decompCtr);
-            totNodeCtr.push_back(tree_->nodeCtr);
+            elctr.push_back(numElements);
         }
-        int32_t totNodes = 0;
-        for (uint32_t i=0; i<nodeCtr.size(); i++) {
-            totNodes += nodeCtr[i];
+        uint64_t tot = 0;
+        for (uint32_t i=0; i<elctr.size(); i++) {
+            tot += elctr[i];
         }
-        fprintf(stderr, "Avg. number of decomp nodes: %f\n", (float)totNodes / 
-                nodeCtr.size());
-        for (uint32_t i=0; i<nodeCtr.size(); i++)
-            fprintf(stderr, "%d, ", nodeCtr[i]);
-        fprintf(stderr, "\n");
-        for (uint32_t i=0; i<totNodeCtr.size(); i++)
-            fprintf(stderr, "%d, ", totNodeCtr[i]);
-        fprintf(stderr, "\n");
-        nodeCtr.clear();
-        totNodeCtr.clear();
+        fprintf(stderr, "Avg. number of elements: %f\n", (float)tot / 
+                elctr.size());
+        fprintf(stderr, "A: %lu, B:%lu\n", numElements, numMerged);
+        elctr.clear();
     }
 
     void Monitor::addNode(Node* n)
