@@ -11,6 +11,7 @@ using namespace libconfig;
 
 DEFINE_string(minni__input_files, "", "Input file");
 DEFINE_string(minni__so_name, "", "Path to application shared object file");
+DEFINE_uint64(minni__max_maps, 1, "Number of mappers per node");
 DEFINE_string(minni__internal__selected, "", "Selected aggregator");
 DEFINE_uint64(minni__tbb__buffers, 0, "Number of buffers in TBB pipeline");
 DEFINE_uint64(minni__tbb__token_size, 0, "TBB token size");
@@ -70,6 +71,11 @@ int main(int argc, char **argv)
     if (FLAGS_minni__so_name.compare("")) {
         Setting& c_so_name = cfg.lookup("minni.so_name");
         c_so_name = (char*)FLAGS_minni__so_name.c_str();
+    }
+
+    if (FLAGS_minni__max_maps) {
+        Setting& c_max_maps = cfg.lookup("minni.max_maps");
+        c_max_maps = (int)FLAGS_minni__max_maps;
     }
 
     if (FLAGS_minni__internal__selected.compare("")) {
