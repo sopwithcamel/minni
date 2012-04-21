@@ -86,6 +86,7 @@ namespace compresstree {
         Buffer::List* l = buffer_.lists_[0];
         l->hashes_[l->num_] = hashv;
         l->sizes_[l->num_] = buf_size;
+        memset(l->data_ + l->size_, 0, buf_size);
         ((ProtobufPartialAgg*)agg)->serialize(l->data_ + l->size_,
                 buf_size);
         l->size_ += buf_size;
