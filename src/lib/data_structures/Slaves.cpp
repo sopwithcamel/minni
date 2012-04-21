@@ -8,7 +8,8 @@ namespace compresstree {
     Slave::Slave(CompressTree* tree) :
             tree_(tree),
             inputComplete_(false),
-            queueEmpty_(true)
+            queueEmpty_(true),
+            askForCompletionNotice_(false)
     {
         pthread_mutex_init(&queueMutex_, NULL);
         pthread_cond_init(&queueHasWork_, NULL);
