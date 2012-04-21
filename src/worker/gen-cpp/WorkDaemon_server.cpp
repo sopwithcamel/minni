@@ -50,6 +50,7 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
 public:
   WorkDaemonHandler(): task_reg(), file_reg() {
     // Set up the root and a MasterTask.
+    id = 0;
     root = new(task::allocate_root()) empty_task();
     //MasterTask& t = *new(root->allocate_additional_child_of(*root)) MasterTask(&status_map, &mapper_map, &reducer_map);
     //root->spawn(t); // NB: root hasn't be spawned since that is synchronous
@@ -205,7 +206,7 @@ public:
     // Crash the node.
   void kill(){
     if (id > 0)
-	exit(0);
+    	exit(0);
     cout << id++ << ": Kill..." << endl;
     cout << "---NEW EPOCH---" << endl;
     file_reg.clear();
