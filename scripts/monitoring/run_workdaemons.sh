@@ -1,1 +1,0 @@
-parallel-ssh -t -1 -h ~/kfs-0.5/scripts/machines.txt "export LD_LIBRARY_PATH=/home/hamur/tbb40_233oss/build/linux_intel64_gcc_cc4.6.0_libc2.12.1_kernel2.6.38.3_release; time ~/minni/src/worker/gen-cpp/workdaemon > /localfs/hamur/wlog"
