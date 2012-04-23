@@ -55,7 +55,7 @@ namespace compresstree {
 #endif
       public:
         CompressTree(uint32_t a, uint32_t b, uint32_t nodesInMemory,
-                uint32_t buffer_size,
+                uint32_t buffer_size, uint32_t pao_size,
                 size_t (*createPAOFunc)(Token* t, PartialAgg** p),
                 void (*destroyPAOFunc)(PartialAgg* p));
         ~CompressTree();
