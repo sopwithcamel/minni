@@ -135,9 +135,9 @@ task* ReducerWrapperTask::execute() {
 		} else if (partstatus::DONE == curr_stat) {
 			assert(flag == 1); // should have pulled at least one
 			flag = 2;
-			TimeLog::addTimeStamp(ss.str() + ": Starting Reducing");
+			TimeLog::addTimeStamp(jobid, "Starting Reducing");
 			reducer->aggreg->runPipeline();
-			TimeLog::addTimeStamp(ss.str() + ": Done Reducing");
+			TimeLog::addTimeStamp(jobid, "Done Reducing");
 			TimeLog::dumpLog();
 			cout<<"Reducer: Done with reducing \n";
 			break;
