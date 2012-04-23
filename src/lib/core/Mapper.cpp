@@ -137,7 +137,7 @@ task* MapperWrapperTask::execute() {
 	ss << jobid;
 	map_out_file += ss.str() + "-part";
 
-	TimeLog::addTimeStamp(ss.str() + ": Start of map phase");
+	TimeLog::addTimeStamp(jobid, "Start of map phase");
 
 	if (!selected_map_aggregator.compare("bucket")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new BucketAggregator(
@@ -170,7 +170,7 @@ task* MapperWrapperTask::execute() {
 		cout<<"Pushed back the file to worker daemon list \n";
 		my_Filelist.push_back(f1);
 	}
-	TimeLog::addTimeStamp(ss.str() + ": End of map phase");
+	TimeLog::addTimeStamp(jobid, "End of map phase");
 	TimeLog::dumpLog();
 	
 	delete mapper->aggregs;

@@ -39,12 +39,14 @@ private:
 	~TimeLog() {};
 public:
 	static std::vector<TimeStamp> timelog;
-	static void addTimeStamp(std::string str)
+	static void addTimeStamp(int jobid, std::string str)
 	{
-		TimeStamp* ts;
-		time_t ltime = time(NULL);
-		ts = new TimeStamp(str, ltime);
-		timelog.push_back(*ts);		
+        if (jobid == 0 || jobid == 1) {
+            TimeStamp* ts;
+            time_t ltime = time(NULL);
+            ts = new TimeStamp(str, ltime);
+            timelog.push_back(*ts);		
+        }
 	}
 		
 	static void dumpLog() {
