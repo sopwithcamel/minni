@@ -2,7 +2,6 @@
 #include "Reducer.h"
 #include "BucketAggregator.h"
 #include "util.h"
-#include <google/heap-profiler.h>
 
 //Reducer class
 Reducer::Reducer(size_t (*__createPAO)(Token* t, PartialAgg** p), 
@@ -149,12 +148,6 @@ task* ReducerWrapperTask::execute() {
 	cout<<"Reducer: The master is "<<myoutput.master_name<<endl;
 	cout<<"Reducer: The output port is "<<myoutput.port<<endl;
 
-	Setting& c_heapprof = readConfigFile(cfg, "minni.debug.heapprofile");
-	int heapprofile = c_heapprof;
-/*
-    if (heapprofile == 1)
-        HeapProfilerStop();
-*/
 	delete reducer->aggreg;
 	delete reducer;
 	free(s_name);
