@@ -26,10 +26,12 @@ cpToDFS_LDFLAGS = -lkfsClient \
 		  -lkfsIO \
 		  -lkfsCommon \
 		  -lqcdio \
+		  -lboost_regex-mt \
 		  -lboost_regex
 
 cpFromDFS_LDFLAGS = -lkfsClient \
 		  -lkfsIO \
 		  -lkfsCommon \
 		  -lqcdio \
+		  -lboost_regex-mt \
 		  -lboost_regex

@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "uthash.h"
 #include "Tokenizer.h"
 
 //#define UTHASH
