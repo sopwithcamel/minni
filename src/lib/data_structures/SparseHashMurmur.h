@@ -1,5 +1,5 @@
-#ifndef LIB_SPARSEHASH_H
-#define LIB_SPARSEHASH_H
+#ifndef LIB_SPARSEHASHMURMUR_H
+#define LIB_SPARSEHASHMURMUR_H
 
 #include <google/sparse_hash_map>
 #include <tr1/unordered_map>
@@ -9,7 +9,7 @@
 #include "HashUtil.h"
 #include "PartialAgg.h"
 
-class SparseHash :
+class SparseHashMurmur :
         public Accumulator
 {
     struct Murmur {
@@ -29,13 +29,14 @@ class SparseHash :
     typedef google::sparse_hash_map<const char*, PartialAgg*, Murmur, 
             eqstr> Hash;
   public:
-    SparseHash(size_t capacity, size_t evictAtTime);
-    ~SparseHash();
+    SparseHashMurmur(size_t capacity, size_t evictAtTime);
+    ~SparseHashMurmur();
     /* returns true if an insert was performed; returns false if
      * merged with existing PAO */
     bool insert(void* key, PartialAgg* value, PartialAgg**& evicted,
             size_t& num_evicted, size_t max_evictable);
     bool nextValue(void*& key, PartialAgg*& value);
+    size_t getNumElements() const;
   private:
     Hash accumulator_;
     size_t capacity_;

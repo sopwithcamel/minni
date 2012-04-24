@@ -3,10 +3,12 @@
 
 CompressTreeInserter::CompressTreeInserter(Aggregator* agg,
         Accumulator* acc,
+        HashUtil::HashFunction hf,
         size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 		void (*destroyPAOFunc)(PartialAgg* p),
 		size_t max_keys) :
     AccumulatorInserter(agg, acc, destroyPAOFunc, max_keys),
+    hf_(hf),
     createPAO_(createPAOFunc),
     next_buffer(0)
 {
@@ -45,15 +47,27 @@ void* CompressTreeInserter::operator()(void* recv)
     size_t numEvicted = 0;
     size_t evict_list_ctr = 0;
 
-    unsigned char md_value[EVP_MAX_MD_SIZE];                                                                      
-    unsigned char md_trunc[64];                                                                                   
-    EVP_MD_CTX mdctx;
-    unsigned int md_len;
-
     while (ind < recv_length) {
         pao = pao_l[ind];
-        hashv = HashUtil::MurmurHash(pao->key(), pao->key().size()); 
-
+        switch (hf_) {
+            case HashUtil::MURMUR:
+                hashv = HashUtil::MurmurHash(pao->key(), 42);
+                break;
+            case HashUtil::BOB:
+                hashv = HashUtil::BobHash(pao->key(), 42);
+                break;
+        }
+/*
+        std::string k = pao->key();
+        hashv &= 0xFFFF;
+        uint32_t let = 0;
+        let = k[0];
+        let <<= 8;
+        let |= k[1];
+        let <<=16;
+        let |= hashv;
+        hashv = let;
+*/
         ptrToHash = (void*)&hashv;
         PartialAgg** l = this_list + evict_list_ctr;
         ct->insert(ptrToHash, pao, l, numEvicted,
@@ -70,11 +84,15 @@ void* CompressTreeInserter::operator()(void* recv)
         uint64_t hash;
         void* ptrToHash = (void*)&hash;
         bool remain;
-        while(ct->nextValue(ptrToHash, this_list[evict_list_ctr++])) {
-            if (evict_list_ctr == max_keys_per_token) {
-                aggregator_->sendNextToken = false; // i'm not done yet!
+        while(!aggregator_->can_exit) {
+            if (evict_list_ctr == max_keys_per_token)
+                break;
+            remain = ct->nextValue(ptrToHash, this_list[evict_list_ctr]);
+            if (!remain) {
+                aggregator_->can_exit = true;
                 break;
             }
+            evict_list_ctr++;
         }
 	}
 

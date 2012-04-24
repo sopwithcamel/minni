@@ -6,7 +6,7 @@ AccumulatorInserter::AccumulatorInserter(Aggregator* agg,
         Accumulator* acc,
         void (*destroyPAOFunc)(PartialAgg* p),
         const size_t max_keys) :
-    filter(/*serial=*/true),
+    filter(serial_in_order),
     aggregator_(agg),
     accumulator_(acc),
     destroyPAO(destroyPAOFunc),

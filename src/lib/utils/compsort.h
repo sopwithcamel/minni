@@ -25,7 +25,14 @@ namespace compsort {
         // k is the number of bits allocated for each value
         uint32_t* last_word = out;
         uint32_t a = 32; // denotes the number of bits remaining in last word
-        uint32_t k = floor(log2((data[len-1] - data[0]) / len)) + 1;
+        uint32_t min = UINT32_MAX, max = 0;
+        uint32_t k;
+        for (int i=len-1; i>=1; i--) {
+            data[i] -= data[i-1];
+            if (data[i] < min) min = data[i];
+            if (data[i] > max) max = data[i];
+        }
+        k = floor(log2((max + min) / 2)) + 1;
         *last_word = k; last_word++; // store k as first element since we need it later
         last_word++; // leave another space for storing offset in the final word
         *last_word = 0;
@@ -123,6 +130,8 @@ exit_loop:
         if (rem != 0) {
             assert(false);
         }
+        for (int i=1; i<out_len; i++)
+            out[i] += out[i-1];
     }
 };
 

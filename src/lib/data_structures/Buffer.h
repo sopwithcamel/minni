@@ -16,7 +16,7 @@ namespace compresstree {
               List();
               ~List();
               /* allocates buffers */
-              void allocate();
+              void allocate(bool isLarge);
               /* frees allocated buffers. Maintains counter info */
               void deallocate();
               /* set list to empty */
@@ -36,11 +36,12 @@ namespace compresstree {
           // clears all buffer state
           ~Buffer();
           // add a list and allocate memory
-          List* addList();
+          List* addList(bool isLarge=false);
           void addList(List* l);
           /* clear the lists_ vector. This does not free space allocated
            * for the buffers but merely deletes the pointers. To avoid
            * memory leaks, this must be called after deallocate() */
+          void delList(uint32_t ind);
           void clear();
           /* frees buffers in all the lists. This maintains all the count
            * information about each of the lists */

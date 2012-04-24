@@ -8,7 +8,8 @@ namespace compresstree {
     Slave::Slave(CompressTree* tree) :
             tree_(tree),
             inputComplete_(false),
-            queueEmpty_(true)
+            queueEmpty_(true),
+            askForCompletionNotice_(false)
     {
         pthread_mutex_init(&queueMutex_, NULL);
         pthread_cond_init(&queueHasWork_, NULL);
@@ -103,7 +104,7 @@ namespace compresstree {
                 if (n->isRoot())
                     rootFlag = true;
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "emptier: emptying node: %d\t", n->id_);
+                fprintf(stderr, "emptier: emptying node: %d (size: %u)\t", n->id_, n->buffer_.numElements());
                 fprintf(stderr, "remaining: ");
                 queue_.printElements();
 #endif
@@ -119,20 +120,9 @@ namespace compresstree {
                 else {
                     n->aggregateMergedBuffer();
                 }
-                // check if aggregation made the node small enough
-                if (!n->isFull() && !n->isRoot() && 
-                        tree_->emptyType_ != ALWAYS) {
-#ifdef CT_NODE_DEBUG
-                    fprintf(stderr, "node: %d reduced in size to %u\n", 
-                            n->id_, n->buffer_.numElements());
-#endif
-                    // Set node as NOT queued for emptying
-                    CALL_MEM_FUNC(*n, n->compress)();
-                } else {
-                    n->emptyBuffer();
-                    if (n->isLeaf())
-                        tree_->handleFullLeaves();
-                }
+                n->emptyBuffer();
+                if (n->isLeaf())
+                    tree_->handleFullLeaves();
                 if (rootFlag) {
                     // do the split and create new root
                     rootFlag = false;
@@ -174,7 +164,7 @@ namespace compresstree {
         }
         pthread_mutex_unlock(&queueMutex_);
 #ifdef CT_NODE_DEBUG
-        fprintf(stderr, "Node %d added to to-empty list: ", node->id_);
+        fprintf(stderr, "Node %d (size: %u) added to to-empty list: ", node->id_, node->buffer_.numElements());
         queue_.printElements();
 #endif
     }
@@ -213,9 +203,6 @@ namespace compresstree {
                 pthread_mutex_lock(&(n->compActMutex_));
                 if (n->compAct_ == Node::COMPRESS) {
                     n->snappyCompress();
-#ifdef ENABLE_COUNTERS
-                    tree_->monitor_->decompCtr--;
-#endif
                     // signal to agent waiting for completion.
                     pthread_cond_signal(&n->compActCond_);
                 } else if (n->compAct_ == Node::DECOMPRESS) {
@@ -225,9 +212,6 @@ namespace compresstree {
 #endif
                     pthread_mutex_lock(&(n->compActMutex_));
                     n->snappyDecompress();
-#ifdef ENABLE_COUNTERS
-                    tree_->monitor_->decompCtr++;
-#endif
                     pthread_cond_signal(&n->compActCond_);
                 }
                 n->queuedForCompAct_ = false;
@@ -271,7 +255,7 @@ namespace compresstree {
             pthread_mutex_lock(&queueMutex_);
             nodes_.push_front(node);
 #ifdef CT_NODE_DEBUG
-            fprintf(stderr, "adding node %d to decompress: ", node->id_);
+            fprintf(stderr, "adding node %d (size: %u) to decompress: ", node->id_, node->buffer_.numElements());
             printElements();
 #endif
         }
@@ -311,14 +295,14 @@ namespace compresstree {
                 Node* n = nodes_.front();
                 nodes_.pop_front();
                 pthread_mutex_unlock(&queueMutex_);
+                n->waitForCompressAction(Node::DECOMPRESS);
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "sorter: sorting node: %d\t", n->id_);
+                fprintf(stderr, "sorter: sorting node: %d (size: %u)\t", n->id_, n->buffer_.numElements());
                 fprintf(stderr, "remaining: ");
                 for (int i=0; i<nodes_.size(); i++)
                     fprintf(stderr, "%d, ", nodes_[i]->id_);
                 fprintf(stderr, "\n");
 #endif
-                n->waitForCompressAction(Node::DECOMPRESS);
                 if (n->isRoot())
                     n->sortBuffer();
                 else {
@@ -534,10 +518,11 @@ namespace compresstree {
 #ifdef ENABLE_COUNTERS
     Monitor::Monitor(CompressTree* tree) :
             Slave(tree),
+            numElements(0),
+            numMerged(0),
             actr(0),
             bctr(0),
-            cctr(0),
-            decompCtr(1)
+            cctr(0)
     {
     }
 
@@ -555,23 +540,16 @@ namespace compresstree {
         pthread_barrier_wait(&tree_->threadsBarrier_);
         while (!inputComplete_) {
             sleep(1);
-            nodeCtr.push_back(decompCtr);
-            totNodeCtr.push_back(tree_->nodeCtr);
+            elctr.push_back(numElements);
         }
-        int32_t totNodes = 0;
-        for (uint32_t i=0; i<nodeCtr.size(); i++) {
-            totNodes += nodeCtr[i];
+        uint64_t tot = 0;
+        for (uint32_t i=0; i<elctr.size(); i++) {
+            tot += elctr[i];
         }
-        fprintf(stderr, "Avg. number of decomp nodes: %f\n", (float)totNodes / 
-                nodeCtr.size());
-        for (uint32_t i=0; i<nodeCtr.size(); i++)
-            fprintf(stderr, "%d, ", nodeCtr[i]);
-        fprintf(stderr, "\n");
-        for (uint32_t i=0; i<totNodeCtr.size(); i++)
-            fprintf(stderr, "%d, ", totNodeCtr[i]);
-        fprintf(stderr, "\n");
-        nodeCtr.clear();
-        totNodeCtr.clear();
+        fprintf(stderr, "Avg. number of elements: %f\n", (float)tot / 
+                elctr.size());
+        fprintf(stderr, "A: %lu, B:%lu\n", numElements, numMerged);
+        elctr.clear();
     }
 
     void Monitor::addNode(Node* n)

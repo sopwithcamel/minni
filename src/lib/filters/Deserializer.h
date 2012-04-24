@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
+#include <boost/archive/binary_iarchive.hpp>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <tr1/unordered_map>
@@ -14,6 +15,7 @@
 #include "tbb/tbb_allocator.h"
 
 #include "Defs.h"
+#include "BoostPartialAgg.h"
 #include "HandSerializedPartialAgg.h"
 #include "ProtobufPartialAgg.h"
 #include "Mapper.h"
@@ -50,10 +52,11 @@ private:
 	MultiBuffer<FilterInfo>* send;
 	void* read_buf;
 
-    bool usesProtobuf_;
+    PartialAgg::SerializationMethod serializationMethod_;
 	std::ifstream *cur_bucket;		// file pointer for current bucket
     google::protobuf::io::ZeroCopyInputStream *raw_input;
     google::protobuf::io::CodedInputStream* coded_input;
+    boost::archive::binary_iarchive* ia_;
     
 	void* operator()(void*);
 	uint64_t appendToList(PartialAgg* p);

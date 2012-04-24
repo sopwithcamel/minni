@@ -38,43 +38,47 @@ using namespace std;
 #define get16bits(d) (*((const uint16_t *) (d)))
 
 class HashUtil {
-    public:
-        // Bob Jenkins Hash
-        static uint32_t BobHash(const void *buf, size_t length, uint32_t seed = 0);
-        static uint32_t BobHash(const string &s, uint32_t seed = 0);
+  public:
+    enum HashFunction {
+        MURMUR,
+        BOB
+    };
+    // Bob Jenkins Hash
+    static uint32_t BobHash(const void *buf, size_t length, uint32_t seed = 0);
+    static uint32_t BobHash(const string &s, uint32_t seed = 0);
 
-        // Bob Jenkins Hash that returns two indices in one call
-        // Useful for Cuckoo hashing, power of two choices, etc.
-        // Use idx1 before idx2, when possible. idx1 and idx2 should be initialized to seeds.
-        static void BobHash(const void *buf, size_t length, uint32_t *idx1,  uint32_t *idx2);
-        static void BobHash(const string &s, uint32_t *idx1,  uint32_t *idx2);
+    // Bob Jenkins Hash that returns two indices in one call
+    // Useful for Cuckoo hashing, power of two choices, etc.
+    // Use idx1 before idx2, when possible. idx1 and idx2 should be initialized to seeds.
+    static void BobHash(const void *buf, size_t length, uint32_t *idx1,  uint32_t *idx2);
+    static void BobHash(const string &s, uint32_t *idx1,  uint32_t *idx2);
 
-        // MurmurHash2
-        static uint32_t MurmurHash(const void *buf, size_t length, uint32_t seed = 0);
-        static uint32_t MurmurHash(const string &s, uint32_t seed = 0);
+    // MurmurHash2
+    static uint32_t MurmurHash(const void *buf, size_t length, uint32_t seed = 0);
+    static uint32_t MurmurHash(const string &s, uint32_t seed = 0);
 
-        // FNV Hash
-        static uint32_t FNVHash(const void *buf, size_t length);
-        static uint32_t FNVHash(const string &s);
+    // FNV Hash
+    static uint32_t FNVHash(const void *buf, size_t length);
+    static uint32_t FNVHash(const string &s);
 
-        // SuperFastHash
-        static uint32_t SuperFastHash(const void *buf, size_t len);
-        static uint32_t SuperFastHash(const string &s);
+    // SuperFastHash
+    static uint32_t SuperFastHash(const void *buf, size_t len);
+    static uint32_t SuperFastHash(const string &s);
 
-        // Integer hashes (from Bob Jenkins)
-        static uint32_t hashint_full_avalanche_1( uint32_t a);
-        static uint32_t hashint_full_avalanche_2( uint32_t a);
-        static uint32_t hashint_half_avalanche( uint32_t a);
+    // Integer hashes (from Bob Jenkins)
+    static uint32_t hashint_full_avalanche_1( uint32_t a);
+    static uint32_t hashint_full_avalanche_2( uint32_t a);
+    static uint32_t hashint_half_avalanche( uint32_t a);
 
-        // Null hash (shift and mask)
-        static uint32_t NullHash(const void* buf, size_t length, uint32_t shiftbytes);
+    // Null hash (shift and mask)
+    static uint32_t NullHash(const void* buf, size_t length, uint32_t shiftbytes);
 
-        // Wrappers for MD5 and SHA1 hashing using EVP
-        static std::string MD5Hash(const char* inbuf, size_t in_length);
-        static std::string SHA1Hash(const char* inbuf, size_t in_length);
+    // Wrappers for MD5 and SHA1 hashing using EVP
+    static std::string MD5Hash(const char* inbuf, size_t in_length);
+    static std::string SHA1Hash(const char* inbuf, size_t in_length);
 
-    private:
-        HashUtil();
+  private:
+    HashUtil();
 };
 
 #endif  // #ifndef _HASHUTIL_H_

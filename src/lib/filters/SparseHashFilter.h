@@ -12,7 +12,8 @@
 #include "Aggregator.h"
 #include "Accumulator.h"
 #include "AccumulatorFilter.h"
-#include "SparseHash.h"
+#include "SparseHashMurmur.h"
+#include "SparseHashBob.h"
 #include "PartialAgg.h"
 #include "Util.h"
 
@@ -27,10 +28,13 @@ class SparseHashInserter :
 			Accumulator* acc,
             size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p),
+            int num_part,
 			const size_t max_keys);
 	~SparseHashInserter();
+    int partition(const std::string& key);
 	void* operator()(void* pao_list);
   private:
+    int numPartitions_;
 	size_t next_buffer;
 	MultiBuffer<FilterInfo>* send_;
     MultiBuffer<PartialAgg*>* evicted_list_;

@@ -470,8 +470,6 @@ bool Master::checkStatus()
 						if (remainingReducers + activeReducers == 0)
 						{
 							cout << "All reducers have now finished" << endl;
-							TimeLog::addTimeStamp("Master: All reducers done");
-							TimeLog::dumpLog();
 							sendFinishedNodes();
 							return true;
 						}

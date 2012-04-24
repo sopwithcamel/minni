@@ -36,8 +36,8 @@ class Aggregator
 	tbb::pipeline* pipeline_list;	
 	tbb::task_scheduler_init* init;
 	bool input_finished;		// indicates if input stage is done
-    // set to false by filters that aren't ready to terminate
-    bool sendNextToken;
+    // set to true by filters once they are ready to terminate
+    bool can_exit;
 	uint64_t tot_input_tokens;	// measures total input tokens
 
 	void resetFlags();

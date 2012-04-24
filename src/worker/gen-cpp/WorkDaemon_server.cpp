@@ -9,6 +9,8 @@
 #include "WorkDaemon_file.h"
 #include "Mapper.h"
 #include "Reducer.h"
+#include <execinfo.h>
+#include <signal.h>
 
 // Thrift includes
 #include <protocol/TBinaryProtocol.h>
@@ -48,6 +50,7 @@ class WorkDaemonHandler : virtual public WorkDaemonIf {
 public:
   WorkDaemonHandler(): task_reg(), file_reg() {
     // Set up the root and a MasterTask.
+    id = 0;
     root = new(task::allocate_root()) empty_task();
     //MasterTask& t = *new(root->allocate_additional_child_of(*root)) MasterTask(&status_map, &mapper_map, &reducer_map);
     //root->spawn(t); // NB: root hasn't be spawned since that is synchronous
@@ -203,7 +206,7 @@ public:
     // Crash the node.
   void kill(){
     if (id > 0)
-	exit(0);
+    	exit(0);
     cout << id++ << ": Kill..." << endl;
     cout << "---NEW EPOCH---" << endl;
     file_reg.clear();
@@ -214,6 +217,19 @@ public:
 	
 };
 
+void handler(int sig) {
+    void *array[10];
+    size_t size;
+
+    // get void*'s for all entries on the stack
+    size = backtrace(array, 10);
+
+    // print out all the frames to stderr
+    fprintf(stderr, "Error: signal %d:\n", sig);
+    backtrace_symbols_fd(array, size, 2);
+    exit(1);
+}
+
 int main(int argc, char **argv) {
   int port = 9090;
   if(argc == 2){
@@ -221,6 +237,7 @@ int main(int argc, char **argv) {
   }
   cout << "--- Starting Minni ---" << endl;
   cout << "Port: " << port << endl;
+  signal(SIGSEGV, handler);   // install our handler
   shared_ptr<WorkDaemonHandler> handler(new WorkDaemonHandler());
   shared_ptr<TProcessor> processor(new WorkDaemonProcessor(handler));
   shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));

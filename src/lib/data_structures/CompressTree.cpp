@@ -10,7 +10,12 @@
 
 namespace compresstree {
 
+    uint32_t BUFFER_SIZE;
+    uint32_t MAX_ELS_PER_BUFFER;
+    uint32_t EMPTY_THRESHOLD;
+
     CompressTree::CompressTree(uint32_t a, uint32_t b, uint32_t nodesInMemory,
+                uint32_t buffer_size, uint32_t pao_size,
                 size_t (*createPAOFunc)(Token* t, PartialAgg** p),
                 void (*destroyPAOFunc)(PartialAgg* p)) :
         a_(a),
@@ -19,7 +24,7 @@ namespace compresstree {
         createPAO_(createPAOFunc),
         destroyPAO_(destroyPAOFunc),
         alg_(SNAPPY),
-        allFlush_(false),
+        allFlush_(true),
         lastLeafRead_(0),
         lastOffset_(0),
         lastElement_(0),
@@ -27,6 +32,10 @@ namespace compresstree {
         nodesInMemory_(nodesInMemory),
         numEvicted_(0)
     {
+        BUFFER_SIZE = buffer_size;
+        MAX_ELS_PER_BUFFER = BUFFER_SIZE / pao_size;
+        EMPTY_THRESHOLD = MAX_ELS_PER_BUFFER >> 1;
+    
         pthread_mutex_init(&rootNodeAvailableMutex_, NULL);
         pthread_cond_init(&rootNodeAvailableForWriting_, NULL);
 
@@ -65,6 +74,7 @@ namespace compresstree {
         }
         if (inputNode_->isFull()) {
             // check if rootNode_ is available
+            inputNode_->checkSerializationIntegrity();
             pthread_mutex_lock(&rootNodeAvailableMutex_);
             while (!rootNode_->buffer_.empty() || 
                     rootNode_->queuedForEmptying_) {
@@ -89,9 +99,7 @@ namespace compresstree {
             sorter_->addNode(rootNode_);
             sorter_->wakeup();
         }
-        std::string serialized;
-        ((ProtobufPartialAgg*)agg)->serialize(&serialized);
-        bool ret = inputNode_->insert(*(uint64_t*)hash, serialized);
+        bool ret = inputNode_->insert(*(uint64_t*)hash, agg);
 
 #ifdef ENABLE_EVICTION
         // check if any elements were evicted and pick those up
@@ -150,6 +158,8 @@ namespace compresstree {
 
             // page in and decompress first leaf
             Node* curLeaf = allLeaves_[0];
+            while (curLeaf->buffer_.numElements() == 0)
+                curLeaf = allLeaves_[++lastLeafRead_];
 #ifdef ENABLE_PAGING
             if (curLeaf->isPagedOut()) {
                 pager_->pageIn(curLeaf);
@@ -166,8 +176,8 @@ namespace compresstree {
         createPAO_(NULL, &agg);
         if (!((ProtobufPartialAgg*)agg)->deserialize(l->data_ + lastOffset_,
                 l->sizes_[lastElement_])) {
-            fprintf(stderr, "Node: %d; num lists: %d\n", curLeaf->id_, curLeaf->buffer_.lists_.size());
-            assert(false);
+            // file is empty
+            return false;
         }
         lastOffset_ += l->sizes_[lastElement_];
         lastElement_++;
@@ -185,6 +195,8 @@ namespace compresstree {
                 return false;
             }
             Node *n = allLeaves_[lastLeafRead_];
+            while (curLeaf->buffer_.numElements() == 0)
+                curLeaf = allLeaves_[++lastLeafRead_];
 #ifdef ENABLE_PAGING
             pager_->pageIn(n);
             n->waitForPageIn();
@@ -218,7 +230,7 @@ namespace compresstree {
         }
         allLeaves_.clear();
         leavesToBeEmptied_.clear();
-        allFlush_ = false;
+        allFlush_ = true;
         lastLeafRead_ = 0;
         lastOffset_ = 0;
         lastElement_ = 0;
@@ -233,7 +245,8 @@ namespace compresstree {
         fprintf(stderr, "Starting to flush\n");
         // check if rootNode_ is available
         pthread_mutex_lock(&rootNodeAvailableMutex_);
-        while (rootNode_->isFull()) {
+        while (!rootNode_->buffer_.empty() || 
+                rootNode_->queuedForEmptying_) {
             pthread_cond_wait(&rootNodeAvailableForWriting_,
                     &rootNodeAvailableMutex_);
         }
@@ -309,6 +322,7 @@ namespace compresstree {
             leavesToBeEmptied_.pop_front();
 
             Node* newLeaf = node->splitLeaf();
+
             Node *l1 = NULL, *l2 = NULL;
             if (node->isFull()) {
                 l1 = node->splitLeaf();

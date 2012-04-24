@@ -29,7 +29,8 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			data_structures/Buffer.cpp \
 			data_structures/CTNode.cpp \
 			data_structures/CompressTree.cpp \
-			data_structures/SparseHash.cpp \
+			data_structures/SparseHashMurmur.cpp \
+			data_structures/SparseHashBob.cpp \
 			data_structures/Slaves.cpp \
 			utils/HashUtil.cpp
 
@@ -52,7 +53,8 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
 			-L/usr/lib/tbb \
-			-lltdl -lpthread -ltbb -lconfig++ -lsnappy -lssl -lhoard -lprotobuf
+			-lltdl -lpthread -ltbb -lconfig++ -lsnappy -lssl -lhoard \
+			-lprotobuf -lboost_serialization
 
 minni_includedir = $(includedir)/libminni/libminni
 
@@ -89,7 +91,6 @@ minni_include_HEADERS = core/PartialAgg.h \
 			data_structures/Hashtable.h \
 			data_structures/CTNode.h \
 			data_structures/CompressTree.h \
-			data_structures/SparseHash.h \
 			data_structures/Slaves.h \
 			resources/ElasticObject.h \
 			utils/HashUtil.h \

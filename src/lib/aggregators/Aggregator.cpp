@@ -15,18 +15,16 @@ Aggregator::Aggregator(const Config &cfg,
 		num_pipelines(num_pipelines),
 		num_partitions(num_part),
 		input_finished(false),
-        sendNextToken(true),
+        can_exit(false),
 		tot_input_tokens(0),
 		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc)
 {
-	Setting& c_num_threads = readConfigFile(cfg, "minni.tbb.threads");
-	num_threads = c_num_threads;
-
-//	Setting& c_num_buffers = readConfigFile(cfg, "minni.tbb.buffers");
+	Setting& c_num_buffers = readConfigFile(cfg, "minni.tbb.buffers");
 
 	init = new tbb::task_scheduler_init();
-	num_buffers = init->default_num_threads();
+	num_buffers = 1; //init->default_num_threads();
+    fprintf(stderr, "Number of threads: %d\n", num_buffers);
 	pipeline_list = new tbb::pipeline[num_pipelines]; 
 }
 
@@ -43,7 +41,7 @@ void Aggregator::runPipeline()
         pipeline_list[i].run(num_buffers);
         resetFlags();
         pipeline_list[i].clear();
-		TimeLog::addTimeStamp("Pipeline completed");
+		TimeLog::addTimeStamp(jobid, "Pipeline completed");
 	}
 }
 
@@ -55,7 +53,7 @@ void Aggregator::runPipeline()
 void Aggregator::resetFlags()
 {
 	input_finished = false;
-    sendNextToken = true;
+    can_exit = false;
 	tot_input_tokens = 0;
 }
 

@@ -8,7 +8,7 @@ class HandSerializedPartialAgg : public PartialAgg {
 	HandSerializedPartialAgg() {}
 	virtual ~HandSerializedPartialAgg() {}
 
-    bool usesProtobuf() const { return false; }
+    SerializationMethod getSerializationMethod() const { return HAND; }
 
 	/* serialize into file */
 	virtual void serialize(std::ofstream* output) const = 0;

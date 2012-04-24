@@ -56,34 +56,42 @@ BucketAggregator::BucketAggregator(const Config &cfg,
     string inp_type = (const char*)c_inp_typ;
 
     /* Initialize data structures */
-    if (!intagg.compare("comp-bt")) {
+    if (!intagg.compare("cbt")) {
+        Setting& c_fanout = readConfigFile(cfg,
+                "minni.internal.cbt.fanout");
+        uint32_t fanout = c_fanout;
+        Setting& c_buffer_size = readConfigFile(cfg,
+                "minni.internal.cbt.buffer_size");
+        uint32_t buffer_size = c_buffer_size;
+        Setting& c_pao_size = readConfigFile(cfg,
+                "minni.internal.cbt.pao_size");
+        uint32_t pao_size = c_pao_size;
         acc_internal_ = dynamic_cast<Accumulator*>(new 
-                compresstree::CompressTree(2, 8, 1000, createPAOFunc, 
-                destroyPAOFunc));
+                compresstree::CompressTree(2, fanout, 1000, buffer_size, pao_size,
+                createPAOFunc, destroyPAOFunc));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                CompressTreeInserter(this, acc_internal_, createPAOFunc,
+                CompressTreeInserter(this, acc_internal_,
+                HashUtil::MURMUR, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
-/*
-        acc_bucket_ = dynamic_cast<Accumulator*>(new 
-                compresstree::CompressTree(2, 8, 1000, createPAOFunc, 
-                destroyPAOFunc));
-*/
         bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                CompressTreeInserter(this, acc_internal_, createPAOFunc,
+                CompressTreeInserter(this, acc_internal_,
+                HashUtil::BOB, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
 
     } else if (!intagg.compare("sparsehash")) {
-        acc_internal_ = dynamic_cast<Accumulator*>(new SparseHash(capacity,
+        Setting& c_num_part = readConfigFile(cfg,
+                "minni.internal.sparsehash.partitions");
+        int num_part = c_num_part;
+        acc_internal_ = dynamic_cast<Accumulator*>(new SparseHashMurmur(capacity,
+                max_keys_per_token));
+        acc_bucket_ = dynamic_cast<Accumulator*>(new SparseHashBob(capacity,
                 max_keys_per_token));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 SparseHashInserter(this, acc_internal_, createPAOFunc,
-                destroyPAOFunc, max_keys_per_token));
-/*
-        acc_bucket_ = dynamic_cast<Accumulator*>(new SparseHash(capacity));
-*/
+                destroyPAOFunc, num_part, max_keys_per_token));
         bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                SparseHashInserter(this, acc_internal_, createPAOFunc,
-                destroyPAOFunc, max_keys_per_token));
+                SparseHashInserter(this, acc_bucket_, createPAOFunc,
+                destroyPAOFunc, 1, max_keys_per_token));
 
     } 
 #ifdef UTHASH
@@ -127,7 +135,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
     }
 
     if (agg_in_mem) {
-        if (!intagg.compare("comp-bt") || !intagg.compare("sparsehash")) {
+        if (!intagg.compare("cbt") || !intagg.compare("sparsehash")) {
             pipeline_list[0].add_filter(*acc_int_inserter_);
         } else {
             hasher_ = new Hasher(this, hashtable_, destroyPAOFunc,
@@ -163,7 +171,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
             createPAOFunc, destroyPAOFunc, max_keys_per_token);
     pipeline_list[1].add_filter(*deserializer_);
 
-    if (!intagg.compare("comp-bt") || !intagg.compare("sparsehash")) {
+    if (!intagg.compare("cbt") || !intagg.compare("sparsehash")) {
         pipeline_list[1].add_filter(*bucket_inserter_);
     } else {
         bucket_hasher_ = new Hasher(this, hashtable_, destroyPAOFunc,
