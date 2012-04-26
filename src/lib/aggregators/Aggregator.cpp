@@ -41,7 +41,7 @@ void Aggregator::runPipeline()
         pipeline_list[i].run(num_buffers);
         resetFlags();
         pipeline_list[i].clear();
-		TimeLog::addTimeStamp("Pipeline completed");
+		TimeLog::addTimeStamp(jobid, "Pipeline completed");
 	}
 }
 

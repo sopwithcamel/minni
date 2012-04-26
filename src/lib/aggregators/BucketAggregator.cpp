@@ -63,8 +63,11 @@ BucketAggregator::BucketAggregator(const Config &cfg,
         Setting& c_buffer_size = readConfigFile(cfg,
                 "minni.internal.cbt.buffer_size");
         uint32_t buffer_size = c_buffer_size;
+        Setting& c_pao_size = readConfigFile(cfg,
+                "minni.internal.cbt.pao_size");
+        uint32_t pao_size = c_pao_size;
         acc_internal_ = dynamic_cast<Accumulator*>(new 
-                compresstree::CompressTree(2, fanout, 1000, buffer_size,
+                compresstree::CompressTree(2, fanout, 1000, buffer_size, pao_size,
                 createPAOFunc, destroyPAOFunc));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_,

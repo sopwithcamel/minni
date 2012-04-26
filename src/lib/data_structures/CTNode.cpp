@@ -58,10 +58,6 @@ namespace compresstree {
         free(fileName);
         free(nodeNum);
 #endif
-#ifdef ENABLE_COUNTERS
-        if (tree_->monitor_)
-            tree_->monitor_->decompCtr++;
-#endif
     }
 
     Node::~Node()
@@ -90,10 +86,14 @@ namespace compresstree {
         Buffer::List* l = buffer_.lists_[0];
         l->hashes_[l->num_] = hashv;
         l->sizes_[l->num_] = buf_size;
+        memset(l->data_ + l->size_, 0, buf_size);
         ((ProtobufPartialAgg*)agg)->serialize(l->data_ + l->size_,
                 buf_size);
         l->size_ += buf_size;
         l->num_++;
+#ifdef ENABLE_COUNTERS
+        tree_->monitor_->numElements++;
+#endif
 
         return true;
     }
@@ -458,6 +458,8 @@ namespace compresstree {
                 if (!thisPAO->key().compare(lastPAO->key())) {
                     lastPAO->merge(thisPAO);
 #ifdef ENABLE_COUNTERS
+                    tree_->monitor_->numElements--;
+                    tree_->monitor_->numMerged++;
                     tree_->monitor_->cctr++;
 #endif
                     continue;
@@ -635,6 +637,10 @@ namespace compresstree {
                 }
                 if (!thisPAO->key().compare(lastPAO->key())) {
                     lastPAO->merge(thisPAO);
+#ifdef ENABLE_COUNTERS
+                    tree_->monitor_->numElements--;
+                    tree_->monitor_->numMerged++;
+#endif
                     numMerged++;
                     offset += l->sizes_[i];
                     continue;

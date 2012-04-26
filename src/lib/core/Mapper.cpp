@@ -4,7 +4,6 @@
 #include "BucketAggregator.h"
 #include "HashsortAggregator.h"
 #include <dlfcn.h>
-#include <google/heap-profiler.h>
 
 //Mapper
 Mapper::Mapper(size_t (*__createPAO)(Token* t, PartialAgg** p), 
@@ -97,12 +96,6 @@ task* MapperWrapperTask::execute() {
 	char *s_name;
 	uint64_t npart;
 
-	Setting& c_heapprof = readConfigFile(cfg, "minni.debug.heapprofile");
-	int heapprofile = c_heapprof;
-/*
-    if (heapprofile == 1)
-        HeapProfilerStart("/localfs/hamur/minni.hprof");
-*/
 	if(ParseProperties(soname,npart) == 1)  { //TODO
 		cout<<"Parse properties something wrong. I am leaving!"<<endl;
 		return NULL; 
@@ -137,7 +130,7 @@ task* MapperWrapperTask::execute() {
 	ss << jobid;
 	map_out_file += ss.str() + "-part";
 
-	TimeLog::addTimeStamp(ss.str() + ": Start of map phase");
+	TimeLog::addTimeStamp(jobid, "Start of map phase");
 
 	if (!selected_map_aggregator.compare("bucket")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new BucketAggregator(
@@ -170,7 +163,7 @@ task* MapperWrapperTask::execute() {
 		cout<<"Pushed back the file to worker daemon list \n";
 		my_Filelist.push_back(f1);
 	}
-	TimeLog::addTimeStamp(ss.str() + ": End of map phase");
+	TimeLog::addTimeStamp(jobid, "End of map phase");
 	TimeLog::dumpLog();
 	
 	delete mapper->aggregs;

@@ -110,8 +110,9 @@ namespace compresstree {
         void* work();
         void addNode(Node* n);
       private:
-        uint64_t decompCtr;
-        std::vector<float> decompressCtr;
+        uint64_t numElements;
+        uint64_t numMerged;
+        std::vector<uint64_t> elctr;
         std::vector<int32_t> nodeCtr;
         std::vector<int32_t> totNodeCtr;
         uint64_t actr;
