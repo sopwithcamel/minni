@@ -22,24 +22,29 @@ ImagePAO::ImagePAO(Token* token)
 	if (token != NULL)
     {
         // Set key equal to the query file name
-        pb.set_key((char*) (token->tokens[2]));
+        if (token->tokens[2])
+            pb.set_key((char*) (token->tokens[2]));
 
-        //	fprintf(stderr, "Key: %s\t", key);
         // Calculate image hash
-        CImg<unsigned char> img;
-        img.load_jpeg_buffer((JOCTET*)(token->tokens[3]), token->token_sizes[3]);
-        pHash(img, hash);
+        if ((token->tokens[3]))
+        {
+            CImg<unsigned char> img;
+            img.load_jpeg_buffer((JOCTET*)(token->tokens[3]), token->token_sizes[3]);
+            pHash(img, hash);
 
-        uint64_t ne_hash;
-        fprintf(stderr, "Neigh: %s\n", (char*)token->tokens[0]);
-        imagepao::Neighbor* n = pb.add_neighbors();
-        n->set_key((char*)(token->tokens[0]));
-
-        CImg<unsigned char> ne_img;
-        ne_img.load_jpeg_buffer((JOCTET*)(token->tokens[1]),
-                token->token_sizes[1]);
-        pHash(ne_img, ne_hash);
-        n->set_distance(abs((long)(hash - ne_hash)));
+            // not computed if we don't have data ourselves...
+            if (token->tokens[0] && token->tokens[1])
+            {
+                uint64_t ne_hash = 0;
+                CImg<unsigned char> ne_img;
+                imagepao::Neighbor* n = pb.add_neighbors();
+                n->set_key((char*)(token->tokens[0]));
+                ne_img.load_jpeg_buffer((JOCTET*)(token->tokens[1]),
+                                                  token->token_sizes[1]);
+                pHash(ne_img, ne_hash);
+                n->set_distance(abs((long)(hash - ne_hash)));
+            }
+        }
     }
 }
 
