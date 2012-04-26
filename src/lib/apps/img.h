@@ -38,6 +38,8 @@ class ImagePAO : public ProtobufPartialAgg {
             google::protobuf::io::CodedInputStream* input);
 	inline bool deserialize(const std::string& input);
 	inline bool deserialize(const char* input, size_t size);
+    inline uint32_t serializedSize() const;
+    inline void serialize(char* output, size_t size);
     static bool comparator(imagepao::Neighbor n1, imagepao::Neighbor n2)
     {
         return (n1.distance() < n2.distance());

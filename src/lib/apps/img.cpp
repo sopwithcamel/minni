@@ -156,6 +156,11 @@ void ImagePAO::pHash(CImg<unsigned char> src, uint64_t& hash)
 	}
 }
 
+inline uint32_t ImagePAO::serializedSize() const
+{
+    return pb.ByteSize();
+}
+
 inline void ImagePAO::serialize(google::protobuf::io::CodedOutputStream* output) const
 {
     output->WriteVarint32(pb.ByteSize());
@@ -165,6 +170,12 @@ inline void ImagePAO::serialize(google::protobuf::io::CodedOutputStream* output)
 inline void ImagePAO::serialize(std::string* output) const
 {
     pb.SerializeToString(output);
+}
+
+inline void ImagePAO::serialize(char* output, size_t size)
+{
+    memset((void*)output, 0, size);
+	pb.SerializeToArray(output, size);
 }
 
 inline bool ImagePAO::deserialize(google::protobuf::io::CodedInputStream* input)
