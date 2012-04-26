@@ -41,6 +41,9 @@ AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 
+# Enable printing macros for C++ stdint types
+AC_DEFINE([__STDC_FORMAT_MACROS],[],[Force definition of format macros for C++])
+
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([memset socket])
