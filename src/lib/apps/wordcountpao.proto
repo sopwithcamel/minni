@@ -3,6 +3,6 @@ package wordcount;
 option optimize_for = SPEED;
 
 message pao {
-    required string key = 1;
+    required bytes key = 1;
     required uint64 count = 2;
 }

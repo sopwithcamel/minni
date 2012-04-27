@@ -21,18 +21,22 @@ size_t SemanticPartialAgg::create(Token* t, PartialAgg** p)
 	if (t == NULL)
 		new_pao = new SemanticPartialAgg(NULL, NULL);
 	else {
-        SynsetPtr p, pt;
+        SynsetPtr sptr, pt;
         char* syn = "uncl.";
         wninit();
-        p = findtheinfo_ds((char*)t->tokens[0], NOUN, HYPERPTR, ALLSENSES);
-        if (p) {
-            if (p->ptrcount > 0) {
-                pt = read_synset(p->ppos[0], p->ptroff[0], "");
+        sptr = findtheinfo_ds((char*)t->tokens[0], NOUN, HYPERPTR, ALLSENSES);
+        if (sptr) {
+            if (sptr->ptrcount > 0) {
+                pt = read_synset(sptr->ppos[0], sptr->ptroff[0], "");
 //                printf("Syn: %s\n", pt->words[0]);
                 syn = pt->words[0];
             }
         }
 		new_pao = new SemanticPartialAgg(syn, (char*)t->tokens[1]);
+        if (sptr) {
+            free_syns(sptr);
+            free_syns(pt);
+        }
     }
 	p[0] = new_pao;	
 	return 1;
@@ -53,7 +57,7 @@ void SemanticPartialAgg::merge(PartialAgg* add_agg)
             pb.mutable_books()->end()) - pb.mutable_books()->begin();
 
     // Truncate duplicates
-    for (int i=0; i<siz-rem; i++)
+    for (int i=0; i<siz-1; i++)
         pb.mutable_books()->RemoveLast();
 }
 
