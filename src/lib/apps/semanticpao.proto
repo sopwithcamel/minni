@@ -1,0 +1,8 @@
+package semanticpao;
+
+option optimize_for = SPEED;
+
+message pao {
+    required string key = 1;
+    repeated string books = 2;
+}
