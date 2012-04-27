@@ -35,6 +35,8 @@ MapperWrapperTask::MapperWrapperTask (JobID jid, Properties * p,
 		myinput = new ChunkInput();
 	else if (!inp_type.compare("file"))
 		myinput = new FileInput();
+	else if (!inp_type.compare("filechunk"))
+		myinput = new FileInput();
 }
 
 MapperWrapperTask::~MapperWrapperTask()

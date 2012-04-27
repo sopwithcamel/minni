@@ -119,6 +119,10 @@ BucketAggregator::BucketAggregator(const Config &cfg,
             filetoker = new FileTokenizerFilter(this, cfg,
                     map_input, max_keys_per_token);
             pipeline_list[0].add_filter(*filetoker);
+        } else if (!inp_type.compare("filechunk")) {
+            filechunker = new FileChunkerFilter(this, map_input, cfg,
+                    max_keys_per_token);
+            pipeline_list[0].add_filter(*filechunker);
         }
 
         creator_ = new PAOCreator(this, createPAOFunc, max_keys_per_token);

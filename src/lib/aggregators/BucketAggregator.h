@@ -17,6 +17,7 @@
 #include "Deserializer.h"
 #include "DFSReader.h"
 #include "ElasticObject.h"
+#include "FileChunkerFilter.h"
 #include "FileReaderFilter.h"
 #include "FileTokenizerFilter.h"
 #include "Hasher.h"
@@ -58,6 +59,7 @@ class BucketAggregator :
     FileReaderFilter* filereader;
     FileTokenizerFilter* filetoker;
     TokenizerFilter* toker;
+    FileChunkerFilter* filechunker;
 
     /* for serialized PAOs from local file */
     const char* infile_;
