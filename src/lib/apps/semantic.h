@@ -1,9 +1,11 @@
+#include <algorithm>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include "Mapper.h"
 #include "ProtobufPartialAgg.h"
 #include "Tokenizer.h"
 #include "semanticpao.pb.h"
+#include <string.h>
 #include <wn.h>
 
 class SemanticPartialAgg : public ProtobufPartialAgg {
@@ -24,6 +26,15 @@ class SemanticPartialAgg : public ProtobufPartialAgg {
             google::protobuf::io::CodedInputStream* input);
 	inline bool deserialize(const std::string& input);
 	inline bool deserialize(const char* input, size_t size);
+    static bool compstr(std::string& n1, std::string& n2)
+    {
+        return n1.compare(n2);
+    }
+    static bool eqstr(std::string& n1, std::string& n2)
+    {
+        return !n1.compare(n2);
+    }
+
   private:
     semanticpao::pao pb;
 };
