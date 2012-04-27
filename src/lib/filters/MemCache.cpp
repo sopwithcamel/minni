@@ -85,6 +85,8 @@ void MemCache::readFileContents()
 	uint64_t sz;
 	for(int i=0; i<queryList.size(); i++) {
 		f = fopen(queryList[i], "r");
+        if (f == NULL)
+            return;
 		assert(f);
 		fseek(f, 0, SEEK_END);
 		sz = ftell(f);
