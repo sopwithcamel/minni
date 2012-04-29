@@ -1,0 +1,8 @@
+package wcdigram;
+
+option optimize_for = SPEED;
+
+message pao {
+    required bytes key = 1;
+    required uint64 count = 2;
+}
