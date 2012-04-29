@@ -25,9 +25,9 @@ FileReaderFilter::~FileReaderFilter()
 	// Freeing memory allocated by FileInput
 	file_list.clear();
 
-	for (int i=0; i<num_buffers; i++) {
-		for (int j=0; j<files_per_call; j++)
-			free(file_names[i][j]);
+	for (uint64_t i=0; i<num_buffers; i++) {
+		for (uint64_t j=0; j<files_per_call; j++)
+			free((*file_names)[i][j]);
 	}
 	delete file_names;
 	delete send;
