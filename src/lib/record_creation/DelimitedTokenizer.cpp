@@ -38,12 +38,15 @@ uint64_t DelimitedTokenizer::getTokens(void*& data_fragments,
 	char *str1, *str2;
 	Token* tok;
 
+/*
 	for (str1=buf;; str1=NULL) {
 		// split token
 		spl = strtok_r(str1, delimiters[0], &saveptr1);
 		if (spl == NULL)
 			return tok_ctr;
 		tok = tokens[tok_ctr++];
+        if (tok_ctr == num_tokens-1)
+            break;
 
 		if (delimiters[1]) { // sub-tokenize
 			for (str2=spl;; str2=NULL) {
@@ -56,5 +59,23 @@ uint64_t DelimitedTokenizer::getTokens(void*& data_fragments,
 		} else {
 			tok->tokens.push_back((void*)spl);
 		}
+	}
+*/
+    char* last = NULL;
+	for (str1=buf;; str1=NULL) {
+		// split token
+		spl = strtok_r(str1, delimiters[0], &saveptr1);
+		if (spl == NULL)
+			return tok_ctr;
+        if (last == NULL) {
+            last = spl;
+            continue;
+        }
+		tok = tokens[tok_ctr++];
+        if (tok_ctr == num_tokens-1)
+            break;
+        tok->tokens.push_back((void*)last);
+        tok->tokens.push_back((void*)spl);
+        last = spl;
 	}
 }
