@@ -141,20 +141,31 @@ void Master::splitDir(DFS& dfs, const string& dir)
 	assert(dfs.readDir(dir, fils) == 0);
 
 	uint64_t rem_fils = fils.size();
-	int rem_nodes = getNumberOfNodes();
+	int rem_maps = getNumberOfNodes() * spec->getMaxMaps();
 	uint64_t fils_for_map = 0;
 	uint64_t fil_begin_ind = 0;
 
 	// TODO: for now we don't optimize for locality of data
-	for (nodeIter = nodes.begin(); nodeIter != nodes.end(); nodeIter++) {
-		assert(rem_nodes);
+	while (rem_fils > 0) {
+		assert(rem_maps);
 		fils_for_map = (uint64_t) floor(((double)rem_fils / 
-				rem_nodes));
+				rem_maps));
 		rem_fils -= fils_for_map;
-		rem_nodes--;
+		rem_maps--;
 
-		assignMapJob(nodeIter->second, fil_begin_ind, fil_begin_ind + 
+		Node* min = (*(nodes.begin())).second;
+		JobID minJobs = INT64_MAX;
+
+        for (nodeIter = nodes.begin(); nodeIter != nodes.end(); nodeIter++) {
+			/* make sure node is found in nodes list */
+            if (nodeIter->second->numRemainingJobs() < minJobs) {
+                minJobs  = nodeIter->second->numRemainingJobs();
+                min = nodeIter->second;
+            }
+		}
+		assignMapJob(min, fil_begin_ind, fil_begin_ind + 
 				fils_for_map, dir);
+        fil_begin_ind += fils_for_map;
 	}
 	
 }
