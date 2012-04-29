@@ -71,9 +71,9 @@ uint64_t DelimitedTokenizer::getTokens(void*& data_fragments,
             last = spl;
             continue;
         }
-		tok = tokens[tok_ctr++];
         if (tok_ctr == num_tokens-1)
-            break;
+            return tok_ctr;
+		tok = tokens[tok_ctr++];
         tok->tokens.push_back((void*)last);
         tok->tokens.push_back((void*)spl);
         last = spl;
