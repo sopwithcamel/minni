@@ -34,8 +34,12 @@ private:
 	FileInput* input;
 	vector<string> file_list;
 	size_t files_sent;
+    size_t first_file;
+    size_t tot_files_to_chunk;
 	MultiBuffer<FilterInfo>* send;
 	MultiBuffer<Token*>* tokens;
+	MultiBuffer<char*>* contents;
+    MultiBuffer<size_t>* num_tokens;
 	DelimitedTokenizer* chunk_tokenizer;
 	uint64_t next_buffer;
 	const size_t max_keys_per_token;

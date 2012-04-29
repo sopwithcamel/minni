@@ -6,18 +6,25 @@ FileChunkerFilter::FileChunkerFilter(Aggregator* agg, MapInput* _input,
 		aggregator(agg),
 		filter(serial_in_order),
         max_keys_per_token(max_keys),
-		files_sent(0)
+		files_sent(0),
+        next_buffer(0)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	input = (FileInput*)_input;
     // fetch list of file names
 	input->getFileNames(file_list);
-    for (uint64_t i=0; i<file_list.size(); i++)
-        fprintf(stderr, "File: %s\n", file_list[i].c_str());
+    first_file = input->file_ind_beg;
+    tot_files_to_chunk = input->file_ind_end - input->file_ind_beg;
+//    for (uint64_t i=0; i<file_list.size(); i++)
+//        fprintf(stderr, "File: %s\n", file_list[i].c_str());
 
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 	tokens = new MultiBuffer<Token*>(num_buffers, max_keys_per_token);
+	contents = new MultiBuffer<char*>(num_buffers, 1);
+    num_tokens = new MultiBuffer<size_t>(num_buffers, 1);
 	for (int i=0; i<num_buffers; i++) {
+        (*num_tokens)[i][0] = 0;
+        (*contents)[i][0] = NULL;
 		for (int j=0; j<max_keys_per_token; j++) {
 			(*tokens)[i][j] = new Token();
 		}
@@ -43,10 +50,15 @@ FileChunkerFilter::~FileChunkerFilter()
 	file_list.clear();
 
 	for (int i=0; i<num_buffers; i++) {
+        if ((*contents)[i][0] != NULL)
+            free((*contents)[i][0]);
 		for (int j=0; j<max_keys_per_token; j++) {
             delete (*tokens)[i][j];
 		}
 	}
+    delete tokens;
+    delete contents;
+    delete num_tokens;
 	delete send;
     delete chunk_tokenizer;
 }
@@ -55,6 +67,8 @@ void* FileChunkerFilter::operator()(void*)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	Token** this_token_list = (*tokens)[next_buffer];
+	char** this_content_list = (*contents)[next_buffer];
+    size_t* this_num_tokens = (*num_tokens)[next_buffer];
 	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
 
@@ -73,28 +87,37 @@ void* FileChunkerFilter::operator()(void*)
 
     // read file
     uint64_t file_size;
-    char* file_data;
-    input->readFile(file_list[files_sent], file_data, file_size);
 
-	for (int i=0; i < max_keys_per_token; i++)
+	// Free contents from previous invocation
+    if (this_content_list[0] != NULL) {
+        free(this_content_list[0]);
+        this_content_list[0] = NULL;
+    }
+    input->readFile(file_list[first_file + files_sent], this_content_list[0],
+            file_size);
+
+	for (int i=0; i < *this_num_tokens; i++) {
         this_token_list[i]->clear();
+    }
 
 	// fetch all tokens from file
-    void* contents = (void*)file_data;
-	size_t num_tokens = chunk_tokenizer->getTokens(contents,
+    fprintf(stderr, "%lu: rd %s:", files_sent,
+            file_list[first_file + files_sent].c_str());	
+    void* cont = (void*)(this_content_list[0]);
+	*this_num_tokens = chunk_tokenizer->getTokens(cont,
             max_keys_per_token, this_token_list);
-    fprintf(stderr, "Num tokens read:%d\n", num_tokens);	
+    fprintf(stderr, "%lu\n", *this_num_tokens);	
 
-    
-	for (int i=0; i < max_keys_per_token; i++)
-        this_token_list[i]->tokens.push_back((void*)(file_list[files_sent].c_str()));
+    const char* fname = file_list[files_sent].c_str();
+	for (int i=0; i < *this_num_tokens; i++)
+        this_token_list[i]->tokens.push_back((void*)fname);
 
-	if (++files_sent == file_list.size()) {
+	if (++files_sent == tot_files_to_chunk) {
 		aggregator->input_finished = true;
 	}
 
 	this_send->result = this_token_list;
-	this_send->length = num_tokens;
+	this_send->length = *this_num_tokens;
 
 	return this_send;
 }
