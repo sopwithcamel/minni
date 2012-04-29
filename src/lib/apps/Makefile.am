@@ -1,6 +1,6 @@
 EXTRA_DIST = wordcount.cpp wordcount.h wordcountpao.pb.cc wordcountpao.pb.h wcplain.cpp wcplain.h# img.cpp img.h pagerank.cpp pagerank.h
 
-pkglib_LTLIBRARIES = wordcount.la wcplain.la img.la #pagerank.la
+pkglib_LTLIBRARIES = wordcount.la wcplain.la img.la imgplain.la #pagerank.la
 
 ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I$(srcdir)/../ \
@@ -17,6 +17,10 @@ ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 img_la_SOURCES = img.cpp imgpao.pb.cc
 img_la_LDFLAGS = -module -lX11 -lpthread -ljpeg -lprotobuf
 img_la_CPPFLAGS = $(ALL_CPPFLAGS)
+
+imgplain_la_SOURCES = imgplain.cpp
+imgplain_la_LDFLAGS = -module -lX11 -lpthread -ljpeg
+imgplain_la_CPPFLAGS = $(ALL_CPPFLAGS)
 
 #pagerank_la_SOURCES = pagerank.cpp
 
