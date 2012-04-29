@@ -19,6 +19,7 @@ size_t SemanticPlain::create(Token* t, PartialAgg** p)
 	if (t == NULL)
 		new_pao = new SemanticPlain(NULL, NULL);
 	else {
+/*
         SynsetPtr sptr, pt;
         char* syn = "uncl.";
         wninit();
@@ -35,6 +36,8 @@ size_t SemanticPlain::create(Token* t, PartialAgg** p)
             free_syns(sptr);
             free_syns(pt);
         }
+*/
+		new_pao = new SemanticPlain((char*)(t->tokens[0]), (char*)(t->tokens[1]));
     }
 	p[0] = new_pao;	
 	return 1;
