@@ -1,7 +1,7 @@
 EXTRA_DIST = wordcount.cpp wordcount.h wordcountpao.pb.cc wordcountpao.pb.h  wcplain.cpp wcplain.h
 #			 semantic.cpp semantic. semanticpao.pb.cc semanticpao.pb.h	# img.cpp img.h semantic.cpp semantic.h
 
-pkglib_LTLIBRARIES = wordcount.la wcplain.la wcdigram.la img.la semantic.la semantic_plain.la digplain.la
+pkglib_LTLIBRARIES = wordcount.la wcplain.la wcdigram.la semantic.la semantic_plain.la digplain.la
 
 ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I$(srcdir)/../ \
@@ -16,10 +16,6 @@ ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I/usr/include/CImg/ \
 			-I/usr/local/WordNet-3.0/include/
 			
-
-img_la_SOURCES = img.cpp imgpao.pb.cc
-img_la_LDFLAGS = -module -lX11 -lpthread -ljpeg -lprotobuf
-img_la_CPPFLAGS = $(ALL_CPPFLAGS)
 
 semantic_la_SOURCES = semantic.cpp semanticpao.pb.cc
 semantic_la_LDFLAGS = -module -lprotobuf -lwordnet-3.0
