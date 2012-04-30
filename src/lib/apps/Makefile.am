@@ -1,6 +1,7 @@
-EXTRA_DIST = wordcount.cpp wordcount.h wordcountpao.pb.cc wordcountpao.pb.h wcplain.cpp wcplain.h# img.cpp img.h pagerank.cpp pagerank.h
+EXTRA_DIST = wordcount.cpp wordcount.h wordcountpao.pb.cc wordcountpao.pb.h  wcplain.cpp wcplain.h
+#			 semantic.cpp semantic. semanticpao.pb.cc semanticpao.pb.h	# img.cpp img.h semantic.cpp semantic.h
 
-pkglib_LTLIBRARIES = wordcount.la wcplain.la# img.la pagerank.la
+pkglib_LTLIBRARIES = wordcount.la wcplain.la wcdigram.la img.la semantic.la semantic_plain.la digplain.la
 
 ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I$(srcdir)/../ \
@@ -12,24 +13,35 @@ ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I$(srcdir)/../resources/ \
 			-I$(srcdir)/../../worker/gen-cpp \
 			-I$(srcdir)/../../dfs/ \
-			-I/usr/include/CImg/
+			-I/usr/include/CImg/ \
+			-I/usr/local/WordNet-3.0/include/
+			
 
-#img_la_SOURCES = img.cpp
+img_la_SOURCES = img.cpp imgpao.pb.cc
+img_la_LDFLAGS = -module -lX11 -lpthread -ljpeg -lprotobuf
+img_la_CPPFLAGS = $(ALL_CPPFLAGS)
 
-#img_la_LDFLAGS = -module -lX11 -lpthread -ljpeg
-
-#img_la_CPPFLAGS = $(ALL_CPPFLAGS)
-
-#pagerank_la_SOURCES = pagerank.cpp
-
-#pagerank_la_LDFLAGS = -module
-
-#pagerank_la_CPPFLAGS = $(ALL_CPPFLAGS)
+semantic_la_SOURCES = semantic.cpp semanticpao.pb.cc
+semantic_la_LDFLAGS = -module -lprotobuf -lwordnet-3.0
+semantic_la_CPPFLAGS = $(ALL_CPPFLAGS)
 
 wordcount_la_SOURCES = wordcount.cpp wordcountpao.pb.cc
 wordcount_la_LDFLAGS = -module -lprotobuf
 wordcount_la_CPPFLAGS = $(ALL_CPPFLAGS)
 
+wcdigram_la_SOURCES = wcdigram.cpp wcdigram.pb.cc
+wcdigram_la_LDFLAGS = -module -lprotobuf
+wcdigram_la_CPPFLAGS = $(ALL_CPPFLAGS)
+
 wcplain_la_SOURCES = wcplain.cpp
 wcplain_la_LDFLAGS = -module
 wcplain_la_CPPFLAGS = $(ALL_CPPFLAGS)
+
+semantic_plain_la_SOURCES = semantic_plain.cpp
+semantic_plain_la_LDFLAGS = -module -lwordnet-3.0
+semantic_plain_la_CPPFLAGS = $(ALL_CPPFLAGS)
+
+digplain_la_SOURCES = digplain.cpp
+digplain_la_LDFLAGS = -module
+digplain_la_CPPFLAGS = $(ALL_CPPFLAGS)
+

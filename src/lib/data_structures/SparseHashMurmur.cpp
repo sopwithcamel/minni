@@ -6,7 +6,7 @@ SparseHashMurmur::SparseHashMurmur(size_t capacity, size_t evictAtTime) :
         evictAtTime_(evictAtTime),
         numElements_(0)
 {
-    accumulator_.set_deleted_key("mamihlapinatapai");
+    accumulator_.set_deleted_key("iapatanipalhimam");
 }
 
 SparseHashMurmur::~SparseHashMurmur()
