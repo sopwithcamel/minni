@@ -25,6 +25,7 @@ DelimitedTokenizer::~DelimitedTokenizer()
 	free(delimiters);
 }
 
+#define 3_GRAM
 /**
  */
 uint64_t DelimitedTokenizer::getTokens(void*& data_fragments, 
@@ -38,7 +39,7 @@ uint64_t DelimitedTokenizer::getTokens(void*& data_fragments,
 	char *str1, *str2;
 	Token* tok;
 
-/*
+#ifdef 1_GRAM
 	for (str1=buf;; str1=NULL) {
 		// split token
 		spl = strtok_r(str1, delimiters[0], &saveptr1);
@@ -60,22 +61,51 @@ uint64_t DelimitedTokenizer::getTokens(void*& data_fragments,
 			tok->tokens.push_back((void*)spl);
 		}
 	}
-*/
+#endif
+#ifdef 2_GRAM
     char* last = NULL;
-	for (str1=buf;; str1=NULL) {
-		// split token
-		spl = strtok_r(str1, delimiters[0], &saveptr1);
-		if (spl == NULL)
-			return tok_ctr;
+    for (str1=buf;; str1=NULL) {
+        // split token
+        spl = strtok_r(str1, delimiters[0], &saveptr1);
+        if (spl == NULL)
+            return tok_ctr;
         if (last == NULL) {
             last = spl;
             continue;
         }
         if (tok_ctr == num_tokens-1)
             return tok_ctr;
-		tok = tokens[tok_ctr++];
+        tok = tokens[tok_ctr++];
         tok->tokens.push_back((void*)last);
         tok->tokens.push_back((void*)spl);
         last = spl;
+    }
+#endif
+#ifdef 3_GRAM
+    char* last = NULL;
+    char* last_but = NULL;
+	for (str1=buf;; str1=NULL) {
+		// split token
+		spl = strtok_r(str1, delimiters[0], &saveptr1);
+		if (spl == NULL)
+			return tok_ctr;
+        if (last_but == NULL) {
+            last_but = spl;
+            continue;
+        }
+        if (last == NULL) {
+            last = last_but;
+            last_but = spl;
+            continue;
+        }
+        if (tok_ctr == num_tokens-1)
+            return tok_ctr;
+		tok = tokens[tok_ctr++];
+        tok->tokens.push_back((void*)last);
+        tok->tokens.push_back((void*)last_but);
+        tok->tokens.push_back((void*)spl);
+        last = last_but;
+        last_but = spl;
 	}
+#endif
 }
