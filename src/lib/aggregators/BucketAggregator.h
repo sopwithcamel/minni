@@ -22,6 +22,7 @@
 #include "FileTokenizerFilter.h"
 #include "Hasher.h"
 #include "Hashtable.h"
+#include "LocalReader.h"
 #include "Mapper.h"
 #include "PAOCreator.h"
 #include "PartialAgg.h"
@@ -62,6 +63,7 @@ class BucketAggregator :
     FileChunkerFilter* filechunker;
 
     /* for serialized PAOs from local file */
+    LocalReader* localreader_;
     const char* infile_;
     Deserializer* inp_deserializer_;
 

@@ -71,11 +71,11 @@ BucketAggregator::BucketAggregator(const Config &cfg,
                 createPAOFunc, destroyPAOFunc));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_,
-                HashUtil::MURMUR, createPAOFunc,
+                HashUtil::BOB, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
         bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_,
-                HashUtil::BOB, createPAOFunc,
+                HashUtil::MURMUR, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
 
     } else if (!intagg.compare("sparsehash")) {
@@ -123,6 +123,10 @@ BucketAggregator::BucketAggregator(const Config &cfg,
             filechunker = new FileChunkerFilter(this, map_input, cfg,
                     max_keys_per_token);
             pipeline_list[0].add_filter(*filechunker);
+        } else if (!inp_type.compare("local")) {
+            localreader_ = new LocalReader(this, fprefix.c_str(),
+                    max_keys_per_token);
+            pipeline_list[0].add_filter(*localreader_);
         }
 
         creator_ = new PAOCreator(this, createPAOFunc, max_keys_per_token);
