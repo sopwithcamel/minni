@@ -25,7 +25,7 @@ DelimitedTokenizer::~DelimitedTokenizer()
 	free(delimiters);
 }
 
-#define 3_GRAM
+#define ONE_GRAM
 /**
  */
 uint64_t DelimitedTokenizer::getTokens(void*& data_fragments, 
@@ -39,7 +39,7 @@ uint64_t DelimitedTokenizer::getTokens(void*& data_fragments,
 	char *str1, *str2;
 	Token* tok;
 
-#ifdef 1_GRAM
+#ifdef ONE_GRAM
 	for (str1=buf;; str1=NULL) {
 		// split token
 		spl = strtok_r(str1, delimiters[0], &saveptr1);
@@ -47,7 +47,7 @@ uint64_t DelimitedTokenizer::getTokens(void*& data_fragments,
 			return tok_ctr;
 		tok = tokens[tok_ctr++];
         if (tok_ctr == num_tokens-1)
-            break;
+            return tok_ctr;
 
 		if (delimiters[1]) { // sub-tokenize
 			for (str2=spl;; str2=NULL) {
@@ -62,7 +62,7 @@ uint64_t DelimitedTokenizer::getTokens(void*& data_fragments,
 		}
 	}
 #endif
-#ifdef 2_GRAM
+#ifdef TWO_GRAM
     char* last = NULL;
     for (str1=buf;; str1=NULL) {
         // split token
@@ -81,7 +81,7 @@ uint64_t DelimitedTokenizer::getTokens(void*& data_fragments,
         last = spl;
     }
 #endif
-#ifdef 3_GRAM
+#ifdef TRI_GRAM
     char* last = NULL;
     char* last_but = NULL;
 	for (str1=buf;; str1=NULL) {
