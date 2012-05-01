@@ -1,7 +1,7 @@
 EXTRA_DIST = wordcount.cpp wordcount.h wordcountpao.pb.cc wordcountpao.pb.h  wcplain.cpp wcplain.h
 #			 semantic.cpp semantic. semanticpao.pb.cc semanticpao.pb.h	# img.cpp img.h semantic.cpp semantic.h
 
-pkglib_LTLIBRARIES = wordcount.la wcplain.la wcdigram.la semantic.la semantic_plain.la digplain.la
+pkglib_LTLIBRARIES = wordcount.la wcplain.la wcdigram.la semantic.la semantic_plain.la digplain.la img.la imgclass.la
 
 ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I$(srcdir)/../ \
@@ -28,6 +28,14 @@ wordcount_la_CPPFLAGS = $(ALL_CPPFLAGS)
 wcdigram_la_SOURCES = wcdigram.cpp wcdigram.pb.cc
 wcdigram_la_LDFLAGS = -module -lprotobuf
 wcdigram_la_CPPFLAGS = $(ALL_CPPFLAGS)
+
+img_la_SOURCES = img.cpp imgpao.pb.cc
+img_la_LDFLAGS = -module -lprotobuf
+img_la_CPPFLAGS = $(ALL_CPPFLAGS)
+
+imgclass_la_SOURCES = imgclass.cpp imgclass.pb.cc
+imgclass_la_LDFLAGS = -module -lprotobuf
+imgclass_la_CPPFLAGS = $(ALL_CPPFLAGS)
 
 wcplain_la_SOURCES = wcplain.cpp
 wcplain_la_LDFLAGS = -module

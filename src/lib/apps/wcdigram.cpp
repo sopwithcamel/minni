@@ -7,12 +7,12 @@ using namespace google::protobuf::io;
 
 #define KEY_SIZE        10
 
-WCDigram::WCDigram(char* wrd, char* next)
+WCDigram::WCDigram(char* one, char* two)
 {
-	if (wrd) {
-		pb.set_key(wrd);
+	if (one) {
+		pb.set_key(one);
         pb.mutable_key()->append("-");
-        pb.mutable_key()->append(next);
+        pb.mutable_key()->append(two);
         pb.set_count(1);
 	} else
         pb.set_count(0);

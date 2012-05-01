@@ -2,12 +2,14 @@
 
 #define KEY_SIZE        10
 
-DigPlain::DigPlain(char* wrd, char* next)
+DigPlain::DigPlain(char* wrd, char* next, char* last)
 {
     if (wrd) {
         key_.assign(wrd);
         key_.append("-");
         key_.append(next);
+        key_.append("-");
+        key_.append(last);
         count_ = 1;
     } else
         count_ = 0;
@@ -31,9 +33,9 @@ size_t DigPlain::create(Token* t, PartialAgg** p)
 {
     DigPlain* new_pao;
     if (t == NULL)
-        new_pao = new DigPlain(NULL, NULL);
+        new_pao = new DigPlain(NULL, NULL, NULL);
     else    
-        new_pao = new DigPlain((char*)(t->tokens[0]), (char*)(t->tokens[1]));
+        new_pao = new DigPlain((char*)(t->tokens[0]), (char*)(t->tokens[1]), (char*)(t->tokens[2]));
     p[0] = new_pao; 
     return 1;
 }

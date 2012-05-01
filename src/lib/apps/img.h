@@ -4,17 +4,21 @@
 #include "ProtobufPartialAgg.h"
 #include "Tokenizer.h"
 #include <assert.h>
+#if 0
 #include <jpeglib.h>
 #include <jerror.h>
+#endif
 #include <list>
 #include "Neighbor.h"
 #include <math.h>
 #include <algorithm>
 #include "imgpao.pb.h"
 
+#if 0
 #define cimg_plugin "plugins/jpeg_buffer.h"
 #include "CImg.h"
 using namespace cimg_library;
+#endif
 
 class ImagePAO : public ProtobufPartialAgg {
   public:
@@ -48,8 +52,10 @@ class ImagePAO : public ProtobufPartialAgg {
   private:
     imagepao::pao pb;
 	uint64_t hash;
+#if 0
 	CImg<float>* ph_dct_matrix(const int N);
 	void pHash(CImg<unsigned char> img, uint64_t& hash);
+#endif
 };
  
 inline const google::protobuf::RepeatedPtrField<imagepao::Neighbor>& ImagePAO::neighbors()

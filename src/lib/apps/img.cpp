@@ -22,9 +22,10 @@ ImagePAO::ImagePAO(Token* token)
 	if (token != NULL)
     {
         // Set key equal to the query file name
-        pb.set_key((char*) (token->tokens[2]));
-
-        //	fprintf(stderr, "Key: %s\t", key);
+        pb.set_key((char*) (token->tokens[0]));
+        fprintf(stderr, "Key: %s\t", (char*)(token->tokens[0]));
+        fprintf(stderr, "Hash: %s\n", (char*)(token->tokens[1]));
+/*
         // Calculate image hash
         CImg<unsigned char> img;
         img.load_jpeg_buffer((JOCTET*)(token->tokens[3]), token->token_sizes[3]);
@@ -40,6 +41,7 @@ ImagePAO::ImagePAO(Token* token)
                 token->token_sizes[1]);
         pHash(ne_img, ne_hash);
         n->set_distance(abs((long)(hash - ne_hash)));
+*/
     }
 }
 
@@ -104,6 +106,7 @@ void ImagePAO::merge(PartialAgg* add_agg)
 	}
 }
 
+#if 0
 CImg<float>* ImagePAO::ph_dct_matrix(const int N)
 {
 	CImg<float> *ptr_matrix = new CImg<float>(N,N,1,1,1/sqrt((float)N));
@@ -150,6 +153,7 @@ void ImagePAO::pHash(CImg<unsigned char> src, uint64_t& hash)
 		one = one << 1;
 	}
 }
+#endif
 
 inline uint32_t ImagePAO::serializedSize() const
 {

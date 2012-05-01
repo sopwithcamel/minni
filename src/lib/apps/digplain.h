@@ -4,7 +4,7 @@
 
 class DigPlain : public BoostPartialAgg {
   public:
-    DigPlain(char* wrd, char* next);
+    DigPlain(char* wrd, char* next, char* last);
     ~DigPlain();
     inline const std::string& key() const;
     inline const uint64_t count() const;
