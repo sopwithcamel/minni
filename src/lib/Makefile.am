@@ -15,6 +15,7 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			filters/FileReaderFilter.cpp \
 			filters/FileTokenizerFilter.cpp \
 			filters/Hasher.cpp \
+			filters/LocalReader.cpp \
 			filters/MemCache.cpp \
 			filters/PAOCreator.cpp \
 			filters/Serializer.cpp \
@@ -75,6 +76,7 @@ minni_include_HEADERS = core/PartialAgg.h \
 			filters/FileReaderFilter.h \
 			filters/FileTokenizerFilter.h \
 			filters/Hasher.h \
+			filters/LocalReader.h \
 			filters/MemCache.h \
 			filters/PAOCreator.h \
 			filters/Serializer.h \
