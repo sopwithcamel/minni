@@ -25,7 +25,7 @@ LocalReader::LocalReader(Aggregator* agg,
 
 	chunk = new MultiBuffer<char*>(num_buffers, 1);
 	for (int i=0; i < num_buffers; i++) {
-		(*chunk)[i][0] = (char*)malloc(max_keys_per_token * 40);
+		(*chunk)[i][0] = (char*)malloc(max_keys_per_token * 80);
 	}
     send = new MultiBuffer<FilterInfo>(num_buffers, 1);
     read_buf = malloc(BUF_SIZE + 1);
@@ -89,18 +89,18 @@ void* LocalReader::operator()(void*)
 
     uint64_t tok_ctr = 0;
     char* buf = this_chunk;
-    size_t offset = 0;
     while (tok_ctr < max_keys_per_token) {
-        if (fgets(buf, BUF_SIZE-offset, inp) == NULL)
+        if (fgets(buf, BUF_SIZE, inp) == NULL)
             break;
         int offset = strlen(buf);
         char* spl = strtok(buf, " \n\r");
         if (spl == NULL)
             break;
         Token* tok = this_token_list[tok_ctr++];
-        tok->tokens.push_back(spl);
-        spl = strtok(NULL, " \n\r");
-        tok->tokens.push_back(spl);
+        do {
+            tok->tokens.push_back(spl);
+            spl = strtok(NULL, " \n\r");
+        } while (spl);
         if (tok_ctr >= max_keys_per_token-2)
             break;
         buf = buf + offset + 1;
