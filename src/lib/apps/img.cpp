@@ -1,4 +1,5 @@
 #include "img.h"
+#include <stdlib.h>
 
 #define KEYSIZE		64
 #define IMG_SIZE	500000
@@ -23,8 +24,13 @@ ImagePAO::ImagePAO(Token* token)
     {
         // Set key equal to the query file name
         pb.set_key((char*) (token->tokens[0]));
-        fprintf(stderr, "Key: %s\t", (char*)(token->tokens[0]));
-        fprintf(stderr, "Hash: %s\n", (char*)(token->tokens[1]));
+//        fprintf(stderr, "Key: %s\t", (char*)(token->tokens[0]));
+//        fprintf(stderr, "Hash: %s\n", (char*)(token->tokens[1]));
+        uint64_t hash = strtoul((const char*)token->tokens[1], NULL, 0);
+        imagepao::Neighbor* n = pb.add_neighbors();
+        n->set_key((char*)(token->tokens[2]));
+        uint64_t ne_hash = strtoul((const char*)token->tokens[3], NULL, 0);
+        n->set_distance(abs((long)(hash - ne_hash)));
 /*
         // Calculate image hash
         CImg<unsigned char> img;
