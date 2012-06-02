@@ -37,3 +37,5 @@ sample.cfg
 *cscope.out
 *.swp
 scripts
+*.pb.cc
+*.pb.h
