@@ -1020,11 +1020,11 @@ namespace compresstree {
     }
 
 #ifdef ENABLE_PAGING
-    bool Node::waitForPageIn()
+    bool Node::waitForPageAction(const PageAction& act)
     {
         // make sure the buffer has been page in
         pthread_mutex_lock(&pageMutex_);
-        while (queuedForPaging_ && pageAct_ == PAGE_IN)
+        while (queuedForPaging_ && pageAct_ == act)
             pthread_cond_wait(&pageCond_, &pageMutex_);
         pthread_mutex_unlock(&pageMutex_);
     }
@@ -1042,6 +1042,44 @@ namespace compresstree {
 
     bool Node::pageOut()
     {
+        if (!buffer_.empty()) {
+            for (uint32_t i=0; i<buffer_.lists_.size(); i++) {
+                Buffer::List* l = buffer_.lists_[i];
+                if (l->state_ == Buffer::List::COMPRESSED)
+                    continue;
+                compressed.addList();
+                // latest added list
+                Buffer::List* cl = 
+                        compressed.lists_[compressed.lists_.size()-1];
+                snappy::RawCompress((const char*)l->hashes_, 
+                        l->num_ * sizeof(uint32_t), 
+                        (char*)cl->hashes_,
+                        &l->c_hashlen_);
+                snappy::RawCompress((const char*)l->sizes_, 
+                        l->num_ * sizeof(uint32_t), 
+                        (char*)cl->sizes_,
+                        &l->c_sizelen_);
+/*
+                compsort::compress(l->hashes_, l->num_,
+                        cl->hashes_, (uint32_t&)l->c_hashlen_);
+                rle::encode(l->sizes_, l->num_, cl->sizes_,
+                        (uint32_t&)l->c_sizelen_);
+*/
+                snappy::RawCompress(l->data_, l->size_, 
+                        cl->data_, 
+                        &l->c_datalen_);
+                l->deallocate();
+                l->hashes_ = cl->hashes_;
+                l->sizes_ = cl->sizes_;
+                l->data_ = cl->data_;
+                l->state_ = Buffer::List::COMPRESSED;
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "compressed list %d in node %d\n", i, id_);
+#endif
+            }
+            // clear compressed list so lists won't be deallocated on return
+            compressed.clear();
+        }
         if (compLength_ > 0) {
             size_t ret;
             ret = pwrite(fd_, buffer_, compLength_, 0);

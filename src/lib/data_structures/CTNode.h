@@ -168,7 +168,7 @@ namespace compresstree {
 
 #ifdef ENABLE_PAGING
         /* Paging-related functions */
-        bool waitForPageIn();
+        bool waitForPageAction(const PageAction& act);
         bool pageOut();
         bool pageIn();
         bool isPagedOut();
