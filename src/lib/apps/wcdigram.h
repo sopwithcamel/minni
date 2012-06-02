@@ -7,7 +7,7 @@
 
 class WCDigram : public ProtobufPartialAgg {
   public:
-	WCDigram(char* one, char* two);
+	WCDigram(char* one, char* two, char* three);
 	~WCDigram();
     inline const std::string& key() const;
     inline const uint64_t count() const;

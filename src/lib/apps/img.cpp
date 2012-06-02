@@ -3,7 +3,7 @@
 
 #define KEYSIZE		64
 #define IMG_SIZE	500000
-#define NEAREST		5
+#define NEAREST		1
 
 /**
  * Creates a PAO that represents the relationship between a query image and a c

@@ -7,12 +7,14 @@ using namespace google::protobuf::io;
 
 #define KEY_SIZE        10
 
-WCDigram::WCDigram(char* one, char* two)
+WCDigram::WCDigram(char* one, char* two, char* three)
 {
 	if (one) {
 		pb.set_key(one);
         pb.mutable_key()->append("-");
         pb.mutable_key()->append(two);
+        pb.mutable_key()->append("-");
+        pb.mutable_key()->append(three);
         pb.set_count(1);
 	} else
         pb.set_count(0);
@@ -22,14 +24,15 @@ WCDigram::~WCDigram()
 {
 }
 
+uint64_t tok;
 
 size_t WCDigram::create(Token* t, PartialAgg** p)
 {
 	WCDigram* new_pao;
 	if (t == NULL)
-		new_pao = new WCDigram(NULL, NULL);
-	else	
-		new_pao = new WCDigram((char*)(t->tokens[0]), (char*)(t->tokens[1]));
+		new_pao = new WCDigram(NULL, NULL, NULL);
+	else
+		new_pao = new WCDigram((char*)(t->tokens[0]), (char*)(t->tokens[1]), (char*)(t->tokens[2]));
 	p[0] = new_pao;	
 	return 1;
 }

@@ -1,0 +1,12 @@
+package imgclasspao;
+
+option optimize_for = SPEED;
+
+message Neighbor {
+    required string key = 1;
+}
+
+message pao {
+    required string key = 1;
+    repeated Neighbor neighbors = 2;
+}
