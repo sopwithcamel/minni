@@ -25,19 +25,25 @@ namespace compresstree {
         friend class Emptier;
         friend class Sorter;
         friend class Pager;
-        typedef bool (Node::*NodeCompressionFn)();
 
-        enum CompressionAction {
-            NONE,
-            COMPRESS,
-            DECOMPRESS
-        };
-
+#ifdef ENABLE_PAGING
         enum PageAction {
             NO_PAGE,
             PAGE_OUT,
             PAGE_IN
         };
+
+        class PagingInfo {
+          public:
+            int fd;
+            vector<uint64_t> offsets;
+            bool pageable;
+            bool queuedForPaging;
+            PageAction pageAct;
+            pthread_cond_t pageCond;
+            pthread_mutex_t pageMutex;
+        };
+#endif
 
         class MergeElement {
           public:
@@ -146,25 +152,10 @@ namespace compresstree {
         void waitForSort();
 
         /* Compression-related functions */
-        NodeCompressionFn compress;
-        /* Decompress node buffer. Returns true if:
-         * + the buffer was decompressed successfully
-         * + the node is marked as incompressible
-         * + the node buffer is empty. In this case, no memory is allocated.
-         * data_ may, therefore, be NULL or not and this must be checked
-         * before using the node (eg. for copying data)
-         */
-        NodeCompressionFn decompress;
-        bool asyncCompress();
-        bool asyncDecompress();
-        /* wait for completion of compression action on node */
-        void waitForCompressAction(const CompressionAction& act);
-        bool snappyCompress();
-        bool snappyDecompress();
-        /* Returns true if node is compressed; also true if node still hasn't
-         * been paged in */
-        bool isCompressed();
-        void setCompressible(bool flag);
+        void scheduleBufferCompressAction(const Buffer::CompressionAction& act);
+        void waitForCompressAction(const Buffer::CompressionAction& act);
+        void performCompressAction();
+        Buffer::CompressionAction getCompressAction();
 
 #ifdef ENABLE_PAGING
         /* Paging-related functions */
@@ -196,21 +187,9 @@ namespace compresstree {
         pthread_mutex_t queuedForEmptyMutex_;
         char** perm_;
 
-        /* Compression related */
-        bool compressible_;
-        bool queuedForCompAct_;
-        CompressionAction compAct_;
-        pthread_cond_t compActCond_;
-        pthread_mutex_t compActMutex_;
-
 #ifdef ENABLE_PAGING
-        /* Paging related */
-        int fd_;
-        bool pageable_;
-        bool queuedForPaging_;
-        PageAction pageAct_;
-        pthread_cond_t pageCond_;
-        pthread_mutex_t pageMutex_;
+        /* Paging-related */
+        PagingInfo pginf_;
 #endif
     };
 }

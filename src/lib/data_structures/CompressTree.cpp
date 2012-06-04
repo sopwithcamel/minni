@@ -166,8 +166,8 @@ namespace compresstree {
                 curLeaf->waitForPageIn();
             }
 #endif
-            CALL_MEM_FUNC(*curLeaf, curLeaf->decompress)();
-            curLeaf->waitForCompressAction(Node::DECOMPRESS);
+            curLeaf->scheduleBufferCompressAction(Buffer::DECOMPRESS);
+            curLeaf->waitForCompressAction(Buffer::DECOMPRESS);
         }
 
         Node* curLeaf = allLeaves_[lastLeafRead_];
@@ -183,7 +183,7 @@ namespace compresstree {
         lastElement_++;
 
         if (lastElement_ >= curLeaf->buffer_.numElements()) {
-            CALL_MEM_FUNC(*curLeaf, curLeaf->compress)();
+            curLeaf->scheduleBufferCompressAction(Buffer::COMPRESS);
             if (++lastLeafRead_ == allLeaves_.size()) {
                 /* Wait for all outstanding compression work to finish */
                 compressor_->waitUntilCompletionNoticeReceived();
@@ -201,8 +201,8 @@ namespace compresstree {
             pager_->pageIn(n);
             n->waitForPageIn();
 #endif
-            CALL_MEM_FUNC(*n, n->decompress)();
-            n->waitForCompressAction(Node::DECOMPRESS);
+            n->scheduleBufferCompressAction(Buffer::DECOMPRESS);
+            n->waitForCompressAction(Buffer::DECOMPRESS);
             lastOffset_ = 0;
             lastElement_ = 0;
         }
@@ -330,13 +330,13 @@ namespace compresstree {
             if (newLeaf && newLeaf->isFull()) {
                 l2 = newLeaf->splitLeaf();
             }
-            CALL_MEM_FUNC(*node, node->compress)();
+            node->scheduleBufferCompressAction(Buffer::COMPRESS);
             if (newLeaf)
-                CALL_MEM_FUNC(*newLeaf, newLeaf->compress)();
+                newLeaf->scheduleBufferCompressAction(Buffer::COMPRESS);
             if (l1)
-                CALL_MEM_FUNC(*l1, l1->compress)();
+                l1->scheduleBufferCompressAction(Buffer::COMPRESS);
             if (l2)
-                CALL_MEM_FUNC(*l2, l2->compress)();
+                l2->scheduleBufferCompressAction(Buffer::COMPRESS);
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Leaf node %d removed from full-leaf-list\n", node->id_);
 #endif
@@ -352,12 +352,12 @@ namespace compresstree {
         rootNode_ = new Node(this, 0);
         rootNode_->buffer_.addList();
         rootNode_->separator_ = UINT32_MAX;
-        rootNode_->setCompressible(false);
+        rootNode_->buffer_.setCompressible(false);
 
         inputNode_ = new Node(this, 0);
         inputNode_->buffer_.addList();
         inputNode_->separator_ = UINT32_MAX;
-        inputNode_->setCompressible(false);
+        inputNode_->buffer_.setCompressible(false);
         
 #ifdef ENABLE_EVICTION
         // buffer for holding evicted values
@@ -431,7 +431,7 @@ namespace compresstree {
         Node* newRoot = new Node(this, rootNode_->level() + 1);
         newRoot->buffer_.addList();
         newRoot->separator_ = UINT32_MAX;
-        newRoot->setCompressible(false);
+        newRoot->buffer_.setCompressible(false);
 #ifdef CT_NODE_DEBUG
         fprintf(stderr, "Node %d is new root; children are %d and %d\n", 
                 newRoot->id_, rootNode_->id_, otherChild->id_);

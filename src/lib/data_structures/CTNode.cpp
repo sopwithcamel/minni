@@ -7,37 +7,20 @@
 #include <string.h>
 #include <time.h>
 
-#include "compsort.h"
 #include "CompressTree.h"
 #include "CTNode.h"
-#include "rle.h"
 #include "Slaves.h"
-#include "snappy.h"
-#include "zlib.h"
 
 namespace compresstree {
     Node::Node(CompressTree* tree, uint32_t level) :
         tree_(tree),
         level_(level),
         parent_(NULL),
-        compressible_(true),
-        queuedForEmptying_(false),
-        queuedForCompAct_(false),
-        compAct_(NONE)
+        queuedForEmptying_(false)
     {
         id_ = tree_->nodeCtr++;
 
-        if (tree_->alg_ == SNAPPY) {
-            compress = &Node::asyncCompress;
-            decompress = &Node::asyncDecompress;
-        } else {
-            fprintf(stderr, "Compression algorithm\n");
-            assert(false);
-        }
-        pthread_mutex_init(&stateMutex_, NULL);
         pthread_mutex_init(&queuedForEmptyMutex_, NULL);
-        pthread_mutex_init(&compActMutex_, NULL);
-        pthread_cond_init(&compActCond_, NULL);
         tree_->createPAO_(NULL, (PartialAgg**)&lastPAO);
         tree_->createPAO_(NULL, (PartialAgg**)&thisPAO);
 
@@ -62,10 +45,7 @@ namespace compresstree {
 
     Node::~Node()
     {
-        pthread_mutex_destroy(&stateMutex_);
         pthread_mutex_destroy(&queuedForEmptyMutex_);
-        pthread_mutex_destroy(&compActMutex_);
-        pthread_cond_destroy(&compActCond_);
 
         tree_->destroyPAO_(lastPAO);
         tree_->destroyPAO_(thisPAO);
@@ -115,11 +95,11 @@ namespace compresstree {
     bool Node::emptyOrCompress()
     {
         if (tree_->emptyType_ == ALWAYS || isFull()) {
-            CALL_MEM_FUNC(*this, decompress)();
+            scheduleBufferCompressAction(Buffer::DECOMPRESS);
             tree_->sorter_->addNode(this);
             tree_->sorter_->wakeup();
         } else {
-            CALL_MEM_FUNC(*this, compress)();
+            scheduleBufferCompressAction(Buffer::COMPRESS);
         }
     }
 
@@ -143,7 +123,7 @@ namespace compresstree {
                         %u/%u\n", id_, buffer_.numElements(), EMPTY_THRESHOLD);
 #endif
             } else { // compress
-                CALL_MEM_FUNC(*this, compress)();
+                scheduleBufferCompressAction(Buffer::COMPRESS);
             }
             return true;
         }
@@ -673,7 +653,7 @@ namespace compresstree {
 
         // if leaf is also the root, create new root
         if (isRoot()) {
-            setCompressible(true);
+            buffer_.setCompressible(true);
             tree_->createNewRoot(newLeaf);
         } else {
             parent_->addChild(newLeaf);
@@ -685,7 +665,7 @@ namespace compresstree {
             uint32_t num)
     {
         // check if the node is still queued up for a previous compression
-        waitForCompressAction(COMPRESS);
+        waitForCompressAction(Buffer::COMPRESS);
 
         // calculate offset
         uint32_t offset = 0;
@@ -806,7 +786,7 @@ namespace compresstree {
 #endif
 
         if (isRoot()) {
-            setCompressible(true);
+            buffer_.setCompressible(true);
             buffer_.deallocate();
             buffer_.clear();
             return tree_->createNewRoot(newNode);
@@ -830,199 +810,40 @@ namespace compresstree {
     {
         return id_;
     }
-    
-    bool Node::asyncCompress()
+
+    void Node::scheduleBufferCompressAction(const Buffer::CompressionAction& act)
     {
-        if (!compressible_)
-            return true;
-        pthread_mutex_lock(&compActMutex_);
-        // check if node already in compression action list
-        if (queuedForCompAct_) {
-            // check if compression request has been cancelled
-            if (compAct_ == DECOMPRESS) {
-                /* reset action request; node need not be added
-                 * again */
-                compAct_ = NONE;
-#ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Node %d decompression cancelled\n", id_);
-#endif
-                pthread_mutex_unlock(&compActMutex_);
-                return true;
-            } else if (compAct_ == NONE) {
-                compAct_ = COMPRESS;
-                pthread_mutex_unlock(&compActMutex_);
-#ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Node %d reset to compress\n", id_);
-#endif
-                return true;
-            } else { // we're compressing twice
-#ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Trying to compress node %d twice", id_);
-#endif
-//                assert(false);
-            }
-        } else {
-            if (buffer_.empty()) {
-                queuedForCompAct_ = false;
-                pthread_mutex_unlock(&compActMutex_);
-                return true;
-            } else {
-                queuedForCompAct_ = true;
-                compAct_ = COMPRESS;
-            }
-        }
-        pthread_mutex_unlock(&compActMutex_);
-        tree_->compressor_->addNode(this);
-        tree_->compressor_->wakeup();
-        return true;
-    }
-    
-    bool Node::asyncDecompress()
-    {
-        if (!compressible_) {
+        if (!buffer_.compressible_) {
             fprintf(stderr, "Node %d not compressible\n", id_);
-            return true;
         }
-        pthread_mutex_lock(&compActMutex_);
-        // check if node already in list
-        if (queuedForCompAct_) {
-            // check if compression request is outstanding
-            if (compAct_ == COMPRESS || compAct_ == NONE) {
-                compAct_ = DECOMPRESS;
-                pthread_mutex_unlock(&compActMutex_);
-#ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Node %d reset to decompress\n", id_);
-#endif
-                return true;
-            } else { // we're decompressing twice
-#ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Trying to decompress node %d twice", id_);
-#endif
-                assert(false);
-            }
-        } else {
-            // check if the buffer is empty;
-            if (buffer_.empty()) {
-                queuedForCompAct_ = false;
-                pthread_mutex_unlock(&compActMutex_);
-                return true;
-            } else {
-                queuedForCompAct_ = true;
-                compAct_ = DECOMPRESS;
-            }
-        }
-        pthread_mutex_unlock(&compActMutex_);
+        if (act == Buffer::COMPRESS)
+            buffer_.scheduleCompress();
+        else if (act == Buffer::DECOMPRESS)
+            buffer_.scheduleDecompress();
+        else
+            assert(false && "Invalid compress action");
         tree_->compressor_->addNode(this);
         tree_->compressor_->wakeup();
-        return true;
+    }
+    
+    void Node::waitForCompressAction(const Buffer::CompressionAction& act)
+    {
+        buffer_.waitForCompressAction(act);
     }
 
-    void Node::waitForCompressAction(const CompressionAction& act)
+    void Node::performCompressAction()
     {
-        // make sure the buffer has been decompressed
-        pthread_mutex_lock(&compActMutex_);
-        while (queuedForCompAct_ && compAct_ == act)
-            pthread_cond_wait(&compActCond_, &compActMutex_);
-        pthread_mutex_unlock(&compActMutex_);
+        buffer_.performCompressAction();
     }
 
-    bool Node::snappyCompress()
+    Buffer::CompressionAction Node::getCompressAction()
     {
-        if (!buffer_.empty()) {
-            // allocate memory for one list
-            Buffer compressed;
-
-            for (uint32_t i=0; i<buffer_.lists_.size(); i++) {
-                Buffer::List* l = buffer_.lists_[i];
-                if (l->state_ == Buffer::List::COMPRESSED)
-                    continue;
-                compressed.addList();
-                // latest added list
-                Buffer::List* cl = 
-                        compressed.lists_[compressed.lists_.size()-1];
-                snappy::RawCompress((const char*)l->hashes_, 
-                        l->num_ * sizeof(uint32_t), 
-                        (char*)cl->hashes_,
-                        &l->c_hashlen_);
-                snappy::RawCompress((const char*)l->sizes_, 
-                        l->num_ * sizeof(uint32_t), 
-                        (char*)cl->sizes_,
-                        &l->c_sizelen_);
-/*
-                compsort::compress(l->hashes_, l->num_,
-                        cl->hashes_, (uint32_t&)l->c_hashlen_);
-                rle::encode(l->sizes_, l->num_, cl->sizes_,
-                        (uint32_t&)l->c_sizelen_);
-*/
-                snappy::RawCompress(l->data_, l->size_, 
-                        cl->data_, 
-                        &l->c_datalen_);
-                l->deallocate();
-                l->hashes_ = cl->hashes_;
-                l->sizes_ = cl->sizes_;
-                l->data_ = cl->data_;
-                l->state_ = Buffer::List::COMPRESSED;
-#ifdef CT_NODE_DEBUG
-                fprintf(stderr, "compressed list %d in node %d\n", i, id_);
-#endif
-            }
-            // clear compressed list so lists won't be deallocated on return
-            compressed.clear();
-        }
-        return true;
-    }
-
-    bool Node::snappyDecompress()
-    {
-        if (!buffer_.empty()) {
-            // allocate memory for decompressed buffers
-            Buffer decompressed;
-
-            for (uint32_t i=0; i<buffer_.lists_.size(); i++) {
-                Buffer::List* cl = buffer_.lists_[i];
-                if (cl->state_ == Buffer::List::DECOMPRESSED)
-                    continue;
-                decompressed.addList();
-                // latest added list
-                Buffer::List* l =
-                        decompressed.lists_[decompressed.lists_.size()-1];
-                snappy::RawUncompress((const char*)cl->hashes_, 
-                        cl->c_hashlen_, (char*)l->hashes_);
-                snappy::RawUncompress((const char*)cl->sizes_, 
-                        cl->c_sizelen_, (char*)l->sizes_);
-/*
-                uint32_t siz;
-                compsort::decompress(cl->hashes_, (uint32_t)cl->c_hashlen_,
-                        l->hashes_, siz);
-                rle::decode(cl->sizes_, (uint32_t)cl->c_sizelen_,
-                        l->sizes_, siz);
-*/
-                snappy::RawUncompress(cl->data_, cl->c_datalen_,
-                        l->data_);
-                cl->deallocate();
-                cl->hashes_ = l->hashes_;
-                cl->sizes_ = l->sizes_;
-                cl->data_ = l->data_;
-                cl->state_ = Buffer::List::DECOMPRESSED;
-            }
-            // clear decompressed so lists won't be deallocated on return
-            decompressed.clear();
-#ifdef CT_NODE_DEBUG
-            fprintf(stderr, "decompressed node %d; n: %u\n", id_, buffer_.numElements());
-#endif
-        }
-        return true;
-    }
-
-    void Node::setCompressible(bool flag)
-    {
-        compressible_ = flag;
+        return buffer_.getCompressAction();
     }
 
 #ifdef ENABLE_PAGING
     bool Node::waitForPageAction(const PageAction& act)
     {
-        // make sure the buffer has been page in
         pthread_mutex_lock(&pageMutex_);
         while (queuedForPaging_ && pageAct_ == act)
             pthread_cond_wait(&pageCond_, &pageMutex_);
@@ -1043,61 +864,22 @@ namespace compresstree {
     bool Node::pageOut()
     {
         if (!buffer_.empty()) {
-            for (uint32_t i=0; i<buffer_.lists_.size(); i++) {
+            uint32_t pagedOutAlready = pginf_.offsets.size();
+            for (uint32_t i=pagedOutAlready; i<buffer_.lists_.size(); i++) {
                 Buffer::List* l = buffer_.lists_[i];
-                if (l->state_ == Buffer::List::COMPRESSED)
-                    continue;
-                compressed.addList();
-                // latest added list
-                Buffer::List* cl = 
-                        compressed.lists_[compressed.lists_.size()-1];
-                snappy::RawCompress((const char*)l->hashes_, 
-                        l->num_ * sizeof(uint32_t), 
-                        (char*)cl->hashes_,
-                        &l->c_hashlen_);
-                snappy::RawCompress((const char*)l->sizes_, 
-                        l->num_ * sizeof(uint32_t), 
-                        (char*)cl->sizes_,
-                        &l->c_sizelen_);
-/*
-                compsort::compress(l->hashes_, l->num_,
-                        cl->hashes_, (uint32_t&)l->c_hashlen_);
-                rle::encode(l->sizes_, l->num_, cl->sizes_,
-                        (uint32_t&)l->c_sizelen_);
-*/
-                snappy::RawCompress(l->data_, l->size_, 
-                        cl->data_, 
-                        &l->c_datalen_);
-                l->deallocate();
-                l->hashes_ = cl->hashes_;
-                l->sizes_ = cl->sizes_;
-                l->data_ = cl->data_;
-                l->state_ = Buffer::List::COMPRESSED;
-#ifdef CT_NODE_DEBUG
-                fprintf(stderr, "compressed list %d in node %d\n", i, id_);
-#endif
-            }
-            // clear compressed list so lists won't be deallocated on return
-            compressed.clear();
-        }
-        if (compLength_ > 0) {
-            size_t ret;
-            ret = pwrite(fd_, buffer_, compLength_, 0);
+                size_t ret;
+                ret = pwrite(fd_, l->data_, l->size_, 0);
 #ifdef ENABLE_ASSERT_CHECKS
-            if (ret != compLength_) {
-                fprintf(stderr, "Node %d page-out fail! Error: %d\n", id_, errno);
-                fprintf(stderr, "written: %ld actual: %ld\n", ret, compLength_);
-                assert(false);
+                if (ret != l->size_) {
+                    fprintf(stderr, "Node %d page-out fail! Error: %d\n", id_, errno);
+                    fprintf(stderr, "written: %ld actual: %ld\n", ret, l->size_);
+                    assert(false);
+                }
+#endif
+                l->deallocate();
+                l->state_ = Buffer::List::PAGED_OUT;
             }
-#endif
-#ifdef CT_NODE_DEBUG
-            fprintf(stderr, "Node: %d: Flushed %ld bytes\n", id_, ret); 
-#endif
-            free(buffer_);
         }
-        buffer_ = NULL;
-
-        setState(PAGED_OUT);
         return true;
     }
 
@@ -1115,7 +897,6 @@ namespace compresstree {
 #endif
         }
 
-        setState(COMPRESSED);
         // set file pointer to beginning of file again
         lseek(fd_, 0, SEEK_SET);
         return true;

@@ -5,7 +5,17 @@
 
 namespace compresstree {
     class Buffer {
+        friend class Node;
+        friend class CompressTree;
+        friend class Compressor;
+
         public:
+          enum CompressionAction {
+              NONE,
+              COMPRESS,
+              DECOMPRESS
+          };
+
           class List {
             public:
               enum ListState {
@@ -50,8 +60,33 @@ namespace compresstree {
            * can happen even if no memory is allocated to the buffers as all
            * buffers may be compressed */
           bool empty() const;
+
+          /* Compression-related */
+          bool compress();
+          bool decompress();
+          void setCompressible(bool flag);
+          bool scheduleCompress();
+          bool scheduleDecompress();
+          void waitForCompressAction(const CompressionAction& act);
+          void performCompressAction();
+          CompressionAction getCompressAction();
+
+          /* Paging-related */
+          
+
           uint32_t numElements() const;
+
+        private:
+          /* buffer fragments */
           std::vector<List*> lists_;
+
+          /* Compression related */
+          bool compressible_;
+          bool queuedForCompAct_;
+          CompressionAction compAct_;
+          pthread_cond_t compActCond_;
+          pthread_mutex_t compActMutex_;
+
     };
 }
 

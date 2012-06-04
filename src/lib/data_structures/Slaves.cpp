@@ -200,23 +200,7 @@ namespace compresstree {
                 Node* n = nodes_.front();
                 nodes_.pop_front();
                 pthread_mutex_unlock(&queueMutex_);
-                pthread_mutex_lock(&(n->compActMutex_));
-                if (n->compAct_ == Node::COMPRESS) {
-                    n->snappyCompress();
-                    // signal to agent waiting for completion.
-                    pthread_cond_signal(&n->compActCond_);
-                } else if (n->compAct_ == Node::DECOMPRESS) {
-                    pthread_mutex_unlock(&(n->compActMutex_));
-#ifdef ENABLE_PAGING
-                    n->waitForPageIn();
-#endif
-                    pthread_mutex_lock(&(n->compActMutex_));
-                    n->snappyDecompress();
-                    pthread_cond_signal(&n->compActCond_);
-                }
-                n->queuedForCompAct_ = false;
-                n->compAct_ = Node::NONE;
-                pthread_mutex_unlock(&(n->compActMutex_));
+                n->performCompressAction();
                 pthread_mutex_lock(&queueMutex_);
             }
             /* check if anybody wants a notification when list is empty */
@@ -231,9 +215,8 @@ namespace compresstree {
 
     void Compressor::addNode(Node* node)
     {
-        pthread_mutex_lock(&node->compActMutex_);
-        if (node->compAct_ == Node::COMPRESS) {
-            pthread_mutex_unlock(&node->compActMutex_);
+        Buffer::CompressionAction act = node->getCompressAction();
+        if (act == Buffer::COMPRESS) {
             pthread_mutex_lock(&queueMutex_);
             nodes_.push_back(node);
 #ifdef CT_NODE_DEBUG
@@ -251,7 +234,6 @@ namespace compresstree {
             tree_->pager_->pageOut(node);
 #endif
         } else {
-            pthread_mutex_unlock(&node->compActMutex_);
             pthread_mutex_lock(&queueMutex_);
             nodes_.push_front(node);
 #ifdef CT_NODE_DEBUG
@@ -295,7 +277,7 @@ namespace compresstree {
                 Node* n = nodes_.front();
                 nodes_.pop_front();
                 pthread_mutex_unlock(&queueMutex_);
-                n->waitForCompressAction(Node::DECOMPRESS);
+                n->waitForCompressAction(Buffer::DECOMPRESS);
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "sorter: sorting node: %d (size: %u)\t", n->id_, n->buffer_.numElements());
                 fprintf(stderr, "remaining: ");
