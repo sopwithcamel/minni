@@ -23,24 +23,6 @@ namespace compresstree {
         pthread_mutex_init(&queuedForEmptyMutex_, NULL);
         tree_->createPAO_(NULL, (PartialAgg**)&lastPAO);
         tree_->createPAO_(NULL, (PartialAgg**)&thisPAO);
-
-#ifdef ENABLE_PAGING
-        pthread_mutex_init(&pageMutex_, NULL);
-        pthread_cond_init(&pageCond_, NULL);
-
-        pageable_ = true;
-        queuedForPaging_ = false;
-        pageAct_ = NO_PAGE;
-        char* fileName = (char*)malloc(100);
-        char* nodeNum = (char*)malloc(10);
-        strcpy(fileName, "/mnt/hamur/minni_data/");
-        sprintf(nodeNum, "%d", id_);
-        strcat(fileName, nodeNum);
-        strcat(fileName, ".buf");
-        fd_ = open(fileName, O_CREAT|O_RDWR|O_TRUNC, 0755);
-        free(fileName);
-        free(nodeNum);
-#endif
     }
 
     Node::~Node()
@@ -49,12 +31,6 @@ namespace compresstree {
 
         tree_->destroyPAO_(lastPAO);
         tree_->destroyPAO_(thisPAO);
-#ifdef ENABLE_PAGING
-        pthread_mutex_destroy(&pageMutex_);
-        pthread_cond_destroy(&pageCond_);
-
-        close(fd_);
-#endif
     }
 
     bool Node::insert(uint64_t hash, PartialAgg* agg)
@@ -842,73 +818,43 @@ namespace compresstree {
     }
 
 #ifdef ENABLE_PAGING
-    bool Node::waitForPageAction(const PageAction& act)
+    void Node::scheduleBufferPageAction(const Buffer::PageAction& act)
     {
-        pthread_mutex_lock(&pageMutex_);
-        while (queuedForPaging_ && pageAct_ == act)
-            pthread_cond_wait(&pageCond_, &pageMutex_);
-        pthread_mutex_unlock(&pageMutex_);
-    }
-
-    bool Node::isPagedOut()
-    {
-        pthread_mutex_lock(&stateMutex_);
-        if (state_ == PAGED_OUT) {
-            pthread_mutex_unlock(&stateMutex_);
-            return true;
+        if (!buffer_.pageable) {
+            fprintf(stderr, "Node %d not pageable\n", id_);
         }
-        pthread_mutex_unlock(&stateMutex_);
-        return false;
+        if (act == Buffer::PAGE_OUT)
+            buffer_.schedulePageOut();
+        else if (act == Buffer::PAGE_IN)
+            buffer_.schedulePageIn();
+        else
+            assert(false && "Invalid page action");
+        tree_->pager_->addNode(this);
+        tree_->pager_->wakeup();
     }
 
-    bool Node::pageOut()
+    void Node::waitForPageAction(const Buffer::PageAction& act)
     {
-        if (!buffer_.empty()) {
-            uint32_t pagedOutAlready = pginf_.offsets.size();
-            for (uint32_t i=pagedOutAlready; i<buffer_.lists_.size(); i++) {
-                Buffer::List* l = buffer_.lists_[i];
-                size_t ret;
-                ret = pwrite(fd_, l->data_, l->size_, 0);
-#ifdef ENABLE_ASSERT_CHECKS
-                if (ret != l->size_) {
-                    fprintf(stderr, "Node %d page-out fail! Error: %d\n", id_, errno);
-                    fprintf(stderr, "written: %ld actual: %ld\n", ret, l->size_);
-                    assert(false);
-                }
+        buffer_.waitForPageAction(act);
+    }
+
+    void Node::performPageAction()
+    {
+        buffer_.performPageAction();
+#ifdef CT_NODE_DEBUG
+        Buffer::PageAction act = getPageAction();
+        if (act == PAGE_OUT)
+            fprintf(stderr, "pager: paged out node: %d\n", n->id_);
+        else if (act == PAGE_IN)
+            fprintf(stderr, "pager: paged in node: %d\n", n->id_);
 #endif
-                l->deallocate();
-                l->state_ = Buffer::List::PAGED_OUT;
-            }
-        }
-        return true;
     }
 
-    bool Node::pageIn()
+    Buffer::PageAction getPageAction()
     {
-        if (compLength_ > 0) {
-            buffer_ = (char*)malloc(BUFFER_SIZE);
-            size_t ret = pread(fd_, buffer_, compLength_, 0);
-#ifdef ENABLE_ASSERT_CHECKS
-            if (ret != compLength_) {
-                fprintf(stderr, "Node %d page-in fail! Error: %d\n", id_, errno);
-                fprintf(stderr, "written: %ld actual: %ld\n", ret, compLength_);
-                assert(false);
-            }
-#endif
-        }
-
-        // set file pointer to beginning of file again
-        lseek(fd_, 0, SEEK_SET);
-        return true;
+        return buffer_.getPageAction();
     }
-
-    bool Node::isPinned() const
-    {
-        if (isRoot() || parent_->isRoot())
-            return true;
-        return false;
-    }
-#endif //ENABLE_PAGING
+#endif // ENABLE_PAGING
 
     bool Node::checkSerializationIntegrity(int listn/*=-1*/)
     {

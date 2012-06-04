@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <stdlib.h>
 #include "Buffer.h"
 #include "CompressTree.h"
@@ -55,6 +56,24 @@ namespace compresstree {
     {
         pthread_mutex_init(&compActMutex_, NULL);
         pthread_cond_init(&compActCond_, NULL);
+
+#ifdef ENABLE_PAGING
+        pthread_mutex_init(&pageMutex_, NULL);
+        pthread_cond_init(&pageCond_, NULL);
+
+        pageable_ = true;
+        queuedForPaging_ = false;
+        pageAct_ = NO_PAGE;
+        char* fileName = (char*)malloc(100);
+        char* nodeNum = (char*)malloc(10);
+        strcpy(fileName, "/mnt/hamur/minni_data/");
+        sprintf(nodeNum, "%d", id_);
+        strcat(fileName, nodeNum);
+        strcat(fileName, ".buf");
+        fd_ = open(fileName, O_CREAT|O_RDWR|O_TRUNC, 0755);
+        free(fileName);
+        free(nodeNum);
+#endif
     }
 
     Buffer::~Buffer()
@@ -63,6 +82,11 @@ namespace compresstree {
 
         pthread_mutex_destroy(&compActMutex_);
         pthread_cond_destroy(&compActCond_);
+#ifdef ENABLE_PAGING
+        pthread_mutex_destroy(&pageMutex_);
+        pthread_cond_destroy(&pageCond_);
+        close(fd_);
+#endif
     }
 
     Buffer::List* Buffer::addList(bool isLarge/*=false*/)
@@ -100,6 +124,14 @@ namespace compresstree {
     bool Buffer::empty() const
     {
         return (numElements() == 0);
+    }
+
+    uint32_t Buffer::numElements() const
+    {
+        uint32_t num = 0;
+        for (uint32_t i=0; i<lists_.size(); i++)
+            num += lists_[i]->num_;
+        return num;
     }
 
     bool Buffer::compress()
@@ -192,7 +224,9 @@ namespace compresstree {
 
     void Buffer::setCompressible(bool flag)
     {
+        pthread_mutex_lock(&compActMutex_);
         compressible_ = flag;
+        pthread_mutex_unlock(&compActMutex_);
     }
 
     bool Buffer::scheduleCompress()
@@ -286,16 +320,15 @@ namespace compresstree {
         if (compAct_ == COMPRESS) {
             compress();
             // signal to agent waiting for completion.
-            pthread_cond_signal(&compActCond_);
         } else if (compAct_ == DECOMPRESS) {
             pthread_mutex_unlock(&compActMutex_);
 #ifdef ENABLE_PAGING
-            waitForPageIn();
+            waitForPageAction(PAGE_IN);
 #endif
             pthread_mutex_lock(&compActMutex_);
             decompress();
-            pthread_cond_signal(&compActCond_);
         }
+        pthread_cond_signal(&compActCond_);
         queuedForCompAct_ = false;
         compAct_ = NONE;
         pthread_mutex_unlock(&compActMutex_);
@@ -309,12 +342,126 @@ namespace compresstree {
         return act;
     }    
 
-    uint32_t Buffer::numElements() const
+#ifdef ENABLE_PAGING
+    bool Buffer::pageOut()
     {
-        uint32_t num = 0;
-        for (uint32_t i=0; i<lists_.size(); i++)
-            num += lists_[i]->num_;
-        return num;
+        if (!empty()) {
+            uint32_t pagedOutAlready = offsets_.size();
+            for (uint32_t i=pagedOutAlready; i<lists_.size(); i++) {
+                Buffer::List* l = lists_[i];
+                size_t ret;
+                ret = pwrite(fd_, l->data_, l->size_, 0);
+#ifdef ENABLE_ASSERT_CHECKS
+                if (ret != l->size_) {
+                    fprintf(stderr, "Node %d page-out fail! Error: %d\n", id_, errno);
+                    fprintf(stderr, "written: %ld actual: %ld\n", ret, l->size_);
+                    assert(false);
+                }
+#endif
+                l->deallocate();
+                l->state_ = List::PAGED_OUT;
+            }
+        }
+        return true;
     }
 
+    bool Buffer::pageIn()
+    {
+        if (compLength_ > 0) {
+            buffer_ = (char*)malloc(BUFFER_SIZE);
+            size_t ret = pread(fd_, buffer_, compLength_, 0);
+#ifdef ENABLE_ASSERT_CHECKS
+            if (ret != compLength_) {
+                fprintf(stderr, "Node %d page-in fail! Error: %d\n", id_, errno);
+                fprintf(stderr, "written: %ld actual: %ld\n", ret, compLength_);
+                assert(false);
+            }
+#endif
+        }
+
+        // set file pointer to beginning of file again
+        lseek(fd_, 0, SEEK_SET);
+        return true;
+    }
+
+    void Buffer::setPageable(bool flag)
+    {
+        pthread_mutex_lock(&pageMutex_);
+        pageable_ = flag;
+        pthread_mutex_unlock(&pageMutex_);
+    }
+
+    void Buffer::schedulePageOut()
+    {
+        pthread_mutex_lock(&pageMutex_);
+        // check if node already in list
+        if (queuedForPaging_) {
+            // check if page-in request is outstanding
+            if (pageAct_ == PAGE_IN) {
+                // reset action request; node need not be added again
+                pageAct_ = NO_PAGE;
+                pthread_mutex_unlock(&pageMutex_);
+                return;
+            } else if (pageAct_ == NO_PAGE) {
+                pageAct_ = PAGE_OUT;
+                pthread_mutex_unlock(&pageMutex_);
+                return;
+            } else { // we're paging-out twice
+                assert(false && "Paging out twice");
+            }
+        } else {
+            queuedForPaging_ = true;
+            pageAct_ = PAGE_OUT;
+        }
+        pthread_mutex_unlock(&pageMutex_);
+    }
+
+    void Buffer::schedulePageIn()
+    {
+        pthread_mutex_lock(&pageMutex_);
+        // check if node already in list
+        if (queuedForPaging_) {
+            // check if page-out request is outstanding
+            if (pageAct_ == PAGE_OUT) {
+                // reset action request; node need not be added again
+                pageAct_ = NO_PAGE;
+                pthread_mutex_unlock(&pageMutex_);
+                return;
+            } else if (pageAct_ == NO_PAGE) {
+                pageAct_ = PAGE_IN;
+                pthread_mutex_unlock(&pageMutex_);
+                return;
+            } else { // we're paging-in twice
+                assert(false && "Trying to page-in node");
+            }
+        } else {
+            queuedForPaging_ = true;
+            pageAct_ = PAGE_IN;
+        }
+        pthread_mutex_unlock(&pageMutex_);
+    }
+
+    bool Buffer::waitForPageAction(const PageAction& act)
+    {
+        pthread_mutex_lock(&pageMutex_);
+        while (queuedForPaging_ && pageAct_ == act)
+            pthread_cond_wait(&pageCond_, &pageMutex_);
+        pthread_mutex_unlock(&pageMutex_);
+    }
+
+    void Buffer::performPageAction()
+    {
+        pthread_mutex_lock(&pageMutex_);
+        if (pageAct_ == PAGE_OUT) {
+            waitForCompressAction(COMPRESS);
+            pageOut();
+        } else if (pageAct_ == PAGE_IN) {
+            n->pageIn();
+        }
+        pthread_cond_signal(&n->pageCond_);
+        queuedForPaging_ = false;
+        pageAct_ = NO_PAGE;
+        pthread_mutex_unlock(&pageMutex_);
+    }
+#endif //ENABLE_PAGING
 }

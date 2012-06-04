@@ -2,6 +2,7 @@
 #define LIB_COMPRESS_BUFFER_H
 #include <stdint.h>
 #include <vector>
+#include "CTConfig.h"
 
 namespace compresstree {
     class Buffer {
@@ -15,6 +16,14 @@ namespace compresstree {
               COMPRESS,
               DECOMPRESS
           };
+
+#ifdef ENABLE_PAGING
+          enum PageAction {
+              NO_PAGE,
+              PAGE_OUT,
+              PAGE_IN
+          };
+#endif
 
           class List {
             public:
@@ -60,6 +69,7 @@ namespace compresstree {
            * can happen even if no memory is allocated to the buffers as all
            * buffers may be compressed */
           bool empty() const;
+          uint32_t numElements() const;
 
           /* Compression-related */
           bool compress();
@@ -71,10 +81,17 @@ namespace compresstree {
           void performCompressAction();
           CompressionAction getCompressAction();
 
+#ifdef ENABLE_PAGING
           /* Paging-related */
-          
-
-          uint32_t numElements() const;
+          bool pageOut();
+          bool pageIn();
+          void setPageable(bool flag);
+          void schedulePageOut();
+          void schedulePageIn();
+          void waitForPageAction(const PageAction& act);
+          void performPageAction();
+          PageAction getPageAction();
+#endif
 
         private:
           /* buffer fragments */
@@ -87,6 +104,16 @@ namespace compresstree {
           pthread_cond_t compActCond_;
           pthread_mutex_t compActMutex_;
 
+#ifdef ENABLE_PAGING
+          /* Paging-related */
+          int fd_;
+          vector<uint64_t> offsets_;
+          bool pageable_;
+          bool queuedForPaging_;
+          PageAction pageAct_;
+          pthread_cond_t pageCond_;
+          pthread_mutex_t pageMutex_;
+#endif //ENABLE_PAGING
     };
 }
 

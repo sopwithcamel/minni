@@ -7,6 +7,7 @@
 
 #include "Buffer.h"
 #include "CompressTree.h"
+#include "CTConfig.h"
 #include "ProtobufPartialAgg.h"
 
 #define CALL_MEM_FUNC(object,ptrToMember) ((object).*(ptrToMember))
@@ -26,24 +27,6 @@ namespace compresstree {
         friend class Sorter;
         friend class Pager;
 
-#ifdef ENABLE_PAGING
-        enum PageAction {
-            NO_PAGE,
-            PAGE_OUT,
-            PAGE_IN
-        };
-
-        class PagingInfo {
-          public:
-            int fd;
-            vector<uint64_t> offsets;
-            bool pageable;
-            bool queuedForPaging;
-            PageAction pageAct;
-            pthread_cond_t pageCond;
-            pthread_mutex_t pageMutex;
-        };
-#endif
 
         class MergeElement {
           public:
@@ -159,12 +142,11 @@ namespace compresstree {
 
 #ifdef ENABLE_PAGING
         /* Paging-related functions */
-        bool waitForPageAction(const PageAction& act);
-        bool pageOut();
-        bool pageIn();
-        bool isPagedOut();
-        bool isPinned() const;
-#endif
+        void scheduleBufferPageAction(const Buffer::PageAction& act);
+        void waitForPageAction(const Buffer::PageAction& act);
+        void performPageAction();
+        Buffer::PageAction getPageAction();
+#endif // ENABLE_PAGING
 
       private:
         /* pointer to the tree */
@@ -186,11 +168,6 @@ namespace compresstree {
         bool queuedForEmptying_;
         pthread_mutex_t queuedForEmptyMutex_;
         char** perm_;
-
-#ifdef ENABLE_PAGING
-        /* Paging-related */
-        PagingInfo pginf_;
-#endif
     };
 }
 
