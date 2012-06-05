@@ -235,6 +235,9 @@ namespace compresstree {
             node->scheduleBufferPageAction(Buffer::PAGE_OUT);
 #endif
         } else {
+#ifdef ENABLE_PAGING
+            node->scheduleBufferPageAction(Buffer::PAGE_IN);
+#endif
             pthread_mutex_lock(&queueMutex_);
             nodes_.push_front(node);
 #ifdef CT_NODE_DEBUG

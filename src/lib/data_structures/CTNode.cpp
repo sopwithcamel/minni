@@ -72,6 +72,9 @@ namespace compresstree {
     bool Node::emptyOrCompress()
     {
         if (tree_->emptyType_ == ALWAYS || isFull()) {
+#ifdef ENABLE_PAGING
+            scheduleBufferPageAction(Buffer::PAGE_IN);
+#endif
             scheduleBufferCompressAction(Buffer::DECOMPRESS);
             tree_->sorter_->addNode(this);
             tree_->sorter_->wakeup();
@@ -101,6 +104,9 @@ namespace compresstree {
 #endif
             } else { // compress
                 scheduleBufferCompressAction(Buffer::COMPRESS);
+#ifdef ENABLE_PAGING
+                scheduleBufferPageAction(Buffer::PAGE_OUT);
+#endif
             }
             return true;
         }
@@ -407,7 +413,7 @@ namespace compresstree {
         // aux is on stack and will be destroyed
 
         buffer_.deallocate();
-        buffer_ = aux;
+        buffer_.lists_ = aux.lists_;
         aux.clear();
         checkSerializationIntegrity();
         return true;
@@ -472,7 +478,7 @@ namespace compresstree {
         // aux itself is on the stack and will be destroyed
         buffer_.deallocate();
         buffer_.clear();
-        buffer_ = aux;
+        buffer_.lists_ = aux.lists_;
         aux.clear();
         checkSerializationIntegrity();
 
@@ -577,7 +583,7 @@ namespace compresstree {
         // aux itself is on the stack and will be destroyed
         buffer_.deallocate();
         buffer_.clear();
-        buffer_ = aux;
+        buffer_.lists_ = aux.lists_;
         aux.clear();
         return true;
     }
@@ -631,6 +637,9 @@ namespace compresstree {
         // if leaf is also the root, create new root
         if (isRoot()) {
             buffer_.setCompressible(true);
+#ifdef ENABLE_PAGING
+            buffer_.setPageable(true);
+#endif
             tree_->createNewRoot(newLeaf);
         } else {
             parent_->addChild(newLeaf);
@@ -764,6 +773,9 @@ namespace compresstree {
 
         if (isRoot()) {
             buffer_.setCompressible(true);
+#ifdef ENABLE_PAGING
+            buffer_.setPageable(true);
+#endif
             buffer_.deallocate();
             buffer_.clear();
             return tree_->createNewRoot(newNode);
@@ -792,15 +804,19 @@ namespace compresstree {
     {
         if (!buffer_.compressible_) {
             fprintf(stderr, "Node %d not compressible\n", id_);
+            return;
         }
+        bool add;
         if (act == Buffer::COMPRESS)
-            buffer_.scheduleCompress();
+            add = buffer_.checkCompress();
         else if (act == Buffer::DECOMPRESS)
-            buffer_.scheduleDecompress();
+            add = buffer_.checkDecompress();
         else
             assert(false && "Invalid compress action");
-        tree_->compressor_->addNode(this);
-        tree_->compressor_->wakeup();
+        if (add) {
+            tree_->compressor_->addNode(this);
+            tree_->compressor_->wakeup();
+        }
     }
     
     void Node::waitForCompressAction(const Buffer::CompressionAction& act)
@@ -823,15 +839,19 @@ namespace compresstree {
     {
         if (!buffer_.pageable_) {
             fprintf(stderr, "Node %d not pageable\n", id_);
+            return;
         }
+        bool add;
         if (act == Buffer::PAGE_OUT)
-            buffer_.schedulePageOut();
+            add = buffer_.checkPageOut();
         else if (act == Buffer::PAGE_IN)
-            buffer_.schedulePageIn();
+            add = buffer_.checkPageIn();
         else
             assert(false && "Invalid page action");
-        tree_->pager_->addNode(this);
-        tree_->pager_->wakeup();
+        if (add) {
+            tree_->pager_->addNode(this);
+            tree_->pager_->wakeup();
+        }
     }
 
     void Node::waitForPageAction(const Buffer::PageAction& act)
@@ -844,10 +864,10 @@ namespace compresstree {
         buffer_.performPageAction();
 #ifdef CT_NODE_DEBUG
         Buffer::PageAction act = getPageAction();
-        if (act == PAGE_OUT)
-            fprintf(stderr, "pager: paged out node: %d\n", n->id_);
-        else if (act == PAGE_IN)
-            fprintf(stderr, "pager: paged in node: %d\n", n->id_);
+        if (act == Buffer::PAGE_OUT)
+            fprintf(stderr, "pager: paged out node: %d\n", id_);
+        else if (act == Buffer::PAGE_IN)
+            fprintf(stderr, "pager: paged in node: %d\n", id_);
 #endif
     }
 

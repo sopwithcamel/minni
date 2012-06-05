@@ -64,15 +64,6 @@ namespace compresstree {
         pageable_ = true;
         queuedForPaging_ = false;
         pageAct_ = NO_PAGE;
-        char* fileName = (char*)malloc(100);
-        char* nodeNum = (char*)malloc(10);
-        strcpy(fileName, "/mnt/hamur/minni_data/");
-        sprintf(nodeNum, "%d", node->id_);
-        strcat(fileName, nodeNum);
-        strcat(fileName, ".buf");
-        fd_ = open(fileName, O_CREAT|O_RDWR|O_TRUNC, 0755);
-        free(fileName);
-        free(nodeNum);
 #endif
     }
 
@@ -136,7 +127,18 @@ namespace compresstree {
 
     void Buffer::setParent(Node* n)
     {
-        node = n;
+        node_ = n;
+#ifdef ENABLE_PAGING
+        char* fileName = (char*)malloc(100);
+        char* nodeNum = (char*)malloc(10);
+        strcpy(fileName, "/localfs/hamur/minni_data/");
+        sprintf(nodeNum, "%d", node_->id_);
+        strcat(fileName, nodeNum);
+        strcat(fileName, ".buf");
+        fd_ = open(fileName, O_CREAT|O_RDWR|O_TRUNC, 0755);
+        free(fileName);
+        free(nodeNum);
+#endif
     }
 
     bool Buffer::compress()
@@ -149,6 +151,10 @@ namespace compresstree {
                 Buffer::List* l = lists_[i];
                 if (l->state_ == Buffer::List::COMPRESSED)
                     continue;
+#ifdef ENABLE_PAGING
+                if (l->state_ == Buffer::List::PAGED_OUT)
+                    continue;
+#endif
                 compressed.addList();
                 // latest added list
                 Buffer::List* cl = 
@@ -176,7 +182,8 @@ namespace compresstree {
                 l->data_ = cl->data_;
                 l->state_ = Buffer::List::COMPRESSED;
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "compressed list %d in node %d\n", i, id_);
+                fprintf(stderr, "compressed list %d in node %d\n",
+                        i, node_->id_);
 #endif
             }
             // clear compressed list so lists won't be deallocated on return
@@ -221,7 +228,8 @@ namespace compresstree {
             // clear decompressed so lists won't be deallocated on return
             decompressed.clear();
 #ifdef CT_NODE_DEBUG
-            fprintf(stderr, "decompressed node %d; n: %u\n", id_, buffer_.numElements());
+            fprintf(stderr, "decompressed node %d; n: %u\n",
+                    node_->id_, numElements());
 #endif
         }
         return true;
@@ -234,7 +242,7 @@ namespace compresstree {
         pthread_mutex_unlock(&compActMutex_);
     }
 
-    bool Buffer::scheduleCompress()
+    bool Buffer::checkCompress()
     {
         pthread_mutex_lock(&compActMutex_);
         // check if node already in compression action list
@@ -245,38 +253,40 @@ namespace compresstree {
                  * again */
                 compAct_ = NONE;
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Node %d decompression cancelled\n", id_);
+                fprintf(stderr, "Node %d decompression cancelled\n", node_->id_);
 #endif
                 pthread_mutex_unlock(&compActMutex_);
-                return true;
+                return false;
             } else if (compAct_ == NONE) {
                 compAct_ = COMPRESS;
                 pthread_mutex_unlock(&compActMutex_);
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Node %d reset to compress\n", id_);
+                fprintf(stderr, "Node %d reset to compress\n", node_->id_);
 #endif
-                return true;
+                return false;
             } else { // we're compressing twice
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Trying to compress node %d twice", id_);
+                fprintf(stderr, "Trying to compress node %d twice", node_->id_);
 #endif
 //                assert(false);
+                pthread_mutex_unlock(&compActMutex_);
+                return false;
             }
         } else {
             if (empty()) {
                 queuedForCompAct_ = false;
                 pthread_mutex_unlock(&compActMutex_);
-                return true;
+                return false;
             } else {
                 queuedForCompAct_ = true;
                 compAct_ = COMPRESS;
+                pthread_mutex_unlock(&compActMutex_);
+                return true;
             }
         }
-        pthread_mutex_unlock(&compActMutex_);
-        return true;
     }
     
-    bool Buffer::scheduleDecompress()
+    bool Buffer::checkDecompress()
     {
         pthread_mutex_lock(&compActMutex_);
         // check if node already in list
@@ -286,28 +296,29 @@ namespace compresstree {
                 compAct_ = DECOMPRESS;
                 pthread_mutex_unlock(&compActMutex_);
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Node %d reset to decompress\n", id_);
+                fprintf(stderr, "Node %d reset to decompress\n", node_->id_);
 #endif
-                return true;
+                return false;
             } else { // we're decompressing twice
 #ifdef CT_NODE_DEBUG
-                fprintf(stderr, "Trying to decompress node %d twice", id_);
+                fprintf(stderr, "Trying to decompress node %d twice", node_->id_);
 #endif
-                assert(false);
+                pthread_mutex_unlock(&compActMutex_);
+                return false;
             }
         } else {
             // check if the buffer is empty;
             if (empty()) {
                 queuedForCompAct_ = false;
                 pthread_mutex_unlock(&compActMutex_);
-                return true;
+                return false;
             } else {
                 queuedForCompAct_ = true;
                 compAct_ = DECOMPRESS;
+                pthread_mutex_unlock(&compActMutex_);
+                return true;
             }
         }
-        pthread_mutex_unlock(&compActMutex_);
-        return true;
     }
     
     void Buffer::waitForCompressAction(const CompressionAction& act)
@@ -351,15 +362,19 @@ namespace compresstree {
     bool Buffer::pageOut()
     {
         if (!empty()) {
-            uint32_t pagedOutAlready = offsets_.size();
-            for (uint32_t i=pagedOutAlready; i<lists_.size(); i++) {
+            for (uint32_t i=0; i<lists_.size(); i++) {
                 Buffer::List* l = lists_[i];
-                size_t ret;
-                ret = pwrite(fd_, l->data_, l->size_, 0);
+                if (l->state_ == List::PAGED_OUT)
+                    continue;
+                size_t ret1, ret2, ret3;
+                ret1 = pwrite(fd_, l->hashes_, l->c_hashlen_, 0);
+                ret2 = pwrite(fd_, l->sizes_, l->c_sizelen_, 0);
+                ret3 = pwrite(fd_, l->data_, l->c_datalen_, 0);
 #ifdef ENABLE_ASSERT_CHECKS
-                if (ret != l->size_) {
-                    fprintf(stderr, "Node %d page-out fail! Error: %d\n", id_, errno);
-                    fprintf(stderr, "written: %ld actual: %ld\n", ret, l->size_);
+                if (ret1 != l->c_hashlen_ || ret2 != c_sizelen_ ||
+                        ret3 != c_datalen_) {
+                    fprintf(stderr, "Node %d page-out fail! Error: %d\n",
+                            id_, errno);
                     assert(false);
                 }
 #endif
@@ -372,13 +387,17 @@ namespace compresstree {
 
     bool Buffer::pageIn()
     {
-        for (uint32_t i=0; i<offsets_.size(); i++) {
-            List* l = addList();
-            size_t ret = pread(fd_, l, offsets_[i], 0);
+        for (uint32_t i=0; i<lists_.size(); i++) {
+            List* l = lists_[i];
+            size_t ret1, ret2, ret3;
+            ret1 = pread(fd_, l->hashes_, l->c_hashlen_, 0);
+            ret2 = pread(fd_, l->sizes_, l->c_sizelen_, 0);
+            ret3 = pread(fd_, l->data_, l->c_datalen_, 0);
 #ifdef ENABLE_ASSERT_CHECKS
-            if (ret != offsets_[i]) {
+            if (ret1 != l->c_hashlen_ || ret2 != c_sizelen_ ||
+                    ret3 != c_datalen_) {
                 fprintf(stderr, "Node %d page-in fail! Error: %d\n",
-                        node->id_, errno);
+                        node_->id_, errno);
                 fprintf(stderr, "written: %ld actual: %ld\n",
                         ret, offsets_[i]);
                 assert(false);
@@ -398,7 +417,7 @@ namespace compresstree {
         pthread_mutex_unlock(&pageMutex_);
     }
 
-    void Buffer::schedulePageOut()
+    bool Buffer::checkPageOut()
     {
         pthread_mutex_lock(&pageMutex_);
         // check if node already in list
@@ -408,22 +427,21 @@ namespace compresstree {
                 // reset action request; node need not be added again
                 pageAct_ = NO_PAGE;
                 pthread_mutex_unlock(&pageMutex_);
-                return;
+                return false;
             } else if (pageAct_ == NO_PAGE) {
                 pageAct_ = PAGE_OUT;
                 pthread_mutex_unlock(&pageMutex_);
-                return;
-            } else { // we're paging-out twice
-                assert(false && "Paging out twice");
+                return false;
             }
         } else {
             queuedForPaging_ = true;
             pageAct_ = PAGE_OUT;
+            pthread_mutex_unlock(&pageMutex_);
+            return true;
         }
-        pthread_mutex_unlock(&pageMutex_);
     }
 
-    void Buffer::schedulePageIn()
+    bool Buffer::checkPageIn()
     {
         pthread_mutex_lock(&pageMutex_);
         // check if node already in list
@@ -433,19 +451,21 @@ namespace compresstree {
                 // reset action request; node need not be added again
                 pageAct_ = NO_PAGE;
                 pthread_mutex_unlock(&pageMutex_);
-                return;
+                return false;
             } else if (pageAct_ == NO_PAGE) {
                 pageAct_ = PAGE_IN;
                 pthread_mutex_unlock(&pageMutex_);
-                return;
+                return false;
             } else { // we're paging-in twice
-                assert(false && "Trying to page-in node");
+                pthread_mutex_unlock(&pageMutex_);
+                return false;
             }
         } else {
             queuedForPaging_ = true;
             pageAct_ = PAGE_IN;
+            pthread_mutex_unlock(&pageMutex_);
+            return true;
         }
-        pthread_mutex_unlock(&pageMutex_);
     }
 
     void Buffer::waitForPageAction(const PageAction& act)
@@ -460,7 +480,9 @@ namespace compresstree {
     {
         pthread_mutex_lock(&pageMutex_);
         if (pageAct_ == PAGE_OUT) {
+            pthread_mutex_unlock(&pageMutex_);
             waitForCompressAction(COMPRESS);
+            pthread_mutex_lock(&pageMutex_);
             pageOut();
         } else if (pageAct_ == PAGE_IN) {
             pageIn();
@@ -473,10 +495,7 @@ namespace compresstree {
 
     Buffer::PageAction Buffer::getPageAction()
     {
-        pthread_mutex_lock(&pageMutex_);
-        PageAction act = pageAct_;
-        pthread_mutex_unlock(&pageMutex_);
-        return act;
+        return pageAct_;
     }    
 
 #endif //ENABLE_PAGING

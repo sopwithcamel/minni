@@ -78,8 +78,10 @@ namespace compresstree {
           bool compress();
           bool decompress();
           void setCompressible(bool flag);
-          bool scheduleCompress();
-          bool scheduleDecompress();
+          /* return value indicates whether the node needs to be added or
+           * if it's already present in the queue */
+          bool checkCompress();
+          bool checkDecompress();
           void waitForCompressAction(const CompressionAction& act);
           void performCompressAction();
           CompressionAction getCompressAction();
@@ -89,15 +91,17 @@ namespace compresstree {
           bool pageOut();
           bool pageIn();
           void setPageable(bool flag);
-          void schedulePageOut();
-          void schedulePageIn();
+          /* return value indicates whether the node needs to be added or
+           * if it's already present in the queue */
+          bool checkPageOut();
+          bool checkPageIn();
           void waitForPageAction(const PageAction& act);
           void performPageAction();
           PageAction getPageAction();
 #endif
 
         private:
-          const Node* node;
+          const Node* node_;
           /* buffer fragments */
           std::vector<List*> lists_;
 
@@ -111,7 +115,6 @@ namespace compresstree {
 #ifdef ENABLE_PAGING
           /* Paging-related */
           int fd_;
-          std::vector<uint64_t> offsets_;
           bool pageable_;
           bool queuedForPaging_;
           PageAction pageAct_;

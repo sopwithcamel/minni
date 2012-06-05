@@ -160,10 +160,6 @@ namespace compresstree {
             Node* curLeaf = allLeaves_[0];
             while (curLeaf->buffer_.numElements() == 0)
                 curLeaf = allLeaves_[++lastLeafRead_];
-#ifdef ENABLE_PAGING
-            curLeaf->scheduleBufferPageAction(Buffer::PAGE_IN);
-            curLeaf->waitForPageAction(Buffer::PAGE_IN);
-#endif
             curLeaf->scheduleBufferCompressAction(Buffer::DECOMPRESS);
             curLeaf->waitForCompressAction(Buffer::DECOMPRESS);
         }
@@ -195,10 +191,6 @@ namespace compresstree {
             Node *n = allLeaves_[lastLeafRead_];
             while (curLeaf->buffer_.numElements() == 0)
                 curLeaf = allLeaves_[++lastLeafRead_];
-#ifdef ENABLE_PAGING
-            n->scheduleBufferPageAction(Buffer::PAGE_IN);
-            n->waitForPageAction(Buffer::PAGE_IN);
-#endif
             n->scheduleBufferCompressAction(Buffer::DECOMPRESS);
             n->waitForCompressAction(Buffer::DECOMPRESS);
             lastOffset_ = 0;
@@ -329,12 +321,15 @@ namespace compresstree {
                 l2 = newLeaf->splitLeaf();
             }
             node->scheduleBufferCompressAction(Buffer::COMPRESS);
-            if (newLeaf)
+            if (newLeaf) {
                 newLeaf->scheduleBufferCompressAction(Buffer::COMPRESS);
-            if (l1)
+            }
+            if (l1) {
                 l1->scheduleBufferCompressAction(Buffer::COMPRESS);
-            if (l2)
+            }
+            if (l2) {
                 l2->scheduleBufferCompressAction(Buffer::COMPRESS);
+            }
 #ifdef CT_NODE_DEBUG
             fprintf(stderr, "Leaf node %d removed from full-leaf-list\n", node->id_);
 #endif
@@ -356,6 +351,10 @@ namespace compresstree {
         inputNode_->buffer_.addList();
         inputNode_->separator_ = UINT32_MAX;
         inputNode_->buffer_.setCompressible(false);
+#ifdef ENABLE_PAGING
+        rootNode_->buffer_.setPageable(false);
+        inputNode_->buffer_.setPageable(false);
+#endif
         
 #ifdef ENABLE_EVICTION
         // buffer for holding evicted values
