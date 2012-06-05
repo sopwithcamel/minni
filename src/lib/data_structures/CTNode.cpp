@@ -19,6 +19,7 @@ namespace compresstree {
         queuedForEmptying_(false)
     {
         id_ = tree_->nodeCtr++;
+        buffer_.setParent(this); 
 
         pthread_mutex_init(&queuedForEmptyMutex_, NULL);
         tree_->createPAO_(NULL, (PartialAgg**)&lastPAO);
@@ -820,7 +821,7 @@ namespace compresstree {
 #ifdef ENABLE_PAGING
     void Node::scheduleBufferPageAction(const Buffer::PageAction& act)
     {
-        if (!buffer_.pageable) {
+        if (!buffer_.pageable_) {
             fprintf(stderr, "Node %d not pageable\n", id_);
         }
         if (act == Buffer::PAGE_OUT)
@@ -850,7 +851,7 @@ namespace compresstree {
 #endif
     }
 
-    Buffer::PageAction getPageAction()
+    Buffer::PageAction Node::getPageAction()
     {
         return buffer_.getPageAction();
     }

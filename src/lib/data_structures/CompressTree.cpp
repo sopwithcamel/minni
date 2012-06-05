@@ -161,10 +161,8 @@ namespace compresstree {
             while (curLeaf->buffer_.numElements() == 0)
                 curLeaf = allLeaves_[++lastLeafRead_];
 #ifdef ENABLE_PAGING
-            if (curLeaf->isPagedOut()) {
-                pager_->pageIn(curLeaf);
-                curLeaf->waitForPageIn();
-            }
+            curLeaf->scheduleBufferPageAction(Buffer::PAGE_IN);
+            curLeaf->waitForPageAction(Buffer::PAGE_IN);
 #endif
             curLeaf->scheduleBufferCompressAction(Buffer::DECOMPRESS);
             curLeaf->waitForCompressAction(Buffer::DECOMPRESS);
@@ -198,8 +196,8 @@ namespace compresstree {
             while (curLeaf->buffer_.numElements() == 0)
                 curLeaf = allLeaves_[++lastLeafRead_];
 #ifdef ENABLE_PAGING
-            pager_->pageIn(n);
-            n->waitForPageIn();
+            n->scheduleBufferPageAction(Buffer::PAGE_IN);
+            n->waitForPageAction(Buffer::PAGE_IN);
 #endif
             n->scheduleBufferCompressAction(Buffer::DECOMPRESS);
             n->waitForCompressAction(Buffer::DECOMPRESS);

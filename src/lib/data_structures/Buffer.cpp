@@ -67,7 +67,7 @@ namespace compresstree {
         char* fileName = (char*)malloc(100);
         char* nodeNum = (char*)malloc(10);
         strcpy(fileName, "/mnt/hamur/minni_data/");
-        sprintf(nodeNum, "%d", id_);
+        sprintf(nodeNum, "%d", node->id_);
         strcat(fileName, nodeNum);
         strcat(fileName, ".buf");
         fd_ = open(fileName, O_CREAT|O_RDWR|O_TRUNC, 0755);
@@ -132,6 +132,11 @@ namespace compresstree {
         for (uint32_t i=0; i<lists_.size(); i++)
             num += lists_[i]->num_;
         return num;
+    }
+
+    void Buffer::setParent(Node* n)
+    {
+        node = n;
     }
 
     bool Buffer::compress()
@@ -367,13 +372,15 @@ namespace compresstree {
 
     bool Buffer::pageIn()
     {
-        if (compLength_ > 0) {
-            buffer_ = (char*)malloc(BUFFER_SIZE);
-            size_t ret = pread(fd_, buffer_, compLength_, 0);
+        for (uint32_t i=0; i<offsets_.size(); i++) {
+            List* l = addList();
+            size_t ret = pread(fd_, l, offsets_[i], 0);
 #ifdef ENABLE_ASSERT_CHECKS
-            if (ret != compLength_) {
-                fprintf(stderr, "Node %d page-in fail! Error: %d\n", id_, errno);
-                fprintf(stderr, "written: %ld actual: %ld\n", ret, compLength_);
+            if (ret != offsets_[i]) {
+                fprintf(stderr, "Node %d page-in fail! Error: %d\n",
+                        node->id_, errno);
+                fprintf(stderr, "written: %ld actual: %ld\n",
+                        ret, offsets_[i]);
                 assert(false);
             }
 #endif
@@ -441,7 +448,7 @@ namespace compresstree {
         pthread_mutex_unlock(&pageMutex_);
     }
 
-    bool Buffer::waitForPageAction(const PageAction& act)
+    void Buffer::waitForPageAction(const PageAction& act)
     {
         pthread_mutex_lock(&pageMutex_);
         while (queuedForPaging_ && pageAct_ == act)
@@ -456,12 +463,21 @@ namespace compresstree {
             waitForCompressAction(COMPRESS);
             pageOut();
         } else if (pageAct_ == PAGE_IN) {
-            n->pageIn();
+            pageIn();
         }
-        pthread_cond_signal(&n->pageCond_);
+        pthread_cond_signal(&pageCond_);
         queuedForPaging_ = false;
         pageAct_ = NO_PAGE;
         pthread_mutex_unlock(&pageMutex_);
     }
+
+    Buffer::PageAction Buffer::getPageAction()
+    {
+        pthread_mutex_lock(&pageMutex_);
+        PageAction act = pageAct_;
+        pthread_mutex_unlock(&pageMutex_);
+        return act;
+    }    
+
 #endif //ENABLE_PAGING
 }

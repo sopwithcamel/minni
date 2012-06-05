@@ -22,11 +22,11 @@ namespace compresstree {
 
     class Node {
         friend class CompressTree;
+        friend class Buffer;
         friend class Compressor;
         friend class Emptier;
         friend class Sorter;
         friend class Pager;
-
 
         class MergeElement {
           public:

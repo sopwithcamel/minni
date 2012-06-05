@@ -112,7 +112,8 @@ namespace compresstree {
                 for (int i=n->children_.size()-1; i>=0; i--) {
 #ifdef ENABLE_PAGING
                     // schedule pre-fetching of children of node into memory
-                    tree_->pager_->pageIn(n->children_[i]);
+                    n->children_[i]->scheduleBufferPageAction(
+                            Buffer::PAGE_IN);
 #endif
                 }        
                 if (n->isRoot())
@@ -231,7 +232,7 @@ namespace compresstree {
              * since there is no page-out request (yet). This leads to a case
              * where a decompression later assumes that the page-in has
              * completed */
-            tree_->pager_->pageOut(node);
+            node->scheduleBufferPageAction(Buffer::PAGE_OUT);
 #endif
         } else {
             pthread_mutex_lock(&queueMutex_);
@@ -371,13 +372,11 @@ namespace compresstree {
 
     void Pager::addNode(Node* node)
     {
-        pthread_mutex_lock(&node->pageMutex_);
-        if (node->pageAct_ == Node::PAGE_OUT) {
-            pthread_mutex_unlock(&node->pageMutex_);
+        Buffer::PageAction act = node->getPageAction();
+        if (act == Buffer::PAGE_OUT) {
             pthread_mutex_lock(&queueMutex_);
             nodes_.push_back(node);
         } else {
-            pthread_mutex_unlock(&node->pageMutex_);
             pthread_mutex_lock(&queueMutex_);
             nodes_.push_front(node);
         }

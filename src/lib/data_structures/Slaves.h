@@ -92,8 +92,6 @@ namespace compresstree {
         static void* callHelper(void* context);
         Pager(CompressTree* tree);
         ~Pager();
-        void pageOut(Node* node);
-        void pageIn(Node* node);
         void* work();
         void addNode(Node* node);
     };

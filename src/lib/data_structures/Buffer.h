@@ -5,6 +5,8 @@
 #include "CTConfig.h"
 
 namespace compresstree {
+    class Node;
+
     class Buffer {
         friend class Node;
         friend class CompressTree;
@@ -70,6 +72,7 @@ namespace compresstree {
            * buffers may be compressed */
           bool empty() const;
           uint32_t numElements() const;
+          void setParent(Node* n);
 
           /* Compression-related */
           bool compress();
@@ -94,6 +97,7 @@ namespace compresstree {
 #endif
 
         private:
+          const Node* node;
           /* buffer fragments */
           std::vector<List*> lists_;
 
@@ -107,7 +111,7 @@ namespace compresstree {
 #ifdef ENABLE_PAGING
           /* Paging-related */
           int fd_;
-          vector<uint64_t> offsets_;
+          std::vector<uint64_t> offsets_;
           bool pageable_;
           bool queuedForPaging_;
           PageAction pageAct_;

@@ -4,18 +4,10 @@
 #include <deque>
 #include <pthread.h>
 #include <queue>
+#include "CTConfig.h"
 #include "CTNode.h"
 #include "Accumulator.h"
 #include "PartialAgg.h"
-
-//#define ENABLE_ASSERT_CHECKS
-//#define CT_NODE_DEBUG
-//#define ENABLE_INTEGRITY_CHECK
-//#define ENABLE_COUNTERS
-/* broken */
-//#define ENABLE_PAGING
-/* TODO: Eviction is broken */
-//#define ENABLE_EVICTION
 
 namespace compresstree {
 
