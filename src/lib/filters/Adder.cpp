@@ -36,6 +36,7 @@ void* Adder::operator()(void* recv)
 	FilterInfo* this_send = (*send)[next_buffer];
 	PartialAgg** this_list = (*agged_list)[next_buffer];
 	next_buffer = (next_buffer + 1) % aggregator->getNumBuffers();
+	tokens_processed++;
 
 	while (ind < merge_list_length) {
 		pao = merge_list[ind];
@@ -51,8 +52,8 @@ void* Adder::operator()(void* recv)
 		ind++;
 	}
 
-	tokens_processed++;
-
+    // Not storing any state
+    aggregator->can_exit = true;
 	this_send->result = this_list;
 	this_send->length = pao_list_ctr;
 	return this_send;
