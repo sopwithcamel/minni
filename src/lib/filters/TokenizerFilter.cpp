@@ -112,6 +112,9 @@ void* TokenizerFilter::operator()(void* input_data)
 		}
 	}
 pass_through:
+    // not storing any state
+    aggregator->can_exit &= true;
+
 	this_send->result = this_token_list;
 	this_send->length = num_tokens;
 	this_send->flush_hash = false;

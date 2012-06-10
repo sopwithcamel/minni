@@ -100,7 +100,6 @@ void* Serializer::operator()(void* pao_list)
     if (aggregator->input_finished && 
             tokens_processed == aggregator->tot_input_tokens  &&
             aggregator->can_exit == true) {
-
         for (int i=0; i<num_buckets; i++) {
             switch(serializationMethod_) {
                 case PartialAgg::PROTOBUF:
@@ -114,6 +113,6 @@ void* Serializer::operator()(void* pao_list)
             fl_[i]->close();
             delete fl_[i];
         }
-
-    }
+    } else
+        aggregator->can_exit &= false;
 }

@@ -45,13 +45,15 @@ void* DFSReader::operator()(void*)
         if (aggregator->can_exit)
             return NULL;
         else {
+            aggregator->can_exit = true;
             this_send->result = NULL;
             this_send->length = 0;
             // still have to count this as a token
             aggregator->tot_input_tokens++;
             return this_send;
         }
-    }
+    } else
+        aggregator->can_exit = false;
 	aggregator->tot_input_tokens++;
 
 	if (0 >= rem_buffer_size) {

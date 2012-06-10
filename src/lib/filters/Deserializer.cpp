@@ -62,6 +62,7 @@ void* Deserializer::operator()(void*)
         if (aggregator->can_exit)
             return NULL;
         else {
+            aggregator->can_exit = true;
             this_send->result = NULL;
             this_send->length = 0;
             this_send->flush_hash = true;
@@ -70,7 +71,8 @@ void* Deserializer::operator()(void*)
             aggregator->tot_input_tokens++;
             return this_send;
         }
-    }
+    } else
+        aggregator->can_exit = false;
 	aggregator->tot_input_tokens++;
 
 	if (!cur_bucket) { // new bucket has to be opened

@@ -53,7 +53,7 @@ void* Adder::operator()(void* recv)
 	}
 
     // Not storing any state
-    aggregator->can_exit = true;
+    aggregator->can_exit &= true;
 	this_send->result = this_list;
 	this_send->length = pao_list_ctr;
 	return this_send;

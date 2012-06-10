@@ -72,10 +72,11 @@ void* Hasher::operator()(void* recv)
         bool evictDone = hashtable->evictAll(this_list + evict_list_ctr, 
                 num_evicted, max_keys_per_token - evict_list_ctr);
         if (evictDone) {
-            aggregator->can_exit = true; // i'm done now!
+            aggregator->can_exit &= true; // i'm done now!
         }
         evict_list_ctr += num_evicted;
-	}
+	} else
+        aggregator->can_exit &= false;
 	this_send->result = this_list;
 	this_send->length = evict_list_ctr;
     this_send->destroy_pao = recv_list->destroy_pao;
