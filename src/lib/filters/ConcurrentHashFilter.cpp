@@ -6,11 +6,12 @@
 using namespace tbb;
 
 ConcurrentHashInserter::ConcurrentHashInserter(Aggregator* agg,
+        Accumulator* acc,
         size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 		void (*destroyPAOFunc)(PartialAgg* p),
 		size_t max_keys) :
+    AccumulatorInserter(agg, acc, destroyPAOFunc, max_keys),
     createPAO_(createPAOFunc),
-    destroyPAO_(destroyPAOFunc),    
     next_buffer(0)
 {
 	uint64_t num_buffers = aggregator_->getNumBuffers();
@@ -44,9 +45,9 @@ void* ConcurrentHashInserter::operator()(void* recv)
     size_t evict_list_ctr = 0;
 
 	// Insert PAOs
-    parallel_for(tbb::blocked_range<PartialAgg*>(pao_l,
-            pao_l+recv_length),
-            100, Aggregate(ht, recv_list->destroy_pao, destroyPAO_));
+    parallel_for(tbb::blocked_range<PartialAgg**>(pao_l,
+            pao_l+recv_length, 100),
+            Aggregate(ht, recv_list->destroy_pao, destroyPAO));
     
 	if (flush_on_complete || aggregator_->input_finished && 
                 tokens_processed == aggregator_->tot_input_tokens) {

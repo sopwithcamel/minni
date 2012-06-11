@@ -12,12 +12,13 @@
 #include "tbb/tbb_allocator.h"
 #include "tbb/tick_count.h"
 
+#include "AccumulatorFilter.h"
 #include "Aggregator.h"
 #include "HashUtil.h"
 #include "PartialAgg.h"
 #include "Util.h"
 
-class ConcurrentHashInserter
+class ConcurrentHashInserter : public AccumulatorInserter
 {
     struct HashCompare {
         static size_t hash(const char* key)
@@ -29,37 +30,38 @@ class ConcurrentHashInserter
             return (s1 && s2 && strcmp(s1, s2) == 0);
         }
     };
-    typedef tbb::concurrent_hash_map<const char*, PartialAgg*, HashCompare> Hashtable;
+    typedef tbb::concurrent_hash_map<const char*, PartialAgg*,
+            HashCompare> Hashtable;
 
     struct Aggregate {
         Hashtable* ht;
         bool destroyMerged_;
         void (*destroyPAO_)(PartialAgg* p);
 
-        Aggregate(Hashtable* ht_, void (*destroyPAOFunc)(PartialAgg* p),
-                bool destroy) : 
+        Aggregate(Hashtable* ht_, bool destroy,
+                void (*destroyPAOFunc)(PartialAgg* p)) : 
             ht(ht_),
             destroyMerged_(destroy),
             destroyPAO_(destroyPAOFunc) {}
-        void operator()(const tbb::blocked_range<PartialAgg*> r) const
+        void operator()(const tbb::blocked_range<PartialAgg**> r) const
         {
-            for (PartialAgg* it=r.begin(); it != r.end(); ++it) {
+            for (PartialAgg** it=r.begin(); it != r.end(); ++it) {
                 Hashtable::accessor a;
-                if (ht->insert(a, it->key())) { // wasn't present
-                    a->second = it;
+                if (ht->insert(a, (*it)->key().c_str())) { // wasn't present
+                    a->second = *it;
                 } else { // already present
-                    a->second->merge(it);
+                    a->second->merge(*it);
                     if (destroyMerged_)
-                        destroyPAO_(it);
+                        destroyPAO_(*it);
                 }
             }
         }
     };
   public:
 	ConcurrentHashInserter(Aggregator* agg,
+            Accumulator* acc,
             size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p),
-            int num_part,
 			const size_t max_keys);
 	~ConcurrentHashInserter();
 	void* operator()(void* pao_list);
