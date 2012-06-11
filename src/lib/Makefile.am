@@ -9,6 +9,7 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			filters/AccumulatorFilter.cpp \
 			filters/Adder.cpp \
 			filters/CompressTreeFilter.cpp \
+			filters/ConcurrentHashFilter.cpp \
 			filters/Deserializer.cpp \
 			filters/DFSReader.cpp \
 			filters/FileChunkerFilter.cpp \
@@ -70,6 +71,7 @@ minni_include_HEADERS = core/PartialAgg.h \
 			filters/AccumulatorFilter.h \
 			filters/Adder.h \
 			filters/CompressTreeFilter.h \
+			filters/ConcurrentHashFilter.h \
 			filters/Deserializer.h \
 			filters/DFSReader.h \
 			filters/FileChunkerFilter.h \
