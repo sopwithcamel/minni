@@ -12,7 +12,8 @@ ConcurrentHashInserter::ConcurrentHashInserter(Aggregator* agg,
 		size_t max_keys) :
     AccumulatorInserter(agg, acc, destroyPAOFunc, max_keys),
     createPAO_(createPAOFunc),
-    next_buffer(0)
+    next_buffer(0),
+    num_evicted(0)
 {
 	uint64_t num_buffers = aggregator_->getNumBuffers();
 	send_ = new MultiBuffer<FilterInfo>(num_buffers, 1);
@@ -45,13 +46,31 @@ void* ConcurrentHashInserter::operator()(void* recv)
     size_t evict_list_ctr = 0;
 
 	// Insert PAOs
-    parallel_for(tbb::blocked_range<PartialAgg**>(pao_l,
-            pao_l+recv_length, 100),
-            Aggregate(ht, recv_list->destroy_pao, destroyPAO));
+    if (recv_length > 0) {
+        parallel_for(tbb::blocked_range<PartialAgg**>(pao_l,
+                pao_l+recv_length, 100),
+                Aggregate(ht, recv_list->destroy_pao, destroyPAO));
+    }
     
 	if (flush_on_complete || aggregator_->input_finished && 
                 tokens_processed == aggregator_->tot_input_tokens) {
-        aggregator_->can_exit &= true;
+        if (num_evicted == 0)
+            evict_it = ht->begin();
+        for (; evict_it != ht->end(); ++evict_it) {
+            this_list[evict_list_ctr++] = evict_it->second;
+            if (evict_list_ctr == max_keys_per_token)
+                break;
+        }
+        fprintf(stderr, "Hash has %ld elements; sending %ld\n", ht->size(), evict_list_ctr);
+        num_evicted += evict_list_ctr;
+        if (evict_list_ctr < max_keys_per_token) {
+            aggregator_->can_exit &= true;
+            ht->clear();
+            num_evicted = 0;
+        } else {
+            aggregator_->stall_pipeline |= true;
+            aggregator_->can_exit &= false;
+        }
 	} else {
         aggregator_->can_exit &= false;
     }

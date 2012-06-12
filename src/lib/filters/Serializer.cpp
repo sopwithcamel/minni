@@ -75,8 +75,9 @@ void* Serializer::operator()(void* pao_list)
 	uint64_t ind = 0;
     while(ind < recv_length) {
         pao = pao_l[ind];
-        buc = partition(pao->key());	
         assert(pao != NULL);
+//        fprintf(stderr, "%d, %s\n", ind, pao->key().c_str());
+        buc = partition(pao->key());	
         switch (serializationMethod_) {
             case PartialAgg::PROTOBUF:
                 ((ProtobufPartialAgg*)pao)->serialize(coded_output_[buc]);
@@ -113,6 +114,7 @@ void* Serializer::operator()(void* pao_list)
             fl_[i]->close();
             delete fl_[i];
         }
+        aggregator->can_exit &= true;
     } else
         aggregator->can_exit &= false;
 }

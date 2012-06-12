@@ -23,7 +23,8 @@ class ConcurrentHashInserter : public AccumulatorInserter
     struct HashCompare {
         static size_t hash(const char* key)
         {
-            return HashUtil::BobHash(key, strlen(key), 42);
+            size_t a = HashUtil::BobHash(key, strlen(key), 42);
+            return a;
         }
         //! True if strings are equal
         static bool equal(const char* s1, const char* s2) {
@@ -73,5 +74,7 @@ class ConcurrentHashInserter : public AccumulatorInserter
 	void (*destroyPAO_)(PartialAgg* p);
 
     Hashtable* ht;
+    Hashtable::iterator evict_it;
+    size_t num_evicted;
 };
 #endif //LIB_CONCURRENTHASHFILTER_H

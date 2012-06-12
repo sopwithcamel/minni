@@ -63,6 +63,8 @@ void* Deserializer::operator()(void*)
             return NULL;
         else {
             aggregator->can_exit = true;
+            aggregator->stall_pipeline = false;
+
             this_send->result = NULL;
             this_send->length = 0;
             this_send->flush_hash = true;
@@ -71,8 +73,21 @@ void* Deserializer::operator()(void*)
             aggregator->tot_input_tokens++;
             return this_send;
         }
-    } else
+    }
+    if (aggregator->stall_pipeline) {
+        aggregator->stall_pipeline = false;
+
+        this_send->result = NULL;
+        this_send->length = 0;
+        this_send->flush_hash = true;
+        this_send->destroy_pao = false;
+        // still have to count this as a token
+        aggregator->tot_input_tokens++;
+        return this_send;
+    } else {
         aggregator->can_exit = false;
+        aggregator->stall_pipeline = false;
+    }
 	aggregator->tot_input_tokens++;
 
 	if (!cur_bucket) { // new bucket has to be opened
