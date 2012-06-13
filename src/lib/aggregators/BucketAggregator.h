@@ -14,6 +14,7 @@
 #include "AccumulatorFilter.h"
 #include "CompressTree.h"
 #include "CompressTreeFilter.h"
+#include "ConcurrentHashFilter.h"
 #include "Deserializer.h"
 #include "DFSReader.h"
 #include "ElasticObject.h"

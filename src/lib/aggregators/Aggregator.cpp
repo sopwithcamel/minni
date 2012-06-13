@@ -16,6 +16,7 @@ Aggregator::Aggregator(const Config &cfg,
 		num_partitions(num_part),
 		input_finished(false),
         can_exit(false),
+        stall_pipeline(false),
 		tot_input_tokens(0),
 		createPAO(createPAOFunc),
 		destroyPAO(destroyPAOFunc)
@@ -54,6 +55,7 @@ void Aggregator::resetFlags()
 {
 	input_finished = false;
     can_exit = false;
+    stall_pipeline = false;
 	tot_input_tokens = 0;
 }
 

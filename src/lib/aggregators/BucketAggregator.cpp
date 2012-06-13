@@ -71,28 +71,37 @@ BucketAggregator::BucketAggregator(const Config &cfg,
                 createPAOFunc, destroyPAOFunc));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_,
-                HashUtil::BOB, createPAOFunc,
+                HashUtil::MURMUR, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
         bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, acc_internal_,
-                HashUtil::MURMUR, createPAOFunc,
+                HashUtil::BOB, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
 
     } else if (!intagg.compare("sparsehash")) {
         Setting& c_num_part = readConfigFile(cfg,
                 "minni.internal.sparsehash.partitions");
+        Setting& c_concurrent = readConfigFile(cfg,
+                "minni.internal.sparsehash.concurrent");
         int num_part = c_num_part;
+        int concurrent = c_concurrent;
         acc_internal_ = dynamic_cast<Accumulator*>(new SparseHashMurmur(capacity,
-                max_keys_per_token));
-        acc_bucket_ = dynamic_cast<Accumulator*>(new SparseHashBob(capacity,
                 max_keys_per_token));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 SparseHashInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, num_part, max_keys_per_token));
-        bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                SparseHashInserter(this, acc_bucket_, createPAOFunc,
-                destroyPAOFunc, 1, max_keys_per_token));
-
+        if (!concurrent) {
+            acc_bucket_ = dynamic_cast<Accumulator*>(new SparseHashBob(capacity,
+                    max_keys_per_token));
+            bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
+                    SparseHashInserter(this, acc_bucket_, createPAOFunc,
+                    destroyPAOFunc, 1, max_keys_per_token));
+        } else {
+            acc_bucket_ = NULL;
+            bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new
+                    ConcurrentHashInserter(this, acc_bucket_, createPAOFunc,
+                    destroyPAOFunc, max_keys_per_token));
+        }
     } 
 #ifdef UTHASH
     else if (!intagg.compare("uthash")) {

@@ -38,6 +38,7 @@ class Aggregator
 	bool input_finished;		// indicates if input stage is done
     // set to true by filters once they are ready to terminate
     bool can_exit;
+    bool stall_pipeline;
 	uint64_t tot_input_tokens;	// measures total input tokens
 
 	void resetFlags();
