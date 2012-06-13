@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include "Buffer.h"
@@ -135,7 +136,14 @@ namespace compresstree {
         sprintf(nodeNum, "%d", node_->id_);
         strcat(fileName, nodeNum);
         strcat(fileName, ".buf");
-        fd_ = open(fileName, O_CREAT|O_RDWR|O_TRUNC, 0755);
+        fprintf(stderr, "Opening file %s\n", fileName);
+//        fd_ = open(fileName, O_CREAT|O_RDWR|O_TRUNC, 0755);
+        fd_ = open(fileName, O_RDWR, 0777);
+        fprintf(stderr, "Node: %d. fd: %d\n", node_->id_, fd_);
+        if (fd_ < 0) {
+            fprintf(stderr, "Error opening file: %s\n", strerror(errno));
+            assert(false);
+        }
         free(fileName);
         free(nodeNum);
 #endif
@@ -223,7 +231,7 @@ namespace compresstree {
                 cl->hashes_ = l->hashes_;
                 cl->sizes_ = l->sizes_;
                 cl->data_ = l->data_;
-                cl->state_ = Buffer::List::DECOMPRESSED;
+                cl->state_ = List::DECOMPRESSED;
             }
             // clear decompressed so lists won't be deallocated on return
             decompressed.clear();
@@ -367,46 +375,64 @@ namespace compresstree {
                 if (l->state_ == List::PAGED_OUT)
                     continue;
                 size_t ret1, ret2, ret3;
-                ret1 = pwrite(fd_, l->hashes_, l->c_hashlen_, 0);
-                ret2 = pwrite(fd_, l->sizes_, l->c_sizelen_, 0);
-                ret3 = pwrite(fd_, l->data_, l->c_datalen_, 0);
+                ret1 = write(fd_, l->hashes_, l->c_hashlen_);
+                ret2 = write(fd_, l->sizes_, l->c_sizelen_);
+                ret3 = write(fd_, l->data_, l->c_datalen_);
 #ifdef ENABLE_ASSERT_CHECKS
-                if (ret1 != l->c_hashlen_ || ret2 != c_sizelen_ ||
-                        ret3 != c_datalen_) {
-                    fprintf(stderr, "Node %d page-out fail! Error: %d\n",
-                            id_, errno);
+                if (ret1 != l->c_hashlen_ || ret2 != l->c_sizelen_ ||
+                        ret3 != l->c_datalen_) {
+                    fprintf(stderr, "Node %d page-out fail! Error: %s\n fd:%d\n",
+                            node_->id_, strerror(errno), fd_);
                     assert(false);
                 }
 #endif
                 l->deallocate();
                 l->state_ = List::PAGED_OUT;
             }
+            fprintf(stderr, "Paged out to fd_ %d\n", fd_);
         }
         return true;
     }
 
     bool Buffer::pageIn()
     {
+        // set file pointer to beginning of file
+        lseek(fd_, 0, SEEK_SET);
+
+        Buffer paged_in;
         for (uint32_t i=0; i<lists_.size(); i++) {
             List* l = lists_[i];
+            List* pgin_list = paged_in.addList();
             size_t ret1, ret2, ret3;
-            ret1 = pread(fd_, l->hashes_, l->c_hashlen_, 0);
-            ret2 = pread(fd_, l->sizes_, l->c_sizelen_, 0);
-            ret3 = pread(fd_, l->data_, l->c_datalen_, 0);
+            ret1 = read(fd_, pgin_list->hashes_, l->c_hashlen_);
+            ret2 = read(fd_, pgin_list->sizes_, l->c_sizelen_);
+            ret3 = read(fd_, pgin_list->data_, l->c_datalen_);
 #ifdef ENABLE_ASSERT_CHECKS
-            if (ret1 != l->c_hashlen_ || ret2 != c_sizelen_ ||
-                    ret3 != c_datalen_) {
-                fprintf(stderr, "Node %d page-in fail! Error: %d\n",
-                        node_->id_, errno);
-                fprintf(stderr, "written: %ld actual: %ld\n",
-                        ret, offsets_[i]);
+            if (ret1 != l->c_hashlen_ || ret2 != l->c_sizelen_ ||
+                    ret3 != l->c_datalen_) {
+                fprintf(stderr, "Node %d page-in fail! Error: %s\n fd: %d\n",
+                        node_->id_, strerror(errno), fd_);
+                fprintf(stderr, "HL:%ld;RHL:%ld\nSL:%ld;RSL:%ld\nDL:%ld;RDL:%ld\n",
+                        l->c_hashlen_, ret1, l->c_sizelen_, ret2,
+                        l->c_datalen_, ret3);
                 assert(false);
             }
 #endif
+            l->hashes_ = pgin_list->hashes_;
+            l->sizes_ = pgin_list->sizes_;
+            l->data_ = pgin_list->data_;
+            l->state_ = List::COMPRESSED;
         }
+        // clear paged_in to prevent deallocation on return
+        paged_in.clear();
 
         // set file pointer to beginning of file again
         lseek(fd_, 0, SEEK_SET);
+
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "paged in node %d; n: %u\n",
+                node_->id_, numElements());
+#endif
         return true;
     }
 

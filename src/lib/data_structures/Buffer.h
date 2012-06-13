@@ -54,6 +54,7 @@ namespace compresstree {
               size_t c_datalen_;
           };
           Buffer();
+          Buffer(const Buffer&);
           // clears all buffer state
           ~Buffer();
           // add a list and allocate memory
