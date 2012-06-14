@@ -14,6 +14,7 @@
 #include "Util.h"
 
 #include "leveldb/db.h"
+#include "leveldb/filter_policy.h"
 #include "leveldb/iterator.h"
 #include "leveldb/options.h"
 #include "leveldb/cache.h"
@@ -31,16 +32,23 @@ public:
 			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys);
 	~ExternalHasher();
+	void* operator()(void* pao_list);
 private:
 	Aggregator* aggregator;
 	const size_t max_keys_per_token;
 	leveldb::DB* db;
+	leveldb::Options options;
 	char* buf;
 	size_t (*createPAO)(Token* t, PartialAgg** p);
 	void (*destroyPAO)(PartialAgg* p);
     PartialAgg::SerializationMethod serializationMethod_;
+    leveldb::Iterator* evict_it;
+    size_t num_evicted;
 
-	void* operator()(void* pao_list);
+	size_t next_buffer;
+	MultiBuffer<FilterInfo>* send_;
+    MultiBuffer<PartialAgg*>* evicted_list_;
+    size_t tokens_processed;
 };
 
 class ExternalHashReader : public tbb::filter {
