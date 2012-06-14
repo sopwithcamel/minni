@@ -30,11 +30,11 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	Setting& c_intagg = readConfigFile(cfg, "minni.internal.selected");
 	string intagg = c_intagg;
 
+    Setting& c_agginmem = readConfigFile(cfg, "minni.internal.enabled");
+    int agg_in_mem = c_agginmem;
+
 	Setting& c_fprefix = readConfigFile(cfg, "minni.common.file_prefix");
 	string fprefix = (const char*)c_fprefix;
-
-	Setting& c_agginmem = readConfigFile(cfg, "minni.aggregator.hashsort.aggregate");
-	int agg_in_mem = c_agginmem;
 
 	Setting& c_nsort_mem = readConfigFile(cfg, "minni.aggregator.hashsort.nsort_mem");
 	int nsort_mem = c_nsort_mem;

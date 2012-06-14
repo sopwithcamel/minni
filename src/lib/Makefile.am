@@ -12,6 +12,7 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			filters/ConcurrentHashFilter.cpp \
 			filters/Deserializer.cpp \
 			filters/DFSReader.cpp \
+			filters/ExternalHasher.cpp \
 			filters/FileChunkerFilter.cpp \
 			filters/FileReaderFilter.cpp \
 			filters/FileTokenizerFilter.cpp \
@@ -24,6 +25,7 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			filters/TokenizerFilter.cpp \
 			aggregators/Aggregator.cpp \
 			aggregators/BucketAggregator.cpp \
+			aggregators/ExthashAggregator.cpp \
 			aggregators/HashsortAggregator.cpp \
 			record_creation/Tokenizer.cpp \
 			record_creation/FileTokenizer.cpp \
@@ -51,12 +53,14 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 					   -I$(srcdir)/data_structures/ \
 					   -I$(srcdir)/resources/ \
 					   -I$(srcdir)/apps/ \
-					   -I$(srcdir)/utils
+					   -I$(srcdir)/utils \
+					   -I/net/hu17/hamur3/libraries/leveldb-1.5.0/include/
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
 			-L/usr/lib/tbb \
 			-lltdl -lpthread -ltbb -lconfig++ -lsnappy -lssl -lhoard \
-			-lprotobuf -lboost_serialization
+			-lprotobuf -lboost_serialization \
+			-L/net/hu17/hamur3/libraries/leveldb-1.5.0 -lleveldb
 
 minni_includedir = $(includedir)/libminni/libminni
 
@@ -73,6 +77,7 @@ minni_include_HEADERS = core/PartialAgg.h \
 			filters/ConcurrentHashFilter.h \
 			filters/Deserializer.h \
 			filters/DFSReader.h \
+			filters/ExternalHasher.h \
 			filters/FileChunkerFilter.h \
 			filters/FileReaderFilter.h \
 			filters/FileTokenizerFilter.h \
@@ -84,6 +89,7 @@ minni_include_HEADERS = core/PartialAgg.h \
 			filters/SparseHashFilter.h \
 			filters/TokenizerFilter.h \
 			aggregators/BucketAggregator.h \
+			aggregators/ExthashAggregator.h \
 			aggregators/HashsortAggregator.h \
 			aggregators/Aggregator.h \
 			record_creation/FileTokenizer.h \

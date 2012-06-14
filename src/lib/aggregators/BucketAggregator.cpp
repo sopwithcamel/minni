@@ -41,14 +41,14 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 	Setting& c_intagg = readConfigFile(cfg, "minni.internal.selected");
 	string intagg = c_intagg;
 
+    Setting& c_agginmem = readConfigFile(cfg, "minni.internal.enabled");
+    int agg_in_mem = c_agginmem;
+
     Setting& c_nb = readConfigFile(cfg, "minni.aggregator.bucket.num");
     num_buckets = c_nb;
 
     Setting& c_fprefix = readConfigFile(cfg, "minni.common.file_prefix");
     string fprefix = (const char*)c_fprefix;
-
-    Setting& c_agginmem = readConfigFile(cfg, "minni.aggregator.bucket.aggregate");
-    int agg_in_mem = c_agginmem;
 
     Setting& c_inp_typ = readConfigFile(cfg, "minni.input_type");
     string inp_type = (const char*)c_inp_typ;

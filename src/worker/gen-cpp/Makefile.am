@@ -45,4 +45,5 @@ workdaemon_LDFLAGS = $(TBB_LIBS) \
 		     -lconfig++ \
 			 -lhoard \
 			 -ltbb \
-			 -lprotobuf
+			 -lprotobuf \
+			 -L/net/hu17/hamur3/libraries/leveldb-1.5.0 -lleveldb
