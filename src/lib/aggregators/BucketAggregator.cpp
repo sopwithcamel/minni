@@ -21,12 +21,10 @@ BucketAggregator::BucketAggregator(const Config &cfg,
         infile_(infile),
         inp_deserializer_(NULL),
         creator_(NULL),
-        hasher_(NULL),
         bucket_serializer_(NULL),
         deserializer_(NULL),
         acc_int_inserter_(NULL),
         bucket_inserter_(NULL),
-        bucket_hasher_(NULL),
         final_serializer_(NULL),     
         outfile_(outfile)
 {
@@ -103,11 +101,6 @@ BucketAggregator::BucketAggregator(const Config &cfg,
                     destroyPAOFunc, max_keys_per_token));
         }
     } 
-#ifdef UTHASH
-    else if (!intagg.compare("uthash")) {
-        hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(capacity));
-    }
-#endif
 
     if (type == Map) {
         /* Beginning of first pipeline: this pipeline takes the entire
@@ -154,10 +147,6 @@ BucketAggregator::BucketAggregator(const Config &cfg,
     if (agg_in_mem) {
         if (!intagg.compare("cbt") || !intagg.compare("sparsehash")) {
             pipeline_list[0].add_filter(*acc_int_inserter_);
-        } else {
-            hasher_ = new Hasher(this, hashtable_, destroyPAOFunc,
-                    max_keys_per_token);
-            pipeline_list[0].add_filter(*hasher_);
         }
     }
 
@@ -190,10 +179,6 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 
     if (!intagg.compare("cbt") || !intagg.compare("sparsehash")) {
         pipeline_list[1].add_filter(*bucket_inserter_);
-    } else {
-        bucket_hasher_ = new Hasher(this, hashtable_, destroyPAOFunc,
-                max_keys_per_token);
-        pipeline_list[1].add_filter(*bucket_hasher_);
     }
 
     char* final_path = (char*)malloc(FILENAME_LENGTH);
@@ -218,10 +203,6 @@ BucketAggregator::~BucketAggregator()
     if (inp_deserializer_)
         delete(inp_deserializer_);
     delete creator_;
-    if (hasher_) {
-        delete hashtable_;
-        delete hasher_;
-    }
     if (acc_int_inserter_) {
         delete acc_internal_;
         delete acc_int_inserter_;
@@ -230,8 +211,6 @@ BucketAggregator::~BucketAggregator()
         delete bucket_serializer_;
     if (deserializer_)
         delete deserializer_;
-    if (bucket_hasher_)
-        delete bucket_hasher_;
     if (bucket_inserter_) {
 //        delete acc_bucket_;
         delete bucket_inserter_;

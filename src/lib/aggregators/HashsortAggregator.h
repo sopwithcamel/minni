@@ -19,8 +19,6 @@
 #include "DFSReader.h"
 #include "FileReaderFilter.h"
 #include "FileTokenizerFilter.h"
-#include "Hasher.h"
-#include "Hashtable.h"
 #include "Mapper.h"
 #include "PAOCreator.h"
 #include "PartialAgg.h"
@@ -47,7 +45,6 @@ private:
 	uint64_t capacity; // aggregator capacity
 
     /* data structures */
-    Hashtable* hashtable_;
     Accumulator* acc_internal_;
 
 	/* for chunk input from DFS */
@@ -63,7 +60,6 @@ private:
 
 	PAOCreator* creator;
 	AccumulatorInserter* acc_int_inserter_;
-	Hasher* hasher;
 	Serializer* serializer;
 	Sorter* sorter;
 

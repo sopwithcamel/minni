@@ -70,11 +70,6 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
                 SparseHashInserter(this, acc_internal_, createPAOFunc,
                 destroyPAOFunc, num_part, max_keys_per_token));
     } 
-#ifdef UTHASH
-    else if (!intagg.compare("uthash")) {
-        hashtable_ = dynamic_cast<Hashtable*>(new UTHashtable(capacity));
-    }
-#endif
 
 	if (type == Map) {
 		/* Beginning of first pipeline: this pipeline takes the entire
@@ -112,10 +107,6 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	if (agg_in_mem) {
         if (!intagg.compare("cbt") || !intagg.compare("sparsehash")) {
             pipeline_list[0].add_filter(*acc_int_inserter_);
-        } else {
-            hasher = new Hasher(this, hashtable_, destroyPAOFunc,
-                    max_keys_per_token);
-            pipeline_list[0].add_filter(*hasher);
         }
 	}
 
@@ -176,10 +167,6 @@ HashsortAggregator::~HashsortAggregator()
 		delete(filetoker);
 	if (inp_deserializer)
 		delete(inp_deserializer);
-	if (hasher) {
-        delete(hashtable_);
-		delete(hasher);
-	}
 	delete(serializer);
 	delete(sorter);
 	delete(deserializer);

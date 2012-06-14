@@ -21,8 +21,6 @@
 #include "FileChunkerFilter.h"
 #include "FileReaderFilter.h"
 #include "FileTokenizerFilter.h"
-#include "Hasher.h"
-#include "Hashtable.h"
 #include "LocalReader.h"
 #include "Mapper.h"
 #include "PAOCreator.h"
@@ -51,7 +49,6 @@ class BucketAggregator :
     uint64_t capacity; // aggregator capacity
 
     /* data structures */
-    Hashtable* hashtable_;
     Accumulator* acc_internal_;
     Accumulator* acc_bucket_;
 
@@ -69,12 +66,10 @@ class BucketAggregator :
     Deserializer* inp_deserializer_;
 
     PAOCreator* creator_;
-    Hasher* hasher_;
     Serializer* bucket_serializer_;
     Deserializer* deserializer_;
 	AccumulatorInserter* acc_int_inserter_;
 	AccumulatorInserter* bucket_inserter_;
-    Hasher* bucket_hasher_;
     Serializer* final_serializer_;
     uint64_t num_buckets;
     const char* outfile_;

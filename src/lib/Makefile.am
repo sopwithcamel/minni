@@ -15,7 +15,6 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			filters/FileChunkerFilter.cpp \
 			filters/FileReaderFilter.cpp \
 			filters/FileTokenizerFilter.cpp \
-			filters/Hasher.cpp \
 			filters/LocalReader.cpp \
 			filters/MemCache.cpp \
 			filters/PAOCreator.cpp \
@@ -77,7 +76,6 @@ minni_include_HEADERS = core/PartialAgg.h \
 			filters/FileChunkerFilter.h \
 			filters/FileReaderFilter.h \
 			filters/FileTokenizerFilter.h \
-			filters/Hasher.h \
 			filters/LocalReader.h \
 			filters/MemCache.h \
 			filters/PAOCreator.h \
@@ -94,7 +92,6 @@ minni_include_HEADERS = core/PartialAgg.h \
 			data_structures/Accumulator.h \
 			data_structures/Buffer.h \
 			data_structures/EmptyQueue.h \
-			data_structures/Hashtable.h \
 			data_structures/CTNode.h \
 			data_structures/CompressTree.h \
 			data_structures/Slaves.h \
