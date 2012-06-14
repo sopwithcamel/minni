@@ -86,8 +86,10 @@ void* SparseHashInserter::operator()(void* recv)
             if (!remain) {
                 aggregator_->can_exit &= true;
                 break;
-            } else
+            } else {
+                aggregator_->stall_pipeline |= true;
                 aggregator_->can_exit &= false;
+            }
             evict_list_ctr++;
         }
 	} else
