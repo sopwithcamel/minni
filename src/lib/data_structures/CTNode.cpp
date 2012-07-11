@@ -19,6 +19,7 @@ namespace compresstree {
     {
         id_ = tree_->nodeCtr++;
         buffer_.setParent(this); 
+        buffer_.setupPaging(); 
 
         pthread_mutex_init(&queuedForEmptyMutex_, NULL);
         tree_->createPAO_(NULL, (PartialAgg**)&lastPAO);
@@ -31,6 +32,8 @@ namespace compresstree {
 
         tree_->destroyPAO_(lastPAO);
         tree_->destroyPAO_(thisPAO);
+
+        buffer_.cleanupPaging();
     }
 
     bool Node::insert(uint64_t hash, PartialAgg* agg)
@@ -71,9 +74,6 @@ namespace compresstree {
     bool Node::emptyOrCompress()
     {
         if (tree_->emptyType_ == ALWAYS || isFull()) {
-#ifdef ENABLE_PAGING
-            scheduleBufferPageAction(Buffer::PAGE_IN);
-#endif
             scheduleBufferCompressAction(Buffer::DECOMPRESS);
             tree_->sorter_->addNode(this);
             tree_->sorter_->wakeup();
@@ -103,9 +103,11 @@ namespace compresstree {
 #endif
             } else { // compress
                 scheduleBufferCompressAction(Buffer::COMPRESS);
+/* Already being called from above
 #ifdef ENABLE_PAGING
                 scheduleBufferPageAction(Buffer::PAGE_OUT);
 #endif
+*/
             }
             return true;
         }
@@ -152,12 +154,11 @@ namespace compresstree {
                         children_[curChild]->copyIntoBuffer(l, lastElement,
                                 curElement - lastElement);
 #ifdef CT_NODE_DEBUG
-                        fprintf(stderr, "Copied %u elements into node %d;\
-                                sep: %u, next: %u\n",
+                        fprintf(stderr, "Copied %u elements into node %d\
+                                 list:%u\n",
                                 curElement - lastElement,
                                 children_[curChild]->id_,
-                                children_[curChild]->separator_,
-                                buffer_.lists_[0]->hashes_[curElement]);
+                                children_[curChild]->buffer_.lists_.size()-1);
 #endif
                         lastElement = curElement;
                     }
@@ -187,10 +188,10 @@ namespace compresstree {
                         curElement - lastElement);
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Copied %u elements into node %d; \
-                        sep: %u\n",
+                        list: %u\n",
                         curElement - lastElement,
                         children_[curChild]->id_,
-                        children_[curChild]->separator_);
+                        children_[curChild]->buffer_.lists_.size()-1);
 #endif
                 children_[curChild]->emptyOrCompress();
                 curChild++;

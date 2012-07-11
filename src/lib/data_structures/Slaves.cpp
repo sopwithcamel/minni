@@ -108,14 +108,6 @@ namespace compresstree {
                 fprintf(stderr, "remaining: ");
                 queue_.printElements();
 #endif
-
-                for (int i=n->children_.size()-1; i>=0; i--) {
-#ifdef ENABLE_PAGING
-                    // schedule pre-fetching of children of node into memory
-                    n->children_[i]->scheduleBufferPageAction(
-                            Buffer::PAGE_IN);
-#endif
-                }        
                 if (n->isRoot())
                     n->aggregateSortedBuffer();
                 else {

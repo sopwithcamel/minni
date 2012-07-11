@@ -20,7 +20,7 @@ namespace compresstree {
                 void (*destroyPAOFunc)(PartialAgg* p)) :
         a_(a),
         b_(b),
-        nodeCtr(0),
+        nodeCtr(1),
         createPAO_(createPAOFunc),
         destroyPAO_(destroyPAOFunc),
         alg_(SNAPPY),

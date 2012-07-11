@@ -1,6 +1,7 @@
 #ifndef LIB_COMPRESS_BUFFER_H
 #define LIB_COMPRESS_BUFFER_H
 #include <stdint.h>
+#include <stdio.h>
 #include <vector>
 #include "CTConfig.h"
 
@@ -74,6 +75,8 @@ namespace compresstree {
           bool empty() const;
           uint32_t numElements() const;
           void setParent(Node* n);
+          void setupPaging();
+          void cleanupPaging();
 
           /* Compression-related */
           bool compress();
@@ -115,7 +118,7 @@ namespace compresstree {
 
 #ifdef ENABLE_PAGING
           /* Paging-related */
-          int fd_;
+          FILE* f_;
           bool pageable_;
           bool queuedForPaging_;
           PageAction pageAct_;
