@@ -342,9 +342,13 @@ namespace compresstree {
     bool Buffer::pageOut()
     {
         if (!empty()) {
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "paged out node %d; lists: ", node_->id_);
+#endif
             for (uint32_t i=0; i<lists_.size(); i++) {
                 Buffer::List* l = lists_[i];
-                if (l->state_ == List::PAGED_OUT)
+                /* List may be already paged out or yet to be compressed */
+                if (l->state_ != List::COMPRESSED)
                     continue;
                 size_t ret1, ret2, ret3;
                 ret1 = fwrite(l->hashes_, 1, l->c_hashlen_, f_);
@@ -363,10 +367,14 @@ namespace compresstree {
 #endif
                 l->deallocate();
                 l->state_ = List::PAGED_OUT;
+#ifdef CT_NODE_DEBUG
+                fprintf(stderr, "%d (%lu), ", i, lists_[i]->num_);
+#endif
             }
-            fprintf(stderr, "paged out node %d; n: %u\n",
-                    node_->id_, numElements());
         }
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "\n");
+#endif
         return true;
     }
 
@@ -374,6 +382,10 @@ namespace compresstree {
     {
         // set file pointer to beginning of file
         rewind(f_);
+
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "paged in node %d; lists: ", node_->id_);
+#endif
 
         Buffer paged_in;
         for (uint32_t i=0; i<lists_.size(); i++) {
@@ -397,21 +409,23 @@ namespace compresstree {
                 assert(false);
             }
 #endif
+#ifdef CT_NODE_DEBUG
+            fprintf(stderr, "%d (%lu), ", i, lists_[i]->num_);
+#endif
             l->hashes_ = pgin_list->hashes_;
             l->sizes_ = pgin_list->sizes_;
             l->data_ = pgin_list->data_;
             l->state_ = List::COMPRESSED;
         }
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "\n");
+#endif
         // clear paged_in to prevent deallocation on return
         paged_in.clear();
 
         // set file pointer to beginning of file again
         rewind(f_);
 
-#ifdef CT_NODE_DEBUG
-        fprintf(stderr, "paged in node %d; n: %u lists: %u\n",
-                node_->id_, numElements(), lists_.size());
-#endif
         return true;
     }
 
@@ -431,7 +445,6 @@ namespace compresstree {
         sprintf(nodeNum, "%d", node_->id_);
         strcat(fileName, nodeNum);
         strcat(fileName, ".buf");
-        fprintf(stderr, "Thread %ld Opening file %s\n", pthread_self(), fileName);
         f_ = fopen(fileName, "w+");
         if (f_ == NULL) {
             fprintf(stderr, "Error opening file: %s\n", strerror(errno));
@@ -496,21 +509,25 @@ namespace compresstree {
         pthread_mutex_unlock(&pageMutex_);
     }
 
-    void Buffer::performPageAction()
+    bool Buffer::performPageAction()
     {
+        bool ret = true;
         pthread_mutex_lock(&pageMutex_);
         if (pageAct_ == PAGE_OUT) {
-            pthread_mutex_unlock(&pageMutex_);
-            waitForCompressAction(COMPRESS);
-            pthread_mutex_lock(&pageMutex_);
-            pageOut();
+            if (lists_[lists_.size()-1]->state_ != List::COMPRESSED)
+                ret = false;
+            else
+                pageOut();
         } else if (pageAct_ == PAGE_IN) {
             pageIn();
         }
-        pthread_cond_signal(&pageCond_);
-        queuedForPaging_ = false;
-        pageAct_ = NO_PAGE;
+        if (ret) {
+            pthread_cond_signal(&pageCond_);
+            queuedForPaging_ = false;
+            pageAct_ = NO_PAGE;
+        }
         pthread_mutex_unlock(&pageMutex_);
+        return ret;
     }
 
     Buffer::PageAction Buffer::getPageAction()

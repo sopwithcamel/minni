@@ -155,7 +155,7 @@ namespace compresstree {
                                 curElement - lastElement);
 #ifdef CT_NODE_DEBUG
                         fprintf(stderr, "Copied %u elements into node %d\
-                                 list:%u\n",
+                                 list:%lu\n",
                                 curElement - lastElement,
                                 children_[curChild]->id_,
                                 children_[curChild]->buffer_.lists_.size()-1);
@@ -188,7 +188,7 @@ namespace compresstree {
                         curElement - lastElement);
 #ifdef CT_NODE_DEBUG
                 fprintf(stderr, "Copied %u elements into node %d; \
-                        list: %u\n",
+                        list: %lu\n",
                         curElement - lastElement,
                         children_[curChild]->id_,
                         children_[curChild]->buffer_.lists_.size()-1);
@@ -512,23 +512,14 @@ namespace compresstree {
                 if (numMerged == 0) {
                     if (!lastPAO->deserialize(l->data_ + lastOffset,
                             l->sizes_[lastIndex])) {
-/*
-                        // skip error
-                        lastIndex = i;
-                        lastOffset = offset;
-                        offset += l->sizes_[i];
-                        continue;
-*/
-                        fprintf(stderr, "Can't deserialize at %u, index: %u\n", lastOffset, lastIndex);
+                        fprintf(stderr, "Can't deserialize at %u, index: %u\n",
+                                lastOffset, lastIndex);
                         assert(false);
                     }
                 }
-                if(!thisPAO->deserialize(l->data_ + offset, l->sizes_[i])) {
-/*
-                    offset += l->sizes_[i];
-                    continue;
-*/
-                    fprintf(stderr, "Can't deserialize at %u, index: %u\n", offset, i);
+                if (!thisPAO->deserialize(l->data_ + offset, l->sizes_[i])) {
+                    fprintf(stderr, "Can't deserialize at %u, index: %u\n",
+                            offset, i);
                     assert(false);
                 }
                 if (!thisPAO->key().compare(lastPAO->key())) {
@@ -578,7 +569,11 @@ namespace compresstree {
             a->size_ += buf_size;
         }
         a->num_++;
-
+#ifdef CT_NODE_DEBUG
+        fprintf(stderr, "Node %d aggregated from %u to %u\n", id_,
+                buffer_.numElements(), aux.numElements());
+#endif
+        
         // clear buffer and copy over aux.
         // aux itself is on the stack and will be destroyed
         buffer_.deallocate();
@@ -859,16 +854,19 @@ namespace compresstree {
         buffer_.waitForPageAction(act);
     }
 
-    void Node::performPageAction()
+    bool Node::performPageAction()
     {
-        buffer_.performPageAction();
+        bool ret = buffer_.performPageAction();
 #ifdef CT_NODE_DEBUG
-        Buffer::PageAction act = getPageAction();
-        if (act == Buffer::PAGE_OUT)
-            fprintf(stderr, "pager: paged out node: %d\n", id_);
-        else if (act == Buffer::PAGE_IN)
-            fprintf(stderr, "pager: paged in node: %d\n", id_);
+        if (ret) {
+            Buffer::PageAction act = getPageAction();
+            if (act == Buffer::PAGE_OUT)
+                fprintf(stderr, "pager: paged out node: %d\n", id_);
+            else if (act == Buffer::PAGE_IN)
+                fprintf(stderr, "pager: paged in node: %d\n", id_);
+        }
 #endif
+        return ret;
     }
 
     Buffer::PageAction Node::getPageAction()

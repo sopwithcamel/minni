@@ -171,8 +171,9 @@ namespace compresstree {
         createPAO_(NULL, &agg);
         if (!((ProtobufPartialAgg*)agg)->deserialize(l->data_ + lastOffset_,
                 l->sizes_[lastElement_])) {
-            // file is empty
-            return false;
+            fprintf(stderr, "Can't deserialize at %u, index: %u\n", lastOffset_,
+                    lastElement_);
+            assert(false);
         }
         lastOffset_ += l->sizes_[lastElement_];
         lastElement_++;

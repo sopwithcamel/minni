@@ -144,7 +144,7 @@ namespace compresstree {
         /* Paging-related functions */
         void scheduleBufferPageAction(const Buffer::PageAction& act);
         void waitForPageAction(const Buffer::PageAction& act);
-        void performPageAction();
+        bool performPageAction();
         Buffer::PageAction getPageAction();
 #endif // ENABLE_PAGING
 

@@ -100,7 +100,7 @@ namespace compresstree {
           bool checkPageOut();
           bool checkPageIn();
           void waitForPageAction(const PageAction& act);
-          void performPageAction();
+          bool performPageAction();
           PageAction getPageAction();
 #endif
 
