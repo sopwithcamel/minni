@@ -352,8 +352,10 @@ namespace compresstree {
                 Node* n = nodes_.front();
                 nodes_.pop_front();
                 pthread_mutex_unlock(&queueMutex_);
-                n->performPageAction();
+                bool suc = n->performPageAction();
                 pthread_mutex_lock(&queueMutex_);
+                if (!suc)
+                    nodes_.push_back(n);
             }
             /* check if anybody wants a notification when list is empty */
             sendCompletionNotice();

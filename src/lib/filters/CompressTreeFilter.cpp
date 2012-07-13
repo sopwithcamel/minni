@@ -87,6 +87,7 @@ void* CompressTreeInserter::operator()(void* recv)
         bool remain;
         while(true) {
             if (evict_list_ctr == max_keys_per_token) {
+                aggregator_->stall_pipeline |= true;
                 aggregator_->can_exit &= false;
                 break;
             }

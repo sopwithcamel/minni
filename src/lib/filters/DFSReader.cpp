@@ -71,6 +71,7 @@ void* DFSReader::operator()(void*)
 
 	if (id > input->chunk_id_end && rem_buffer_size <= 0) {
 		aggregator->input_finished = true;
+        aggregator->can_exit = true;
 	}
 	this_send->result = this_chunk;
 	this_send->length = 1;

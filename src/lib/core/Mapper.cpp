@@ -2,6 +2,7 @@
 #include "Mapper.h"
 
 #include "BucketAggregator.h"
+#include "ExthashAggregator.h"
 #include "HashsortAggregator.h"
 #include <dlfcn.h>
 
@@ -143,6 +144,11 @@ task* MapperWrapperTask::execute() {
 						map_out_file.c_str()));
 	} else if (!selected_map_aggregator.compare("hashsort")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new HashsortAggregator(
+						cfg, jobid, Map, npart, myinput, NULL,
+						mapper->createPAO, mapper->destroyPAO,
+						map_out_file.c_str()));
+	} else if (!selected_map_aggregator.compare("exthash")) {
+		mapper->aggregs = dynamic_cast<Aggregator*>(new ExthashAggregator(
 						cfg, jobid, Map, npart, myinput, NULL,
 						mapper->createPAO, mapper->destroyPAO,
 						map_out_file.c_str()));

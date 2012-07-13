@@ -54,13 +54,13 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 					   -I$(srcdir)/resources/ \
 					   -I$(srcdir)/apps/ \
 					   -I$(srcdir)/utils \
-					   -I/net/hu17/hamur3/libraries/leveldb-1.5.0/include/
+					   -I/usr/local/lib/leveldb-1.5.0/include/
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
 			-L/usr/lib/tbb \
 			-lltdl -lpthread -ltbb -lconfig++ -lsnappy -lssl -lhoard \
 			-lprotobuf -lboost_serialization \
-			-L/net/hu17/hamur3/libraries/leveldb-1.5.0 -lleveldb
+			-L/usr/local/lib/leveldb-1.5.0 -lleveldb
 
 minni_includedir = $(includedir)/libminni/libminni
 
