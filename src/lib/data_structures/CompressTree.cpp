@@ -39,9 +39,6 @@ namespace compresstree {
         pthread_mutex_init(&rootNodeAvailableMutex_, NULL);
         pthread_cond_init(&rootNodeAvailableForWriting_, NULL);
 
-#ifdef ENABLE_EVICTION
-        pthread_mutex_init(&evictedBufferMutex_, NULL);
-#endif
         uint32_t threadCount = 4;
 #ifdef ENABLE_PAGING
         threadCount++;
@@ -57,14 +54,10 @@ namespace compresstree {
     {
         pthread_cond_destroy(&rootNodeAvailableForWriting_);
         pthread_mutex_destroy(&rootNodeAvailableMutex_);
-#ifdef ENABLE_EVICTION
-        pthread_mutex_destroy(&evictedBufferMutex_);
-#endif
         pthread_barrier_destroy(&threadsBarrier_);
     }
 
-    bool CompressTree::insert(void* hash, PartialAgg* agg, PartialAgg**& evicted,
-            size_t& num_evicted, size_t max_evictable)
+    bool CompressTree::insert(void* hash, PartialAgg* agg)
     {
         // copy buf into root node buffer
         // root node buffer always decompressed
@@ -101,34 +94,6 @@ namespace compresstree {
             sorter_->wakeup();
         }
         bool ret = inputNode_->insert(*(uint64_t*)hash, agg);
-
-#ifdef ENABLE_EVICTION
-        // check if any elements were evicted and pick those up
-        // returns non-zero if unsucc.
-        if (pthread_mutex_trylock(&evictedBufferMutex_)) {
-            num_evicted = 0;
-            return ret; 
-        }
-        num_evicted = numEvicted_;
-        if (numEvicted_ > 0) {
-            char* buf = evictedBuffer_;
-            uint32_t offset = 0;
-            uint32_t* bufSize;
-            fprintf(stderr, "Evicting %lu elements\n", numEvicted_);
-            PartialAgg* p;
-            for (uint32_t i=0; i<numEvicted_; i++) {
-                createPAO_(NULL, &p);
-                rootNode_->deserializePAO((uint32_t*)(buf + offset), p);
-                evicted[i] = p;
-                offset += sizeof(uint32_t);
-                bufSize = (uint32_t*)(buf + offset);
-                offset += sizeof(uint32_t) + *bufSize;
-            }
-            numEvicted_ = 0;
-            evictedBufferOffset_ = 0;
-        }
-        pthread_mutex_unlock(&evictedBufferMutex_);
-#endif
         return ret;
     }
 
@@ -359,10 +324,6 @@ namespace compresstree {
         inputNode_->buffer_.setPageable(false);
 #endif
         
-#ifdef ENABLE_EVICTION
-        // buffer for holding evicted values
-        evictedBuffer_ = (char*)malloc(BUFFER_SIZE);
-#endif
         emptyType_ = IF_FULL;
 
         pthread_attr_t attr;

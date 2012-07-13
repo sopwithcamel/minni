@@ -44,7 +44,6 @@ void* CompressTreeInserter::operator()(void* recv)
 	next_buffer = (next_buffer + 1) % aggregator_->getNumBuffers();
     tokens_processed++;
 
-    size_t numEvicted = 0;
     size_t evict_list_ctr = 0;
 
     while (ind < recv_length) {
@@ -57,22 +56,9 @@ void* CompressTreeInserter::operator()(void* recv)
                 hashv = HashUtil::BobHash(pao->key(), 42);
                 break;
         }
-/*
-        std::string k = pao->key();
-        hashv &= 0xFFFF;
-        uint32_t let = 0;
-        let = k[0];
-        let <<= 8;
-        let |= k[1];
-        let <<=16;
-        let |= hashv;
-        hashv = let;
-*/
+
         ptrToHash = (void*)&hashv;
-        PartialAgg** l = this_list + evict_list_ctr;
-        ct->insert(ptrToHash, pao, l, numEvicted,
-                max_keys_per_token - evict_list_ctr);
-        evict_list_ctr += numEvicted;
+        ct->insert(ptrToHash, pao);
         if (recv_list->destroy_pao)
             destroyPAO(pao);
         ind++;
