@@ -438,7 +438,6 @@ namespace compresstree {
 
     void Buffer::setupPaging()
     {
-#ifdef ENABLE_PAGING
         char* fileName = (char*)malloc(100);
         char* nodeNum = (char*)malloc(10);
         strcpy(fileName, "/localfs/hamur/minni_data/");
@@ -452,14 +451,11 @@ namespace compresstree {
         }
         free(fileName);
         free(nodeNum);
-#endif
     }
 
     void Buffer::cleanupPaging()
     {
-#ifdef ENABLE_PAGING
         fclose(f_);
-#endif
     }
 
     bool Buffer::checkPageOut()
@@ -534,6 +530,5 @@ namespace compresstree {
     {
         return pageAct_;
     }    
-
 #endif //ENABLE_PAGING
 }

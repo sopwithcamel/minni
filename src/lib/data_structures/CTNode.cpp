@@ -19,7 +19,9 @@ namespace compresstree {
     {
         id_ = tree_->nodeCtr++;
         buffer_.setParent(this); 
+#ifdef ENABLE_PAGING
         buffer_.setupPaging(); 
+#endif
 
         pthread_mutex_init(&queuedForEmptyMutex_, NULL);
         tree_->createPAO_(NULL, (PartialAgg**)&lastPAO);
@@ -33,7 +35,9 @@ namespace compresstree {
         tree_->destroyPAO_(lastPAO);
         tree_->destroyPAO_(thisPAO);
 
+#ifdef ENABLE_PAGING
         buffer_.cleanupPaging();
+#endif
     }
 
     bool Node::insert(uint64_t hash, PartialAgg* agg)
