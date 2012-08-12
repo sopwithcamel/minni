@@ -70,8 +70,6 @@ class ConcurrentHashInserter : public AccumulatorInserter
 	size_t next_buffer;
 	MultiBuffer<FilterInfo>* send_;
     MultiBuffer<PartialAgg*>* evicted_list_;
-	size_t (*createPAO_)(Token* t, PartialAgg** p);
-	void (*destroyPAO_)(PartialAgg* p);
 
     Hashtable* ht;
     Hashtable::iterator evict_it;

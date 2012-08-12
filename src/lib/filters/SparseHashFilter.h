@@ -38,24 +38,5 @@ class SparseHashInserter :
 	size_t next_buffer;
 	MultiBuffer<FilterInfo>* send_;
     MultiBuffer<PartialAgg*>* evicted_list_;
-	size_t (*createPAO_)(Token* t, PartialAgg** p);
 };
-
-/*
-class SparseHashReader :
-        public AccumulatorReader
-{
-  public:
-	SparseHashReader(Aggregator* agg,
-			Accumulator* acc,
-			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			const size_t max_keys);
-    SparseHashReader(Aggregator* agg,
-            Accumulator* acc,
-            size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-            const char* outfile_prefix);
-	~SparseHashReader();
-	void* operator()(void* pao_list);
-};
-*/
 #endif // LIB_SPARSEHASHFILTER_H

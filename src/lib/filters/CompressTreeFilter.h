@@ -35,24 +35,6 @@ class CompressTreeInserter :
 	size_t next_buffer;
 	MultiBuffer<FilterInfo>* send_;
     MultiBuffer<PartialAgg*>* evicted_list_;
-	size_t (*createPAO_)(Token* t, PartialAgg** p);
 };
 
-/*
-class CompressTreeReader :
-        public AccumulatorReader
-{
-  public:
-	CompressTreeReader(Aggregator* agg,
-			Accumulator* acc,
-			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			const size_t max_keys);
-    CompressTreeReader(Aggregator* agg,
-            Accumulator* acc,
-            size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-            const char* outfile_prefix);
-	~CompressTreeReader();
-	void* operator()(void* pao_list);
-};
-*/
 #endif // LIB_COMPRESSTREEFILTER_H

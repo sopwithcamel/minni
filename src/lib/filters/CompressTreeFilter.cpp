@@ -1,5 +1,4 @@
 #include "CompressTreeFilter.h"
-#include <openssl/evp.h>
 
 CompressTreeInserter::CompressTreeInserter(Aggregator* agg,
         Accumulator* acc,
@@ -7,9 +6,8 @@ CompressTreeInserter::CompressTreeInserter(Aggregator* agg,
         size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 		void (*destroyPAOFunc)(PartialAgg* p),
 		size_t max_keys) :
-    AccumulatorInserter(agg, acc, destroyPAOFunc, max_keys),
+    AccumulatorInserter(agg, acc, createPAOFunc, destroyPAOFunc, max_keys),
     hf_(hf),
-    createPAO_(createPAOFunc),
     next_buffer(0)
 {
 	uint64_t num_buffers = aggregator_->getNumBuffers();
@@ -91,53 +89,3 @@ void* CompressTreeInserter::operator()(void* recv)
     this_send->destroy_pao = true;
     return this_send;
 }
-
-/*
-CompressTreeReader::CompressTreeReader(Aggregator* agg, 
-        Accumulator* acc,
-        size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-        const size_t max_keys) :
-    AccumulatorReader(agg, acc, createPAOFunc, max_keys)
-{
-}
-
-CompressTreeReader::CompressTreeReader(Aggregator* agg,
-        Accumulator* acc,
-        size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-        const char* outfile_prefix) :
-    AccumulatorReader(agg, acc, createPAOFunc, outfile_prefix)
-{
-}
-
-CompressTreeReader::~CompressTreeReader()
-{
-}
-
-void* CompressTreeReader::operator()(void* recv)
-{
-    if (writeToFile_) {
-        PartialAgg* pao;
-        uint64_t buc;
-        bool valid, remove;
-        string val;
-        compresstree::CompressTree* bt = (compresstree::CompressTree*)accumulator_;
-        uint64_t n_part = aggregator_->getNumPartitions();
-        uint64_t hash;
-        createPAO_(NULL, &pao);
-        void* ptrToHash = (void*)&hash;
-        while (bt->nextValue(ptrToHash, pao)) {
-            buc = *(uint64_t*)ptrToHash % n_part;
-            assert(buc >= 0);
-            pao->serialize(buf_);
-            fwrite(buf_, 1, strlen(buf_), fl_[buc]);
-        }
-        fprintf(stderr, "Closing files\n");
-        for (int i=0; i<n_part; i++)
-            fclose(fl_[i]);
-        return NULL;
-    } else {
-        fprintf(stderr, "Not implemented yet!");
-        assert(false);
-    }
-}
-*/

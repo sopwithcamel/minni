@@ -10,8 +10,7 @@ ConcurrentHashInserter::ConcurrentHashInserter(Aggregator* agg,
         size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 		void (*destroyPAOFunc)(PartialAgg* p),
 		size_t max_keys) :
-    AccumulatorInserter(agg, acc, destroyPAOFunc, max_keys),
-    createPAO_(createPAOFunc),
+    AccumulatorInserter(agg, acc, createPAOFunc, destroyPAOFunc, max_keys),
     next_buffer(0),
     num_evicted(0)
 {

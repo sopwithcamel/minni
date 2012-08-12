@@ -9,8 +9,7 @@ SparseHashInserter::SparseHashInserter(Aggregator* agg,
 		void (*destroyPAOFunc)(PartialAgg* p),
         int num_part,
 		size_t max_keys) :
-    AccumulatorInserter(agg, acc, destroyPAOFunc, max_keys),
-    createPAO_(createPAOFunc),
+    AccumulatorInserter(agg, acc, createPAOFunc, destroyPAOFunc, max_keys),
     next_buffer(0),
     numPartitions_(num_part)
 {
