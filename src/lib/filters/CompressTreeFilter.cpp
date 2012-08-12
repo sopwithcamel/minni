@@ -1,12 +1,12 @@
 #include "CompressTreeFilter.h"
 
 CompressTreeInserter::CompressTreeInserter(Aggregator* agg,
-        Accumulator* acc,
+        const Config &cfg,
         HashUtil::HashFunction hf,
         size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 		void (*destroyPAOFunc)(PartialAgg* p),
 		size_t max_keys) :
-    AccumulatorInserter(agg, acc, createPAOFunc, destroyPAOFunc, max_keys),
+    AccumulatorInserter(agg, cfg, createPAOFunc, destroyPAOFunc, max_keys),
     hf_(hf),
     next_buffer(0)
 {
@@ -14,12 +14,26 @@ CompressTreeInserter::CompressTreeInserter(Aggregator* agg,
 	send_ = new MultiBuffer<FilterInfo>(num_buffers, 1);
 	evicted_list_ = new MultiBuffer<PartialAgg*>(num_buffers,
 			max_keys_per_token);
+
+    Setting& c_fanout = readConfigFile(cfg,
+            "minni.internal.cbt.fanout");
+    uint32_t fanout = c_fanout;
+    Setting& c_buffer_size = readConfigFile(cfg,
+            "minni.internal.cbt.buffer_size");
+    uint32_t buffer_size = c_buffer_size;
+    Setting& c_pao_size = readConfigFile(cfg,
+            "minni.internal.cbt.pao_size");
+    uint32_t pao_size = c_pao_size;
+    cbt_ = new cbt::CompressTree(2, fanout, 1000, buffer_size, pao_size,
+                createPAOFunc, destroyPAOFunc);
 }
 
 CompressTreeInserter::~CompressTreeInserter()
 {
 	delete evicted_list_;
 	delete send_;
+
+    delete cbt_;
 }
 
 void* CompressTreeInserter::operator()(void* recv)
@@ -30,7 +44,6 @@ void* CompressTreeInserter::operator()(void* recv)
     uint64_t hashv;
     void* ptrToHash;
 	PartialAgg* pao;
-    compresstree::CompressTree* ct = (compresstree::CompressTree*)accumulator_;
 
 	FilterInfo* recv_list = (FilterInfo*)recv;
 	PartialAgg** pao_l = (PartialAgg**)recv_list->result;
@@ -56,7 +69,7 @@ void* CompressTreeInserter::operator()(void* recv)
         }
 
         ptrToHash = (void*)&hashv;
-        ct->insert(ptrToHash, pao);
+        cbt_->insert(ptrToHash, pao);
         if (recv_list->destroy_pao)
             destroyPAO(pao);
         ind++;
@@ -75,7 +88,7 @@ void* CompressTreeInserter::operator()(void* recv)
                 aggregator_->can_exit &= false;
                 break;
             }
-            remain = ct->nextValue(ptrToHash, this_list[evict_list_ctr]);
+            remain = cbt_->nextValue(ptrToHash, this_list[evict_list_ctr]);
             if (!remain) {
                 aggregator_->can_exit &= true;
                 break;

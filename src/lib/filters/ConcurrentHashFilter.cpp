@@ -6,11 +6,11 @@
 using namespace tbb;
 
 ConcurrentHashInserter::ConcurrentHashInserter(Aggregator* agg,
-        Accumulator* acc,
+        const Config &cfg,
         size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 		void (*destroyPAOFunc)(PartialAgg* p),
 		size_t max_keys) :
-    AccumulatorInserter(agg, acc, createPAOFunc, destroyPAOFunc, max_keys),
+    AccumulatorInserter(agg, cfg, createPAOFunc, destroyPAOFunc, max_keys),
     next_buffer(0),
     num_evicted(0)
 {
@@ -18,7 +18,7 @@ ConcurrentHashInserter::ConcurrentHashInserter(Aggregator* agg,
 	send_ = new MultiBuffer<FilterInfo>(num_buffers, 1);
 	evicted_list_ = new MultiBuffer<PartialAgg*>(num_buffers,
 			max_keys_per_token);
-    ht = new Hashtable();
+    ht_ = new Hashtable();
 }
 
 ConcurrentHashInserter::~ConcurrentHashInserter()
@@ -26,7 +26,7 @@ ConcurrentHashInserter::~ConcurrentHashInserter()
 	delete evicted_list_;
 	delete send_;
 
-    delete ht;
+    delete ht_;
 }
 
 void* ConcurrentHashInserter::operator()(void* recv)
@@ -48,23 +48,23 @@ void* ConcurrentHashInserter::operator()(void* recv)
     if (recv_length > 0) {
         parallel_for(tbb::blocked_range<PartialAgg**>(pao_l,
                 pao_l+recv_length, 100),
-                Aggregate(ht, recv_list->destroy_pao, destroyPAO));
+                Aggregate(ht_, recv_list->destroy_pao, destroyPAO));
     }
     
 	if (flush_on_complete || aggregator_->input_finished && 
                 tokens_processed == aggregator_->tot_input_tokens) {
         if (num_evicted == 0)
-            evict_it = ht->begin();
-        for (; evict_it != ht->end(); ++evict_it) {
+            evict_it = ht_->begin();
+        for (; evict_it != ht_->end(); ++evict_it) {
             this_list[evict_list_ctr++] = evict_it->second;
             if (evict_list_ctr == max_keys_per_token)
                 break;
         }
-        fprintf(stderr, "Hash has %ld elements; sending %ld\n", ht->size(), evict_list_ctr);
+        fprintf(stderr, "Hash has %ld elements; sending %ld\n", ht_->size(), evict_list_ctr);
         num_evicted += evict_list_ctr;
         if (evict_list_ctr < max_keys_per_token) {
             aggregator_->can_exit &= true;
-            ht->clear();
+            ht_->clear();
             num_evicted = 0;
         } else {
             aggregator_->stall_pipeline |= true;

@@ -60,18 +60,18 @@ class ConcurrentHashInserter : public AccumulatorInserter
     };
   public:
 	ConcurrentHashInserter(Aggregator* agg,
-            Accumulator* acc,
+            const Config &cfg,
             size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys);
 	~ConcurrentHashInserter();
 	void* operator()(void* pao_list);
   private:
+    Hashtable* ht_;
 	size_t next_buffer;
 	MultiBuffer<FilterInfo>* send_;
     MultiBuffer<PartialAgg*>* evicted_list_;
 
-    Hashtable* ht;
     Hashtable::iterator evict_it;
     size_t num_evicted;
 };

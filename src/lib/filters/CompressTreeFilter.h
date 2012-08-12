@@ -10,20 +10,18 @@
 #include "tbb/tbb_allocator.h"
 
 #include "Aggregator.h"
-#include "Accumulator.h"
 #include "AccumulatorFilter.h"
 #include "CompressTree.h"
 #include "HashUtil.h"
 #include "PartialAgg.h"
 #include "Util.h"
 
-
 class CompressTreeInserter :
         public AccumulatorInserter
 {
   public:
 	CompressTreeInserter(Aggregator* agg,
-			Accumulator* acc,
+            const Config &cfg,
             HashUtil::HashFunction hf,
             size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p),
@@ -31,6 +29,7 @@ class CompressTreeInserter :
 	~CompressTreeInserter();
 	void* operator()(void* pao_list);
   private:
+    cbt::CompressTree* cbt_;
     HashUtil::HashFunction hf_;
 	size_t next_buffer;
 	MultiBuffer<FilterInfo>* send_;

@@ -10,7 +10,6 @@
 #include "tbb/tbb_allocator.h"
 
 #include "Aggregator.h"
-#include "Accumulator.h"
 #include "PartialAgg.h"
 #include "Util.h"
 
@@ -19,7 +18,7 @@ class AccumulatorInserter :
 {
   public:
 	AccumulatorInserter(Aggregator* agg,
-			Accumulator* acc,
+            const Config &cfg,
             size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p),
 			size_t max_keys);
@@ -27,7 +26,7 @@ class AccumulatorInserter :
 	void* operator()(void* pao_list) {}
   protected:
 	Aggregator* aggregator_;
-    Accumulator* accumulator_;
+    const Config& cfg_;
 	const size_t max_keys_per_token;
 	uint64_t tokens_processed;
 	size_t (*createPAO_)(Token* t, PartialAgg** p);

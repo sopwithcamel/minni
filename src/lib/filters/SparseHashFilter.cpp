@@ -4,12 +4,12 @@
 #define HASH_FUNCTION   HASH_MUR
 
 SparseHashInserter::SparseHashInserter(Aggregator* agg,
-        Accumulator* acc,
+        const Config &cfg,
         size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 		void (*destroyPAOFunc)(PartialAgg* p),
         int num_part,
 		size_t max_keys) :
-    AccumulatorInserter(agg, acc, createPAOFunc, destroyPAOFunc, max_keys),
+    AccumulatorInserter(agg, cfg, createPAOFunc, destroyPAOFunc, max_keys),
     next_buffer(0),
     numPartitions_(num_part)
 {
@@ -17,12 +17,19 @@ SparseHashInserter::SparseHashInserter(Aggregator* agg,
 	send_ = new MultiBuffer<FilterInfo>(num_buffers, 1);
 	evicted_list_ = new MultiBuffer<PartialAgg*>(num_buffers,
 			max_keys_per_token);
+
+    Setting& c_capacity = readConfigFile(cfg, "minni.aggregator.bucket.capacity");
+    uint64_t capacity = c_capacity;
+    sparsehash_ = new SparseHashMurmur(capacity,
+                max_keys_per_token);
 }
 
 SparseHashInserter::~SparseHashInserter()
 {
 	delete evicted_list_;
 	delete send_;
+
+    delete sparsehash_;
 }
 
 int SparseHashInserter::partition(const std::string& key)
@@ -42,7 +49,6 @@ void* SparseHashInserter::operator()(void* recv)
 	size_t ind = 0;
 	PartialAgg* pao;
 //    SparseHash* sh = (SparseHash*)accumulator_;
-    Accumulator* sh = accumulator_;
 
 	FilterInfo* recv_list = (FilterInfo*)recv;
 	PartialAgg** pao_l = (PartialAgg**)recv_list->result;
@@ -62,7 +68,7 @@ void* SparseHashInserter::operator()(void* recv)
         PartialAgg** l = this_list + evict_list_ctr;
         int p = partition(pao->key());
         if (p == 0) {
-            bool ret = sh->insert((void*)pao->key().c_str(), pao, l, numEvicted,
+            bool ret = sparsehash_->insert((void*)pao->key().c_str(), pao, l, numEvicted,
                     max_keys_per_token - evict_list_ctr);
             if (recv_list->destroy_pao && !ret)
                 destroyPAO(pao);
@@ -81,7 +87,7 @@ void* SparseHashInserter::operator()(void* recv)
         while(true) {
             if (evict_list_ctr == max_keys_per_token)
                 break;
-            remain = sh->nextValue(ptrToHash, this_list[evict_list_ctr]);
+            remain = sparsehash_->nextValue(ptrToHash, this_list[evict_list_ctr]);
             if (!remain) {
                 aggregator_->can_exit &= true;
                 break;

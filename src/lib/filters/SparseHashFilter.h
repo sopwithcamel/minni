@@ -10,7 +10,6 @@
 #include "tbb/tbb_allocator.h"
 
 #include "Aggregator.h"
-#include "Accumulator.h"
 #include "AccumulatorFilter.h"
 #include "SparseHashMurmur.h"
 #include "SparseHashBob.h"
@@ -25,7 +24,7 @@ class SparseHashInserter :
     static const uint64_t NUM_BUCKETS = UINT64_MAX;
   public:
 	SparseHashInserter(Aggregator* agg,
-			Accumulator* acc,
+            const Config &cfg,
             size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			void (*destroyPAOFunc)(PartialAgg* p),
             int num_part,
@@ -34,6 +33,7 @@ class SparseHashInserter :
     int partition(const std::string& key);
 	void* operator()(void* pao_list);
   private:
+    SparseHashMurmur* sparsehash_;
     int numPartitions_;
 	size_t next_buffer;
 	MultiBuffer<FilterInfo>* send_;
