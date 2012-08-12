@@ -44,30 +44,16 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 
     /* Initialize data structures */
     if (!intagg.compare("cbt")) {
-        Setting& c_fanout = readConfigFile(cfg,
-                "minni.internal.cbt.fanout");
-        uint32_t fanout = c_fanout;
-        Setting& c_buffer_size = readConfigFile(cfg,
-                "minni.internal.cbt.buffer_size");
-        uint32_t buffer_size = c_buffer_size;
-        Setting& c_pao_size = readConfigFile(cfg,
-                "minni.internal.cbt.pao_size");
-        uint32_t pao_size = c_pao_size;
-        acc_internal_ = dynamic_cast<Accumulator*>(new 
-                compresstree::CompressTree(2, fanout, 90, buffer_size, pao_size,
-                createPAOFunc, destroyPAOFunc));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                CompressTreeInserter(this, acc_internal_,
+                CompressTreeInserter(this, cfg,
                 HashUtil::MURMUR, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
     } else if (!intagg.compare("sparsehash")) {
         Setting& c_num_part = readConfigFile(cfg,
                 "minni.internal.sparsehash.partitions");
         int num_part = c_num_part;
-        acc_internal_ = dynamic_cast<Accumulator*>(new SparseHashMurmur(capacity,
-                max_keys_per_token));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                SparseHashInserter(this, acc_internal_, createPAOFunc,
+                SparseHashInserter(this, cfg, createPAOFunc,
                 destroyPAOFunc, num_part, max_keys_per_token));
     } 
 

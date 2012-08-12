@@ -10,7 +10,6 @@
 #include "tbb/task_scheduler_init.h"
 #include "tbb/tbb_allocator.h"
 
-#include "Accumulator.h"
 #include "AccumulatorFilter.h"
 #include "CompressTree.h"
 #include "CompressTreeFilter.h"
@@ -46,12 +45,6 @@ class BucketAggregator :
                 const char* outfile);
     ~BucketAggregator();
   private:
-    uint64_t capacity; // aggregator capacity
-
-    /* data structures */
-    Accumulator* acc_internal_;
-    Accumulator* acc_bucket_;
-
     /* for chunk input from DFS */
     MapInput* map_input; 
     DFSReader* chunkreader;

@@ -10,7 +10,6 @@
 #include "tbb/task_scheduler_init.h"
 #include "tbb/tbb_allocator.h"
 
-#include "Accumulator.h"
 #include "AccumulatorFilter.h"
 #include "Adder.h"
 #include "CompressTree.h"
@@ -43,9 +42,6 @@ public:
 	~HashsortAggregator();
 private:
 	uint64_t capacity; // aggregator capacity
-
-    /* data structures */
-    Accumulator* acc_internal_;
 
 	/* for chunk input from DFS */
 	MapInput* map_input; 

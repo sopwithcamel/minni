@@ -35,9 +35,6 @@ BucketAggregator::BucketAggregator(const Config &cfg,
     Setting& c_max_keys = readConfigFile(cfg, "minni.tbb.max_keys_per_token");
     size_t max_keys_per_token = c_max_keys;
 
-    Setting& c_capacity = readConfigFile(cfg, "minni.aggregator.bucket.capacity");
-    capacity = c_capacity;
-
 	Setting& c_intagg = readConfigFile(cfg, "minni.internal.selected");
 	string intagg = c_intagg;
 
@@ -53,51 +50,38 @@ BucketAggregator::BucketAggregator(const Config &cfg,
     Setting& c_inp_typ = readConfigFile(cfg, "minni.input_type");
     string inp_type = (const char*)c_inp_typ;
 
-    /* Initialize data structures */
     if (!intagg.compare("cbt")) {
-        Setting& c_fanout = readConfigFile(cfg,
-                "minni.internal.cbt.fanout");
-        uint32_t fanout = c_fanout;
-        Setting& c_buffer_size = readConfigFile(cfg,
-                "minni.internal.cbt.buffer_size");
-        uint32_t buffer_size = c_buffer_size;
-        Setting& c_pao_size = readConfigFile(cfg,
-                "minni.internal.cbt.pao_size");
-        uint32_t pao_size = c_pao_size;
-        acc_internal_ = dynamic_cast<Accumulator*>(new 
-                compresstree::CompressTree(2, fanout, 1000, buffer_size, pao_size,
-                createPAOFunc, destroyPAOFunc));
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                CompressTreeInserter(this, acc_internal_,
+                CompressTreeInserter(this, cfg,
                 HashUtil::MURMUR, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
         bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                CompressTreeInserter(this, acc_internal_,
+                CompressTreeInserter(this, cfg,
                 HashUtil::BOB, createPAOFunc,
                 destroyPAOFunc, max_keys_per_token));
-
     } else if (!intagg.compare("sparsehash")) {
-        Setting& c_num_part = readConfigFile(cfg,
-                "minni.internal.sparsehash.partitions");
         Setting& c_concurrent = readConfigFile(cfg,
                 "minni.internal.sparsehash.concurrent");
-        int num_part = c_num_part;
         int concurrent = c_concurrent;
-        acc_internal_ = dynamic_cast<Accumulator*>(new SparseHashMurmur(capacity,
-                max_keys_per_token));
+        Setting& c_num_part = readConfigFile(cfg,
+                "minni.internal.sparsehash.partitions");
+        int num_part = c_num_part;
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                SparseHashInserter(this, acc_internal_, createPAOFunc,
+                SparseHashInserter(this, cfg, createPAOFunc,
                 destroyPAOFunc, num_part, max_keys_per_token));
         if (!concurrent) {
-            acc_bucket_ = dynamic_cast<Accumulator*>(new SparseHashBob(capacity,
-                    max_keys_per_token));
+            acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
+                    SparseHashInserter(this, cfg, createPAOFunc,
+                        destroyPAOFunc, num_part, max_keys_per_token));
             bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                    SparseHashInserter(this, acc_bucket_, createPAOFunc,
+                    SparseHashInserter(this, cfg, createPAOFunc,
                     destroyPAOFunc, 1, max_keys_per_token));
         } else {
-            acc_bucket_ = NULL;
+            acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
+                    SparseHashInserter(this, cfg, createPAOFunc,
+                        destroyPAOFunc, num_part, max_keys_per_token));
             bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new
-                    ConcurrentHashInserter(this, acc_bucket_, createPAOFunc,
+                    ConcurrentHashInserter(this, cfg, createPAOFunc,
                     destroyPAOFunc, max_keys_per_token));
         }
     } 
@@ -204,7 +188,6 @@ BucketAggregator::~BucketAggregator()
         delete(inp_deserializer_);
     delete creator_;
     if (acc_int_inserter_) {
-        delete acc_internal_;
         delete acc_int_inserter_;
     }
     if (bucket_serializer_)
