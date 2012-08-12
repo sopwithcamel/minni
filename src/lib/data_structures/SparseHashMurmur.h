@@ -5,12 +5,10 @@
 #include <tr1/unordered_map>
 #include <string>
 
-#include "Accumulator.h"
 #include "HashUtil.h"
 #include "PartialAgg.h"
 
-class SparseHashMurmur :
-        public Accumulator
+class SparseHashMurmur
 {
     struct Murmur {
         uint32_t operator()(const char* key) const

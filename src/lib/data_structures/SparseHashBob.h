@@ -5,12 +5,10 @@
 #include <tr1/unordered_map>
 #include <string>
 
-#include "Accumulator.h"
 #include "HashUtil.h"
 #include "PartialAgg.h"
 
-class SparseHashBob :
-        public Accumulator
+class SparseHashBob
 {
     struct Bob {
         uint32_t operator()(const char* key) const
