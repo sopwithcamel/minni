@@ -30,12 +30,8 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			record_creation/Tokenizer.cpp \
 			record_creation/FileTokenizer.cpp \
 			record_creation/DelimitedTokenizer.cpp \
-			data_structures/Buffer.cpp \
-			data_structures/CTNode.cpp \
-			data_structures/CompressTree.cpp \
 			data_structures/SparseHashMurmur.cpp \
 			data_structures/SparseHashBob.cpp \
-			data_structures/Slaves.cpp \
 			utils/HashUtil.cpp
 
 libminni_la_LIBADD = ../dfs/libdfs.la
@@ -54,13 +50,15 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 					   -I$(srcdir)/resources/ \
 					   -I$(srcdir)/apps/ \
 					   -I$(srcdir)/utils \
-					   -I/usr/local/lib/leveldb-1.5.0/include/
+					   -I/usr/local/lib/leveldb-1.5.0/include/ \
+					   -I/net/hu17/hamur3/code/cbt/src
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
 			-L/usr/lib/tbb \
 			-lltdl -lpthread -ltbb -lconfig++ -lsnappy -lssl -lhoard \
 			-lprotobuf -lboost_serialization \
-			-L/usr/local/lib/leveldb-1.5.0 -lleveldb
+			-L/usr/local/lib/leveldb-1.5.0 -lleveldb \
+			-L/net/hu17/hamur3/code/cbt/ -lcbt
 
 minni_includedir = $(includedir)/libminni/libminni
 
@@ -95,12 +93,6 @@ minni_include_HEADERS = core/PartialAgg.h \
 			record_creation/FileTokenizer.h \
 			record_creation/DelimitedTokenizer.h \
 			record_creation/Tokenizer.h \
-			data_structures/Accumulator.h \
-			data_structures/Buffer.h \
-			data_structures/EmptyQueue.h \
-			data_structures/CTNode.h \
-			data_structures/CompressTree.h \
-			data_structures/Slaves.h \
 			resources/ElasticObject.h \
 			utils/HashUtil.h \
 			utils/compsort.h \
