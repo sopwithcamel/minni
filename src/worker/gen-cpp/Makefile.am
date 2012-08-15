@@ -25,7 +25,8 @@ workdaemon_CPPFLAGS = $(TBB_CFLAGS) $(THRIFT_CFLAGS) \
 		      -I$(srcdir)/../../lib/resources \
 		      -I$(srcdir)/../../master \
 		      -I$(srcdir)/../../common \
-		      -I$(srcdir)/../../dfs
+		      -I$(srcdir)/../../dfs \
+			  -I/net/hu17/hamur3/code/cbt/src
 
 libdaemon_la_CPPFLAGS = $(TBB_CFLAGS) \
 			$(THRIFT_CFLAGS)

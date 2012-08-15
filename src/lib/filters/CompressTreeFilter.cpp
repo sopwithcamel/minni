@@ -56,7 +56,7 @@ void* CompressTreeInserter::operator()(void* recv)
     tokens_processed++;
 
     size_t evict_list_ctr = 0;
-
+/*
     while (ind < recv_length) {
         pao = pao_l[ind];
         switch (hf_) {
@@ -74,8 +74,13 @@ void* CompressTreeInserter::operator()(void* recv)
             destroyPAO(pao);
         ind++;
     }
-
-    assert(evict_list_ctr < max_keys_per_token);
+*/
+    cbt_->bulk_insert(pao_l, recv_length);
+    if (recv_list->destroy_pao) {
+        for (int i=0; i<recv_length; i++)
+            destroyPAO(pao_l[i]);
+    }
+    
 	if (flush_on_complete || aggregator_->input_finished && 
                 tokens_processed == aggregator_->tot_input_tokens && 
                 aggregator_->can_exit) {
