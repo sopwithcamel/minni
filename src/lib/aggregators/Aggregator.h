@@ -28,10 +28,10 @@ class Aggregator
 			AggType where,
 			uint64_t num_pipelines, 
 			uint64_t num_part, 
-			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			void (*destroyPAOFunc)(PartialAgg* p));
+			Operations* _ops);
 	virtual ~Aggregator();
 	void runPipeline();
+    const Operations* const ops() const;
 
 	tbb::pipeline* pipeline_list;	
 	tbb::task_scheduler_init* init;
@@ -54,8 +54,7 @@ class Aggregator
 	uint64_t num_buffers;
 	const uint64_t num_pipelines; 	// number of pipelines in aggregator
 	const uint64_t num_partitions;	// number of partitions for map output
-	size_t (*createPAO)(Token* t, PartialAgg** p);
-	void (*destroyPAO)(PartialAgg* p);
+    const Operations* const ops_;
 };
 
 #endif // LIB_AGGREGATOR_H

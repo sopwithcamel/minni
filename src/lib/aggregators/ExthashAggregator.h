@@ -11,12 +11,8 @@
 #include "tbb/tbb_allocator.h"
 
 #include "AccumulatorFilter.h"
-#include "CompressTree.h"
-#include "CompressTreeFilter.h"
-#include "ConcurrentHashFilter.h"
 #include "Deserializer.h"
 #include "DFSReader.h"
-#include "ElasticObject.h"
 #include "ExternalHasher.h"
 #include "FileChunkerFilter.h"
 #include "FileReaderFilter.h"
@@ -26,9 +22,6 @@
 #include "PAOCreator.h"
 #include "PartialAgg.h"
 #include "Serializer.h"
-#include "SparseHashBob.h"
-#include "SparseHashMurmur.h"
-#include "SparseHashFilter.h"
 #include "TokenizerFilter.h"
 #include "util.h"
 
@@ -41,8 +34,7 @@ class ExthashAggregator :
                 const uint64_t num_part,
                 MapInput* _map_input,
                 const char* infile, 
-                size_t (*createPAOFunc)(Token* t, PartialAgg** p), 
-                void (*destroyPAOFunc)(PartialAgg* p), 
+                Operations* ops,
                 const char* outfile);
     ~ExthashAggregator();
   private:

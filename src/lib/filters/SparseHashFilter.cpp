@@ -5,11 +5,9 @@
 
 SparseHashInserter::SparseHashInserter(Aggregator* agg,
         const Config &cfg,
-        size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-		void (*destroyPAOFunc)(PartialAgg* p),
         int num_part,
 		size_t max_keys) :
-    AccumulatorInserter(agg, cfg, createPAOFunc, destroyPAOFunc, max_keys),
+    AccumulatorInserter(agg, cfg, max_keys),
     next_buffer(0),
     numPartitions_(num_part)
 {
@@ -20,8 +18,8 @@ SparseHashInserter::SparseHashInserter(Aggregator* agg,
 
     Setting& c_capacity = readConfigFile(cfg, "minni.aggregator.bucket.capacity");
     uint64_t capacity = c_capacity;
-    sparsehash_ = new SparseHashMurmur(capacity,
-                max_keys_per_token);
+    sparsehash_ = new SparseHashMurmur(capacity, max_keys_per_token,
+            aggregator_->ops());
 }
 
 SparseHashInserter::~SparseHashInserter()
@@ -61,17 +59,18 @@ void* SparseHashInserter::operator()(void* recv)
 	next_buffer = (next_buffer + 1) % aggregator_->getNumBuffers();
     size_t evict_list_ctr = 0;
 
+    const Operations* const op = aggregator_->ops();
 	// Insert PAOs
     while (ind < recv_length) {
         size_t numEvicted = 0;
         pao = pao_l[ind];
         PartialAgg** l = this_list + evict_list_ctr;
-        int p = partition(pao->key());
+        int p = partition(pao->key);
         if (p == 0) {
-            bool ret = sparsehash_->insert((void*)pao->key().c_str(), pao, l, numEvicted,
+            bool ret = sparsehash_->insert((void*)pao->key.c_str(), pao, l, numEvicted,
                     max_keys_per_token - evict_list_ctr);
             if (recv_list->destroy_pao && !ret)
-                destroyPAO(pao);
+                op->destroyPAO(pao);
         } else {
             this_list[evict_list_ctr++] = pao;
         }

@@ -1,4 +1,6 @@
 #include "HashsortAggregator.h"
+#include "CompressTreeFilter.h"
+#include "SparseHashFilter.h"
 
 /*
  * Initialize pipeline
@@ -9,10 +11,9 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 				const uint64_t num_part,
 				MapInput* _map_input,
 				const char* infile, 
-				size_t (*createPAOFunc)(Token* t, PartialAgg** p), 
-				void (*destroyPAOFunc)(PartialAgg* p), 
+                Operations* ops,
 				const char* outfile):
-		Aggregator(cfg, jid, type, 3, num_part, createPAOFunc, destroyPAOFunc),
+		Aggregator(cfg, jid, type, 3, num_part, ops),
 		map_input(_map_input),
 		infile(infile),
 		outfile(outfile)
@@ -46,15 +47,13 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
     if (!intagg.compare("cbt")) {
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, cfg,
-                HashUtil::MURMUR, createPAOFunc,
-                destroyPAOFunc, max_keys_per_token));
+                HashUtil::MURMUR, max_keys_per_token));
     } else if (!intagg.compare("sparsehash")) {
         Setting& c_num_part = readConfigFile(cfg,
                 "minni.internal.sparsehash.partitions");
         int num_part = c_num_part;
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                SparseHashInserter(this, cfg, createPAOFunc,
-                destroyPAOFunc, num_part, max_keys_per_token));
+                SparseHashInserter(this, cfg, num_part, max_keys_per_token));
     } 
 
 	if (type == Map) {
@@ -77,15 +76,14 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 			pipeline_list[0].add_filter(*filetoker);
 		}
 
-		creator = new PAOCreator(this, createPAOFunc, max_keys_per_token);
+		creator = new PAOCreator(this, max_keys_per_token);
 		pipeline_list[0].add_filter(*creator);
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);
 		strcpy(input_file, fprefix.c_str());
 		strcat(input_file, infile);
 		inp_deserializer = new Deserializer(this, 1/*TODO: how many?*/, 
-                input_file, createPAOFunc, destroyPAOFunc, 
-                max_keys_per_token);
+                input_file, max_keys_per_token);
 		pipeline_list[0].add_filter(*inp_deserializer);
 		free(input_file);
 	}
@@ -108,7 +106,7 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	strcat(unsorted_file, "unsorted");
 
 	serializer = new Serializer(this, 1/*create one unsorted file*/, 
-			unsorted_file, createPAOFunc, destroyPAOFunc);
+			unsorted_file);
 	pipeline_list[0].add_filter(*serializer);
 
 	/* In the second pipeline, each bucket is sorted using nsort */
@@ -121,18 +119,16 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 	
 	/* In this pipeline, the sorted file is deserialized into
 	 * PAOs again, aggregated and serialized. */
-	deserializer = new Deserializer(this, 1, sorted_file,
-			createPAOFunc, destroyPAOFunc, max_keys_per_token);
+	deserializer = new Deserializer(this, 1, sorted_file, max_keys_per_token);
 	pipeline_list[2].add_filter(*deserializer);
 
-	adder = new Adder(this, destroyPAOFunc, max_keys_per_token);
+	adder = new Adder(this, max_keys_per_token);
 	pipeline_list[2].add_filter(*adder);
 
 	char* final_path = (char*)malloc(FILENAME_LENGTH);
 	strcpy(final_path, fprefix.c_str());
 	strcat(final_path, outfile);
-	final_serializer = new Serializer(this, getNumPartitions(), 
-			final_path, createPAOFunc, destroyPAOFunc); 
+	final_serializer = new Serializer(this, getNumPartitions(), final_path); 
 	pipeline_list[2].add_filter(*final_serializer);
 
 	free(final_path);

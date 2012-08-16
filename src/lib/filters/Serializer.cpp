@@ -6,24 +6,17 @@ using namespace google::protobuf::io;
 
 Serializer::Serializer(Aggregator* agg,
 			const uint64_t nb, 
-			const char* outfile_prefix,
-			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			void (*destroyPAOFunc)(PartialAgg* p)) :
+			const char* outfile_prefix) :
 		filter(serial_in_order),
 		aggregator(agg),
 		already_partitioned(false),
 		num_buckets(nb),
-		tokens_processed(0),
-		createPAO(createPAOFunc),
-		destroyPAO(destroyPAOFunc)
+		tokens_processed(0)
 {
 	char num[10];
 	char* fname = (char*)malloc(FILENAME_LENGTH);
 
-    PartialAgg* dummy;
-    createPAO(NULL, &dummy);
-    serializationMethod_ = dummy->getSerializationMethod();
-    destroyPAO(dummy);
+    serializationMethod_ = aggregator->ops()->getSerializationMethod();
 
 	for (int i=0; i<num_buckets; i++) {
 		sprintf(num, "%d", i);
@@ -33,11 +26,11 @@ Serializer::Serializer(Aggregator* agg,
         std::ofstream* of = new std::ofstream(fname, ios::out|ios::binary);
         fl_.push_back(of);
         switch (serializationMethod_) {
-            case PartialAgg::PROTOBUF:
+            case Operations::PROTOBUF:
                 raw_output_.push_back(new OstreamOutputStream(fl_[i]));
                 coded_output_.push_back(new CodedOutputStream(raw_output_[i]));
                 break;
-            case PartialAgg::BOOST:
+            case Operations::BOOST:
                 oa_.push_back(new boost::archive::binary_oarchive(*fl_[i]));
                 break;
         }
@@ -73,24 +66,28 @@ void* Serializer::operator()(void* pao_list)
     tokens_processed++;
 
 	uint64_t ind = 0;
+    const Operations* const op = aggregator->ops();
+
     while(ind < recv_length) {
         pao = pao_l[ind];
         assert(pao != NULL);
 //        fprintf(stderr, "%d, %s\n", ind, pao->key().c_str());
-        buc = partition(pao->key());	
+        buc = partition(pao->key);	
         switch (serializationMethod_) {
-            case PartialAgg::PROTOBUF:
-                ((ProtobufPartialAgg*)pao)->serialize(coded_output_[buc]);
+            case Operations::PROTOBUF:
+                ((PbSerOperations*)op)->serialize(pao, coded_output_[buc]);
                 break;
-            case PartialAgg::BOOST:
-                ((BoostPartialAgg*)pao)->serialize(oa_[buc]);
+            case Operations::BOOST:
+                ((BoostOperations*)op)->serialize(pao, oa_[buc]);
                 break;
+/*
             case PartialAgg::HAND:
                 ((HandSerializedPartialAgg*)pao)->serialize(fl_[buc]);
                 break;
+*/
         }
         if (recv->destroy_pao)
-            destroyPAO(pao);
+            op->destroyPAO(pao);
         ind++;
     }
 
@@ -103,11 +100,11 @@ void* Serializer::operator()(void* pao_list)
             aggregator->can_exit == true) {
         for (int i=0; i<num_buckets; i++) {
             switch(serializationMethod_) {
-                case PartialAgg::PROTOBUF:
+                case Operations::PROTOBUF:
                     delete coded_output_[i];
                     delete raw_output_[i];
                     break;
-                case PartialAgg::BOOST:
+                case Operations::BOOST:
                     delete oa_[i];
                     break;
             }

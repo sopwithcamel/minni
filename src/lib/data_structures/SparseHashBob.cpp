@@ -1,7 +1,9 @@
 #include "SparseHashBob.h"
 #include <algorithm>
 
-SparseHashBob::SparseHashBob(size_t capacity, size_t evictAtTime) :
+SparseHashBob::SparseHashBob(size_t capacity, size_t evictAtTime,
+    const Operations* const ops) :
+        ops(ops),
         capacity_(capacity),
         evictAtTime_(evictAtTime),
         numElements_(0)
@@ -13,7 +15,7 @@ SparseHashBob::~SparseHashBob()
 {
 }
 
-bool SparseHashBob::insert(void* key, PartialAgg* value, PartialAgg**& evicted,
+bool SparseHashBob::insert(void* key, PartialAgg* inspao, PartialAgg**& evicted,
         size_t& num_evicted, size_t max_evictable)
 {
     bool ret;
@@ -22,11 +24,11 @@ bool SparseHashBob::insert(void* key, PartialAgg* value, PartialAgg**& evicted,
     PartialAgg* mg = NULL;
     mg = accumulator_[k];
     if (mg) {
-        mg->merge(value);
+        ops->merge(mg->value, inspao->value);
         ret = false;
     } else {
         ret = true;
-        accumulator_[k] = value;
+        accumulator_[k] = inspao;
         numElements_++;
         // insert invalidates read iterator
         readIterator_ = accumulator_.end();

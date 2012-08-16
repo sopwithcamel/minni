@@ -31,11 +31,9 @@ using namespace libconfig;
 
 class Mapper {
 public:
-	Mapper(size_t (*__createPAO)(Token* t, PartialAgg** p), 
-			void (*__destroyPAO)(PartialAgg* p));
+	Mapper(Operations* __ops);
 	~Mapper();
-	size_t (*createPAO)(Token* token, PartialAgg** p); 
-	void (*destroyPAO)(PartialAgg* p);
+	Operations* ops;
 	int num_partition;
 	Aggregator* aggregs;
 private:
@@ -44,11 +42,13 @@ private:
 class MapperWrapperTask : public task {
   public:
 	Mapper* mapper;	
-	size_t (*__libminni_create_pao)(Token* t, PartialAgg** p);
-	void (*__libminni_destroy_pao)(PartialAgg* pao);
+    /* pointer to app. operation; assigned dynamically after application
+    is linked*/
+	Operations* __libminni_operations;
 	string so_path;
 	MapInput* myinput;
-	MapperWrapperTask (JobID jid, Properties * p, TaskRegistry * t, LocalFileRegistry * f);
+    MapperWrapperTask (JobID jid, Properties * p, TaskRegistry * t,
+            LocalFileRegistry * f);
 	task* execute();
 	~MapperWrapperTask();
   private:

@@ -50,53 +50,15 @@ libminni_la_CPPFLAGS = $(TBB_CFLAGS) \
 					   -I$(srcdir)/resources/ \
 					   -I$(srcdir)/apps/ \
 					   -I$(srcdir)/utils \
-					   -I/usr/local/lib/leveldb-1.5.0/include/ \
-					   -I/net/hu17/hamur3/code/cbt/src
+					   -I/usr/local/lib/leveldb-1.5.0/include/
 
 libminni_la_LDFLAGS = -version-info $(MINNI_SO_VERSION) \
 			-L/usr/lib/tbb \
 			-lltdl -lpthread -ltbb -lconfig++ -lsnappy -lssl -lhoard \
 			-lprotobuf -lboost_serialization \
-			-L/usr/local/lib/leveldb-1.5.0 -lleveldb \
-			-L/net/hu17/hamur3/code/cbt/ -lcbt
+			-L/usr/local/lib/leveldb-1.5.0 -lleveldb -lcbt
 
 minni_includedir = $(includedir)/libminni/libminni
-
-minni_include_HEADERS = core/PartialAgg.h \
-			core/Mapper.h \
-			core/MapInput.h \
-			core/Reducer.h \
-			core/Minnie.h \
-			core/Defs.h \
-			core/Util.h \
-			filters/AccumulatorFilter.h \
-			filters/Adder.h \
-			filters/CompressTreeFilter.h \
-			filters/ConcurrentHashFilter.h \
-			filters/Deserializer.h \
-			filters/DFSReader.h \
-			filters/ExternalHasher.h \
-			filters/FileChunkerFilter.h \
-			filters/FileReaderFilter.h \
-			filters/FileTokenizerFilter.h \
-			filters/LocalReader.h \
-			filters/MemCache.h \
-			filters/PAOCreator.h \
-			filters/Serializer.h \
-			filters/Sorter.h \
-			filters/SparseHashFilter.h \
-			filters/TokenizerFilter.h \
-			aggregators/BucketAggregator.h \
-			aggregators/ExthashAggregator.h \
-			aggregators/HashsortAggregator.h \
-			aggregators/Aggregator.h \
-			record_creation/FileTokenizer.h \
-			record_creation/DelimitedTokenizer.h \
-			record_creation/Tokenizer.h \
-			resources/ElasticObject.h \
-			utils/HashUtil.h \
-			utils/compsort.h \
-			utils/rle.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 

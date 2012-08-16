@@ -14,7 +14,7 @@ class Token {
 	void clear();
 	std::vector<void*> tokens;
 	std::vector<size_t> token_sizes;
-	std::vector<PartialAgg*> objs;
+//	std::vector<PartialAgg*> objs;
 };
 
 class Tokenizer {

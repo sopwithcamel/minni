@@ -28,8 +28,6 @@ class ExternalHasher : public tbb::filter {
 public:
 	ExternalHasher(Aggregator* agg,
 			const char* ht_name,
-			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys);
 	~ExternalHasher();
 	void* operator()(void* pao_list);
@@ -39,9 +37,7 @@ private:
 	leveldb::DB* db;
 	leveldb::Options options;
 	char* buf;
-	size_t (*createPAO)(Token* t, PartialAgg** p);
-	void (*destroyPAO)(PartialAgg* p);
-    PartialAgg::SerializationMethod serializationMethod_;
+    Operations::SerializationMethod serializationMethod_;
     leveldb::Iterator* evict_it;
     size_t num_evicted;
 

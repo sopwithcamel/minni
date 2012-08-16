@@ -8,8 +8,6 @@ using namespace google::protobuf::io;
 Deserializer::Deserializer(Aggregator* agg,
 			const uint64_t num_buckets, 
 			const char* inp_prefix, 
-			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			void (*destroyPAOFunc)(PartialAgg* p),
             size_t max_keys) :
 		aggregator(agg),
 		filter(serial_in_order),
@@ -17,9 +15,7 @@ Deserializer::Deserializer(Aggregator* agg,
 		num_buckets(num_buckets),
 		buckets_processed(0),
 		cur_bucket(NULL),
-		next_buffer(0),
-		createPAO(createPAOFunc),
-		destroyPAO(destroyPAOFunc)
+		next_buffer(0)
 {
 	size_t num_buffers = aggregator->getNumBuffers();
 
@@ -31,10 +27,7 @@ Deserializer::Deserializer(Aggregator* agg,
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 	read_buf = malloc(BUF_SIZE + 1);
 
-    PartialAgg* dummy;
-    createPAO(NULL, &dummy);
-    serializationMethod_ = dummy->getSerializationMethod();
-    destroyPAO(dummy);
+    serializationMethod_ = aggregator->ops()->getSerializationMethod();
 }
 
 Deserializer::~Deserializer()
@@ -97,12 +90,12 @@ void* Deserializer::operator()(void*)
 		file_name = file_name + ss.str();
 		cur_bucket = new std::ifstream(file_name.c_str(), ios::in|ios::binary);
         switch (serializationMethod_) {
-            case PartialAgg::PROTOBUF:
+            case Operations::PROTOBUF:
                 raw_input = new IstreamInputStream(cur_bucket);
                 coded_input = new CodedInputStream(raw_input);
                 coded_input->SetTotalBytesLimit(1073741824, -1);
                 break;
-            case PartialAgg::BOOST:
+            case Operations::BOOST:
                 ia_ = new boost::archive::binary_iarchive(*cur_bucket);
                 break;
         }
@@ -111,25 +104,33 @@ void* Deserializer::operator()(void*)
 	}
 
     bool eof_reached = false;
+    const Operations* const op = aggregator->ops();
+
     while (true) {
-        createPAO(NULL, &(this_list[pao_list_ctr]));
+        op->createPAO(NULL, &(this_list[pao_list_ctr]));
         bool ret;
         switch (serializationMethod_) {
-            case PartialAgg::PROTOBUF:
-                ret = ((ProtobufPartialAgg*)this_list[
-                        pao_list_ctr])->deserialize(coded_input);
-                break;
-            case PartialAgg::BOOST:
-                ret = ((BoostPartialAgg*)this_list[
-                        pao_list_ctr])->deserialize(ia_);
-                break;
+            case Operations::PROTOBUF:
+                {
+                    ret = ((PbSerOperations*)op)->deserialize(
+                            this_list[pao_list_ctr], coded_input);
+                    break;
+                }
+            case Operations::BOOST:
+                {
+                    ret = ((BoostOperations*)op)->deserialize(
+                            this_list[pao_list_ctr], ia_);
+                    break;
+                }
+/*
             case PartialAgg::HAND:
                 ret = ((HandSerializedPartialAgg*)this_list[
                         pao_list_ctr])->deserialize(cur_bucket);
                 break;
+*/
         }
         if (!ret) {
-            destroyPAO(this_list[pao_list_ctr]);
+            op->destroyPAO(this_list[pao_list_ctr]);
             this_list[pao_list_ctr] = NULL;
             eof_reached = true;
             break;           
@@ -142,11 +143,11 @@ void* Deserializer::operator()(void*)
 
 	if (eof_reached) {
         switch (serializationMethod_) {
-            case PartialAgg::PROTOBUF:
+            case Operations::PROTOBUF:
                 delete coded_input;
                 delete raw_input;
                 break;
-            case PartialAgg::BOOST:
+            case Operations::BOOST:
                 delete ia_;
                 break;
         }

@@ -13,6 +13,7 @@
 #include "Defs.h"
 #include "PartialAgg.h"
 #include "Mapper.h"
+#include "Tokenizer.h"
 #include "Util.h"
 
 /**

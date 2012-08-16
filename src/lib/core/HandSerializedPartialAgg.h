@@ -3,7 +3,7 @@
 
 #include "PartialAgg.h"
 
-class HandSerializedPartialAgg : public PartialAgg {
+class HandSerializedPartialAgg : public Operations {
   public:
 	HandSerializedPartialAgg() {}
 	virtual ~HandSerializedPartialAgg() {}

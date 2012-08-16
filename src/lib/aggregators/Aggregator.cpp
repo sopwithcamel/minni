@@ -1,15 +1,14 @@
 #include "Aggregator.h"
 
-uint64_t PartialAgg::createCtr = 0;
-uint64_t PartialAgg::destCtr = 0;
+uint64_t Operations::createCtr = 0;
+uint64_t Operations::destCtr = 0;
 
 Aggregator::Aggregator(const Config &cfg,
             JobID jid,
 			AggType where,
 			uint64_t num_pipelines, 
 			uint64_t num_part,
-			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			void (*destroyPAOFunc)(PartialAgg* p)) :
+            Operations* _ops) :
         jobid(jid),
 		type(where),
 		num_pipelines(num_pipelines),
@@ -18,14 +17,13 @@ Aggregator::Aggregator(const Config &cfg,
         can_exit(false),
         stall_pipeline(false),
 		tot_input_tokens(0),
-		createPAO(createPAOFunc),
-		destroyPAO(destroyPAOFunc)
+		ops_(_ops)
 {
 	Setting& c_num_buffers = readConfigFile(cfg, "minni.tbb.buffers");
 
 	init = new tbb::task_scheduler_init();
 	num_buffers = 1; //init->default_num_threads();
-    fprintf(stderr, "Number of threads: %d\n", num_buffers);
+    fprintf(stderr, "Number of threads: %ld\n", num_buffers);
 	pipeline_list = new tbb::pipeline[num_pipelines]; 
 }
 
@@ -44,6 +42,11 @@ void Aggregator::runPipeline()
         pipeline_list[i].clear();
 		TimeLog::addTimeStamp(jobid, "Pipeline completed");
 	}
+}
+
+const Operations* const Aggregator::ops() const
+{
+    return ops_;
 }
 
 /**

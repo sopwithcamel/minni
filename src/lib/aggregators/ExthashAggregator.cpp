@@ -1,4 +1,7 @@
 #include "ExthashAggregator.h"
+#include "CompressTreeFilter.h"
+#include "ConcurrentHashFilter.h"
+#include "SparseHashFilter.h"
 
 /*
  * Initialize pipeline
@@ -9,10 +12,9 @@ ExthashAggregator::ExthashAggregator(const Config &cfg,
                 const uint64_t num_part,
                 MapInput* _map_input,
                 const char* infile, 
-                size_t (*createPAOFunc)(Token* t, PartialAgg** p), 
-                void (*destroyPAOFunc)(PartialAgg* p), 
+                Operations* ops,
                 const char* outfile):
-        Aggregator(cfg, jid, type, 2, num_part, createPAOFunc, destroyPAOFunc),
+        Aggregator(cfg, jid, type, 2, num_part, ops),
         map_input(_map_input),
         chunkreader(NULL),
         filereader(NULL),
@@ -51,16 +53,14 @@ ExthashAggregator::ExthashAggregator(const Config &cfg,
     if (!intagg.compare("cbt")) {
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
                 CompressTreeInserter(this, cfg,
-                HashUtil::MURMUR, createPAOFunc,
-                destroyPAOFunc, max_keys_per_token));
+                HashUtil::MURMUR, max_keys_per_token));
 
     } else if (!intagg.compare("sparsehash")) {
         Setting& c_num_part = readConfigFile(cfg,
                 "minni.internal.sparsehash.partitions");
         int num_part = c_num_part;
         acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                SparseHashInserter(this, cfg, createPAOFunc,
-                destroyPAOFunc, num_part, max_keys_per_token));
+                SparseHashInserter(this, cfg, num_part, max_keys_per_token));
     } 
 
     if (type == Map) {
@@ -87,7 +87,7 @@ ExthashAggregator::ExthashAggregator(const Config &cfg,
             pipeline_list[0].add_filter(*localreader_);
         }
 
-        creator_ = new PAOCreator(this, createPAOFunc, max_keys_per_token);
+        creator_ = new PAOCreator(this, max_keys_per_token);
         pipeline_list[0].add_filter(*creator_);
 
     } else if (type == Reduce) {
@@ -95,7 +95,7 @@ ExthashAggregator::ExthashAggregator(const Config &cfg,
         strcpy(input_file, fprefix.c_str());
         strcat(input_file, infile_);
         inp_deserializer_ = new Deserializer(this, 1, input_file,
-            createPAOFunc, destroyPAOFunc, max_keys_per_token);
+                max_keys_per_token);
         pipeline_list[0].add_filter(*inp_deserializer_);
         free(input_file);
     }
@@ -106,15 +106,14 @@ ExthashAggregator::ExthashAggregator(const Config &cfg,
         }
     }
 
-    ext_hasher_ = new ExternalHasher(this, htname.c_str(), createPAOFunc,
-            destroyPAOFunc, max_keys_per_token);
+    ext_hasher_ = new ExternalHasher(this, htname.c_str(),
+            max_keys_per_token);
     pipeline_list[0].add_filter(*ext_hasher_);
 
     char* final_path = (char*)malloc(FILENAME_LENGTH);
     strcpy(final_path, fprefix.c_str());
     strcat(final_path, outfile_);
-    final_serializer_ = new Serializer(this, getNumPartitions(), 
-            final_path, createPAOFunc, destroyPAOFunc); 
+    final_serializer_ = new Serializer(this, getNumPartitions(), final_path); 
     pipeline_list[0].add_filter(*final_serializer_);
 
     

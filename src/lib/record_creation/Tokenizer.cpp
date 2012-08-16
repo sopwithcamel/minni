@@ -23,13 +23,15 @@ Token::~Token()
 	for (i=0; i<tokens.size(); i++)
 		free(tokens[i]);
 */
+/*
 	for (i=0; i<objs.size(); i++)
 		delete objs[i];
+*/
 }
 
 void Token::clear()
 {
 	tokens.clear();
 	token_sizes.clear();
-	objs.clear();
+//	objs.clear();
 }

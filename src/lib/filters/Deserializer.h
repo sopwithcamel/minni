@@ -35,15 +35,11 @@ public:
 	Deserializer(Aggregator* agg, 
 			const uint64_t num_buckets, 
 			const char* inp_prefix,
-			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			void (*destroyPAOFunc)(PartialAgg* p),
             size_t max_keys);
 	~Deserializer();
 private:
 	Aggregator* aggregator;
 	const size_t max_keys_per_token;
-	size_t (*createPAO)(Token* t, PartialAgg** p);
-	void (*destroyPAO)(PartialAgg* p);
 	char* inputfile_prefix;
 	const uint64_t num_buckets;	// Number of files to process serially
 	uint64_t buckets_processed;
@@ -52,7 +48,7 @@ private:
 	MultiBuffer<FilterInfo>* send;
 	void* read_buf;
 
-    PartialAgg::SerializationMethod serializationMethod_;
+    Operations::SerializationMethod serializationMethod_;
 	std::ifstream *cur_bucket;		// file pointer for current bucket
     google::protobuf::io::ZeroCopyInputStream *raw_input;
     google::protobuf::io::CodedInputStream* coded_input;

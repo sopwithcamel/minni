@@ -12,8 +12,6 @@
 
 #include "AccumulatorFilter.h"
 #include "Adder.h"
-#include "CompressTree.h"
-#include "CompressTreeFilter.h"
 #include "Deserializer.h"
 #include "DFSReader.h"
 #include "FileReaderFilter.h"
@@ -23,8 +21,6 @@
 #include "PartialAgg.h"
 #include "Serializer.h"
 #include "Sorter.h"
-#include "SparseHashMurmur.h"
-#include "SparseHashFilter.h"
 #include "TokenizerFilter.h"
 #include "util.h"
 
@@ -36,8 +32,7 @@ public:
 				const uint64_t _partid,
 				MapInput* _map_input,
 				const char* infile, 
-				size_t (*createPAOFunc)(Token* t, PartialAgg** p), 
-				void (*destroyPAOFunc)(PartialAgg* p), 
+                Operations* ops,
 				const char* outfile);
 	~HashsortAggregator();
 private:

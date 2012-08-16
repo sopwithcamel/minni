@@ -1,13 +1,11 @@
 #include "PAOCreator.h"
 
 PAOCreator::PAOCreator(Aggregator* agg,
-			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
 			const size_t max_keys) :
 		aggregator(agg),
 		filter(serial_in_order),
 		max_keys_per_token(max_keys),
-		next_buffer(0),
-		createPAO(createPAOFunc)
+		next_buffer(0)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	pao_list = new MultiBuffer<PartialAgg*>(num_buffers, max_keys_per_token);
@@ -41,10 +39,12 @@ void* PAOCreator::operator()(void* recv)
 	PartialAgg** this_pao_list = (*pao_list)[next_buffer];
 	FilterInfo* this_send = (*send)[next_buffer];
 	next_buffer = (next_buffer + 1) % num_buffers; 
+
+    const Operations* const op = aggregator->ops();
 	
 	while (ind < recv_length) {
 		tok = tok_list[ind];
-		num_paos_added = createPAO(tok, &this_pao_list[this_list_ctr]);
+		num_paos_added = op->createPAO(tok, &this_pao_list[this_list_ctr]);
 		this_list_ctr += num_paos_added;
 		assert(this_list_ctr < max_keys_per_token);
 

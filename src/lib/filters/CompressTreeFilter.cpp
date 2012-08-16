@@ -3,10 +3,8 @@
 CompressTreeInserter::CompressTreeInserter(Aggregator* agg,
         const Config &cfg,
         HashUtil::HashFunction hf,
-        size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-		void (*destroyPAOFunc)(PartialAgg* p),
 		size_t max_keys) :
-    AccumulatorInserter(agg, cfg, createPAOFunc, destroyPAOFunc, max_keys),
+    AccumulatorInserter(agg, cfg, max_keys),
     hf_(hf),
     next_buffer(0)
 {
@@ -25,7 +23,7 @@ CompressTreeInserter::CompressTreeInserter(Aggregator* agg,
             "minni.internal.cbt.pao_size");
     uint32_t pao_size = c_pao_size;
     cbt_ = new cbt::CompressTree(2, fanout, 1000, buffer_size, pao_size,
-                createPAOFunc, destroyPAOFunc);
+                aggregator_->ops());
 }
 
 CompressTreeInserter::~CompressTreeInserter()
@@ -78,7 +76,7 @@ void* CompressTreeInserter::operator()(void* recv)
     cbt_->bulk_insert(pao_l, recv_length);
     if (recv_list->destroy_pao) {
         for (int i=0; i<recv_length; i++)
-            destroyPAO(pao_l[i]);
+            aggregator_->ops()->destroyPAO(pao_l[i]);
     }
     
 	if (flush_on_complete || aggregator_->input_finished && 

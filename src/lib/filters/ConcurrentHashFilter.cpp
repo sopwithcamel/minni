@@ -7,10 +7,8 @@ using namespace tbb;
 
 ConcurrentHashInserter::ConcurrentHashInserter(Aggregator* agg,
         const Config &cfg,
-        size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-		void (*destroyPAOFunc)(PartialAgg* p),
 		size_t max_keys) :
-    AccumulatorInserter(agg, cfg, createPAOFunc, destroyPAOFunc, max_keys),
+    AccumulatorInserter(agg, cfg, max_keys),
     next_buffer(0),
     num_evicted(0)
 {
@@ -48,7 +46,8 @@ void* ConcurrentHashInserter::operator()(void* recv)
     if (recv_length > 0) {
         parallel_for(tbb::blocked_range<PartialAgg**>(pao_l,
                 pao_l+recv_length, 100),
-                Aggregate(ht_, recv_list->destroy_pao, destroyPAO));
+                Aggregate(ht_, recv_list->destroy_pao,
+                aggregator_->ops()));
     }
     
 	if (flush_on_complete || aggregator_->input_finished && 

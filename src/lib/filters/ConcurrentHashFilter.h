@@ -37,23 +37,23 @@ class ConcurrentHashInserter : public AccumulatorInserter
     struct Aggregate {
         Hashtable* ht;
         bool destroyMerged_;
-        void (*destroyPAO_)(PartialAgg* p);
+        const Operations* const ops;
 
         Aggregate(Hashtable* ht_, bool destroy,
-                void (*destroyPAOFunc)(PartialAgg* p)) : 
+                const Operations* const ops) :
             ht(ht_),
             destroyMerged_(destroy),
-            destroyPAO_(destroyPAOFunc) {}
+            ops(ops) {}
         void operator()(const tbb::blocked_range<PartialAgg**> r) const
         {
             for (PartialAgg** it=r.begin(); it != r.end(); ++it) {
                 Hashtable::accessor a;
-                if (ht->insert(a, (*it)->key().c_str())) { // wasn't present
+                if (ht->insert(a, (*it)->key.c_str())) { // wasn't present
                     a->second = *it;
                 } else { // already present
-                    a->second->merge(*it);
+                    ops->merge(a->second->value, (*it)->value);
                     if (destroyMerged_)
-                        destroyPAO_(*it);
+                        ops->destroyPAO(*it);
                 }
             }
         }
@@ -61,8 +61,6 @@ class ConcurrentHashInserter : public AccumulatorInserter
   public:
 	ConcurrentHashInserter(Aggregator* agg,
             const Config &cfg,
-            size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys);
 	~ConcurrentHashInserter();
 	void* operator()(void* pao_list);

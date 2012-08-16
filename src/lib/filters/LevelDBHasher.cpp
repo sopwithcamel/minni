@@ -7,13 +7,9 @@ using leveldb::NewBloomFilterPolicy;
 
 ExternalHasher::ExternalHasher(Aggregator* agg, 
 			const char* ht_name,
-			size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys) :
 		filter(/*serial=*/true),
 		aggregator(agg),
-		createPAO(createPAOFunc),
-		destroyPAO(destroyPAOFunc),
 		max_keys_per_token(max_keys),
         num_evicted(0),
         tokens_processed(0)
@@ -24,10 +20,7 @@ ExternalHasher::ExternalHasher(Aggregator* agg,
 //	options.write_buffer_size = ;
 	leveldb::Status s = leveldb::DB::Open(options, ht_name, &db);
 	assert(s.ok());
-    PartialAgg* dummy;
-    createPAO(NULL, &dummy);
-    serializationMethod_ = dummy->getSerializationMethod();
-    destroyPAO(dummy);
+    serializationMethod_ = aggregator->ops()->getSerializationMethod();
 
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	send_ = new MultiBuffer<FilterInfo>(num_buffers, 1);
@@ -47,7 +40,8 @@ ExternalHasher::~ExternalHasher()
 void* ExternalHasher::operator()(void* recv)
 {
 	char *key;
-	string value;
+	string insert_value;
+    string read_value;
 	size_t ind = 0;
 	PartialAgg* pao;
 
@@ -65,23 +59,25 @@ void* ExternalHasher::operator()(void* recv)
 
 	// Insert PAOs
     PartialAgg* p;
-    createPAO(NULL, &p);
+    const Operations* const op = aggregator->ops();
+
+    op->createPAO(NULL, &p);
 	while (ind < recv_length) {
 		pao = pao_l[ind];
 
-		leveldb::Status s = db->Get(leveldb::ReadOptions(), pao->key(),
-				&value);
+		leveldb::Status s = db->Get(leveldb::ReadOptions(), pao->key,
+                &read_value);
 		if (s.ok()) {
-			((ProtobufPartialAgg*)p)->deserialize(value);
-			pao->merge(p);
+			op->deserialize(p, read_value);
+			op->merge(pao->value, p->value);
 		}
-		((ProtobufPartialAgg*)pao)->serialize(&value);
-		s = db->Put(leveldb::WriteOptions(), pao->key(), value);
+		op->serialize(pao, &insert_value);
+		s = db->Put(leveldb::WriteOptions(), pao->key, insert_value);
 		assert(s.ok());
-		destroyPAO(pao);
+        op->destroyPAO(pao);
 		ind++;
 	}
-    destroyPAO(p);
+    op->destroyPAO(p);
 
 	if (aggregator->can_exit) { // if everyone else has voted to exit
         if (num_evicted == 0) {
@@ -89,8 +85,8 @@ void* ExternalHasher::operator()(void* recv)
             evict_it->SeekToFirst();
         }
         for (; evict_it->Valid(); evict_it->Next()) {
-            createPAO(NULL, &pao);
-            ((ProtobufPartialAgg*)pao)->deserialize(evict_it->value().ToString());
+            op->createPAO(NULL, &pao);
+            op->deserialize(pao, evict_it->value().ToString());
             this_list[evict_list_ctr++] = pao;
             if (evict_list_ctr == max_keys_per_token)
                 break;

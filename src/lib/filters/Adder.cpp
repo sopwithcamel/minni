@@ -1,12 +1,10 @@
 #include "Adder.h"
 
 Adder::Adder(Aggregator* agg, 
-			void (*destroyPAOFunc)(PartialAgg* p),
             size_t max_keys) :
 		filter(/*serial=*/true),
 		aggregator(agg),
         max_keys_per_token(max_keys),
-		destroyPAO(destroyPAOFunc),
 		next_buffer(0),
 		tokens_processed(0)
 {
@@ -38,13 +36,15 @@ void* Adder::operator()(void* recv)
 	next_buffer = (next_buffer + 1) % aggregator->getNumBuffers();
 	tokens_processed++;
 
+    const Operations* const op = aggregator->ops();
+
 	while (ind < merge_list_length) {
 		pao = merge_list[ind];
 		if (!merge_pao) // first pao
 			merge_pao = pao;
-		else if (!merge_pao->key().compare(pao->key())) { // same key
-			merge_pao->merge(pao);
-			destroyPAO(pao);
+		else if (!merge_pao->key.compare(pao->key)) { // same key
+			op->merge(pao->value, merge_pao->value);
+			op->destroyPAO(pao);
 		} else { // different pao
 			this_list[pao_list_ctr++] = merge_pao;
 			merge_pao = pao;

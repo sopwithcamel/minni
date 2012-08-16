@@ -6,17 +6,19 @@
 #include "PartialAgg.h"
 
 class Token;
-class BoostPartialAgg : public PartialAgg {
+class BoostOperations : public Operations {
   public:
-	BoostPartialAgg() {}
-	virtual ~BoostPartialAgg() {}
+	BoostOperations() {}
+	virtual ~BoostOperations() {}
 
     SerializationMethod getSerializationMethod() const { return BOOST; }
 
 	/* serialize into file */
-	virtual void serialize(boost::archive::binary_oarchive* output) const = 0;
+	virtual void serialize(PartialAgg* p,
+            boost::archive::binary_oarchive* output) const = 0;
 	/* deserialize from file */
-	virtual bool deserialize(boost::archive::binary_iarchive* input) = 0;
+	virtual bool deserialize(PartialAgg* p,
+            boost::archive::binary_iarchive* input) const = 0;
 };
 
 #endif

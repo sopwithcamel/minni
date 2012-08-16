@@ -11,7 +11,7 @@
 
 #include "Aggregator.h"
 #include "AccumulatorFilter.h"
-#include "CompressTree.h"
+#include "cbt/CompressTree.h"
 #include "HashUtil.h"
 #include "PartialAgg.h"
 #include "Util.h"
@@ -23,8 +23,6 @@ class CompressTreeInserter :
 	CompressTreeInserter(Aggregator* agg,
             const Config &cfg,
             HashUtil::HashFunction hf,
-            size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			void (*destroyPAOFunc)(PartialAgg* p),
 			const size_t max_keys);
 	~CompressTreeInserter();
 	void* operator()(void* pao_list);

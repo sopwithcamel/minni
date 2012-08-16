@@ -25,8 +25,6 @@ class SparseHashInserter :
   public:
 	SparseHashInserter(Aggregator* agg,
             const Config &cfg,
-            size_t (*createPAOFunc)(Token* t, PartialAgg** p),
-			void (*destroyPAOFunc)(PartialAgg* p),
             int num_part,
 			const size_t max_keys);
 	~SparseHashInserter();

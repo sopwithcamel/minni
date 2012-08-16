@@ -1,4 +1,3 @@
-#include "config.h"
 #include "Mapper.h"
 
 #include "BucketAggregator.h"
@@ -7,10 +6,8 @@
 #include <dlfcn.h>
 
 //Mapper
-Mapper::Mapper(size_t (*__createPAO)(Token* t, PartialAgg** p), 
-			void (*__destroyPAO)(PartialAgg* p)):
-		createPAO(__createPAO),
-		destroyPAO(__destroyPAO)	
+Mapper::Mapper(Operations* __ops):
+		ops(__ops)
 {
 }
 
@@ -75,23 +72,16 @@ int MapperWrapperTask::UserMapLinking(const char* soname)
 		return 1;
 	}
 
-	__libminni_create_pao = (size_t (*)(Token*, PartialAgg**)) dlsym(
-			handle, "__libminni_pao_create");
+	__libminni_operations = (Operations*)dlsym(handle,
+            "__libminni_operations");
 	if ((err = dlerror()) != NULL)
 	{
-		fprintf(stderr, "Error locating symbol __libminni_create_pao\
+		fprintf(stderr, "Error locating symbol __libminni_operations\
 				in %s\n", err);
 		exit(-1);
 	}
-	__libminni_destroy_pao = (void (*)(PartialAgg*)) dlsym(handle, 
-			"__libminni_pao_destroy");
-	if ((err = dlerror()) != NULL)
-	{
-		fprintf(stderr, "Error locating symbol __libminni_destroy_pao\
-			in %s\n", err);
-		exit(-1);
-	}
-	mapper = new Mapper(__libminni_create_pao, __libminni_destroy_pao);
+
+	mapper = new Mapper(__libminni_operations);
 
 	return 0;
 }
@@ -140,18 +130,15 @@ task* MapperWrapperTask::execute() {
 	if (!selected_map_aggregator.compare("bucket")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new BucketAggregator(
 						cfg, jobid, Map, npart, myinput, NULL,
-						mapper->createPAO, mapper->destroyPAO, 
-						map_out_file.c_str()));
+						mapper->ops, map_out_file.c_str()));
 	} else if (!selected_map_aggregator.compare("hashsort")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new HashsortAggregator(
 						cfg, jobid, Map, npart, myinput, NULL,
-						mapper->createPAO, mapper->destroyPAO,
-						map_out_file.c_str()));
+						mapper->ops, map_out_file.c_str()));
 	} else if (!selected_map_aggregator.compare("exthash")) {
 		mapper->aggregs = dynamic_cast<Aggregator*>(new ExthashAggregator(
 						cfg, jobid, Map, npart, myinput, NULL,
-						mapper->createPAO, mapper->destroyPAO,
-						map_out_file.c_str()));
+						mapper->ops, map_out_file.c_str()));
 	} else {
 		fprintf(stderr, "Illegal aggregator chosen!\n");
 		exit(1);

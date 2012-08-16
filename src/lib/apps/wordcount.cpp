@@ -1,24 +1,16 @@
 #include "wordcount.h"
 
-using namespace google::protobuf::io;
-
 #define KEY_SIZE        10
 
 WordCountPartialAgg::WordCountPartialAgg(char* wrd)
 {
-	if (wrd) {
-		pb.set_key(wrd);
-        pb.set_count(1);
-	} else
-        pb.set_count(0);
 }
 
 WordCountPartialAgg::~WordCountPartialAgg()
 {
 }
 
-
-size_t WordCountPartialAgg::create(Token* t, PartialAgg** p)
+size_t WordCountOperations::createPAO(Token* t, PartialAgg** p) const
 {
 	WordCountPartialAgg* new_pao;
 	if (t == NULL)
@@ -29,54 +21,65 @@ size_t WordCountPartialAgg::create(Token* t, PartialAgg** p)
 	return 1;
 }
 
-void WordCountPartialAgg::merge(PartialAgg* add_agg)
+bool WordCountOperations::destroyPAO(PartialAgg* p) const
 {
-	WordCountPartialAgg* wp = (WordCountPartialAgg*)add_agg;
-	pb.set_count(count() + wp->count());
+	return true;
 }
 
-inline void WordCountPartialAgg::serialize(
-        CodedOutputStream* output) const
+inline uint32_t WordCountOperations::getSerializedSize(PartialAgg* p) const
 {
-    output->WriteVarint32(pb.ByteSize());
-    pb.SerializeToCodedStream(output);
+    // update for Boost!
+    return 0;
 }
 
-inline uint32_t WordCountPartialAgg::serializedSize() const
+void WordCountOperations::merge(Value* v, Value* mg) const
 {
-    return pb.ByteSize();
+	((WordCountValue*)v)->count += ((WordCountValue*)mg)->count;
 }
 
-
-inline void WordCountPartialAgg::serialize(std::string* output) const
+void WordCountOperations::serialize(PartialAgg* p,
+        boost::archive::binary_oarchive* output) const
 {
-    pb.SerializeToString(output);
+/*
+    (*output) << p->key;
+    WordCountValue* vptr = (WordCountValue*)(p->value);
+    (*output) << vptr->count;
+*/
 }
 
-inline void WordCountPartialAgg::serialize(char* output, size_t size)
+bool WordCountOperations::deserialize(PartialAgg* p,
+        boost::archive::binary_iarchive* input) const
 {
-    memset((void*)output, 0, size);
-	pb.SerializeToArray(output, size);
+/*
+    try {
+        (*input) >> p->key;
+        WordCountValue* vptr = (WordCountValue*)(p->value);
+        (*input) >> vptr->count;
+        return true;
+    } catch (...) {
+        return false;
+    }
+*/
 }
 
-inline bool WordCountPartialAgg::deserialize(CodedInputStream* input)
+inline bool WordCountOperations::serialize(PartialAgg* p,
+        std::string* output) const
 {
-    uint32_t bytes;
-    input->ReadVarint32(&bytes);
-    CodedInputStream::Limit msgLimit = input->PushLimit(bytes);
-    bool ret = pb.ParseFromCodedStream(input);
-    input->PopLimit(msgLimit);
-    return ret;
 }
 
-inline bool WordCountPartialAgg::deserialize(const std::string& input)
+inline bool WordCountOperations::serialize(PartialAgg* p,
+        char* output, size_t size) const
 {
-	return pb.ParseFromString(input);
 }
 
-inline bool WordCountPartialAgg::deserialize(const char* input, size_t size)
+inline bool WordCountOperations::deserialize(PartialAgg* p,
+        const std::string& input) const
 {
-	return pb.ParseFromArray(input, size);
 }
 
-REGISTER_PAO(WordCountPartialAgg);
+inline bool WordCountOperations::deserialize(PartialAgg* p,
+        const char* input, size_t size) const
+{
+}
+
+REGISTER(WordCountOperations);

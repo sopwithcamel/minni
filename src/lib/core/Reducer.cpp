@@ -1,13 +1,10 @@
-#include "config.h"
 #include "Reducer.h"
 #include "BucketAggregator.h"
 #include "util.h"
 
 //Reducer class
-Reducer::Reducer(size_t (*__createPAO)(Token* t, PartialAgg** p), 
-			void (*__destroyPAO)(PartialAgg* p)):
-		createPAO(__createPAO),
-		destroyPAO(__destroyPAO)
+Reducer::Reducer(Operations* __ops) :
+        ops(__ops)
 {
 }
 
@@ -57,14 +54,16 @@ int ReducerWrapperTask::UserMapLinking(const char* soname) {
 		return 1;
 	}
 
-	__libminni_create_pao = (size_t (*)(Token*, PartialAgg**)) dlsym(handle, "__libminni_pao_create");
-	__libminni_destroy_pao = (void (*)(PartialAgg*)) dlsym(handle, "__libminni_pao_destroy");
+	__libminni_operations = (Operations*)dlsym(handle,
+            "__libminni_operations");
 	if ((err = dlerror()) != NULL)
 	{
-		fprintf(stderr, "Error locating symbol __libminni_create_pao in %s\n", err);
+		fprintf(stderr, "Error locating symbol __libminni_operations\
+				in %s\n", err);
 		exit(-1);
 	}
-	reducer = new Reducer(__libminni_create_pao, __libminni_destroy_pao); /*deleted at the end*/
+
+	reducer = new Reducer(__libminni_operations); /*deleted at the end*/
 	
 	return SUCCESS_EXIT;
 }
@@ -107,7 +106,7 @@ task* ReducerWrapperTask::execute() {
 	if (!selected_reduce_aggregator.compare("bucket")) {
 		reducer->aggreg = dynamic_cast<Aggregator*>(new BucketAggregator(cfg,
 					jobid, Reduce, 1, NULL, input_file.c_str(),
-                    reducer->createPAO, reducer->destroyPAO, "result"));
+                    reducer->ops, "result"));
 	}
 		
 	int sleeptime = BASE_SLEEPTIME;
