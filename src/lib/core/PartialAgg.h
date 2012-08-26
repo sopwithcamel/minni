@@ -6,8 +6,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#define REGISTER(x) \
-        Operations* __libminni_operations = new x();
+#define REGISTER(x)\
+        extern "C" Operations* __libminni_create_ops()\
+        {\
+            return new x();\
+        }
+
 
 class Token;
 class Value {

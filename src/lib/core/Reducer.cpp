@@ -54,14 +54,15 @@ int ReducerWrapperTask::UserMapLinking(const char* soname) {
 		return 1;
 	}
 
-	__libminni_operations = (Operations*)dlsym(handle,
-            "__libminni_operations");
+    Operations* (*create_ops_obj)() = (Operations* (*)())dlsym(handle,
+            "__libminni_create_ops");
 	if ((err = dlerror()) != NULL)
 	{
-		fprintf(stderr, "Error locating symbol __libminni_operations\
+		fprintf(stderr, "Error locating symbol __libminni_create_ops\
 				in %s\n", err);
 		exit(-1);
 	}
+	__libminni_operations = create_ops_obj();
 
 	reducer = new Reducer(__libminni_operations); /*deleted at the end*/
 	
