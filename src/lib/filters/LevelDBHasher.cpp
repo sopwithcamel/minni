@@ -65,14 +65,14 @@ void* ExternalHasher::operator()(void* recv)
 	while (ind < recv_length) {
 		pao = pao_l[ind];
 
-		leveldb::Status s = db->Get(leveldb::ReadOptions(), pao->key,
+		leveldb::Status s = db->Get(leveldb::ReadOptions(), op->getKey(pao),
                 &read_value);
 		if (s.ok()) {
 			op->deserialize(p, read_value);
-			op->merge(pao->value, p->value);
+			op->merge(pao, p);
 		}
 		op->serialize(pao, &insert_value);
-		s = db->Put(leveldb::WriteOptions(), pao->key, insert_value);
+		s = db->Put(leveldb::WriteOptions(), op->getKey(pao), insert_value);
 		assert(s.ok());
         op->destroyPAO(pao);
 		ind++;

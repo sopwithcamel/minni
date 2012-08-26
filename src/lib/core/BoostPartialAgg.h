@@ -3,6 +3,7 @@
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+#include <string.h>
 #include "PartialAgg.h"
 
 class Token;
@@ -14,7 +15,7 @@ class BoostOperations : public Operations {
     SerializationMethod getSerializationMethod() const { return BOOST; }
 
 	/* serialize into file */
-	virtual void serialize(PartialAgg* p,
+	virtual bool serialize(PartialAgg* p,
             boost::archive::binary_oarchive* output) const = 0;
 	/* deserialize from file */
 	virtual bool deserialize(PartialAgg* p,

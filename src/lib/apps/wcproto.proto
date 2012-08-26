@@ -1,0 +1,8 @@
+package wordcount;
+
+option optimize_for = SPEED;
+
+message pao {
+    required bytes key = 1;
+    required uint32 count = 2;
+}

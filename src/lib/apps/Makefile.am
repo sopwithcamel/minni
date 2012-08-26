@@ -1,7 +1,7 @@
 #EXTRA_DIST = wordcount.cpp wordcount.h wordcountpao.pb.cc wordcountpao.pb.h  wcplain.cpp wcplain.h
 #			 semantic.cpp semantic. semanticpao.pb.cc semanticpao.pb.h	# img.cpp img.h semantic.cpp semantic.h
 
-pkglib_LTLIBRARIES = wordcount.la
+pkglib_LTLIBRARIES = wc_boost.la wc_proto.la
 #wcplain.la wchand.la \
 #					wcdigram.la semantic.la semantic_plain.la \
 #					digplain.la img.la imgclass.la
@@ -24,9 +24,13 @@ ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 #semantic_la_LDFLAGS = -module -lprotobuf -lwordnet-3.0
 #semantic_la_CPPFLAGS = $(ALL_CPPFLAGS)
 #
-wordcount_la_SOURCES = wordcount.cpp wordcountpao.pb.cc
-wordcount_la_LDFLAGS = -module
-wordcount_la_CPPFLAGS = $(ALL_CPPFLAGS)
+wc_boost_la_SOURCES = wc_boost.cpp
+wc_boost_la_LDFLAGS = -module
+wc_boost_la_CPPFLAGS = $(ALL_CPPFLAGS)
+#
+wc_proto_la_SOURCES = wc_proto.cpp wcproto.pb.cc
+wc_proto_la_LDFLAGS = -module
+wc_proto_la_CPPFLAGS = $(ALL_CPPFLAGS)
 #
 #wcdigram_la_SOURCES = wcdigram.cpp wcdigram.pb.cc
 #wcdigram_la_LDFLAGS = -module -lprotobuf

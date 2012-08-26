@@ -24,7 +24,7 @@ bool SparseHashBob::insert(void* key, PartialAgg* inspao, PartialAgg**& evicted,
     PartialAgg* mg = NULL;
     mg = accumulator_[k];
     if (mg) {
-        ops->merge(mg->value, inspao->value);
+        ops->merge(mg, inspao);
         ret = false;
     } else {
         ret = true;

@@ -72,10 +72,10 @@ void* Serializer::operator()(void* pao_list)
         pao = pao_l[ind];
         assert(pao != NULL);
 //        fprintf(stderr, "%d, %s\n", ind, pao->key().c_str());
-        buc = partition(pao->key);	
+        buc = partition(op->getKey(pao));	
         switch (serializationMethod_) {
             case Operations::PROTOBUF:
-                ((PbSerOperations*)op)->serialize(pao, coded_output_[buc]);
+                ((ProtobufOperations*)op)->serialize(pao, coded_output_[buc]);
                 break;
             case Operations::BOOST:
                 ((BoostOperations*)op)->serialize(pao, oa_[buc]);

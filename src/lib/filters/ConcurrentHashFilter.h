@@ -48,10 +48,10 @@ class ConcurrentHashInserter : public AccumulatorInserter
         {
             for (PartialAgg** it=r.begin(); it != r.end(); ++it) {
                 Hashtable::accessor a;
-                if (ht->insert(a, (*it)->key.c_str())) { // wasn't present
+                if (ht->insert(a, ops->getKey(*it))) { // wasn't present
                     a->second = *it;
                 } else { // already present
-                    ops->merge(a->second->value, (*it)->value);
+                    ops->merge(a->second, *it);
                     if (destroyMerged_)
                         ops->destroyPAO(*it);
                 }

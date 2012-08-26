@@ -14,17 +14,12 @@
 
 
 class Token;
-class Value {
-};
 
 class PartialAgg {
   protected:
     /* don't allow PartialAgg objects to be created */
 	PartialAgg() {}
     ~PartialAgg() {}
-  public:
-    std::string key;
-    Value* value;
 };
 
 class Operations {
@@ -38,9 +33,11 @@ class Operations {
         HAND
     };
     virtual ~Operations() = 0;
+    virtual const char* getKey(PartialAgg* p) const = 0;
+    virtual bool sameKey(PartialAgg* p1, PartialAgg* p2) const = 0;
     virtual size_t createPAO(Token* t, PartialAgg** p_list) const = 0;
     virtual bool destroyPAO(PartialAgg* p) const = 0;
-	virtual void merge(Value* v, Value* merge) const = 0;
+	virtual bool merge(PartialAgg* v, PartialAgg* merge) const = 0;
     virtual SerializationMethod getSerializationMethod() const = 0;
     virtual uint32_t getSerializedSize(PartialAgg* p) const = 0;
 	/* serialize into string/buffer */

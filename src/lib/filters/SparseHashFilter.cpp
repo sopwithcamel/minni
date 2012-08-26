@@ -65,9 +65,9 @@ void* SparseHashInserter::operator()(void* recv)
         size_t numEvicted = 0;
         pao = pao_l[ind];
         PartialAgg** l = this_list + evict_list_ctr;
-        int p = partition(pao->key);
+        int p = partition(op->getKey(pao));
         if (p == 0) {
-            bool ret = sparsehash_->insert((void*)pao->key.c_str(), pao, l, numEvicted,
+            bool ret = sparsehash_->insert((void*)op->getKey(pao), pao, l, numEvicted,
                     max_keys_per_token - evict_list_ctr);
             if (recv_list->destroy_pao && !ret)
                 op->destroyPAO(pao);

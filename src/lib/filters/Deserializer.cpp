@@ -112,7 +112,7 @@ void* Deserializer::operator()(void*)
         switch (serializationMethod_) {
             case Operations::PROTOBUF:
                 {
-                    ret = ((PbSerOperations*)op)->deserialize(
+                    ret = ((ProtobufOperations*)op)->deserialize(
                             this_list[pao_list_ctr], coded_input);
                     break;
                 }

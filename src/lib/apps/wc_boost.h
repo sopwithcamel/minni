@@ -2,13 +2,15 @@
 #include "BoostPartialAgg.h"
 #include "Tokenizer.h"
 
-class WordCountOperations : public BoostOperations {
+class WCBoostOperations : public BoostOperations {
   public:
+    const char* getKey(PartialAgg* p) const;
+    bool sameKey(PartialAgg* p1, PartialAgg* p2) const;
 	size_t createPAO(Token* t, PartialAgg** p) const;
     bool destroyPAO(PartialAgg* p) const;
-	void merge(Value* v, Value* mg) const;
+	bool merge(PartialAgg* p, PartialAgg* mg) const;
     inline uint32_t getSerializedSize(PartialAgg* p) const;
-	inline void serialize(PartialAgg* p,
+	inline bool serialize(PartialAgg* p,
             boost::archive::binary_oarchive* output) const;
 	inline bool deserialize(PartialAgg* p,
             boost::archive::binary_iarchive* input) const;
@@ -22,14 +24,13 @@ class WordCountOperations : public BoostOperations {
             const char* input, size_t size) const;
 };
 
-class WordCountValue : public Value {
-  public:
-    uint32_t count;
-};
-
-class WordCountPartialAgg : public PartialAgg
+class WCBoostPAO : public PartialAgg
 {
+    friend class WCBoostOperations;
   public:
-	WordCountPartialAgg(char* wrd);
-	~WordCountPartialAgg();
+	WCBoostPAO(char* wrd);
+	~WCBoostPAO();
+  private:
+    char* key;
+    uint32_t count;
 };

@@ -5,21 +5,19 @@
 #include "PartialAgg.h"
 
 class Token;
-class PbSerOperations : public Operations {
+class ProtobufOperations : public Operations {
   public:
-	PbSerOperations() {}
-	virtual ~PbSerOperations() {}
+	ProtobufOperations() {}
+	virtual ~ProtobufOperations() {}
 
     SerializationMethod getSerializationMethod() const { return PROTOBUF; }
 
-    virtual uint32_t serializedSize() const = 0;
-
 	/* serialize into file */
-	virtual void serialize(PartialAgg* p,
+	virtual bool serialize(PartialAgg* p,
             google::protobuf::io::CodedOutputStream* output) const = 0;
 	/* deserialize from file */
 	virtual bool deserialize(PartialAgg* p,
-            google::protobuf::io::CodedInputStream* input) = 0;
+            google::protobuf::io::CodedInputStream* input) const = 0;
 };
 
 #endif
