@@ -77,12 +77,12 @@ BucketAggregator::BucketAggregator(const Config &cfg,
                     SparseHashInserter(this, cfg,
                     1, max_keys_per_token));
         } else {
-            acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
-                    SparseHashInserter(this, cfg,
-                    num_part, max_keys_per_token));
-            bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new
+            acc_int_inserter_ = dynamic_cast<AccumulatorInserter*>(new
                     ConcurrentHashInserter(this, cfg,
                     max_keys_per_token));
+            bucket_inserter_ = dynamic_cast<AccumulatorInserter*>(new 
+                    SparseHashInserter(this, cfg,
+                    num_part, max_keys_per_token));
         }
     } 
 

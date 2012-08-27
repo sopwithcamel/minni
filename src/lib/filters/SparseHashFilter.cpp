@@ -30,10 +30,10 @@ SparseHashInserter::~SparseHashInserter()
     delete sparsehash_;
 }
 
-int SparseHashInserter::partition(const std::string& key)
+int SparseHashInserter::partition(const char* key) const
 {
 	int buc, sum = 0;
-	for (int i=0; i<key.size(); i++)
+	for (int i=0; i<strlen(key); i++)
 		sum += key[i];
 	buc = (sum) % numPartitions_;
 	if (buc < 0)
@@ -65,7 +65,7 @@ void* SparseHashInserter::operator()(void* recv)
         size_t numEvicted = 0;
         pao = pao_l[ind];
         PartialAgg** l = this_list + evict_list_ctr;
-        int p = partition(op->getKey(pao));
+        int p = 0; // partition(op->getKey(pao)); // only internal hashing for now
         if (p == 0) {
             bool ret = sparsehash_->insert((void*)op->getKey(pao), pao, l, numEvicted,
                     max_keys_per_token - evict_list_ctr);

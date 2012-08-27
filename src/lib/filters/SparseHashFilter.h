@@ -28,7 +28,7 @@ class SparseHashInserter :
             int num_part,
 			const size_t max_keys);
 	~SparseHashInserter();
-    int partition(const std::string& key);
+    int partition(const char* key) const;
 	void* operator()(void* pao_list);
   private:
     SparseHashMurmur* sparsehash_;

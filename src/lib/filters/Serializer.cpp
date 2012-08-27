@@ -44,10 +44,10 @@ Serializer::~Serializer()
 {
 }
 
-int Serializer::partition(const std::string& key)
+int Serializer::partition(const char* key) const
 {
 	int buc, sum = 0;
-	for (int i=0; i<key.size(); i++)
+	for (int i=0; i<strlen(key); i++)
 		sum += key[i];
 	buc = (sum + type) % num_buckets;
 	if (buc < 0)
