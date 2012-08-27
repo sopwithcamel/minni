@@ -43,6 +43,8 @@ size_t WCProtoOperations::createPAO(Token* t, PartialAgg** p) const
 
 bool WCProtoOperations::destroyPAO(PartialAgg* p) const
 {
+    WCProtoPAO* wp = (WCProtoPAO*)p;
+    delete wp;
 }
 
 bool WCProtoOperations::merge(PartialAgg* p, PartialAgg* mg) const
