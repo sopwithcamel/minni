@@ -17,17 +17,23 @@ WCProtoPAO::~WCProtoPAO()
 {
 }
 
+const char* WCProtoOperations::getKey(PartialAgg* p) const
+{
+    WCProtoPAO* wp = (WCProtoPAO*)p;
+    return wp->pb.key().c_str();
+}
+
+bool WCProtoOperations::setKey(PartialAgg* p, char* k) const
+{
+	WCProtoPAO* wp = (WCProtoPAO*)p;
+    wp->pb.set_key(k);
+}
+
 bool WCProtoOperations::sameKey(PartialAgg* p1, PartialAgg* p2) const
 {
     WCProtoPAO* wp1 = (WCProtoPAO*)p1;
     WCProtoPAO* wp2 = (WCProtoPAO*)p2;
     return (!wp1->pb.key().compare(wp2->pb.key()));
-}
-
-const char* WCProtoOperations::getKey(PartialAgg* p) const
-{
-    WCProtoPAO* wp = (WCProtoPAO*)p;
-    return wp->pb.key().c_str();
 }
 
 size_t WCProtoOperations::createPAO(Token* t, PartialAgg** p) const

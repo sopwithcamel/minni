@@ -8,8 +8,9 @@
 class WCProtoOperations : public ProtobufOperations
 {
   public:
-    bool sameKey(PartialAgg* p1, PartialAgg* p2) const;
     const char* getKey(PartialAgg* p) const;
+    bool setKey(PartialAgg* p, char* k) const;
+    bool sameKey(PartialAgg* p1, PartialAgg* p2) const;
 	size_t createPAO(Token* t, PartialAgg** p) const;
     bool destroyPAO(PartialAgg* p) const;
 	bool merge(PartialAgg* p, PartialAgg* mg) const;
