@@ -82,6 +82,7 @@ void* CompressTreeInserter::operator()(void* recv)
 	if (flush_on_complete || aggregator_->input_finished && 
                 tokens_processed == aggregator_->tot_input_tokens && 
                 aggregator_->can_exit) {
+/*
         uint64_t hash;
         void* ptrToHash = (void*)&hash;
         bool remain;
@@ -98,6 +99,13 @@ void* CompressTreeInserter::operator()(void* recv)
             }
             evict_list_ctr++;
         }
+*/
+        bool remain = cbt_->bulk_read(this_list, evict_list_ctr,
+                max_keys_per_token);
+        if (!remain)
+            aggregator_->can_exit &= true;
+        else
+            aggregator_->can_exit &= false;
 	}
 
     this_send->result = this_list;
