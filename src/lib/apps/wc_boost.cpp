@@ -17,13 +17,23 @@ WCBoostPAO::WCBoostPAO(char* wrd)
 
 WCBoostPAO::~WCBoostPAO()
 {
-    if (key)
+    if (key) {
         free(key);
+        key = NULL;
+    }
 }
 
 const char* WCBoostOperations::getKey(PartialAgg* p) const
 {
     return ((WCBoostPAO*)p)->key;
+}
+
+bool WCBoostOperations::setKey(PartialAgg* p, char* k) const
+{
+	WCBoostPAO* wp = (WCBoostPAO*)p;
+    // free the current key and set new key
+    free(wp->key);
+    wp->key = k;
 }
 
 bool WCBoostOperations::sameKey(PartialAgg* p1, PartialAgg* p2) const
