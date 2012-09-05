@@ -71,8 +71,7 @@ void* Serializer::operator()(void* pao_list)
     while(ind < recv_length) {
         pao = pao_l[ind];
         assert(pao != NULL);
-//        fprintf(stderr, "%d, %s\n", ind, pao->key().c_str());
-        buc = partition(op->getKey(pao));	
+        buc = partition(op->getKey(pao));
         switch (serializationMethod_) {
             case Operations::PROTOBUF:
                 ((ProtobufOperations*)op)->serialize(pao, coded_output_[buc]);
@@ -80,11 +79,6 @@ void* Serializer::operator()(void* pao_list)
             case Operations::BOOST:
                 ((BoostOperations*)op)->serialize(pao, oa_[buc]);
                 break;
-/*
-            case PartialAgg::HAND:
-                ((HandSerializedPartialAgg*)pao)->serialize(fl_[buc]);
-                break;
-*/
         }
         if (recv->destroy_pao)
             op->destroyPAO(pao);
