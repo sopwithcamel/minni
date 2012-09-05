@@ -55,6 +55,16 @@ class ConcurrentHashInserter : public AccumulatorInserter
                     if (destroyMerged_)
                         ops->destroyPAO(*it);
                 }
+/*
+                const char* key = ops->getKey(*it);
+                std::pair<Hashtable::iterator, bool> ret = ht->insert(
+                        std::make_pair<const char*, PartialAgg*>(key, *it));
+                if (!ret.second) { // not inserted
+                    ops->merge(ret.first->second, *it);
+                    if (destroyMerged_)
+                        ops->destroyPAO(*it);
+                }
+*/
             }
         }
     };
@@ -70,7 +80,9 @@ class ConcurrentHashInserter : public AccumulatorInserter
 	MultiBuffer<FilterInfo>* send_;
     MultiBuffer<PartialAgg*>* evicted_list_;
 
-    Hashtable::iterator evict_it;
+    Hashtable::const_iterator evict_it;
     size_t num_evicted;
+    size_t to_be_evicted;
+    bool to_be_cleared_;
 };
 #endif //LIB_CONCURRENTHASHFILTER_H
