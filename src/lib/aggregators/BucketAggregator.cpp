@@ -134,6 +134,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
         }
     }
 
+/*
     char* bucket_prefix = (char*)malloc(FILENAME_LENGTH);
     strcpy(bucket_prefix, fprefix.c_str());
     char jidstr[10];
@@ -148,6 +149,8 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 
     bucket_serializer_ = new Serializer(this, num_buckets, bucket_prefix);
     pipeline_list[0].add_filter(*bucket_serializer_);
+    free(bucket_prefix);
+*/
     
     /* Second pipeline: In this pipeline, a token is an entire bucket. In
      * other words, each pipeline stage is called once for each bucket to
@@ -156,6 +159,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
 
      * In this pipeline, a bucket is read back into memory (converted to 
      * PAOs again), aggregated using a hashtable, and serialized. */
+/*
     deserializer_ = new Deserializer(this, num_buckets, bucket_prefix,
             max_keys_per_token);
     pipeline_list[1].add_filter(*deserializer_);
@@ -163,15 +167,15 @@ BucketAggregator::BucketAggregator(const Config &cfg,
     if (!intagg.compare("cbt") || !intagg.compare("sparsehash")) {
         pipeline_list[1].add_filter(*bucket_inserter_);
     }
+*/
 
     char* final_path = (char*)malloc(FILENAME_LENGTH);
     strcpy(final_path, fprefix.c_str());
     strcat(final_path, outfile_);
     final_serializer_ = new Serializer(this, getNumPartitions(), 
             final_path); 
-    pipeline_list[1].add_filter(*final_serializer_);
+    pipeline_list[0].add_filter(*final_serializer_);
 
-    free(bucket_prefix);
     free(final_path);
 }
 
