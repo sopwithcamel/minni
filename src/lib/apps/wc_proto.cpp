@@ -47,6 +47,16 @@ size_t WCProtoOperations::createPAO(Token* t, PartialAgg** p) const
     return 1;
 }
 
+size_t WCProtoOperations::dividePAO(const PartialAgg& p,
+        PartialAgg** p_list) const
+{
+    WCProtoPAO* new_pao;
+	const WCProtoPAO* wp = (const WCProtoPAO*)(&p);
+    new_pao = new WCProtoPAO((char*)(wp->pb.key().c_str()));
+    p_list[0] = new_pao; 
+    return 1;
+}
+
 bool WCProtoOperations::destroyPAO(PartialAgg* p) const
 {
     WCProtoPAO* wp = (WCProtoPAO*)p;
@@ -58,14 +68,6 @@ bool WCProtoOperations::merge(PartialAgg* p, PartialAgg* mg) const
     WCProtoPAO* wp = (WCProtoPAO*)p;
     WCProtoPAO* wmp = (WCProtoPAO*)mg;
     wp->pb.set_count(wp->pb.count() + wmp->pb.count());
-}
-
-bool WCProtoOperations::serialize(PartialAgg* p,
-        CodedOutputStream* output) const
-{
-    WCProtoPAO* wp = (WCProtoPAO*)p;
-    output->WriteVarint32(wp->pb.ByteSize());
-    wp->pb.SerializeToCodedStream(output);
 }
 
 inline uint32_t WCProtoOperations::getSerializedSize(PartialAgg* p) const
@@ -90,18 +92,6 @@ bool WCProtoOperations::serialize(PartialAgg* p,
     wp->pb.SerializeToArray(output, size);
 }
 
-bool WCProtoOperations::deserialize(PartialAgg* p,
-        CodedInputStream* input) const
-{
-    uint32_t bytes;
-    WCProtoPAO* wp = (WCProtoPAO*)p;
-    input->ReadVarint32(&bytes);
-    CodedInputStream::Limit msgLimit = input->PushLimit(bytes);
-    bool ret = wp->pb.ParseFromCodedStream(input);
-    input->PopLimit(msgLimit);
-    return ret;
-}
-
 inline bool WCProtoOperations::deserialize(PartialAgg* p,
         const std::string& input) const
 {
@@ -114,6 +104,26 @@ inline bool WCProtoOperations::deserialize(PartialAgg* p,
 {
     WCProtoPAO* wp = (WCProtoPAO*)p;
     return wp->pb.ParseFromArray(input, size);
+}
+
+bool WCProtoOperations::serialize(PartialAgg* p,
+        CodedOutputStream* output) const
+{
+    WCProtoPAO* wp = (WCProtoPAO*)p;
+    output->WriteVarint32(wp->pb.ByteSize());
+    wp->pb.SerializeToCodedStream(output);
+}
+
+bool WCProtoOperations::deserialize(PartialAgg* p,
+        CodedInputStream* input) const
+{
+    uint32_t bytes;
+    WCProtoPAO* wp = (WCProtoPAO*)p;
+    input->ReadVarint32(&bytes);
+    CodedInputStream::Limit msgLimit = input->PushLimit(bytes);
+    bool ret = wp->pb.ParseFromCodedStream(input);
+    input->PopLimit(msgLimit);
+    return ret;
 }
 
 REGISTER(WCProtoOperations);

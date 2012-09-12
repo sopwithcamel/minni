@@ -23,6 +23,8 @@ class WCBoostOperations : public BoostOperations {
             const std::string& input) const;
     inline bool deserialize(PartialAgg* p,
             const char* input, size_t size) const;
+  private:
+    size_t dividePAO(const PartialAgg& p, PartialAgg** pl) const {}
 };
 
 class WCBoostPAO : public PartialAgg
