@@ -10,6 +10,7 @@
 #include "tbb/task_scheduler_init.h"
 #include "tbb/tbb_allocator.h"
 
+#include "AccumulatorFilter.h"
 #include "Deserializer.h"
 #include "Mapper.h"
 #include "PartialAgg.h"
@@ -38,6 +39,7 @@ class LocalIterativeAggregator :
     Deserializer* inp_deserializer_;
 
     PAOMitosis* pao_splitter_;
+	AccumulatorInserter* acc_int_inserter_;
 
     Serializer* final_serializer_;
     uint32_t iter_;

@@ -102,9 +102,10 @@ void* CompressTreeInserter::operator()(void* recv)
 */
         bool remain = cbt_->bulk_read(this_list, evict_list_ctr,
                 max_keys_per_token);
-        if (!remain)
+        if (!remain) {
             aggregator_->can_exit &= true;
-        else
+            tokens_processed = 0;
+        } else
             aggregator_->can_exit &= false;
 	}
 
