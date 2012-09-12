@@ -11,6 +11,7 @@ class PageRankProtoOperations : public ProtobufOperations
     const char* getKey(PartialAgg* p) const;
     bool setKey(PartialAgg* p, char* k) const;
     bool sameKey(PartialAgg* p1, PartialAgg* p2) const;
+	size_t createPAO(Token* t, PartialAgg** p) const;
     size_t dividePAO(const PartialAgg& p, PartialAgg** p_list) const;
     bool destroyPAO(PartialAgg* p) const;
 	bool merge(PartialAgg* p, PartialAgg* mg) const;
@@ -24,8 +25,6 @@ class PageRankProtoOperations : public ProtobufOperations
             google::protobuf::io::CodedOutputStream* output) const;
     inline bool deserialize(PartialAgg* p,
             google::protobuf::io::CodedInputStream* input) const;
-  private:
-	size_t createPAO(Token* t, PartialAgg** p) const {}
 };
 
 class PageRankProtoPAO : public PartialAgg {

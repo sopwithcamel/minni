@@ -38,6 +38,15 @@ bool PageRankProtoOperations::sameKey(PartialAgg* p1, PartialAgg* p2) const
     return (!wp1->pb.key().compare(wp2->pb.key()));
 }
 
+size_t PageRankProtoOperations::createPAO(Token* t, PartialAgg** p) const
+{
+    PageRankProtoPAO* new_pao;
+    string null_key = "";
+    new_pao = new PageRankProtoPAO(null_key, 0);
+    p[0] = new_pao; 
+    return 1;
+}
+
 size_t PageRankProtoOperations::dividePAO(const PartialAgg& p,
         PartialAgg** p_list) const
 {
@@ -45,19 +54,17 @@ size_t PageRankProtoOperations::dividePAO(const PartialAgg& p,
 	const PageRankProtoPAO* wp = static_cast<const PageRankProtoPAO*>(&p);
     uint32_t out_links = wp->pb.links_size();
 
-    // create a copy of the input PAO as the first output PAO
-    new_pao = new PageRankProtoPAO(wp->pb.key(), wp->pb.rank());
-    new_pao->pb.mutable_links()->CopyFrom(wp->pb.links());
-    p_list[0] = new_pao;
+    // the input PAO is the first output PAO
+    p_list[0] = (PartialAgg*)&p;
 
     if (out_links) {
         float pr_given = wp->pb.rank() / out_links;
         for (uint32_t i=1; i<=out_links; i++) {
-            new_pao = new PageRankProtoPAO(wp->pb.links(i), pr_given);
+            new_pao = new PageRankProtoPAO(wp->pb.links(i-1), pr_given);
             p_list[i] = new_pao;
         }
     }
-    return 1;
+    return out_links+1;
 }
 
 bool PageRankProtoOperations::destroyPAO(PartialAgg* p) const
@@ -71,7 +78,10 @@ bool PageRankProtoOperations::merge(PartialAgg* p, PartialAgg* mg) const
     PageRankProtoPAO* wp = (PageRankProtoPAO*)p;
     PageRankProtoPAO* wmp = (PageRankProtoPAO*)mg;
     wp->pb.set_rank(wp->pb.rank() + wmp->pb.rank());
-    wp->pb.mutable_links()->MergeFrom(wmp->pb.links());
+/*
+    for (int i=0; i<wmp->pb.links_size(); i++)
+        *(wp->pb.mutable_links()->Add()) = wmp->pb.links(i);
+*/
 }
 
 inline uint32_t PageRankProtoOperations::getSerializedSize(PartialAgg* p) const

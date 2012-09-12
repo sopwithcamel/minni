@@ -4,7 +4,8 @@ PAOMitosis::PAOMitosis(Aggregator* agg,
 			const size_t max_keys) :
 		aggregator(agg),
 		filter(serial_in_order),
-		max_keys_per_token(max_keys),
+//		max_keys_per_token(max_keys),
+		max_keys_per_token(10000000),
 		next_buffer(0)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
@@ -46,8 +47,6 @@ void* PAOMitosis::operator()(void* recv)
 		p = p_list[ind];
 		num_paos_added = op->dividePAO(*p, &this_pao_list[this_list_ctr]);
 		this_list_ctr += num_paos_added;
-        if (recv_list->destroy_pao)
-            op->destroyPAO(p);
 		assert(this_list_ctr < max_keys_per_token);
 
 		ind++;
