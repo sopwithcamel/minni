@@ -1,4 +1,5 @@
 #include "LocalIterativeAggregator.h"
+#include <stdio.h>
 
 /*
  * Initialize pipeline
@@ -35,7 +36,11 @@ LocalIterativeAggregator::LocalIterativeAggregator(const Config &cfg,
     outfile_ = (char*)malloc(FILENAME_LENGTH);
     strcpy(outfile_, fprefix.c_str());
     strcat(outfile_, outfile);
-    final_serializer_ = new Serializer(this, getNumPartitions(), outfile_); 
+
+    tempfile_ = (char*)malloc(FILENAME_LENGTH);
+    strcpy(tempfile_, fprefix.c_str());
+    strcat(tempfile_, "itertemp");
+    final_serializer_ = new Serializer(this, getNumPartitions(), tempfile_); 
     pipeline_list[0].add_filter(*final_serializer_);
 }
 
@@ -49,11 +54,22 @@ LocalIterativeAggregator::~LocalIterativeAggregator()
 
 void LocalIterativeAggregator::runPipeline()
 {
+    char* inp = (char*)malloc(FILENAME_LENGTH);
+    strcpy(inp, infile_);
+    strcat(inp, "0");
+    char* temp = (char*)malloc(FILENAME_LENGTH);
+    strcpy(temp, tempfile_);
+    strcat(temp, "0");
 	for (int i=0; i<3; i++) {
         fprintf(stderr, "Running the local-iterator pipeline (%d)\n", iter_++);
         pipeline_list[0].run(num_buffers);
         resetFlags();
+        if (rename(temp, inp) != 0)
+            fprintf(stderr, "Error renaming %s to %s\n", temp, inp);
 	}
+    if (rename(inp, outfile_) != 0)
+        fprintf(stderr, "Error renaming map output\n");
+    
     pipeline_list[0].clear();
     TimeLog::addTimeStamp(jobid, "Pipeline completed");
 }

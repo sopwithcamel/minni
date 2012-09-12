@@ -32,10 +32,11 @@ class LocalIterativeAggregator :
   private:
     MapInput* map_input; 
     char* infile_;
+    char* outfile_;
+    char* tempfile_;
     Deserializer* inp_deserializer_;
 
     Serializer* final_serializer_;
-    char* outfile_;
     uint32_t iter_;
 };
 
