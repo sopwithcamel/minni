@@ -1,7 +1,7 @@
 #EXTRA_DIST = wordcount.cpp wordcount.h wordcountpao.pb.cc wordcountpao.pb.h  wcplain.cpp wcplain.h
 #			 semantic.cpp semantic. semanticpao.pb.cc semanticpao.pb.h	# img.cpp img.h semantic.cpp semantic.h
 
-pkglib_LTLIBRARIES = wc_boost.la wc_proto.la
+pkglib_LTLIBRARIES = wc_boost.la wc_proto.la pr_proto.la
 #wcplain.la wchand.la \
 #					wcdigram.la semantic.la semantic_plain.la \
 #					digplain.la img.la imgclass.la
@@ -20,9 +20,9 @@ ALL_CPPFLAGS = $(THRIFT_CFLAGS) \
 			-I/usr/local/WordNet-3.0/include/
 			
 
-#semantic_la_SOURCES = semantic.cpp semanticpao.pb.cc
-#semantic_la_LDFLAGS = -module -lprotobuf -lwordnet-3.0
-#semantic_la_CPPFLAGS = $(ALL_CPPFLAGS)
+pr_proto_la_SOURCES = pr_proto.cpp pagerank.pb.cc
+pr_proto_la_LDFLAGS = -module -lprotobuf
+pr_proto_la_CPPFLAGS = $(ALL_CPPFLAGS)
 #
 wc_boost_la_SOURCES = wc_boost.cpp
 wc_boost_la_LDFLAGS = -module

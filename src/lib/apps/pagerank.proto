@@ -1,0 +1,9 @@
+package pagerank;
+
+option optimize_for = SPEED;
+
+message pao {
+    required bytes key = 1;
+    required float rank = 2;
+    repeated string links = 3 [packed=true];
+}
