@@ -30,7 +30,7 @@ class Aggregator
 			uint64_t num_part, 
 			Operations* _ops);
 	virtual ~Aggregator();
-	void runPipeline();
+	virtual void runPipeline();
     const Operations* const ops() const;
 
 	tbb::pipeline* pipeline_list;	
@@ -47,7 +47,7 @@ class Aggregator
 	uint64_t getNumPartitions() const;
 	AggType getType() const;
 	virtual bool repeatPipeline(uint64_t it);
-  private:
+  protected:
     JobID jobid;
 	AggType type;
 	uint64_t num_threads;
