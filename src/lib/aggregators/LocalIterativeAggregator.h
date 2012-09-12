@@ -13,6 +13,7 @@
 #include "Deserializer.h"
 #include "Mapper.h"
 #include "PartialAgg.h"
+#include "PAOMitosis.h"
 #include "Serializer.h"
 #include "util.h"
 
@@ -35,6 +36,8 @@ class LocalIterativeAggregator :
     char* outfile_;
     char* tempfile_;
     Deserializer* inp_deserializer_;
+
+    PAOMitosis* pao_splitter_;
 
     Serializer* final_serializer_;
     uint32_t iter_;

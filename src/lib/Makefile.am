@@ -19,6 +19,7 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			filters/LocalReader.cpp \
 			filters/MemCache.cpp \
 			filters/PAOCreator.cpp \
+			filters/PAOMitosis.cpp \
 			filters/Serializer.cpp \
 			filters/Sorter.cpp \
 			filters/SparseHashFilter.cpp \
