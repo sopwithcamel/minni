@@ -31,11 +31,11 @@ class LocalIterativeAggregator :
     void runPipeline();
   private:
     MapInput* map_input; 
-    const char* infile_;
+    char* infile_;
     Deserializer* inp_deserializer_;
 
     Serializer* final_serializer_;
-    const char* outfile_;
+    char* outfile_;
     uint32_t iter_;
 };
 

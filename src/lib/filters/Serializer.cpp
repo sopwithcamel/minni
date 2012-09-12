@@ -6,42 +6,21 @@ using namespace google::protobuf::io;
 
 Serializer::Serializer(Aggregator* agg,
 			const uint64_t nb, 
-			const char* outfile_prefix) :
+			const char* o_prefix) :
 		filter(serial_in_order),
 		aggregator(agg),
 		already_partitioned(false),
 		num_buckets(nb),
 		tokens_processed(0)
 {
-	char num[10];
-	char* fname = (char*)malloc(FILENAME_LENGTH);
-
-    serializationMethod_ = aggregator->ops()->getSerializationMethod();
-
-	for (int i=0; i<num_buckets; i++) {
-		sprintf(num, "%d", i);
-		strcpy(fname, outfile_prefix);
-		strcat(fname, num);
-
-        std::ofstream* of = new std::ofstream(fname, ios::out|ios::binary);
-        fl_.push_back(of);
-        switch (serializationMethod_) {
-            case Operations::PROTOBUF:
-                raw_output_.push_back(new OstreamOutputStream(fl_[i]));
-                coded_output_.push_back(new CodedOutputStream(raw_output_[i]));
-                break;
-            case Operations::BOOST:
-                oa_.push_back(new boost::archive::binary_oarchive(*fl_[i]));
-                break;
-        }
-		assert(NULL != fl_[i]);
-	}
-	free(fname);
 	type = aggregator->getType();
+    outfile_prefix = (char*)malloc(FILENAME_LENGTH);
+    strcpy(outfile_prefix, o_prefix);
 }
 
 Serializer::~Serializer()
 {
+    free(outfile_prefix);
 }
 
 int Serializer::partition(const char* key) const
@@ -63,6 +42,33 @@ void* Serializer::operator()(void* pao_list)
 	FilterInfo* recv = (FilterInfo*)pao_list;
 	PartialAgg** pao_l = (PartialAgg**)recv->result;
 	uint64_t recv_length = (uint64_t)recv->length;
+
+    if (tokens_processed == 0) {
+        char num[10];
+        char* fname = (char*)malloc(FILENAME_LENGTH);
+        serializationMethod_ = aggregator->ops()->getSerializationMethod();
+
+        for (int i=0; i<num_buckets; i++) {
+            sprintf(num, "%d", i);
+            strcpy(fname, outfile_prefix);
+            strcat(fname, num);
+
+            std::ofstream* of = new std::ofstream(fname, ios::out|ios::binary);
+            fl_.push_back(of);
+            switch (serializationMethod_) {
+                case Operations::PROTOBUF:
+                    raw_output_.push_back(new OstreamOutputStream(fl_[i]));
+                    coded_output_.push_back(new CodedOutputStream(raw_output_[i]));
+                    break;
+                case Operations::BOOST:
+                    oa_.push_back(new boost::archive::binary_oarchive(*fl_[i]));
+                    break;
+            }
+            assert(NULL != fl_[i]);
+        }
+        free(fname);
+    }
+
     tokens_processed++;
 
 	uint64_t ind = 0;
@@ -105,6 +111,12 @@ void* Serializer::operator()(void* pao_list)
             fl_[i]->close();
             delete fl_[i];
         }
+        // reset for possible reuse
+        fl_.clear();
+        raw_output_.clear();
+        coded_output_.clear();
+        oa_.clear();
+        tokens_processed = 0;
         aggregator->can_exit &= true;
     } else
         aggregator->can_exit &= false;

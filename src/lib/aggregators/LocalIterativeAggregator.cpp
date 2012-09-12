@@ -12,10 +12,9 @@ LocalIterativeAggregator::LocalIterativeAggregator(const Config &cfg,
                 Operations* ops,
                 const char* outfile):
         Aggregator(cfg, jid, type, 2, num_part, ops),
-        infile_(infile),
         inp_deserializer_(NULL),
         final_serializer_(NULL),     
-        outfile_(outfile)
+        iter_(0)
 {
     /* Set up configuration options */
     Setting& c_token_size = readConfigFile(cfg, "minni.tbb.token_size");
@@ -27,40 +26,35 @@ LocalIterativeAggregator::LocalIterativeAggregator(const Config &cfg,
     Setting& c_fprefix = readConfigFile(cfg, "minni.common.file_prefix");
     string fprefix = (const char*)c_fprefix;
 
-    char* input_file = (char*)malloc(FILENAME_LENGTH);
-    strcpy(input_file, fprefix.c_str());
-    strcat(input_file, "input");
-    inp_deserializer_ = new Deserializer(this, 1, input_file,
-            max_keys_per_token);
+    infile_= (char*)malloc(FILENAME_LENGTH);
+    strcpy(infile_, fprefix.c_str());
+    strcat(infile_, "input");
+    inp_deserializer_ = new Deserializer(this, 1, infile_, max_keys_per_token);
     pipeline_list[0].add_filter(*inp_deserializer_);
-    free(input_file);
 
-    char* final_path = (char*)malloc(FILENAME_LENGTH);
-    strcpy(final_path, fprefix.c_str());
-    strcat(final_path, outfile_);
-    final_serializer_ = new Serializer(this, getNumPartitions(), 
-            final_path); 
+    outfile_ = (char*)malloc(FILENAME_LENGTH);
+    strcpy(outfile_, fprefix.c_str());
+    strcat(outfile_, outfile);
+    final_serializer_ = new Serializer(this, getNumPartitions(), outfile_); 
     pipeline_list[0].add_filter(*final_serializer_);
-
-    free(final_path);
 }
 
 LocalIterativeAggregator::~LocalIterativeAggregator()
 {
-    if (inp_deserializer_)
-        delete(inp_deserializer_);
-    if (final_serializer_)
-        delete final_serializer_;
+    free(infile_);
+    free(outfile_);
+    delete(inp_deserializer_);
+    delete final_serializer_;
 }
 
 void LocalIterativeAggregator::runPipeline()
 {
-	for (int i=0; i<num_pipelines; i++) {
-        fprintf(stderr, "Running the local-iterator pipeline %d\n", i);
-        pipeline_list[i].run(num_buffers);
+	for (int i=0; i<3; i++) {
+        fprintf(stderr, "Running the local-iterator pipeline (%d)\n", iter_++);
+        pipeline_list[0].run(num_buffers);
         resetFlags();
-        pipeline_list[i].clear();
-		TimeLog::addTimeStamp(jobid, "Pipeline completed");
 	}
+    pipeline_list[0].clear();
+    TimeLog::addTimeStamp(jobid, "Pipeline completed");
 }
 

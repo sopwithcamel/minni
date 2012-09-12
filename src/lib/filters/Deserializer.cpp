@@ -159,6 +159,7 @@ void* Deserializer::operator()(void*)
 		if (buckets_processed == num_buckets) {
 			aggregator->input_finished = true;
             aggregator->can_exit = true;
+            buckets_processed = 0;
 		}
 	} else
         this_send->flush_hash = false;
