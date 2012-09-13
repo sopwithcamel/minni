@@ -46,6 +46,8 @@ void* PAOMitosis::operator()(void* recv)
 	while (ind < recv_length) {
 		p = p_list[ind];
 		num_paos_added = op->dividePAO(*p, &this_pao_list[this_list_ctr]);
+        if (recv_list->destroy_pao)
+            op->destroyPAO(p);
 		this_list_ctr += num_paos_added;
 		assert(this_list_ctr < max_keys_per_token);
 

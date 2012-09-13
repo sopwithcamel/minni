@@ -54,8 +54,11 @@ size_t PageRankProtoOperations::dividePAO(const PartialAgg& p,
 	const PageRankProtoPAO* wp = static_cast<const PageRankProtoPAO*>(&p);
     uint32_t out_links = wp->pb.links_size();
 
-    // the input PAO is the first output PAO
-    p_list[0] = (PartialAgg*)&p;
+    // copy the input PAO as the first output PAO
+    new_pao = new PageRankProtoPAO(wp->pb.key(), 0);
+    for (int i=0; i<out_links; i++)
+        *(new_pao->pb.mutable_links()->Add()) = wp->pb.links(i);
+    p_list[0] = new_pao;
 
     if (out_links) {
         float pr_given = wp->pb.rank() / out_links;
@@ -78,10 +81,8 @@ bool PageRankProtoOperations::merge(PartialAgg* p, PartialAgg* mg) const
     PageRankProtoPAO* wp = (PageRankProtoPAO*)p;
     PageRankProtoPAO* wmp = (PageRankProtoPAO*)mg;
     wp->pb.set_rank(wp->pb.rank() + wmp->pb.rank());
-/*
     for (int i=0; i<wmp->pb.links_size(); i++)
         *(wp->pb.mutable_links()->Add()) = wmp->pb.links(i);
-*/
 }
 
 inline uint32_t PageRankProtoOperations::getSerializedSize(PartialAgg* p) const
