@@ -96,6 +96,12 @@ LocalIterativeAggregator::~LocalIterativeAggregator()
     delete final_serializer_;
 }
 
+void LocalIterativeAggregator::resetFilters()
+{
+    acc_int_inserter_->reset();
+    final_serializer_->reset();
+}
+
 void LocalIterativeAggregator::runPipeline()
 {
     char* inp = (char*)malloc(FILENAME_LENGTH);
@@ -107,10 +113,11 @@ void LocalIterativeAggregator::runPipeline()
     char* out = (char*)malloc(FILENAME_LENGTH);
     strcpy(out, outfile_);
     strcat(out, "0");
-	for (int i=0; i<3; i++) {
+	for (int i=0; i<5; i++) {
         fprintf(stderr, "Running the local-iterator pipeline (%d)\n", iter_++);
         pipeline_list[0].run(num_buffers);
         resetFlags();
+        resetFilters();
         if (rename(temp, inp) != 0)
             fprintf(stderr, "Error renaming %s to %s\n", temp, inp);
 	}

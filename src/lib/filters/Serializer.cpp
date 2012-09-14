@@ -34,6 +34,11 @@ int Serializer::partition(const char* key) const
 	return buc;
 }
 
+void Serializer::reset()
+{
+    tokens_processed = 0;
+}
+
 void* Serializer::operator()(void* pao_list)
 {
 	PartialAgg* pao;

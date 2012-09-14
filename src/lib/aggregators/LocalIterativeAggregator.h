@@ -43,6 +43,8 @@ class LocalIterativeAggregator :
 
     Serializer* final_serializer_;
     uint32_t iter_;
+
+    void resetFilters();
 };
 
 #endif // LIB_BUCKETAGGREGATOR_H

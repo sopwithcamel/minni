@@ -12,3 +12,8 @@ AccumulatorInserter::AccumulatorInserter(Aggregator* agg,
     tokens_processed(0)
 {
 }
+
+void AccumulatorInserter::reset()
+{
+    tokens_processed = 0;
+}

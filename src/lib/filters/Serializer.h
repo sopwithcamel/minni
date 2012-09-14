@@ -31,6 +31,7 @@ public:
 			const uint64_t nb,
 			const char* outfile_prefix);
 	~Serializer();
+    void reset();
 private:
 	Aggregator* aggregator;
 	AggType type;

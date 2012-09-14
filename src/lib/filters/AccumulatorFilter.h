@@ -21,6 +21,7 @@ class AccumulatorInserter :
             const Config &cfg,
 			size_t max_keys);
 	virtual ~AccumulatorInserter() {}
+    void reset();
 	void* operator()(void* pao_list) {}
   protected:
 	Aggregator* aggregator_;
