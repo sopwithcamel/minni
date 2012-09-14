@@ -65,8 +65,10 @@ size_t PageRankBoostOperations::dividePAO(const PartialAgg& p,
     // copy the input PAO as the first output PAO
     new_pao = new PageRankBoostPAO(wp->key, 0);
     new_pao->num_links = wp->num_links;
-    new_pao->links = (char*)malloc(strlen(wp->links) + 1);
-    strcpy(new_pao->links, wp->links);
+    if (wp->num_links > 0) {
+        new_pao->links = (char*)malloc(strlen(wp->links) + 1);
+        strcpy(new_pao->links, wp->links);
+    }
     p_list[0] = new_pao;
 
     if (wp->num_links > 0) {
@@ -75,7 +77,7 @@ size_t PageRankBoostOperations::dividePAO(const PartialAgg& p,
         string temp(wp->links);
         stringstream ss(temp);
         string l;
-        for (int i=0; i<wp->num_links; i++) {
+        for (int i=1; i<=wp->num_links; i++) {
             getline(ss, l, ' ');
             new_pao = new PageRankBoostPAO((char*)l.c_str(), pr_given);
             p_list[i] = new_pao;
@@ -112,15 +114,17 @@ bool PageRankBoostOperations::serialize(PartialAgg* p,
         boost::archive::binary_oarchive* output) const
 {
     PageRankBoostPAO* wp = (PageRankBoostPAO*)p;
-    uint32_t len = strlen(wp->key) + 1;
+    uint32_t len = strlen(wp->key);
     (*output) << len;
-    (*output) << boost::serialization::make_binary_object(wp->key, len);
+    string temp(wp->key);
+    (*output) << temp;
     (*output) << wp->rank;
     (*output) << wp->num_links;
     if (wp->num_links > 0) {
         len = strlen(wp->links) + 1;
         (*output) << len;
-        (*output) << boost::serialization::make_binary_object(wp->links, len);
+        temp = wp->links;
+        (*output) << temp;
     }
 }
 
@@ -132,13 +136,17 @@ bool PageRankBoostOperations::deserialize(PartialAgg* p,
         uint32_t len;
         (*input) >> len;
         wp->key = (char*)malloc(len + 1);
-        (*input) >> boost::serialization::make_binary_object(wp->key, len);
+        string key_temp;
+        (*input) >> key_temp;
+        strcpy(wp->key, key_temp.c_str());
         (*input) >> wp->rank;
         (*input) >> wp->num_links;
         if (wp->num_links > 0) {
             (*input) >> len;
             wp->links = (char*)malloc(len + 1);
-            (*input) >> boost::serialization::make_binary_object(wp->links, len);
+            string links_temp;
+            (*input) >> links_temp;
+            strcpy(wp->links, links_temp.c_str());
         }
         return true;
     } catch (...) {
