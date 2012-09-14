@@ -121,9 +121,9 @@ bool PageRankBoostOperations::serialize(PartialAgg* p,
     (*output) << wp->rank;
     (*output) << wp->num_links;
     if (wp->num_links > 0) {
-        len = strlen(wp->links) + 1;
+        len = strlen(wp->links);
         (*output) << len;
-        temp = wp->links;
+        temp = string(wp->links);
         (*output) << temp;
     }
 }
