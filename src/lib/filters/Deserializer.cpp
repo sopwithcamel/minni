@@ -92,8 +92,6 @@ void* Deserializer::operator()(void*)
         switch (serializationMethod_) {
             case Operations::PROTOBUF:
                 raw_input = new IstreamInputStream(cur_bucket);
-                coded_input = new CodedInputStream(raw_input);
-                coded_input->SetTotalBytesLimit(1073741824, -1);
                 break;
             case Operations::BOOST:
                 ia_ = new boost::archive::binary_iarchive(*cur_bucket);
@@ -102,6 +100,13 @@ void* Deserializer::operator()(void*)
         assert(cur_bucket->is_open());
 		fprintf(stderr, "opening file %s\n", file_name.c_str());
 	}
+
+    switch (serializationMethod_) {
+        case Operations::PROTOBUF:
+            coded_input = new CodedInputStream(raw_input);
+            coded_input->SetTotalBytesLimit(1073741824, -1);
+            break;
+    }
 
     bool eof_reached = false;
     const Operations* const op = aggregator->ops();
@@ -139,6 +144,12 @@ void* Deserializer::operator()(void*)
         if (pao_list_ctr == max_keys_per_token - 1) {
             break;
         }
+    }
+
+    switch (serializationMethod_) {
+        case Operations::PROTOBUF:
+            delete coded_input;
+            break;
     }
 
 	if (eof_reached) {
