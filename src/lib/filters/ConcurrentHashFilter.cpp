@@ -55,7 +55,7 @@ void* ConcurrentHashInserter::operator()(void* recv)
 	// Insert PAOs
     if (recv_length > 0) {
         parallel_for(tbb::blocked_range<PartialAgg**>(pao_l,
-                pao_l+recv_length, recv_length/4),
+                pao_l+recv_length, recv_length/6),
                 Aggregate(ht_, recv_list->destroy_pao,
                 aggregator_->ops()));
     }
@@ -66,14 +66,15 @@ void* ConcurrentHashInserter::operator()(void* recv)
             evict_it = ht_->begin();
             to_be_evicted = ht_->size();
         }
-        for (; num_evicted + evict_list_ctr < to_be_evicted; evict_it++) {
-            if (aggregator_->ops()->getKey(evict_it->second))
-                this_list[evict_list_ctr++] = evict_it->second;
+        for (; num_evicted + evict_list_ctr < to_be_evicted;
+                evict_it++, evict_list_ctr++) {
             if (evict_list_ctr == max_keys_per_token)
                 break;
+            if (aggregator_->ops()->getKey(evict_it->second))
+                this_list[evict_list_ctr] = evict_it->second;
         }
         num_evicted += evict_list_ctr;
-        fprintf(stderr, "Hash; sent %ld/%ld\n", ht_->size(), num_evicted, to_be_evicted);
+//        fprintf(stderr, "Hash; sent %ld/%ld\n", ht_->size(), num_evicted, to_be_evicted);
         if (evict_list_ctr < max_keys_per_token) {
             aggregator_->can_exit &= true;
             // don't clear right now since that messes with the serializer
