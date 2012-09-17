@@ -4,15 +4,9 @@ using namespace google::protobuf::io;
 
 #define KEY_SIZE        10
 
-WCDigProtoPAO::WCDigProtoPAO(char* one, char* two)
+WCDigProtoPAO::WCDigProtoPAO()
 {
-    if (one) {
-        pb.set_key(one);
-        pb.mutable_key()->append("-");
-        pb.mutable_key()->append(two);
-        pb.set_count(1);
-    } else
-        pb.set_count(0);
+    pb.set_count(0);
 }
 
 WCDigProtoPAO::~WCDigProtoPAO()
@@ -40,12 +34,15 @@ bool WCProtoOperations::sameKey(PartialAgg* p1, PartialAgg* p2) const
 
 size_t WCProtoOperations::createPAO(Token* t, PartialAgg** p) const
 {
-    WCDigProtoPAO* new_pao;
-    if (t == NULL)
-        new_pao = new WCDigProtoPAO(NULL, NULL);
-    else    
-        new_pao = new WCDigProtoPAO((char*)(t->tokens[0]), (char*)(t->tokens[1]));
-    p[0] = new_pao; 
+    if (t == NULL) {
+        p[0] = new WCDigProtoPAO();
+    } else {
+        WCDigProtoPAO* wp = (WCDigProtoPAO*)(p[0]);
+        wp->pb.set_key((char*)(t->tokens[0]));
+        wp->pb.mutable_key()->append("-");
+        wp->pb.mutable_key()->append((char*)(t->tokens[1]));
+        wp->pb.set_count(1);
+    }
     return 1;
 }
 

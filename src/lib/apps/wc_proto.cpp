@@ -4,13 +4,9 @@ using namespace google::protobuf::io;
 
 #define KEY_SIZE        10
 
-WCProtoPAO::WCProtoPAO(char* wrd)
+WCProtoPAO::WCProtoPAO()
 {
-    if (wrd) {
-        pb.set_key(wrd);
-        pb.set_count(1);
-    } else
-        pb.set_count(0);
+    pb.set_count(0);
 }
 
 WCProtoPAO::~WCProtoPAO()
@@ -38,22 +34,19 @@ bool WCProtoOperations::sameKey(PartialAgg* p1, PartialAgg* p2) const
 
 size_t WCProtoOperations::createPAO(Token* t, PartialAgg** p) const
 {
-    WCProtoPAO* new_pao;
-    if (t == NULL)
-        new_pao = new WCProtoPAO(NULL);
-    else    
-        new_pao = new WCProtoPAO((char*)t->tokens[0]);
-    p[0] = new_pao; 
+    if (t == NULL) {
+        p[0] = new WCProtoPAO();
+    } else {
+        WCProtoPAO* wp = (WCProtoPAO*)(p[0]);
+        wp->pb.set_key((char*)t->tokens[0]);
+        wp->pb.set_count(1);
+    }
     return 1;
 }
 
 size_t WCProtoOperations::dividePAO(const PartialAgg& p,
         PartialAgg** p_list) const
 {
-    WCProtoPAO* new_pao;
-	const WCProtoPAO* wp = (const WCProtoPAO*)(&p);
-    new_pao = new WCProtoPAO((char*)(wp->pb.key().c_str()));
-    p_list[0] = new_pao; 
     return 1;
 }
 

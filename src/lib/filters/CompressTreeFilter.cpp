@@ -53,49 +53,12 @@ void* CompressTreeInserter::operator()(void* recv)
 	next_buffer = (next_buffer + 1) % aggregator_->getNumBuffers();
     tokens_processed++;
 
-    size_t evict_list_ctr = 0;
-/*
-    while (ind < recv_length) {
-        pao = pao_l[ind];
-        switch (hf_) {
-            case HashUtil::MURMUR:
-                hashv = HashUtil::MurmurHash(pao->key(), 42);
-                break;
-            case HashUtil::BOB:
-                hashv = HashUtil::BobHash(pao->key(), 42);
-                break;
-        }
-
-        ptrToHash = (void*)&hashv;
-        cbt_->insert(ptrToHash, pao);
-        if (recv_list->destroy_pao)
-            destroyPAO(pao);
-        ind++;
-    }
-*/
-    cbt_->bulk_insert(pao_l, recv_length, recv_list->destroy_pao);
+    cbt_->bulk_insert(pao_l, recv_length);
     
+    size_t evict_list_ctr = 0;
 	if (flush_on_complete || aggregator_->input_finished && 
                 tokens_processed == aggregator_->tot_input_tokens && 
                 aggregator_->can_exit) {
-/*
-        uint64_t hash;
-        void* ptrToHash = (void*)&hash;
-        bool remain;
-        while(true) {
-            if (evict_list_ctr == max_keys_per_token) {
-                aggregator_->stall_pipeline |= true;
-                aggregator_->can_exit &= false;
-                break;
-            }
-            remain = cbt_->nextValue(ptrToHash, this_list[evict_list_ctr]);
-            if (!remain) {
-                aggregator_->can_exit &= true;
-                break;
-            }
-            evict_list_ctr++;
-        }
-*/
         bool remain = cbt_->bulk_read(this_list, evict_list_ctr,
                 max_keys_per_token);
         if (!remain) {

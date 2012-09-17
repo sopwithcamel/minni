@@ -30,7 +30,7 @@ class WCProtoOperations : public ProtobufOperations
 class WCProtoPAO : public PartialAgg {
     friend class WCProtoOperations;
   public:
-	WCProtoPAO(char* wrd);
+	WCProtoPAO();
 	~WCProtoPAO();
   private:
     wordcount::pao pb;
