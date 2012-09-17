@@ -23,12 +23,13 @@
 
 class PAOCreator : public tbb::filter {
 public:
-	PAOCreator(Aggregator* agg, 
-			size_t max_keys);
+	PAOCreator(Aggregator* agg, size_t max_keys, bool ref);
 	~PAOCreator();
 private:
 	Aggregator* aggregator;
 	size_t next_buffer;
+    /* If flag is true, PAOs are reused */
+    bool refresh_paos;
 	const size_t max_keys_per_token;
 	MultiBuffer<PartialAgg*>* pao_list;
 	MultiBuffer<FilterInfo>* send;
