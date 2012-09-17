@@ -73,11 +73,7 @@ void* CompressTreeInserter::operator()(void* recv)
         ind++;
     }
 */
-    cbt_->bulk_insert(pao_l, recv_length);
-    if (recv_list->destroy_pao) {
-        for (int i=0; i<recv_length; i++)
-            aggregator_->ops()->destroyPAO(pao_l[i]);
-    }
+    cbt_->bulk_insert(pao_l, recv_length, recv_list->destroy_pao);
     
 	if (flush_on_complete || aggregator_->input_finished && 
                 tokens_processed == aggregator_->tot_input_tokens && 
