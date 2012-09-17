@@ -76,7 +76,13 @@ HashsortAggregator::HashsortAggregator(const Config &cfg,
 			pipeline_list[0].add_filter(*filetoker);
 		}
 
-		creator = new PAOCreator(this, max_keys_per_token);
+        if (!intagg.compare("cbt")) {
+            creator = new PAOCreator(this, max_keys_per_token,
+                    /*refresh_paos=*/true);
+        } else {
+            creator = new PAOCreator(this, max_keys_per_token,
+                    /*refresh_paos=*/false);
+        }
 		pipeline_list[0].add_filter(*creator);
 	} else if (type == Reduce) {
 		char* input_file = (char*)malloc(FILENAME_LENGTH);

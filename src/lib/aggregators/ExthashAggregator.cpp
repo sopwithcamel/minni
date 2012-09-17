@@ -87,7 +87,13 @@ ExthashAggregator::ExthashAggregator(const Config &cfg,
             pipeline_list[0].add_filter(*localreader_);
         }
 
-        creator_ = new PAOCreator(this, max_keys_per_token);
+        if (!intagg.compare("cbt")) {
+            creator_ = new PAOCreator(this, max_keys_per_token,
+                    /*refresh_paos=*/true);
+        } else {
+            creator_ = new PAOCreator(this, max_keys_per_token,
+                    /*refresh_paos=*/false);
+        }
         pipeline_list[0].add_filter(*creator_);
 
     } else if (type == Reduce) {
