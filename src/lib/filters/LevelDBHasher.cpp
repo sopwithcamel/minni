@@ -40,8 +40,8 @@ ExternalHasher::~ExternalHasher()
 void* ExternalHasher::operator()(void* recv)
 {
 	char *key;
-	string insert_value;
-    string read_value;
+	std::string insert_value;
+    std::string read_value;
 	size_t ind = 0;
 	PartialAgg* pao;
 

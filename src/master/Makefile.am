@@ -25,4 +25,5 @@ test_LDFLAGS = $(TBB_LIBS) \
 	       -lkfsCommon \
 	       -lqcdio \
 	       -lboost_regex \
-		-lconfig++
+		   -lconfig++ \
+		   -ltbb

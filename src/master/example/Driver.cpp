@@ -10,6 +10,8 @@
 #define PRODUCTION_TEST 1
 #define KDFS_TEST_PATH "/test/foo.log"
 
+using namespace libconfig;
+
 int main(int argc, char* args[])
 {
 	if (PRODUCTION_TEST)
