@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <tbb/mutex.h>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -13,14 +15,9 @@
 #include <time.h>
 #include <libconfig.h++>
 
-using std::string;
-using std::vector;
-using std::ofstream;
-using namespace libconfig;
-
-extern Setting& readConfigFile(const Config &cfg, const char* set_name);
-extern bool openConfigFile(Config &cfg);
-extern bool configExists(const Config &cfg, const char* set_name);
+extern libconfig::Setting& readConfigFile(const libconfig::Config &cfg, const char* set_name);
+extern bool openConfigFile(libconfig::Config &cfg);
+extern bool configExists(const libconfig::Config &cfg, const char* set_name);
 
 class TimeStamp {
 public:
@@ -39,20 +36,23 @@ private:
 	~TimeLog() {};
 public:
 	static std::vector<TimeStamp> timelog;
+    static tbb::mutex mutex_;
 	static void addTimeStamp(int jobid, std::string str)
 	{
-        if (jobid == 0 || jobid == 1) {
-            TimeStamp* ts;
-            time_t ltime = time(NULL);
-            ts = new TimeStamp(str, ltime);
-            timelog.push_back(*ts);		
-        }
+        mutex_.lock();
+        TimeStamp* ts;
+        time_t ltime = time(NULL);
+        std::stringstream write_str;
+        write_str << jobid << ": " << str;
+        ts = new TimeStamp(write_str.str(), ltime);
+        timelog.push_back(*ts);		
+        mutex_.unlock();
 	}
 		
 	static void dumpLog() {
 		std::ofstream of;
-		of.open("/localfs/hamur/timelog", ofstream::app);
-		for (vector<TimeStamp>::iterator it = timelog.begin(); 
+		of.open("/localfs/hamur/timelog", std::ofstream::app);
+		for (std::vector<TimeStamp>::iterator it = timelog.begin(); 
 				it != timelog.end(); it++) {
 			of << it->tag << ": " << it->tim << std::endl;
 		}

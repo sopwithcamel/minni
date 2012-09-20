@@ -4,7 +4,10 @@
 #include "util.h"
 #include "Defs.h"
 
+using namespace libconfig;
+
 std::vector<TimeStamp> TimeLog::timelog;
+tbb::mutex TimeLog::mutex_;
 
 Setting& readConfigFile(const Config &cfg, const char* set_name)
 {
