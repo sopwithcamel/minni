@@ -1,7 +1,10 @@
 #EXTRA_DIST = wordcount.cpp wordcount.h wordcountpao.pb.cc wordcountpao.pb.h  wcplain.cpp wcplain.h
 #			 semantic.cpp semantic. semanticpao.pb.cc semanticpao.pb.h	# img.cpp img.h semantic.cpp semantic.h
 
-pkglib_LTLIBRARIES = wc_boost.la wc_proto.la wcdig_proto.la wcdig_boost.la pr_proto.la pr_boost.la
+pkglib_LTLIBRARIES = wc_boost.la wc_proto.la \
+					wcdig_proto.la wcdig_boost.la \
+					wctrig_proto.la wctrig_boost.la \
+					pr_proto.la pr_boost.la
 #wcplain.la wchand.la \
 #					wcdigram.la semantic.la semantic_plain.la \
 #					digplain.la img.la imgclass.la
@@ -43,6 +46,14 @@ wcdig_proto_la_CPPFLAGS = $(ALL_CPPFLAGS)
 wcdig_boost_la_SOURCES = wcdig_boost.cpp
 wcdig_boost_la_LDFLAGS = -module
 wcdig_boost_la_CPPFLAGS = $(ALL_CPPFLAGS)
+#
+wctrig_proto_la_SOURCES = wctrig_proto.cpp wcproto.pb.cc
+wctrig_proto_la_LDFLAGS = -module
+wctrig_proto_la_CPPFLAGS = $(ALL_CPPFLAGS)
+#
+wctrig_boost_la_SOURCES = wctrig_boost.cpp
+wctrig_boost_la_LDFLAGS = -module
+wctrig_boost_la_CPPFLAGS = $(ALL_CPPFLAGS)
 #
 #wcdigram_la_SOURCES = wcdigram.cpp wcdigram.pb.cc
 #wcdigram_la_LDFLAGS = -module -lprotobuf
