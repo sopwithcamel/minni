@@ -1,5 +1,7 @@
 #include "LocalReader.h"
+#include <sstream>
 
+using namespace std;
 #define BUF_SIZE    65535
 
 LocalReader::LocalReader(Aggregator* agg,
@@ -66,6 +68,9 @@ void* LocalReader::operator()(void*)
         if (aggregator->can_exit)
             return NULL;
         else {
+            aggregator->can_exit = true;
+            aggregator->stall_pipeline = false;
+
             this_send->result = NULL;
             this_send->length = 0;
             this_send->flush_hash = true;
@@ -75,11 +80,27 @@ void* LocalReader::operator()(void*)
             return this_send;
         }
     }
+    if (aggregator->stall_pipeline) {
+        aggregator->stall_pipeline = false;
+
+        this_send->result = NULL;
+        this_send->length = 0;
+        this_send->flush_hash = true;
+        this_send->destroy_pao = false;
+        // still have to count this as a token
+        aggregator->tot_input_tokens++;
+        return this_send;
+    } else {
+        aggregator->can_exit = false;
+        aggregator->stall_pipeline = false;
+    }
     aggregator->tot_input_tokens++;
 
 	if (!inp) { // new bucket has to be opened
+        stringstream ss;
+        ss << aggregator->getJobID();
         string file_name = inputfile_prefix;
-        file_name = file_name + "input";
+        file_name = file_name + "input" + ss.str();
         inp = fopen(file_name.c_str(), "rb");
         fprintf(stderr, "opening file %s\n", file_name.c_str());
     }
@@ -89,20 +110,23 @@ void* LocalReader::operator()(void*)
 
     uint64_t tok_ctr = 0;
     char* buf = this_chunk;
+    char* ptr;
     while (tok_ctr < max_keys_per_token) {
         if (fgets(buf, BUF_SIZE, inp) == NULL)
             break;
         int offset = strlen(buf);
-        char* spl = strtok(buf, " \n\r");
+        char* spl = strtok_r(buf, " \n\r\t", &ptr);
         if (spl == NULL)
             break;
         Token* tok = this_token_list[tok_ctr++];
         do {
             tok->tokens.push_back(spl);
-            spl = strtok(NULL, " \n\r");
+            spl = strtok_r(NULL, " \n\r\t", &ptr);
         } while (spl);
-        if (tok_ctr >= max_keys_per_token-2)
+        if (tok_ctr >= max_keys_per_token-20) {
+            fprintf(stderr, "Sending %d elements\n", tok_ctr);
             break;
+        }
         buf = buf + offset + 1;
     }
 
