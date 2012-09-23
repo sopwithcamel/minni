@@ -54,6 +54,14 @@ void* CompressTreeInserter::operator()(void* recv)
     tokens_processed++;
 
     cbt_->bulk_insert(pao_l, recv_length);
+
+    if (recv_list->destroy_pao) {
+        const Operations* const op = aggregator_->ops();
+        for (uint32_t i=0; i<recv_length; i++) {
+            pao = pao_l[i];
+            op->destroyPAO(pao);
+        }
+    }
     
     size_t evict_list_ctr = 0;
 	if (flush_on_complete || aggregator_->input_finished && 
