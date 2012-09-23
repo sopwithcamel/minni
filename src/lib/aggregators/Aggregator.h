@@ -42,6 +42,7 @@ class Aggregator
 	uint64_t tot_input_tokens;	// measures total input tokens
 
 	void resetFlags();
+    JobID getJobID() const;
 	uint64_t getNumThreads() const;
 	uint64_t getNumBuffers() const;
 	uint64_t getNumPartitions() const;

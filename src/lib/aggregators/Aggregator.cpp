@@ -62,6 +62,11 @@ void Aggregator::resetFlags()
 	tot_input_tokens = 0;
 }
 
+JobID Aggregator::getJobID() const
+{
+    return jobid;
+}
+
 uint64_t Aggregator::getNumThreads(void) const
 {
 	return num_threads;
