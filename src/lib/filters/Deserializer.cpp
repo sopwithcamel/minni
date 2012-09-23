@@ -8,14 +8,16 @@ using namespace google::protobuf::io;
 Deserializer::Deserializer(Aggregator* agg,
 			const uint64_t num_buckets, 
 			const char* inp_prefix, 
-            size_t max_keys) :
+            size_t max_keys,
+            bool ref) :
 		aggregator(agg),
 		filter(serial_in_order),
         max_keys_per_token(max_keys),
 		num_buckets(num_buckets),
 		buckets_processed(0),
 		cur_bucket(NULL),
-		next_buffer(0)
+		next_buffer(0),
+        reuse_paos(ref)
 {
 	size_t num_buffers = aggregator->getNumBuffers();
 
@@ -24,6 +26,16 @@ Deserializer::Deserializer(Aggregator* agg,
 
 	pao_list = new MultiBuffer<PartialAgg*>(num_buffers,
 			max_keys_per_token);
+
+    if (reuse_paos) {
+        const Operations* const ops = aggregator->ops();
+        for (int i=0; i<num_buffers; i++) {
+            for (int j=0; j<max_keys_per_token; j++) {
+                ops->createPAO(NULL, &(*pao_list)[i][j]);
+            }
+        }
+    }
+
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 	read_buf = malloc(BUF_SIZE + 1);
 
@@ -34,6 +46,15 @@ Deserializer::~Deserializer()
 {
 	size_t num_buffers = aggregator->getNumBuffers();
 	free(inputfile_prefix);
+    if (reuse_paos) {
+        uint64_t num_buffers = aggregator->getNumBuffers();
+        const Operations* const ops = aggregator->ops();
+        for (int i=0; i<num_buffers; i++) {
+            for (int j=0; j<max_keys_per_token; j++) {
+                ops->destroyPAO((*pao_list)[i][j]);
+            }
+        }
+    }
 	delete pao_list;
 	delete send;
 	free(read_buf);
@@ -86,7 +107,8 @@ void* Deserializer::operator()(void*)
 	if (!cur_bucket) { // new bucket has to be opened
 		string file_name = inputfile_prefix;
 		stringstream ss;
-		ss << buckets_processed++;
+		ss << aggregator->getJobID();
+        buckets_processed++;
 		file_name = file_name + ss.str();
 		cur_bucket = new std::ifstream(file_name.c_str(), ios::in|ios::binary);
         switch (serializationMethod_) {
@@ -112,7 +134,8 @@ void* Deserializer::operator()(void*)
     const Operations* const op = aggregator->ops();
 
     while (true) {
-        op->createPAO(NULL, &(this_list[pao_list_ctr]));
+        if (!reuse_paos)
+            op->createPAO(NULL, &(this_list[pao_list_ctr]));
         bool ret;
         switch (serializationMethod_) {
             case Operations::PROTOBUF:
@@ -155,7 +178,6 @@ void* Deserializer::operator()(void*)
 	if (eof_reached) {
         switch (serializationMethod_) {
             case Operations::PROTOBUF:
-                delete coded_input;
                 delete raw_input;
                 break;
             case Operations::BOOST:
@@ -177,7 +199,7 @@ void* Deserializer::operator()(void*)
 //	fprintf(stderr, "list size: %d\n", pao_list_ctr);
 	this_send->result = this_list;
 	this_send->length = pao_list_ctr;
-    this_send->destroy_pao = true;
+    this_send->destroy_pao = !(reuse_paos);
 	return this_send;
 }
 

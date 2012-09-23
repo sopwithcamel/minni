@@ -35,7 +35,8 @@ public:
 	Deserializer(Aggregator* agg, 
 			const uint64_t num_buckets, 
 			const char* inp_prefix,
-            size_t max_keys);
+            size_t max_keys,
+            bool ref=false);
 	~Deserializer();
 private:
 	Aggregator* aggregator;
@@ -45,6 +46,7 @@ private:
 	uint64_t buckets_processed;
 	MultiBuffer<PartialAgg*>* pao_list;
 	size_t next_buffer;
+    bool reuse_paos;
 	MultiBuffer<FilterInfo>* send;
 	void* read_buf;
 
