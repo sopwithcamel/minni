@@ -2,8 +2,6 @@
 
 using namespace google::protobuf::io;
 
-#define KEY_SIZE        10
-
 WCProtoPAO::WCProtoPAO()
 {
     pb.set_count(0);

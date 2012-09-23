@@ -5,33 +5,37 @@
 #include "Tokenizer.h"
 #include <assert.h>
 #include <list>
-#include "Neighbor.h"
 #include <math.h>
 #include <algorithm>
-#include "imgclass.pb.h"
+#include "imgcluster.pb.h"
 
-class ImageClassPAO : public ProtobufPartialAgg {
-  public:
-	ImageClassPAO(Token* token);
-	~ImageClassPAO();
-	static size_t create(Token* t, PartialAgg** p);
-	/* merge two lists */
-	void merge(PartialAgg* add_agg);
-    inline const std::string& key() const;
-	inline void serialize(
-            google::protobuf::io::CodedOutputStream* output) const;
-	inline void serialize(std::string* output) const;
-	inline bool deserialize(
-            google::protobuf::io::CodedInputStream* input);
-	inline bool deserialize(const std::string& input);
-	inline bool deserialize(const char* input, size_t size);
-    inline uint32_t serializedSize() const;
-    inline void serialize(char* output, size_t size);
-  private:
-    imgclasspao::pao pb;
-};
- 
-inline const std::string& ImageClassPAO::key() const
+class ICProtoOperations : public ProtobufOperations
 {
-    return pb.key();
+  public:
+    const char* getKey(PartialAgg* p) const;
+    bool setKey(PartialAgg* p, char* k) const;
+    bool sameKey(PartialAgg* p1, PartialAgg* p2) const;
+	size_t createPAO(Token* t, PartialAgg** p) const;
+    size_t dividePAO(const PartialAgg& p, PartialAgg** p_list) const;
+    bool destroyPAO(PartialAgg* p) const;
+	bool merge(PartialAgg* p, PartialAgg* mg) const;
+    inline uint32_t getSerializedSize(PartialAgg* p) const;
+    inline bool serialize(PartialAgg* p, std::string* output) const;
+    inline bool serialize(PartialAgg* p, char* output, size_t size) const;
+    inline bool deserialize(PartialAgg* p, const std::string& input) const;
+    inline bool deserialize(PartialAgg* p, const char* input,
+            size_t size) const;
+    inline bool serialize(PartialAgg* p,
+            google::protobuf::io::CodedOutputStream* output) const;
+    inline bool deserialize(PartialAgg* p,
+            google::protobuf::io::CodedInputStream* input) const;
+};
+
+class ImageClusterPAO : public PartialAgg {
+    friend class ICProtoOperations;
+  public:
+	ImageClusterPAO();
+	~ImageClusterPAO();
+  private:
+    imgcluster::pao pb;
 };

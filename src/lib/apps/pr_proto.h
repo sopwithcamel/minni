@@ -30,7 +30,7 @@ class PageRankProtoOperations : public ProtobufOperations
 class PageRankProtoPAO : public PartialAgg {
     friend class PageRankProtoOperations;
   public:
-	PageRankProtoPAO(const std::string& key, float pr);
+	PageRankProtoPAO();
 	~PageRankProtoPAO();
   private:
     pagerank::pao pb;

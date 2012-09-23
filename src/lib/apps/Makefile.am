@@ -4,7 +4,8 @@
 pkglib_LTLIBRARIES = wc_boost.la wc_proto.la \
 					wcdig_proto.la wcdig_boost.la \
 					wctrig_proto.la wctrig_boost.la \
-					pr_proto.la pr_boost.la
+					pr_proto.la pr_boost.la \
+					ic_proto.la ic_boost.la
 #wcplain.la wchand.la \
 #					wcdigram.la semantic.la semantic_plain.la \
 #					digplain.la img.la imgclass.la
@@ -54,6 +55,14 @@ wctrig_proto_la_CPPFLAGS = $(ALL_CPPFLAGS)
 wctrig_boost_la_SOURCES = wctrig_boost.cpp
 wctrig_boost_la_LDFLAGS = -module
 wctrig_boost_la_CPPFLAGS = $(ALL_CPPFLAGS)
+#
+ic_proto_la_SOURCES = ic_proto.cpp imgcluster.pb.cc
+ic_proto_la_LDFLAGS = -module
+ic_proto_la_CPPFLAGS = $(ALL_CPPFLAGS)
+#
+ic_boost_la_SOURCES = ic_boost.cpp
+ic_boost_la_LDFLAGS = -module
+ic_boost_la_CPPFLAGS = $(ALL_CPPFLAGS)
 #
 #wcdigram_la_SOURCES = wcdigram.cpp wcdigram.pb.cc
 #wcdigram_la_LDFLAGS = -module -lprotobuf
