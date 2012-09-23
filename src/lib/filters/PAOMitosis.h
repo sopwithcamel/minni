@@ -23,12 +23,12 @@
 
 class PAOMitosis : public tbb::filter {
 public:
-	PAOMitosis(Aggregator* agg, 
-			size_t max_keys);
+	PAOMitosis(Aggregator* agg, size_t max_keys, bool ref);
 	~PAOMitosis();
 private:
 	Aggregator* aggregator;
 	size_t next_buffer;
+    bool reuse_paos;
 	const size_t max_keys_per_token;
 	MultiBuffer<PartialAgg*>* pao_list;
 	MultiBuffer<FilterInfo>* send;

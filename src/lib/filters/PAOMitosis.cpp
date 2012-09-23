@@ -1,20 +1,40 @@
 #include "PAOMitosis.h"
 
 PAOMitosis::PAOMitosis(Aggregator* agg,
-			const size_t max_keys) :
+			const size_t max_keys,
+            bool ref) :
 		aggregator(agg),
 		filter(serial_in_order),
 //		max_keys_per_token(max_keys),
-		max_keys_per_token(10000000),
-		next_buffer(0)
+		max_keys_per_token(1000*max_keys),
+		next_buffer(0),
+        reuse_paos(ref)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	pao_list = new MultiBuffer<PartialAgg*>(num_buffers, max_keys_per_token);
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
+
+    if (reuse_paos) {
+        const Operations* const ops = aggregator->ops();
+        for (int i=0; i<num_buffers; i++) {
+            for (int j=0; j<max_keys_per_token; j++) {
+                ops->createPAO(NULL, &(*pao_list)[i][j]);
+            }
+        }
+    }
 }
 
 PAOMitosis::~PAOMitosis()
 {
+    if (reuse_paos) {
+        uint64_t num_buffers = aggregator->getNumBuffers();
+        const Operations* const ops = aggregator->ops();
+        for (int i=0; i<num_buffers; i++) {
+            for (int j=0; j<max_keys_per_token; j++) {
+                ops->destroyPAO((*pao_list)[i][j]);
+            }
+        }
+    }
 	delete pao_list;
 	delete send;
 }
@@ -57,7 +77,7 @@ void* PAOMitosis::operator()(void* recv)
 	this_send->result = this_pao_list;
 	this_send->length = this_list_ctr;
 	this_send->flush_hash = false;
-    this_send->destroy_pao = true;
+    this_send->destroy_pao = !(reuse_paos);
 
 	return this_send;
 }
