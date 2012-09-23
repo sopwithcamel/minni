@@ -14,7 +14,7 @@ BucketAggregator::BucketAggregator(const Config &cfg,
                 const char* infile, 
                 Operations* ops,
                 const char* outfile):
-        Aggregator(cfg, jid, type, 2, num_part, ops),
+        Aggregator(cfg, jid, type, 1, num_part, ops),
         map_input(_map_input),
         chunkreader(NULL),
         filereader(NULL),
