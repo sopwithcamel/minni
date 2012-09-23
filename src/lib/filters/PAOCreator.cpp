@@ -5,15 +5,15 @@ PAOCreator::PAOCreator(Aggregator* agg,
             bool ref) :
 		aggregator(agg),
 		filter(serial_in_order),
-		max_keys_per_token(max_keys),
+		max_keys_per_token(max_keys * 4),
 		next_buffer(0),
-        refresh_paos(ref)
+        reuse_paos(ref)
 {
 	uint64_t num_buffers = aggregator->getNumBuffers();
 	pao_list = new MultiBuffer<PartialAgg*>(num_buffers, max_keys_per_token);
 	send = new MultiBuffer<FilterInfo>(num_buffers, 1);
 
-    if (refresh_paos) {
+    if (reuse_paos) {
         const Operations* const ops = aggregator->ops();
         for (int i=0; i<num_buffers; i++) {
             for (int j=0; j<max_keys_per_token; j++) {
@@ -25,7 +25,7 @@ PAOCreator::PAOCreator(Aggregator* agg,
 
 PAOCreator::~PAOCreator()
 {
-    if (refresh_paos) {
+    if (reuse_paos) {
         uint64_t num_buffers = aggregator->getNumBuffers();
         const Operations* const ops = aggregator->ops();
         for (int i=0; i<num_buffers; i++) {
@@ -74,7 +74,7 @@ void* PAOCreator::operator()(void* recv)
 	this_send->result = this_pao_list;
 	this_send->length = this_list_ctr;
 	this_send->flush_hash = false;
-    this_send->destroy_pao = !(refresh_paos);
+    this_send->destroy_pao = !(reuse_paos);
 
 	return this_send;
 }

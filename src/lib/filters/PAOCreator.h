@@ -29,7 +29,7 @@ private:
 	Aggregator* aggregator;
 	size_t next_buffer;
     /* If flag is true, PAOs are reused */
-    bool refresh_paos;
+    bool reuse_paos;
 	const size_t max_keys_per_token;
 	MultiBuffer<PartialAgg*>* pao_list;
 	MultiBuffer<FilterInfo>* send;
