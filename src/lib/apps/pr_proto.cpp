@@ -51,8 +51,11 @@ size_t PageRankProtoOperations::dividePAO(const PartialAgg& p,
 	const PageRankProtoPAO* wp = static_cast<const PageRankProtoPAO*>(&p);
 
     // copy the input PAO as the first output PAO
+/*
     new_pao = new PageRankProtoPAO(*wp);
     p_list[0] = new_pao;
+    p_list[0] = (PageRankProtoPAO*)wp;
+*/
 
     uint32_t out_links = wp->pb.outlinks();
     if (out_links) {
@@ -60,7 +63,7 @@ size_t PageRankProtoOperations::dividePAO(const PartialAgg& p,
 
         stringstream ss(wp->pb.links());
         string l;
-        for (uint32_t i=1; i<=out_links; i++) {
+        for (uint32_t i=0; i<out_links; i++) {
 //            new_pao = (PageRankProtoPAO*)(p_list[i]);
             getline(ss, l, ' ');
             new_pao = new PageRankProtoPAO();
@@ -69,7 +72,7 @@ size_t PageRankProtoOperations::dividePAO(const PartialAgg& p,
             p_list[i] = new_pao;
         }
     }
-    return out_links+1;
+    return out_links;
 }
 
 bool PageRankProtoOperations::destroyPAO(PartialAgg* p) const

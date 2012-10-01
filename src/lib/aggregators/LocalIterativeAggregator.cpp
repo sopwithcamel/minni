@@ -64,10 +64,15 @@ LocalIterativeAggregator::LocalIterativeAggregator(const Config &cfg,
     infile_= (char*)malloc(FILENAME_LENGTH);
     strcpy(infile_, fprefix.c_str());
     strcat(infile_, "input");
-    inp_deserializer_ = new Deserializer(this, 1, infile_, max_keys_per_token);
+
+    bool reuse_paos = false;
+//    if (!intagg.compare("cbt"))
+//        reuse_paos = true;
+    inp_deserializer_ = new Deserializer(this, 1, infile_, max_keys_per_token,
+            reuse_paos);
     pipeline_list[0].add_filter(*inp_deserializer_);
 
-    pao_splitter_ = new PAOMitosis(this, max_keys_per_token);
+    pao_splitter_ = new PAOMitosis(this, max_keys_per_token, reuse_paos);
     pipeline_list[0].add_filter(*pao_splitter_);
 
     if (agg_in_mem) {
@@ -113,15 +118,15 @@ void LocalIterativeAggregator::runPipeline()
     char* out = (char*)malloc(FILENAME_LENGTH);
     strcpy(out, outfile_);
     strcat(out, "0");
-	for (int i=0; i<5; i++) {
+	for (int i=0; i<1; i++) {
         fprintf(stderr, "Running the local-iterator pipeline (%d)\n", iter_++);
         pipeline_list[0].run(num_buffers);
         resetFlags();
         resetFilters();
-        if (rename(temp, inp) != 0)
-            fprintf(stderr, "Error renaming %s to %s\n", temp, inp);
+//        if (rename(temp, inp) != 0)
+//            fprintf(stderr, "Error renaming %s to %s\n", temp, inp);
 	}
-    if (rename(inp, out) != 0)
+    if (rename(temp, out) != 0)
         fprintf(stderr, "Error renaming map output\n");
     
     pipeline_list[0].clear();

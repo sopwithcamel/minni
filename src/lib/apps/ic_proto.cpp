@@ -42,12 +42,14 @@ size_t ICProtoOperations::createPAO(Token* t, PartialAgg** p) const
         int step = l / num_rotations;
         string ph((char*)(t->tokens[1]));
         for (int i=0; i<num_rotations; i++) {
-            ImageClusterPAO* img = (ImageClusterPAO*)(p[i]);
+//            ImageClusterPAO* img = (ImageClusterPAO*)(p[i]);
+            ImageClusterPAO* img = new ImageClusterPAO();
             rotate(ph.begin(), ph.begin()+step, ph.end());
             img->pb.set_key(ph.substr(0, prefix_len));
             img->pb.set_key(ph);
             img->pb.clear_neighbors();
             img->pb.add_neighbors((char*)(t->tokens[0]));
+            p[i] = img;
         }
     }
 	return num_rotations;
