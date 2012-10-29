@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "util.h"
-#include "Defs.h"
 
 using namespace libconfig;
 
@@ -31,14 +30,15 @@ bool configExists(const Config &cfg, const char* set_name)
 bool openConfigFile(Config &cfg)
 {
 	try {
-		cfg.readFile(CONFIG_FILE);
+		cfg.readFile("../../sample.cfg");
 	}
 	catch (FileIOException e) {
 		fprintf(stderr, "Error reading config file \n");
 		exit(1);
 	}	
 	catch (ParseException e) {
-		fprintf(stderr, "Error reading config file: %s at %s:%d\n", e.getError(), e.what(), e.getLine());
+		fprintf(stderr, "Error reading config file: %s at %s:%d\n",
+                e.getError(), e.what(), e.getLine());
 		exit(1);
 	}
 	return true;
