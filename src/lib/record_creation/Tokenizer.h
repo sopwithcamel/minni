@@ -3,19 +3,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "PartialAgg.h"
-#include <vector>
 
 class PartialAgg;
-class Token {
-  public:
-	Token();
-	~Token();
-	void init(const Token&);
-	void clear();
-	std::vector<void*> tokens;
-	std::vector<size_t> token_sizes;
-//	std::vector<PartialAgg*> objs;
-};
 
 class Tokenizer {
   public:

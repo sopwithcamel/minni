@@ -3,7 +3,8 @@ SUBDIRS = apps
 
 lib_LTLIBRARIES = libminni.la 
 
-libminni_la_SOURCES =   core/Mapper.cpp \
+libminni_la_SOURCES =   core/PartialAgg.cpp \
+			core/Mapper.cpp \
 			core/MapInput.cpp \
 			core/Reducer.cpp \
 			filters/AccumulatorFilter.cpp \
@@ -29,7 +30,6 @@ libminni_la_SOURCES =   core/Mapper.cpp \
 			aggregators/ExthashAggregator.cpp \
 			aggregators/HashsortAggregator.cpp \
 			aggregators/LocalIterativeAggregator.cpp \
-			record_creation/Tokenizer.cpp \
 			record_creation/FileTokenizer.cpp \
 			record_creation/DelimitedTokenizer.cpp \
 			data_structures/SparseHashMurmur.cpp \
