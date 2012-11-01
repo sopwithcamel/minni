@@ -13,6 +13,11 @@ class BoostOperations : public Operations {
 	virtual ~BoostOperations() {}
 
     SerializationMethod getSerializationMethod() const { return BOOST; }
+    virtual void* getValue(PartialAgg* p) const {
+        return NULL;
+    }
+    virtual void setValue(PartialAgg* p, void* v) const {
+    }
 
 	/* serialize into file */
 	virtual bool serialize(PartialAgg* p,
